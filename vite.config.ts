@@ -1,9 +1,11 @@
 import inertia from '@inertiajs/vite';
+import { PrimeVueResolver } from '@primevue/auto-import-resolver';
 import { wayfinder } from '@laravel/vite-plugin-wayfinder';
 import tailwindcss from '@tailwindcss/vite';
 import vue from '@vitejs/plugin-vue';
 import laravel from 'laravel-vite-plugin';
 import { bunny } from 'laravel-vite-plugin/fonts';
+import Components from 'unplugin-vue-components/vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
@@ -29,6 +31,10 @@ export default defineConfig({
         }),
         wayfinder({
             formVariants: true,
+        }),
+        Components({
+            resolvers: [PrimeVueResolver()],
+            dts: 'resources/js/types/components.d.ts',
         }),
     ],
     server: {

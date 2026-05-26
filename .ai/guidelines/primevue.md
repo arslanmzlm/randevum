@@ -19,9 +19,9 @@ Avoid hard-coded colors, ad-hoc CSS overrides, and `!important`. Tokens keep the
 
 ## Tailwind v4 integration
 
-- `app.css` imports `tailwindcss` + `tailwindcss-primeui` (bridges PrimeVue tokens into Tailwind) + `primeicons`.
+- `app.css` imports `tailwindcss` + `tailwindcss-primeui` (bridges PrimeVue tokens into Tailwind).
 - The CSS layer order (`theme, base, primevue, utilities`, set in `app.ts`) lets Tailwind utilities override PrimeVue's styled layer when needed.
-- Icons use `primeicons` (`pi pi-*`) — not lucide.
+- Icons use Tabler (`@tabler/icons-vue`), imported as Vue components (e.g. `import { IconCalendar } from '@tabler/icons-vue'`) and passed into PrimeVue icon slots/templates — not `primeicons` or lucide.
 
 ## Components
 
