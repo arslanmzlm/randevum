@@ -13,18 +13,26 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
+            $table->string('first_name', 100);
+            $table->string('last_name', 100);
+            $table->string('email')->unique();                 // birincil giriş (zorunlu)
+            $table->string('phone', 20)->nullable()->unique(); // telefon+OTP ikinci giriş seçeneği
+            $table->string('avatar')->nullable();
+            $table->string('locale', 10)->default('tr_TR');
+            $table->string('timezone', 50)->default('Europe/Istanbul');
+            $table->timestampTz('email_verified_at')->nullable();
+            $table->timestampTz('phone_verified_at')->nullable(); // ilk randevu booking'inde OTP onayı
+            $table->timestampTz('last_login_at')->nullable();
             $table->string('password');
             $table->rememberToken();
-            $table->timestamps();
+            $table->timestampsTz();
+            $table->softDeletesTz();
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();
             $table->string('token');
-            $table->timestamp('created_at')->nullable();
+            $table->timestampTz('created_at')->nullable();
         });
 
         Schema::create('sessions', function (Blueprint $table) {

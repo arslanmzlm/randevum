@@ -15,13 +15,17 @@ class RoleSeeder extends Seeder
      * @var list<string>
      */
     private const ROLES = [
+        // global (clinic_id null)
         'superadmin',
+        'admin',
+        'moderator',
+        'patient',
+        // clinic-scoped (clinic_id set on assignment)
         'owner',
         'manager',
         'doctor',
         'receptionist',
         'assistant',
-        'patient',
     ];
 
     public function run(): void
