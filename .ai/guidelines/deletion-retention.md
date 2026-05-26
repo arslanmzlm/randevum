@@ -15,7 +15,7 @@
 
 - Media hard delete (DB row + S3 file) only within 48h; afterwards soft delete (`deleted_at`) and keep the file for the retention period (hidden from UI only).
 - Always retain originals (Spatie originals + conversions) as a medical-legal record (adult health records: 20-year retention); originals auto-move to S3 Glacier after 6 months.
-- Never auto-trigger KVKK erasure. Route: patient request → superadmin legal review → manual anonymization (clear `patients` PII, keep medical rows linked). Never hard-delete the medical record.
+- Never auto-trigger KVKK erasure: patient request → superadmin review → manual anonymization (clear `patients` PII, keep medical rows). Never hard-delete the medical record.
 
 ## Legal documents & consent
 
