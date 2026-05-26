@@ -3,11 +3,14 @@
 namespace App\Models;
 
 use App\Enums\LegalDocumentType;
+use App\Models\Concerns\BelongsToClinic;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class LegalDocument extends Model
 {
+    use BelongsToClinic;
+
     /**
      * @var list<string>
      */

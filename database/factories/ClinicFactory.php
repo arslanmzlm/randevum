@@ -33,7 +33,7 @@ class ClinicFactory extends Factory
             'vertical_id' => Vertical::factory(),
             'name' => $name,
             'slug' => Str::slug($name).'-'.fake()->unique()->numberBetween(1, 99999),
-            'phone' => fake()->numerify('05## ### ## ##'),
+            'phone' => '0232 '.fake()->numerify('### ## ##'), // valid İzmir landline (laravel-phone requires a valid number)
             'country_id' => $country->id,
             'city_id' => $city->id,
             'address' => fake()->streetAddress(),
