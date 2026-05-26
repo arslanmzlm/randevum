@@ -1,0 +1,24 @@
+name: randevum
+type: laravel
+docroot: public
+php_version: "8.4"
+nodejs_version: "24"
+webserver_type: nginx-fpm
+xdebug_enabled: false
+additional_hostnames: []
+additional_fqdns: []
+database:
+    type: postgres
+    version: "16"
+use_dns_when_possible: true
+composer_version: "2"
+web_environment: []
+corepack_enable: false
+
+# Expose the Vite dev server (port 5173) through ddev-router so HMR works over
+# https://randevum.test:5173. Pairs with server.origin in vite.config.ts.
+web_extra_exposed_ports:
+    - name: vite
+      container_port: 5173
+      http_port: 5172
+      https_port: 5173

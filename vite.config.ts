@@ -31,4 +31,18 @@ export default defineConfig({
             formVariants: true,
         }),
     ],
+    server: {
+        // Listen on all interfaces inside the DDEV web container.
+        host: '0.0.0.0',
+        port: 5173,
+        strictPort: true,
+        // ddev-router proxies https://<project>.test:5173 to the container,
+        // so assets/HMR must be advertised on that external origin.
+        origin: `${process.env.DDEV_PRIMARY_URL}:5173`,
+        // Accept the Host header forwarded by ddev-router (*.test / *.ddev.site).
+        allowedHosts: true,
+        cors: {
+            origin: /https?:\/\/([a-z0-9-]+\.)*(ddev\.site|test)(:\d+)?$/,
+        },
+    },
 });
