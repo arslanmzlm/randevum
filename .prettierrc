@@ -5,6 +5,7 @@
     "htmlWhitespaceSensitivity": "css",
     "printWidth": 80,
     "plugins": [
+        "@shufo/prettier-plugin-blade",
         "prettier-plugin-tailwindcss"
     ],
     "tailwindFunctions": [
@@ -15,6 +16,16 @@
     "tailwindStylesheet": "resources/css/app.css",
     "tabWidth": 4,
     "overrides": [
+        {
+            "files": "*.blade.php",
+            "options": {
+                "parser": "blade",
+                "tabWidth": 4,
+                "sortTailwindcssClasses": true,
+                "componentPrefix": "x-,livewire:",
+                "phpVersion": "8.4"
+            }
+        },
         {
             "files": "**/*.yml",
             "options": {
