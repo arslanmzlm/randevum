@@ -12,10 +12,12 @@
 - Use Spatie Permission with DEFAULT tables and the **Teams** feature. Set `'teams' => true` and `'team_foreign_key' => 'clinic_id'` in `config/permission.php` BEFORE running the permission migration (Teams adds `clinic_id` to `roles`/`model_has_roles`/`model_has_permissions`). Teams ships with `spatie/laravel-permission`.
 - A request-scoped middleware sets the active clinic via `setPermissionsTeamId($clinicId)` (from the user's current clinic); on clinic switch, unset the user's role/permission relations.
 - Role scoping:
-  - **Global** (`clinic_id` null): `superadmin` (platform), `patient` (B2C — permissions over the user's own data).
+  - **Global** (`clinic_id` null): `superadmin` (platform), `admin` (platform ops), `moderator` (platform support/moderation), `patient` (B2C — permissions over the user's own data).
   - **Clinic-scoped** (`clinic_id` set): `owner`, `manager`, `doctor`, `receptionist`, `assistant`.
-- Seed baseline roles (faz-0): `superadmin`, `owner`, `manager`, `doctor`, `receptionist`, `assistant`, `patient`. Roles are global; clinic-scoped assignments carry `clinic_id`.
+- Seed baseline roles (faz-0, 9): `superadmin`, `admin`, `moderator`, `patient`, `owner`, `manager`, `doctor`, `receptionist`, `assistant`. Roles are global; clinic-scoped assignments carry `clinic_id`.
 - Baseline role intent:
+  - `admin` — platform ops: tenant/clinic management, support; NOT destructive config or superadmin assignment.
+  - `moderator` — platform support/moderation: review/flag clinics & content, read-heavy; no tenant mutation or billing.
   - `owner` — clinic/business admin: full clinic access + settings, billing, staff & doctor management, refunds.
   - `manager` — branch ops: staff scheduling, catalog, view billing, manage appointments/patients — NOT business settings, clinic creation, or owner assignment.
   - `doctor` — own appointments/treatments, own `schedule_exceptions`, catalog read. Calendar visibility needs a `doctors` profile row, not the role.

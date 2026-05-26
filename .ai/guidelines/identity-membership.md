@@ -2,7 +2,7 @@
 
 Three distinct layers — keep them separate:
 
-- `users` — global auth identity (login): email/phone (both nullable + unique, at least one required, enforced in the Service layer), name, locale, timezone. NO `clinic_id`/`tenant_id` — a user can relate to several clinics over time (multi-clinic staff, B2C patient).
+- `users` — global auth identity (login): email (required, unique — primary login), phone (nullable, unique — phone+OTP second option), first_name/last_name, locale, timezone. NO `clinic_id`/`tenant_id` — a user can relate to several clinics over time (multi-clinic staff, B2C patient).
 - `doctors` — doctor PROFILE (calendar/medical identity): `user_id` UNIQUE (MVP: a user maps to at most one doctor profile), `clinic_id`, specialization, bio, license. A user "is a doctor" by having this row, NOT by holding a role; calendar visibility comes from it. (Faz 3 multi-clinic doctor: evolves into a `clinic_doctor` pivot and `user_id` UNIQUE relaxes.)
 - `patients` — clinic-owned patient RECORD: `clinic_id` NOT NULL, `user_id` nullable (always null in MVP — clinics create records manually; no patient login until Faz 2). `phone` unique per clinic. The same person across clinics = multiple `patients` rows.
 
