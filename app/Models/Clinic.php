@@ -9,11 +9,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Propaganistas\LaravelPhone\Casts\E164PhoneNumberCast;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
-class Clinic extends Model
+class Clinic extends Model implements HasMedia
 {
     /** @use HasFactory<ClinicFactory> */
-    use HasFactory, SoftDeletes;
+    use HasFactory, InteractsWithMedia, SoftDeletes;
 
     /**
      * @var list<string>
@@ -121,5 +124,23 @@ class Clinic extends Model
     public function patients(): HasMany
     {
         return $this->hasMany(Patient::class);
+    }
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('logo')->singleFile();
+        $this->addMediaCollection('cover')->singleFile();
+    }
+
+    public function registerMediaConversions(?Media $media = null): void
+    {
+        foreach (['large' => 1920, 'medium' => 800, 'thumb' => 300] as $name => $width) {
+            $this->addMediaConversion($name)
+                ->width($width)
+                ->format('webp')
+                ->quality(82)
+                ->performOnCollections('logo', 'cover')
+                ->queued();
+        }
     }
 }
