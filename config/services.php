@@ -35,4 +35,14 @@ return [
         ],
     ],
 
+    'sms' => [
+        'provider' => env('SMS_PROVIDER', 'null'), // 'netgsm' (prod) | 'log' (local) | 'null' (test)
+        'netgsm' => [
+            'base_url' => env('NETGSM_BASE_URL', 'https://api.netgsm.com.tr'),
+            'usercode' => env('NETGSM_USERCODE'),
+            'password' => env('NETGSM_PASSWORD'),
+            'header' => env('NETGSM_HEADER'),
+        ],
+    ],
+
 ];
