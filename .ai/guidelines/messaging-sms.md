@@ -1,7 +1,7 @@
 # Messaging / SMS
 
 - Consume every external messaging vendor through an interface so swapping vendor/region needs no migration. SMS goes through `App\Modules\Messaging\Contracts\SmsProviderInterface` (`send(string $phone, string $body): SmsResponse`); bind the concrete impl in a ServiceProvider, selected via `config('services.sms.provider')`.
-- MVP impl is `NetgsmSmsProvider`; provide a `NullSmsProvider` for test/local.
+- Providers (selected by `config('services.sms.provider')`): `NetgsmSmsProvider` (prod), `LogSmsProvider` (local — logs the body, e.g. to read OTP), `NullSmsProvider` (test — silent). A provider maps errors to an unsuccessful `SmsResponse`, never throws.
 - Send ALL SMS through `SendSmsJob` on the `sms` queue. Never call a provider synchronously.
 - Log every send to `sms_logs` (polymorphic `loggable`): status `Queued`→`Sent`/`Failed`; if a clinic disabled SMS, write `Skipped` but still log it. Snapshot `phone` and `body` onto the row.
 - Status-change SMS are event-driven (dispatched from the status transition), reusing the same pipeline.
