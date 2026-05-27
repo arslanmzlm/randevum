@@ -29,10 +29,23 @@ correctness issues as findings for the human / a follow-up, don't silently refac
   (no cross-module concrete imports), thin controllers.
 - Security/correctness: validation, authorization, N+1, money computed in app layer, snapshots.
 
-## Finish
-- Append a **## Review** section: a checklist of the check results (lint/format/types/tests:
-  pass/fail with the summary line) and a prioritized findings list (blocker / should-fix / nit).
-  State clearly whether the feature is **ready to commit**.
-- End with `<!-- PHASE:review STATUS:done -->` if checks pass and there are no blockers (else
-  `STATUS:blocked` + the blocker list).
-- Give a short final verdict for the human at GATE 2.
+## Finish — three outcomes (the driver acts on your STATUS)
+You do **not** fix correctness issues yourself (beyond formatting) and you do not call other agents.
+Instead you classify findings; the bash driver re-runs the owning phase to fix them, then re-invokes
+you. Keep a single current **## Review** and **## Remediation** section (rewrite them each round).
+
+Write a **## Review** section: the check results (lint/format/types/tests: pass/fail + summary line)
+and a prioritized findings list (blocker / should-fix / nit). Then set the outcome:
+
+- **Clean** (checks pass, no blockers) → set the token to `<!-- PHASE:review STATUS:done -->`.
+  State "ready to commit".
+- **Fixable by re-running a phase** → write a **## Remediation** section with a fenced
+  ` ```remediation ` block, one actionable fix per line, each prefixed with the owning phase tag —
+  `[backend]`, `[frontend]`, or `[tests]` (the only valid tags; the driver re-runs those phases).
+  Be specific (file + what to change). Set `<!-- PHASE:review STATUS:needs-fix -->`.
+- **Not auto-fixable** (needs a human/product decision, a spec change, or it recurred after
+  remediation) → set `<!-- PHASE:review STATUS:blocked -->` and explain. The pipeline stops for the
+  human.
+
+**Replace** the existing `<!-- PHASE:review STATUS:… -->` token line — do not leave a stale one.
+Give a short final verdict for the human at GATE 2.
