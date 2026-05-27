@@ -2,7 +2,7 @@
 
 - Drive ALL edit/delete windows from `config/platform.php` (env-overridable); read them in the Service layer on every edit/delete — never inline durations.
   - `edit_windows.treatment` = 48h, `edit_windows.case` = 48h, `edit_windows.transaction_delete` = 1h
-  - `appointment.hard_delete_allowed_states` = `['Confirmed']`
+  - `appointment.hard_delete_allowed_statuses` = `['confirmed']` (enum backing values, lowercase)
   - `reminders.offsets` = [24h, 1h], `reminders.window_minutes` = 5
 - No hard delete by default. Master/identity data soft-deletes; operational records change state.
 - Treatments & cases: never hard delete. Within 48h an edit is allowed; after, a treatment edit becomes a new "correction" record and a case allows only a status change (close/reopen).
