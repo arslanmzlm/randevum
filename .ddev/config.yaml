@@ -12,7 +12,10 @@ database:
     version: "16"
 use_dns_when_possible: true
 composer_version: "2"
-web_environment: []
+web_environment:
+    # Pest browser tests (pest-plugin-browser → Playwright) look for browsers here;
+    # baked into the web image by .ddev/web-build/Dockerfile. Run `ddev restart` after changes.
+    - PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 corepack_enable: false
 
 # Expose the Vite dev server (port 5173) through ddev-router so HMR works over

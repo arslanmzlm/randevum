@@ -51,6 +51,15 @@ spacing) and verify measurements against **`*.exact.html`** (absolute, pixel-fai
 3. **Semantic HTML / framework components** — `<form>`, typed `<input>`, `<label>`, `<button>`,
    `<a>`, headings — not div/p soup.
 4. **Map, don't copy, values** — colors → tokens, spacing → the scale, typography → text styles.
+5. **Reproduce the control *treatment*, not just the tokens.** Read how the design renders inputs
+   and controls and match it: label position (label inside the field box → floating / in-field
+   label such as PrimeVue `FloatLabel`/`IftaLabel`, not a plain top `<label>`), icon placement
+   inside fields, border colour / radius / height. Map those to design tokens (e.g. set the PrimeVue
+   `formField` preset tokens once) instead of eyeballing per component. Don't downgrade a designed
+   field to a generic one.
+6. **Prefer shared components; extract repeats.** Build the recurring field pattern as a reusable
+   component (`resources/js/components/*`) and use it everywhere, rather than re-wiring
+   label/error/icon markup inline — see the `frontend-components` guideline.
 
 ## Not in the export — you decide, per project conventions
 

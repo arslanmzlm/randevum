@@ -9,4 +9,23 @@
         Instrument Sans, ui-sans-serif, system-ui, sans-serif,
         'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
         'Noto Color Emoji';
+    --color-brand: #00be99;
+    --color-brand-dark: #009b7e;
+    --color-muted: #898989;
+}
+
+/* Declare color-scheme so Chromium "Auto Dark Mode for Web Contents" (Brave/Chrome
+   on a dark OS) doesn't force-invert the light UI (e.g. input backgrounds). */
+:root {
+    color-scheme: light;
+}
+.dark {
+    color-scheme: dark;
+}
+
+@layer components {
+    /* Vertical form-field stack (label + control + error/hint). */
+    .form-group {
+        @apply flex flex-col gap-1.5;
+    }
 }

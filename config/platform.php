@@ -50,4 +50,21 @@ return [
         'window_minutes' => (int) env('PLATFORM_REMINDER_WINDOW_MINUTES', 5),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | OTP (phone-based passwordless login)
+    |--------------------------------------------------------------------------
+    |
+    | Settings for the SMS one-time password login flow. All durations are in
+    | seconds. Read exclusively through the Service layer — never inline.
+    |
+    */
+
+    'otp' => [
+        'length' => (int) env('PLATFORM_OTP_LENGTH', 6),
+        'ttl' => (int) env('PLATFORM_OTP_TTL', 300),
+        'max_attempts' => (int) env('PLATFORM_OTP_MAX_ATTEMPTS', 5),
+        'resend_throttle' => (int) env('PLATFORM_OTP_RESEND_THROTTLE', 60),
+    ],
+
 ];

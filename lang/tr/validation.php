@@ -1,0 +1,87 @@
+<?php
+
+/*
+|--------------------------------------------------------------------------
+| Validation Language Lines (Turkish)
+|--------------------------------------------------------------------------
+|
+| Common rules translated to Turkish. Missing keys fall back to the framework
+| English messages (APP_FALLBACK_LOCALE=en), so this need not be exhaustive.
+|
+*/
+
+return [
+    'accepted' => ':attribute kabul edilmelidir.',
+    'active_url' => ':attribute geçerli bir URL değil.',
+    'after' => ':attribute :date tarihinden sonra olmalıdır.',
+    'after_or_equal' => ':attribute :date tarihinden sonra veya ona eşit olmalıdır.',
+    'alpha' => ':attribute yalnızca harf içerebilir.',
+    'alpha_dash' => ':attribute yalnızca harf, rakam, tire ve alt çizgi içerebilir.',
+    'alpha_num' => ':attribute yalnızca harf ve rakam içerebilir.',
+    'array' => ':attribute bir dizi olmalıdır.',
+    'before' => ':attribute :date tarihinden önce olmalıdır.',
+    'before_or_equal' => ':attribute :date tarihinden önce veya ona eşit olmalıdır.',
+    'between' => [
+        'numeric' => ':attribute :min ile :max arasında olmalıdır.',
+        'file' => ':attribute :min ile :max kilobayt arasında olmalıdır.',
+        'string' => ':attribute :min ile :max karakter arasında olmalıdır.',
+        'array' => ':attribute :min ile :max adet öğe içermelidir.',
+    ],
+    'boolean' => ':attribute alanı yalnızca doğru veya yanlış olabilir.',
+    'confirmed' => ':attribute tekrarı eşleşmiyor.',
+    'current_password' => 'Şifre hatalı.',
+    'date' => ':attribute geçerli bir tarih değil.',
+    'different' => ':attribute ile :other birbirinden farklı olmalıdır.',
+    'digits' => ':attribute :digits haneli olmalıdır.',
+    'digits_between' => ':attribute :min ile :max hane arasında olmalıdır.',
+    'email' => ':attribute geçerli bir e-posta adresi olmalıdır.',
+    'exists' => 'Seçilen :attribute geçersiz.',
+    'file' => ':attribute bir dosya olmalıdır.',
+    'filled' => ':attribute alanı doldurulmalıdır.',
+    'image' => ':attribute bir görsel olmalıdır.',
+    'in' => 'Seçilen :attribute geçersiz.',
+    'integer' => ':attribute bir tam sayı olmalıdır.',
+    'max' => [
+        'numeric' => ':attribute en fazla :max olabilir.',
+        'file' => ':attribute en fazla :max kilobayt olabilir.',
+        'string' => ':attribute en fazla :max karakter olabilir.',
+        'array' => ':attribute en fazla :max öğe içerebilir.',
+    ],
+    'mimes' => ':attribute şu türlerden bir dosya olmalıdır: :values.',
+    'min' => [
+        'numeric' => ':attribute en az :min olmalıdır.',
+        'file' => ':attribute en az :min kilobayt olmalıdır.',
+        'string' => ':attribute en az :min karakter olmalıdır.',
+        'array' => ':attribute en az :min öğe içermelidir.',
+    ],
+    'not_in' => 'Seçilen :attribute geçersiz.',
+    'numeric' => ':attribute bir sayı olmalıdır.',
+    'phone' => ':attribute geçerli bir telefon numarası olmalıdır.',
+    'present' => ':attribute alanı mevcut olmalıdır.',
+    'regex' => ':attribute biçimi geçersiz.',
+    'required' => ':attribute alanı zorunludur.',
+    'required_if' => ':other :value olduğunda :attribute alanı zorunludur.',
+    'required_with' => ':values mevcut olduğunda :attribute alanı zorunludur.',
+    'same' => ':attribute ile :other eşleşmelidir.',
+    'size' => [
+        'numeric' => ':attribute :size olmalıdır.',
+        'file' => ':attribute :size kilobayt olmalıdır.',
+        'string' => ':attribute :size karakter olmalıdır.',
+        'array' => ':attribute :size öğe içermelidir.',
+    ],
+    'string' => ':attribute bir metin olmalıdır.',
+    'unique' => ':attribute zaten kullanılıyor.',
+    'url' => ':attribute geçerli bir URL olmalıdır.',
+    'uuid' => ':attribute geçerli bir UUID olmalıdır.',
+
+    'attributes' => [
+        'email' => 'e-posta adresi',
+        'password' => 'şifre',
+        'phone' => 'telefon numarası',
+        'code' => 'doğrulama kodu',
+        'first_name' => 'ad',
+        'last_name' => 'soyad',
+    ],
+
+    'custom' => [],
+];

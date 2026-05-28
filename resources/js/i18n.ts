@@ -10,6 +10,50 @@ export const i18n = createI18n({
     locale: 'tr',
     fallbackLocale: 'tr',
     messages: {
-        tr: {},
+        tr: {
+            auth: {
+                layout: {
+                    brand: 'Randevum',
+                    tagline: 'Klinik yönetim platformu',
+                },
+                login: {
+                    title: 'Giriş Yap',
+                    subtitle: 'Hesabınıza giriş yapın',
+                    email: 'E-posta adresi',
+                    password: 'Şifre',
+                    remember: 'Beni hatırla',
+                    submit: 'Giriş Yap',
+                    forgot_password: 'Şifremi unuttum',
+                    no_account: 'Hesabınız yok mu?',
+                    register: 'Kayıt ol',
+                },
+                otp: {
+                    phone: 'Telefon numarası',
+                    request: 'SMS Gönder',
+                    code: 'Doğrulama kodu',
+                    verify: 'Doğrula',
+                    sent: 'Doğrulama kodu telefon numaranıza gönderildi.',
+                    invalid_code:
+                        'Girdiğiniz kod hatalı, süresi dolmuş veya çok fazla deneme yapıldı.',
+                },
+                logout: 'Çıkış Yap',
+                status: {
+                    'otp-sent': 'Doğrulama kodu telefon numaranıza gönderildi.',
+                    'passwords.sent':
+                        'Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.',
+                },
+            },
+            dashboard: {
+                title: 'Dashboard',
+                welcome: 'Hoş geldiniz,',
+                placeholder: 'Panel içeriği yakında eklenecek.',
+            },
+            admin: {
+                title: 'Admin Paneli',
+                welcome: 'Hoş geldiniz,',
+                placeholder:
+                    'Superadmin / Admin / Moderatör paneli — ilerleyen fazlarda geliştirilecek.',
+            },
+        },
     },
 });

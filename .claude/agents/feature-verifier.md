@@ -14,17 +14,21 @@ Read the run-file first; the *Approved spec* "Tests" note names the page to smok
 - Invoke **`pest-testing`** (browser-testing section).
 
 ## Verify
-1. Ensure the app is serving: the project runs under DDEV — use its URL (e.g. resolve via
-   `ddev describe` / the project's `.test` host). Start anything needed via `ddev` if it is not up.
-   Build assets if required (`ddev npm run build`, or assume the dev server is running).
-2. Write a focused Pest v4 **browser smoke** test (under `tests/Browser/`) for the feature's main
-   page(s): `visit(<url>)`, assert the page loads, assert **no JavaScript errors**
-   (`assertNoJavascriptErrors()` / `assertNoConsoleLogs()` as the skill describes), assert a couple
-   of key elements/labels are present, and capture a **`screenshot()`**.
-3. Run it via `ddev php artisan test --compact` (browser group). Authenticate first if the page is
-   behind auth (use a factory/seeded user).
+Real browser testing is **already set up** — `pestphp/pest-plugin-browser` + Playwright with
+Chromium baked into the DDEV web image (`.ddev/web-build/Dockerfile`, `PLAYWRIGHT_BROWSERS_PATH`).
+Do a **real browser smoke** — do NOT fall back to the HTTP test client.
 
-Keep it a smoke test (renders + no errors + key elements), not full E2E coverage.
+1. Write a focused Pest browser smoke under `tests/Browser/` for the feature's main page(s):
+   `visit('/login')->assertNoJavascriptErrors()->assertSee('<a real label>')->screenshot();`
+   - `screenshot()` takes **no filename** (its first arg is `$fullPage: bool`); it auto-names from
+     the test and saves a PNG to `tests/Browser/Screenshots/`.
+   - `assertNoJavascriptErrors()` is the point — it catches render-time crashes (e.g. a vue-i18n
+     message error) that feature/HTTP tests miss.
+   - Pest boots its own test server, so relative URLs like `/login` just work — no DDEV URL/cert
+     wrangling. The container is non-root, so no `--no-sandbox` is needed.
+2. Authenticate first if the page is behind auth (factory/seeded user). Run it via
+   `ddev php artisan test --compact` (or the file path). Keep it a smoke (renders + no JS errors +
+   a key element + screenshot), not full E2E.
 
 ## Finish
 - Append a **## Verify** section: the page(s) smoked, pass/fail, and the **screenshot path**
