@@ -14,5 +14,9 @@
   default icon is a PrimeIcon (e.g. Password's mask toggle), supply a Tabler icon via the control's
   icon slot (`#maskicon`/`#unmaskicon`, with `toggleCallback`) and position it yourself
   (`absolute right-3 top-1/2 -translate-y-1/2`).
+- Auth forms must carry `autocomplete` tokens so password managers map fields correctly: the
+  account field (email) = `autocomplete="username"`, new-password fields = `autocomplete="new-password"`,
+  current-password (login) = `autocomplete="current-password"`. Without a `username` field, browsers
+  mis-detect the first password input as the username.
 - **Reference projects (e.g. tezkolay) are for patterns/ideas, not to copy structure wholesale** —
   take the idea, build the minimal thing THIS project needs.

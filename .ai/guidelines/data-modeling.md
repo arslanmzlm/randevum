@@ -13,3 +13,4 @@
 - `clinics.country_id`/`city_id` → FK `countries`/`cities` (ISO 3166-1 / TR plaka); never free text.
 - `clinics.working_hours` and `verticals.config` are JSON.
 - Forward-compat nullable, null in MVP: `appointments.appointment_type_id` (Faz 2). Faz 3 multi-branch = 1 `tenant` → N `clinics` (no `organization_id`).
+- **Dev-mode migrations:** to change an existing table, edit its original `create_*` migration inline and `migrate:fresh` — do NOT stack a new ALTER (`Schema::table` `->change()`) migration. Pre-launch dev only (no production data to preserve); keeps migration history clean. New tables still get their own `create_*` migration.

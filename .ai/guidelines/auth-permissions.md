@@ -6,6 +6,7 @@
 - Phone + SMS OTP is a SECOND, passwordless login option alongside email+password; requires a verified phone.
 - Phone verification is NOT at registration. It's required when a user books their FIRST appointment (SMS OTP → sets `phone_verified_at`), so reminders have a verified number without signup friction. A verified phone also unlocks phone+OTP login.
 - Sanctum backs B2C clients: one shared API for Ionic mobile (token) and Inertia web (session); patient web pages under `resources/js/Pages/Patient/*`.
+- **Fortify action validation is inline, NOT a FormRequest** — exception to the Controller→FormRequest→Service layering. Fortify owns its controllers (login/register/password) and hands the bound action (`CreatesNewUsers`, etc.) a raw `$input` array, so the action validates with `Validator::make(...)->validate()` (like the stock `CreateNewUser`). A FormRequest doesn't fit Fortify's action contract. Field display names still come from `validation.attributes` (lang), never passed inline.
 
 ## Roles & permissions (Spatie Permission + Teams)
 
