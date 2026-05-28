@@ -78,6 +78,7 @@ return [
         'email' => 'E-posta adresi',
         'password' => 'Şifre',
         'password_confirmation' => 'Şifre tekrarı',
+        'current_password' => 'Mevcut şifre',
         'phone' => 'Telefon numarası',
         'code' => 'Doğrulama kodu',
         'first_name' => 'Ad',

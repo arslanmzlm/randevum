@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { Link, router, usePage } from '@inertiajs/vue3';
-import { IconHome, IconLogout } from '@tabler/icons-vue';
+import { IconHome, IconLogout, IconSettings } from '@tabler/icons-vue';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import AppToaster from '@/components/AppToaster.vue';
-import { dashboard, logout } from '@/routes';
+import { dashboard, logout, settings } from '@/routes';
 
 const { t } = useI18n();
 const page = usePage();
@@ -22,14 +22,27 @@ const userName = computed(() => {
     );
 });
 
-// Only routes that already exist. Features add their own entry as they land
-// (e.g. 1.26 appends "Ayarlar" once the settings route is registered).
+// Only routes that already exist. Features add their own entry as they land.
 const navItems = computed(() => [
     { label: t('nav.dashboard'), href: dashboard().url, icon: IconHome },
 ]);
 
+// Account/secondary items pinned to the bottom, above logout.
+const bottomNavItems = computed(() => [
+    { label: t('nav.settings'), href: settings().url, icon: IconSettings },
+]);
+
 function isActive(href: string): boolean {
     return page.url === href || page.url.startsWith(`${href}/`);
+}
+
+function linkClass(href: string): string[] {
+    return [
+        'flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-colors',
+        isActive(href)
+            ? 'bg-surface-100 text-surface-900'
+            : 'text-surface-500 hover:bg-surface-100 hover:text-surface-700',
+    ];
 }
 
 function doLogout(): void {
@@ -55,22 +68,27 @@ function doLogout(): void {
                     v-for="item in navItems"
                     :key="item.href"
                     :href="item.href"
-                    :class="[
-                        'flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-colors',
-                        isActive(item.href)
-                            ? 'bg-surface-100 text-surface-900'
-                            : 'text-surface-500 hover:bg-surface-100 hover:text-surface-700',
-                    ]"
+                    :class="linkClass(item.href)"
                 >
                     <component :is="item.icon" class="size-5 shrink-0" />
                     {{ item.label }}
                 </Link>
             </nav>
 
-            <div class="border-t border-surface-200 p-3">
+            <div class="flex flex-col gap-1 border-t border-surface-200 p-3">
+                <Link
+                    v-for="item in bottomNavItems"
+                    :key="item.href"
+                    :href="item.href"
+                    :class="linkClass(item.href)"
+                >
+                    <component :is="item.icon" class="size-5 shrink-0" />
+                    {{ item.label }}
+                </Link>
+
                 <button
                     type="button"
-                    class="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-surface-500 transition-colors hover:bg-surface-100 hover:text-surface-700"
+                    class="flex w-full cursor-pointer items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-surface-500 transition-colors hover:bg-surface-100 hover:text-surface-700"
                     @click="doLogout"
                 >
                     <IconLogout class="size-5 shrink-0" />

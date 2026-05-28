@@ -71,6 +71,25 @@ export const i18n = createI18n({
                 welcome: 'Hoş geldiniz,',
                 placeholder: 'Panel içeriği yakında eklenecek.',
             },
+            settings: {
+                title: 'Ayarlar',
+                profile: {
+                    heading: 'Profil Bilgileri',
+                    description: 'Ad ve soyadınızı güncelleyin.',
+                    first_name: 'Ad',
+                    last_name: 'Soyad',
+                    submit: 'Kaydet',
+                },
+                password: {
+                    heading: 'Şifre Değiştir',
+                    description:
+                        'Hesabınızın güvenliği için güçlü bir şifre kullanın.',
+                    current: 'Mevcut şifre',
+                    new: 'Yeni şifre',
+                    confirmation: 'Yeni şifre tekrarı',
+                    submit: 'Şifreyi Güncelle',
+                },
+            },
             admin: {
                 title: 'Admin Paneli',
                 welcome: 'Hoş geldiniz,',

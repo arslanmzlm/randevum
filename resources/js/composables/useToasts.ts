@@ -60,6 +60,11 @@ export function useToasts(): void {
     // Validation errors arrive in-place on the same page (no remount), so watch them.
     watch(() => page.props.errors, showErrorToast, { deep: true });
 
+    // Flash toasts can also arrive via a partial reload on a persistent layout
+    // (e.g. settings update redirects back) — the toaster never remounts, so the
+    // onMounted flush won't fire; watch the flash prop to catch those.
+    watch(() => page.props.flash, showFlashToasts, { deep: true });
+
     // Non-Inertia responses (429 throttle, 419 expired) — show a toast instead of
     // Inertia's default raw-response modal.
     onMounted(() => {

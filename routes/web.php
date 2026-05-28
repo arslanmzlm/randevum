@@ -11,6 +11,7 @@ Route::inertia('/', 'Welcome')->name('home');
 */
 Route::middleware('auth')->group(function () {
     Route::inertia('/dashboard', 'Dashboard')->name('dashboard');
+    Route::inertia('/settings', 'settings/Index')->name('settings');
 });
 
 // Domain route groups (auth/admin) are loaded from bootstrap/app.php.
