@@ -2,15 +2,12 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::inertia('/', 'Welcome')->name('home');
-
 /*
 |--------------------------------------------------------------------------
-| Authenticated app pages
+| Admin routes (authenticated)
 |--------------------------------------------------------------------------
+| Platform admin surface. Horizon / Pulse dashboards mount here too (admin-only).
 */
 Route::middleware('auth')->group(function () {
-    Route::inertia('/dashboard', 'Dashboard')->name('dashboard');
+    Route::inertia('/admin', 'Admin/Index')->name('admin');
 });
-
-// Domain route groups (auth/admin) are loaded from bootstrap/app.php.

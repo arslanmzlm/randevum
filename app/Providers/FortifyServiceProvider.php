@@ -2,10 +2,11 @@
 
 namespace App\Providers;
 
-use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Actions\Fortify\UpdateUserPassword;
 use App\Actions\Fortify\UpdateUserProfileInformation;
+use App\Models\Vertical;
+use App\Modules\Identity\Actions\RegisterClinicOwner;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -30,7 +31,7 @@ class FortifyServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Fortify::createUsersUsing(CreateNewUser::class);
+        Fortify::createUsersUsing(RegisterClinicOwner::class);
         Fortify::updateUserProfileInformationUsing(UpdateUserProfileInformation::class);
         Fortify::updateUserPasswordsUsing(UpdateUserPassword::class);
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
@@ -39,6 +40,23 @@ class FortifyServiceProvider extends ServiceProvider
             return Inertia::render('auth/Login', [
                 'canResetPassword' => Features::enabled(Features::resetPasswords()),
                 'canLoginWithOtp' => true,
+                'status' => session('status'),
+            ]);
+        });
+
+        Fortify::registerView(function () {
+            $verticals = Vertical::where('is_active', true)
+                ->get()
+                ->map(fn (Vertical $v): array => [
+                    'id' => $v->id,
+                    'slug' => $v->slug,
+                    'name' => __('verticals.'.$v->slug.'::vertical.name'),
+                ])
+                ->values()
+                ->all();
+
+            return Inertia::render('auth/Register', [
+                'verticals' => $verticals,
                 'status' => session('status'),
             ]);
         });
@@ -55,6 +73,10 @@ class FortifyServiceProvider extends ServiceProvider
 
         RateLimiter::for('otp-verify', function (Request $request) {
             return Limit::perMinute(6)->by($request->input('phone').'|'.$request->ip());
+        });
+
+        RateLimiter::for('register', function (Request $request) {
+            return Limit::perMinute(5)->by($request->ip());
         });
     }
 }

@@ -21,4 +21,21 @@ return [
         'invalid_code' => 'Girdiğiniz kod hatalı, süresi dolmuş veya çok fazla deneme yapıldı.',
     ],
 
+    'register' => [
+        'title' => 'Hesap Oluştur',
+        'subtitle' => 'Kliniğinizi birkaç adımda kayıt edin.',
+        'first_name' => 'Ad',
+        'last_name' => 'Soyad',
+        'email' => 'E-posta adresi',
+        'password' => 'Şifre',
+        'password_confirmation' => 'Şifre tekrarı',
+        'vertical' => 'Klinik türü',
+        'clinic_name' => 'Klinik adı',
+        'terms_label' => 'Kullanım koşulları ve gizlilik politikası',
+        'terms_agree' => ':terms\'i okudum ve kabul ediyorum.',
+        'submit' => 'Hesap Oluştur',
+        'have_account' => 'Zaten hesabınız var mı?',
+        'login_link' => 'Giriş yapın',
+    ],
+
 ];

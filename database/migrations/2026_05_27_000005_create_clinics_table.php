@@ -22,15 +22,15 @@ return new class extends Migration
             $table->text('description')->nullable();
 
             // contact
-            $table->string('phone', 20);
+            $table->string('phone', 20)->nullable();
             $table->string('email')->nullable();
             $table->string('website')->nullable();
 
             // address
             $table->foreignId('country_id')->constrained();
-            $table->foreignId('city_id')->constrained();
+            $table->foreignId('city_id')->nullable()->constrained();
             $table->string('district', 100)->nullable(); // ilçe
-            $table->text('address');
+            $table->text('address')->nullable();
             $table->string('postal_code', 20)->nullable();
             $table->decimal('latitude', 10, 7)->nullable();
             $table->decimal('longitude', 10, 7)->nullable();

@@ -75,12 +75,16 @@ return [
     'uuid' => ':attribute geçerli bir UUID olmalıdır.',
 
     'attributes' => [
-        'email' => 'e-posta adresi',
-        'password' => 'şifre',
-        'phone' => 'telefon numarası',
-        'code' => 'doğrulama kodu',
-        'first_name' => 'ad',
-        'last_name' => 'soyad',
+        'email' => 'E-posta adresi',
+        'password' => 'Şifre',
+        'password_confirmation' => 'Şifre tekrarı',
+        'phone' => 'Telefon numarası',
+        'code' => 'Doğrulama kodu',
+        'first_name' => 'Ad',
+        'last_name' => 'Soyad',
+        'clinic_name' => 'Klinik adı',
+        'vertical_id' => 'Klinik türü',
+        'terms' => 'Kullanım koşulları',
     ],
 
     'custom' => [],
