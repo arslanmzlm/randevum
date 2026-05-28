@@ -14,6 +14,11 @@
   default icon is a PrimeIcon (e.g. Password's mask toggle), supply a Tabler icon via the control's
   icon slot (`#maskicon`/`#unmaskicon`, with `toggleCallback`) and position it yourself
   (`absolute right-3 top-1/2 -translate-y-1/2`).
+- Layouts: auth/guest pages use `layouts/AuthLayout.vue`; authenticated B2B pages use
+  `layouts/AppLayout.vue` (sidebar + topbar shell; mounts `<AppToaster/>`) via
+  `defineOptions({ layout: AppLayout })`. The sidebar `navItems` only lists routes that already
+  exist — when a feature adds an authenticated page, append its nav entry there (don't pre-add links
+  to unbuilt routes). The admin panel is separate from AppLayout.
 - User feedback uses flash **toasts**, not ad-hoc inline banners. Server side:
   `App\Modules\Core\Support\Toast::success|info|warning|error(...)` flashes to the session;
   `HandleInertiaRequests` shares them as `flash.toasts`; `<AppToaster/>` (PrimeVue `Toast` +

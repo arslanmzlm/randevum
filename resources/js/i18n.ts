@@ -11,6 +11,13 @@ export const i18n = createI18n({
     fallbackLocale: 'tr',
     messages: {
         tr: {
+            app: {
+                greeting: 'Hoşgeldiniz, {name}',
+            },
+            nav: {
+                dashboard: 'Ana sayfa',
+                settings: 'Ayarlar',
+            },
             auth: {
                 layout: {
                     brand: 'Randevum',
