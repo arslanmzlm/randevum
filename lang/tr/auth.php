@@ -36,6 +36,7 @@ return [
         'submit' => 'Hesap Oluştur',
         'have_account' => 'Zaten hesabınız var mı?',
         'login_link' => 'Giriş yapın',
+        'welcome' => 'Hesabınız oluşturuldu. Aramıza hoş geldiniz!',
     ],
 
 ];

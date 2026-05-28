@@ -14,6 +14,12 @@
   default icon is a PrimeIcon (e.g. Password's mask toggle), supply a Tabler icon via the control's
   icon slot (`#maskicon`/`#unmaskicon`, with `toggleCallback`) and position it yourself
   (`absolute right-3 top-1/2 -translate-y-1/2`).
+- User feedback uses flash **toasts**, not ad-hoc inline banners. Server side:
+  `App\Modules\Core\Support\Toast::success|info|warning|error(...)` flashes to the session;
+  `HandleInertiaRequests` shares them as `flash.toasts`; `<AppToaster/>` (PrimeVue `Toast` +
+  `useToasts()` composable) renders them and must be mounted in every page shell/layout. A failed
+  (validation) request shows ONE generic error toast (`common.form_error`) — never one per field;
+  inline `FormField` errors stay the per-field signal.
 - Auth forms must carry `autocomplete` tokens so password managers map fields correctly: the
   account field (email) = `autocomplete="username"`, new-password fields = `autocomplete="new-password"`,
   current-password (login) = `autocomplete="current-password"`. Without a `username` field, browsers

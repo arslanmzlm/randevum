@@ -32,6 +32,7 @@ return [
         'submit' => 'Create Account',
         'have_account' => 'Already have an account?',
         'login_link' => 'Sign in',
+        'welcome' => 'Your account is ready. Welcome aboard!',
     ],
 
 ];

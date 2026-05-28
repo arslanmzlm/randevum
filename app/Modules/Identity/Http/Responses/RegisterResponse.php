@@ -2,6 +2,7 @@
 
 namespace App\Modules\Identity\Http\Responses;
 
+use App\Modules\Core\Support\Toast;
 use App\Modules\Identity\Services\PostLoginRedirector;
 use Illuminate\Http\RedirectResponse;
 use Laravel\Fortify\Contracts\RegisterResponse as RegisterResponseContract;
@@ -16,6 +17,8 @@ class RegisterResponse implements RegisterResponseContract
 
     public function toResponse($request): RedirectResponse
     {
+        Toast::success(__('auth.register.welcome'));
+
         return redirect()->to($this->redirector->resolve($request->user()));
     }
 }

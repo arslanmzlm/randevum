@@ -70,6 +70,13 @@ export const i18n = createI18n({
                 placeholder:
                     'Superadmin / Admin / Moderatör paneli — ilerleyen fazlarda geliştirilecek.',
             },
+            common: {
+                form_error: 'Girdiğiniz bilgileri kontrol edin.',
+                too_many_requests:
+                    'Çok fazla deneme yaptınız. Lütfen biraz bekleyip tekrar deneyin.',
+                session_expired:
+                    'Oturumunuz sona erdi. Lütfen sayfayı yenileyip tekrar deneyin.',
+            },
         },
     },
 });

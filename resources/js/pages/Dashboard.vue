@@ -6,6 +6,7 @@
 import { Head, router, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import AppToaster from '@/components/AppToaster.vue';
 import { logout } from '@/routes';
 
 const { t } = useI18n();
@@ -21,6 +22,7 @@ function doLogout(): void {
     <div
         class="flex min-h-screen items-center justify-center bg-surface-50 p-6"
     >
+        <AppToaster />
         <Head :title="t('dashboard.title')" />
 
         <div

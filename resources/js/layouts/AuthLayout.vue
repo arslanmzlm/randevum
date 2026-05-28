@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
+import AppToaster from '@/components/AppToaster.vue';
 
 const { t } = useI18n();
 </script>
 
 <template>
     <div class="flex min-h-screen flex-col lg:flex-row">
+        <AppToaster />
         <div
             class="relative hidden shrink-0 items-center justify-center overflow-hidden bg-brand lg:flex lg:w-2/5 lg:flex-col xl:w-[42%]"
             aria-hidden="true"
