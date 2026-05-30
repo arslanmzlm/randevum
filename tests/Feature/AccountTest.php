@@ -14,20 +14,20 @@ beforeEach(function (): void {
 });
 
 // ---------------------------------------------------------------------------
-// GET /settings — page rendering
+// GET /account — page rendering
 // ---------------------------------------------------------------------------
 
-it('renders the settings page for an authenticated user', function (): void {
+it('renders the account page for an authenticated user', function (): void {
     $user = User::factory()->create();
 
     $this->actingAs($user)
-        ->get(route('settings'))
+        ->get(route('account'))
         ->assertOk()
-        ->assertInertia(fn ($page) => $page->component('settings/Index'));
+        ->assertInertia(fn ($page) => $page->component('account/Index'));
 });
 
-it('redirects guests away from the settings page to login', function (): void {
-    $this->get(route('settings'))
+it('redirects guests away from the account page to login', function (): void {
+    $this->get(route('account'))
         ->assertRedirect(route('login'));
 });
 

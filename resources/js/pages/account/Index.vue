@@ -3,6 +3,7 @@ import { Head, useForm, usePage } from '@inertiajs/vue3';
 import { IconEye, IconEyeOff } from '@tabler/icons-vue';
 import { useI18n } from 'vue-i18n';
 import FormField from '@/components/FormField.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { update as updatePassword } from '@/routes/user-password';
 import { update as updateProfileInformation } from '@/routes/user-profile-information';
@@ -41,18 +42,23 @@ function submitPassword(): void {
 </script>
 
 <template>
-    <div class="mx-auto flex max-w-3xl flex-col gap-6">
-        <Head :title="t('settings.title')" />
+    <div class="flex flex-col gap-6">
+        <Head :title="t('account.title')" />
+
+        <PageHeader
+            :title="t('account.title')"
+            :breadcrumbs="[{ label: t('nav.account') }]"
+        />
 
         <section
             class="rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
         >
             <header class="mb-6">
                 <h2 class="text-lg font-semibold text-surface-900">
-                    {{ t('settings.profile.heading') }}
+                    {{ t('account.profile.heading') }}
                 </h2>
                 <p class="mt-1 text-sm text-surface-500">
-                    {{ t('settings.profile.description') }}
+                    {{ t('account.profile.description') }}
                 </p>
             </header>
 
@@ -60,7 +66,7 @@ function submitPassword(): void {
                 <div class="flex flex-col gap-5">
                     <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
                         <FormField
-                            :label="t('settings.profile.first_name')"
+                            :label="t('account.profile.first_name')"
                             :error="profileForm.errors.first_name"
                         >
                             <InputText
@@ -71,7 +77,7 @@ function submitPassword(): void {
                         </FormField>
 
                         <FormField
-                            :label="t('settings.profile.last_name')"
+                            :label="t('account.profile.last_name')"
                             :error="profileForm.errors.last_name"
                         >
                             <InputText
@@ -84,7 +90,7 @@ function submitPassword(): void {
 
                     <Button
                         type="submit"
-                        :label="t('settings.profile.submit')"
+                        :label="t('account.profile.submit')"
                         :loading="profileForm.processing"
                         class="self-start"
                     />
@@ -97,17 +103,17 @@ function submitPassword(): void {
         >
             <header class="mb-6">
                 <h2 class="text-lg font-semibold text-surface-900">
-                    {{ t('settings.password.heading') }}
+                    {{ t('account.password.heading') }}
                 </h2>
                 <p class="mt-1 text-sm text-surface-500">
-                    {{ t('settings.password.description') }}
+                    {{ t('account.password.description') }}
                 </p>
             </header>
 
             <form novalidate @submit.prevent="submitPassword">
                 <div class="flex flex-col gap-5">
                     <FormField
-                        :label="t('settings.password.current')"
+                        :label="t('account.password.current')"
                         :error="passwordForm.errors.current_password"
                     >
                         <Password
@@ -133,7 +139,7 @@ function submitPassword(): void {
                     </FormField>
 
                     <FormField
-                        :label="t('settings.password.new')"
+                        :label="t('account.password.new')"
                         :error="passwordForm.errors.password"
                     >
                         <Password
@@ -159,7 +165,7 @@ function submitPassword(): void {
                     </FormField>
 
                     <FormField
-                        :label="t('settings.password.confirmation')"
+                        :label="t('account.password.confirmation')"
                         :error="passwordForm.errors.password_confirmation"
                     >
                         <Password
@@ -186,7 +192,7 @@ function submitPassword(): void {
 
                     <Button
                         type="submit"
-                        :label="t('settings.password.submit')"
+                        :label="t('account.password.submit')"
                         :loading="passwordForm.processing"
                         class="self-start"
                     />

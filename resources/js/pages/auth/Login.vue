@@ -57,7 +57,7 @@ function submit(): void {
                     <InputText
                         v-model="form.email"
                         type="email"
-                        autocomplete="email"
+                        autocomplete="username"
                         fluid
                     />
                 </FormField>

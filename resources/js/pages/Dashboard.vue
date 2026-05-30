@@ -5,6 +5,7 @@
  */
 import { Head } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
+import PageHeader from '@/components/PageHeader.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 
 defineOptions({ layout: AppLayout });
@@ -13,14 +14,15 @@ const { t } = useI18n();
 </script>
 
 <template>
-    <Head :title="t('dashboard.title')" />
+    <div class="flex flex-col gap-6">
+        <Head :title="t('dashboard.title')" />
 
-    <div class="rounded-xl border border-surface-200 bg-surface-0 p-8">
-        <h1 class="mb-2 text-2xl font-semibold text-surface-900">
-            {{ t('dashboard.title') }}
-        </h1>
-        <p class="text-sm text-surface-500">
-            {{ t('dashboard.placeholder') }}
-        </p>
+        <PageHeader :title="t('dashboard.title')" />
+
+        <div class="rounded-xl border border-surface-200 bg-surface-0 p-8">
+            <p class="text-sm text-surface-500">
+                {{ t('dashboard.placeholder') }}
+            </p>
+        </div>
     </div>
 </template>

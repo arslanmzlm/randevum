@@ -1,15 +1,26 @@
 <script setup lang="ts">
 import { Link, router, usePage } from '@inertiajs/vue3';
-import { IconHome, IconLogout, IconSettings } from '@tabler/icons-vue';
+import {
+    IconArrowsMaximize,
+    IconArrowsMinimize,
+    IconBuildingHospital,
+    IconHome,
+    IconLogout,
+    IconUserCircle,
+} from '@tabler/icons-vue';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import AppToaster from '@/components/AppToaster.vue';
-import { dashboard, logout, settings } from '@/routes';
+import { useContentWidth } from '@/composables/useContentWidth';
+import { account, dashboard, logout } from '@/routes';
+import { edit as clinicEdit } from '@/routes/clinic';
 
 const { t } = useI18n();
 const page = usePage();
 
 const user = computed(() => page.props.auth?.user ?? null);
+const clinic = computed(() => page.props.activeClinic ?? null);
+const { width: contentWidth, toggle: toggleWidth } = useContentWidth();
 const userName = computed(() => {
     const u = user.value;
 
@@ -25,11 +36,16 @@ const userName = computed(() => {
 // Only routes that already exist. Features add their own entry as they land.
 const navItems = computed(() => [
     { label: t('nav.dashboard'), href: dashboard().url, icon: IconHome },
+    {
+        label: t('nav.clinic'),
+        href: clinicEdit().url,
+        icon: IconBuildingHospital,
+    },
 ]);
 
 // Account/secondary items pinned to the bottom, above logout.
 const bottomNavItems = computed(() => [
-    { label: t('nav.settings'), href: settings().url, icon: IconSettings },
+    { label: t('nav.account'), href: account().url, icon: IconUserCircle },
 ]);
 
 function isActive(href: string): boolean {
@@ -51,19 +67,29 @@ function doLogout(): void {
 </script>
 
 <template>
-    <div class="flex min-h-screen bg-surface-50">
+    <div class="flex h-screen overflow-hidden bg-surface-50">
         <AppToaster />
+        <ConfirmDialog />
 
         <aside
             class="hidden w-64 shrink-0 flex-col border-r border-surface-200 bg-surface-0 lg:flex"
         >
-            <div class="flex h-16 items-center px-6">
-                <span class="text-xl font-semibold text-brand">
-                    {{ t('auth.layout.brand') }}
+            <div class="flex h-16 shrink-0 items-center gap-3 px-6">
+                <img
+                    v-if="clinic?.logo_url"
+                    :src="clinic.logo_url"
+                    :alt="clinic.name"
+                    class="size-9 shrink-0 rounded-lg object-cover"
+                />
+                <span
+                    class="truncate text-lg font-semibold"
+                    :class="clinic ? 'text-surface-900' : 'text-brand'"
+                >
+                    {{ clinic?.name ?? t('auth.layout.brand') }}
                 </span>
             </div>
 
-            <nav class="flex flex-1 flex-col gap-1 px-3 py-4">
+            <nav class="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-4">
                 <Link
                     v-for="item in navItems"
                     :key="item.href"
@@ -75,7 +101,9 @@ function doLogout(): void {
                 </Link>
             </nav>
 
-            <div class="flex flex-col gap-1 border-t border-surface-200 p-3">
+            <div
+                class="flex shrink-0 flex-col gap-1 border-t border-surface-200 p-3"
+            >
                 <Link
                     v-for="item in bottomNavItems"
                     :key="item.href"
@@ -97,17 +125,47 @@ function doLogout(): void {
             </div>
         </aside>
 
-        <div class="flex min-w-0 flex-1 flex-col">
+        <div class="flex min-w-0 flex-1 flex-col overflow-hidden">
             <header
-                class="flex h-16 shrink-0 items-center border-b border-surface-200 bg-surface-0 px-6"
+                class="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-surface-200 bg-surface-0 px-6"
             >
-                <p class="text-lg font-medium text-surface-900">
+                <p class="truncate text-lg font-medium text-surface-900">
                     {{ t('app.greeting', { name: userName }) }}
                 </p>
+
+                <Button
+                    type="button"
+                    severity="secondary"
+                    text
+                    rounded
+                    :aria-label="
+                        contentWidth === 'fluid'
+                            ? t('app.width.collapse')
+                            : t('app.width.expand')
+                    "
+                    @click="toggleWidth"
+                >
+                    <component
+                        :is="
+                            contentWidth === 'fluid'
+                                ? IconArrowsMinimize
+                                : IconArrowsMaximize
+                        "
+                        class="size-5"
+                    />
+                </Button>
             </header>
 
-            <main class="flex-1 p-6 lg:p-8">
-                <slot />
+            <main class="flex-1 overflow-y-auto py-6 lg:py-8">
+                <div
+                    :class="
+                        contentWidth === 'fluid'
+                            ? 'container-fluid'
+                            : 'container'
+                    "
+                >
+                    <slot />
+                </div>
             </main>
         </div>
     </div>

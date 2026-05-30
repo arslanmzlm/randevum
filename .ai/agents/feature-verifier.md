@@ -18,17 +18,37 @@ Real browser testing is **already set up** — `pestphp/pest-plugin-browser` + P
 Chromium baked into the DDEV web image (`.ddev/web-build/Dockerfile`, `PLAYWRIGHT_BROWSERS_PATH`).
 Do a **real browser smoke** — do NOT fall back to the HTTP test client.
 
-1. Write a focused Pest browser smoke under `tests/Browser/` for the feature's main page(s):
-   `visit('/login')->assertNoJavascriptErrors()->assertSee('<a real label>')->screenshot();`
+1. **Rebuild assets first.** New/changed `.vue` files aren't in the bundle until built. Run
+   `ddev npm run build` before the browser test (or ensure `npm run dev` is up), else you smoke a
+   stale page. (Pest serves built assets.)
+2. Write a focused Pest browser smoke under `tests/Browser/` for the feature's main page(s):
+   `visit('/clinic')->assertNoJavascriptErrors()->assertSee('<page-body label>')->screenshot();`
    - `screenshot()` takes **no filename** (its first arg is `$fullPage: bool`); it auto-names from
      the test and saves a PNG to `tests/Browser/Screenshots/`.
-   - `assertNoJavascriptErrors()` is the point — it catches render-time crashes (e.g. a vue-i18n
-     message error) that feature/HTTP tests miss.
-   - Pest boots its own test server, so relative URLs like `/login` just work — no DDEV URL/cert
+   - Authenticate first if the page is behind auth (factory/seeded user).
+   - **Assert real PAGE-BODY content, never shared-shell text.** The app shell (sidebar nav,
+     topbar, "Çıkış Yap", the page's nav label) renders even when the page component itself fails
+     to mount. Pick `assertSee()` targets that live INSIDE the page body — a section heading or
+     field label the page itself renders (e.g. `Klinik Bilgileri`, `Çalışma Saatleri`), NOT the
+     layout/nav. Assert **2–3** such in-body labels.
+   - **CRITICAL — `assertNoJavascriptErrors()` is NOT enough.** It only catches *uncaught* window
+     errors. Vue catches component **setup/render** errors internally, logs them to `console.error`,
+     and renders the page body as an empty comment (`<main>…<!----></main>`) — so a totally blank
+     page still PASSES `assertNoJavascriptErrors()`. This is the #1 false-green. Defend against it:
+     - keep the in-body `assertSee()` asserts above (a blank body makes them fail), AND
+     - additionally assert the page's main content region is non-empty, e.g.
+       `->assertScript('() => (document.querySelector("main")?.innerText.trim().length ?? 0) > 0')`
+       (or `assertNoConsoleLogs()` if the page is expected to be log-clean).
+   - Pest boots its own test server, so relative URLs like `/clinic` just work — no DDEV URL/cert
      wrangling. The container is non-root, so no `--no-sandbox` is needed.
-2. Authenticate first if the page is behind auth (factory/seeded user). Run it via
-   `ddev php artisan test --compact` (or the file path). Keep it a smoke (renders + no JS errors +
-   a key element + screenshot), not full E2E.
+3. Run it via `ddev php artisan test --compact` (or the file path). Keep it a smoke (renders + no
+   JS errors + **non-empty body** + real in-body labels + screenshot), not full E2E. Do **not**
+   add `window.location.href`/manual-reload hacks or console interceptors — a plain
+   `visit()->waitForEvent('networkidle')` is enough; if it won't go green, the feature is broken,
+   so set `STATUS:blocked` with the cause rather than contorting the test to pass.
+4. **Glance at the screenshot yourself** before declaring done: if the content area is blank but
+   the shell is present, the page failed to mount — set `STATUS:blocked` and report it, never
+   `STATUS:done`.
 
 ## Finish
 - Append a **## Verify** section: the page(s) smoked, pass/fail, and the **screenshot path**

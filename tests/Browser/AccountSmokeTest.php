@@ -16,12 +16,12 @@ beforeEach(function (): void {
     app(PermissionRegistrar::class)->setPermissionsTeamId(null);
 });
 
-it('renders the settings page in a real browser without JS errors', function (): void {
+it('renders the account page in a real browser without JS errors', function (): void {
     $user = User::factory()->create();
 
     $this->actingAs($user);
 
-    visit('/settings')
+    visit('/account')
         ->assertNoJavascriptErrors()
         ->assertSee('Profil Bilgileri')
         ->screenshot();

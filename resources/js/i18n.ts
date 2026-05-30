@@ -13,10 +13,15 @@ export const i18n = createI18n({
         tr: {
             app: {
                 greeting: 'Hoşgeldiniz, {name}',
+                width: {
+                    expand: 'Tam genişlik',
+                    collapse: 'Ortalı görünüm',
+                },
             },
             nav: {
                 dashboard: 'Ana sayfa',
-                settings: 'Ayarlar',
+                clinic: 'Klinik profili',
+                account: 'Hesabım',
             },
             auth: {
                 layout: {
@@ -71,8 +76,8 @@ export const i18n = createI18n({
                 welcome: 'Hoş geldiniz,',
                 placeholder: 'Panel içeriği yakında eklenecek.',
             },
-            settings: {
-                title: 'Ayarlar',
+            account: {
+                title: 'Hesabım',
                 profile: {
                     heading: 'Profil Bilgileri',
                     description: 'Ad ve soyadınızı güncelleyin.',
@@ -90,6 +95,78 @@ export const i18n = createI18n({
                     submit: 'Şifreyi Güncelle',
                 },
             },
+            clinic: {
+                title: 'Klinik Profili',
+                subtitle:
+                    'Kliniğinizin bilgilerini ve çalışma saatlerini yönetin.',
+                save: 'Kaydet',
+                sections: {
+                    info: 'Klinik Bilgileri',
+                    contact: 'İletişim',
+                    address: 'Adres',
+                    hours: 'Çalışma Saatleri',
+                    media: 'Görseller',
+                },
+                fields: {
+                    name: 'Klinik adı',
+                    slug: 'Kısa ad (slug)',
+                    description: 'Açıklama',
+                    vertical: 'Klinik türü',
+                    phone: 'Telefon',
+                    email: 'E-posta adresi',
+                    website: 'Web sitesi',
+                    country: 'Ülke',
+                    city: 'Şehir',
+                    district: 'İlçe',
+                    address: 'Açık adres',
+                    postal_code: 'Posta kodu',
+                    slot_duration: 'Varsayılan randevu süresi',
+                },
+                hints: {
+                    slug: 'Yalnızca küçük harf, rakam ve tire kullanılabilir.',
+                    slot_duration:
+                        'Randevu takviminde kullanılacak varsayılan slot süresi (dakika).',
+                },
+                days: {
+                    monday: 'Pazartesi',
+                    tuesday: 'Salı',
+                    wednesday: 'Çarşamba',
+                    thursday: 'Perşembe',
+                    friday: 'Cuma',
+                    saturday: 'Cumartesi',
+                    sunday: 'Pazar',
+                },
+                hours: {
+                    open: 'Açılış',
+                    close: 'Kapanış',
+                    closed: 'Kapalı',
+                    add_break: 'Mola ekle',
+                    remove_break: 'Molayı kaldır',
+                    break: 'Mola',
+                    break_start: 'Mola başlangıcı',
+                    break_end: 'Mola bitişi',
+                    copy_to_all: 'Saatleri eşleştir',
+                    copy_to_all_hint:
+                        'Pazartesi günü ayarlarını tüm günlere uygular.',
+                },
+                verticals: {
+                    podiatry: 'Podoloji',
+                },
+                media: {
+                    logo: 'Logo',
+                    cover: 'Kapak görseli (web)',
+                    cover_mobile: 'Kapak görseli (mobil)',
+                    logo_hint: 'Kare görsel, en az 128×128 piksel.',
+                    cover_hint: '16:9 görsel, en az 1920×1080 piksel.',
+                    cover_mobile_hint: 'Kare görsel, en az 1440×1440 piksel.',
+                    upload: 'Görsel yükle',
+                    remove: 'Kaldır',
+                    remove_confirm:
+                        'Bu görseli kaldırmak istediğinize emin misiniz?',
+                    empty: 'Görsel yok',
+                    uploading: 'Yükleniyor…',
+                },
+            },
             admin: {
                 title: 'Admin Paneli',
                 welcome: 'Hoş geldiniz,',
@@ -102,6 +179,9 @@ export const i18n = createI18n({
                     'Çok fazla deneme yaptınız. Lütfen biraz bekleyip tekrar deneyin.',
                 session_expired:
                     'Oturumunuz sona erdi. Lütfen sayfayı yenileyip tekrar deneyin.',
+                confirm_title: 'Emin misiniz?',
+                delete: 'Sil',
+                cancel: 'Vazgeç',
             },
         },
     },

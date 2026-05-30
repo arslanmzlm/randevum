@@ -25,6 +25,16 @@
   `useToasts()` composable) renders them and must be mounted in every page shell/layout. A failed
   (validation) request shows ONE generic error toast (`common.form_error`) — never one per field;
   inline `FormField` errors stay the per-field signal.
+- **Destructive / mutating actions must confirm first.** Any action that deletes, removes, clears,
+  or makes an irreversible server-side change (delete buttons, bulk cancel, status changes that
+  can't be undone) MUST go through PrimeVue **ConfirmDialog** before running — never fire on the
+  raw click. Use `useConfirm()` (`ConfirmationService` is registered in `app.ts`; `<ConfirmDialog/>`
+  is mounted in `AppLayout`); wrap the handler in `confirm.require({ header, message, acceptProps,
+  rejectProps, accept: () => doIt() })` with labels/messages from lang keys (`common.confirm_title`,
+  `common.delete`, `common.cancel`, + a feature-specific message). Pure client-side form edits not
+  persisted until a later "Save" (e.g. copying values between form fields) do NOT need a confirm —
+  the gate is for irreversible/server-side effects. Icons are Tabler, so don't pass a PrimeIcon
+  `icon:` — omit it or use the `#icon` slot.
 - Auth forms must carry `autocomplete` tokens so password managers map fields correctly: the
   account field (email) = `autocomplete="username"`, new-password fields = `autocomplete="new-password"`,
   current-password (login) = `autocomplete="current-password"`. Without a `username` field, browsers

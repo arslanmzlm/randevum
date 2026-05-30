@@ -29,10 +29,10 @@ function settingsIsoClinicRole(User $user, string $role, int $clinicId): void
 }
 
 // ---------------------------------------------------------------------------
-// GET /settings — auth.user data isolation
+// GET /account — auth.user data isolation
 // ---------------------------------------------------------------------------
 
-it("GET /settings exposes owner-A's own email in auth.user", function (): void {
+it("GET /account exposes owner-A's own email in auth.user", function (): void {
     $clinicA = Clinic::factory()->create();
     $clinicB = Clinic::factory()->create();
 
@@ -43,15 +43,15 @@ it("GET /settings exposes owner-A's own email in auth.user", function (): void {
     settingsIsoClinicRole($ownerB, 'owner', $clinicB->id);
 
     $this->actingAs($ownerA)
-        ->get(route('settings'))
+        ->get(route('account'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->component('settings/Index')
+            ->component('account/Index')
             ->where('auth.user.email', 'ownera@example.com')
         );
 });
 
-it("GET /settings for owner-A never exposes owner-B's email in auth.user", function (): void {
+it("GET /account for owner-A never exposes owner-B's email in auth.user", function (): void {
     $clinicA = Clinic::factory()->create();
     $clinicB = Clinic::factory()->create();
 
@@ -63,7 +63,7 @@ it("GET /settings for owner-A never exposes owner-B's email in auth.user", funct
 
     // Owner-A sees their own email; confirming B's email is absent from A's view
     $this->actingAs($ownerA)
-        ->get(route('settings'))
+        ->get(route('account'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->where('auth.user.email', 'ownera@example.com')
@@ -74,7 +74,7 @@ it("GET /settings for owner-A never exposes owner-B's email in auth.user", funct
     app(PermissionRegistrar::class)->setPermissionsTeamId(null);
 
     $this->actingAs($ownerB)
-        ->get(route('settings'))
+        ->get(route('account'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->where('auth.user.email', 'ownerb@example.com')

@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Clinic;
+use App\Support\ClinicContext;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -41,9 +43,36 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            'activeClinic' => fn () => $this->sharedClinic(),
             'flash' => [
                 'toasts' => fn () => $request->session()->get('toasts', []),
             ],
+        ];
+    }
+
+    /**
+     * Active clinic identity for the app shell (sidebar logo + name); null for guests.
+     *
+     * @return array{id: int, name: string, logo_url: string|null}|null
+     */
+    private function sharedClinic(): ?array
+    {
+        $clinicId = app(ClinicContext::class)->id();
+
+        if ($clinicId === null) {
+            return null;
+        }
+
+        $clinic = Clinic::find($clinicId);
+
+        if ($clinic === null) {
+            return null;
+        }
+
+        return [
+            'id' => $clinic->id,
+            'name' => $clinic->name,
+            'logo_url' => $clinic->imageUrl('logo', 'thumb'),
         ];
     }
 }
