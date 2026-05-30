@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasImageUrls;
 use Database\Factories\ClinicFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -9,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Propaganistas\LaravelPhone\Casts\E164PhoneNumberCast;
+use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -16,7 +18,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 class Clinic extends Model implements HasMedia
 {
     /** @use HasFactory<ClinicFactory> */
-    use HasFactory, InteractsWithMedia, SoftDeletes;
+    use HasFactory, HasImageUrls, InteractsWithMedia, SoftDeletes;
 
     /**
      * @var list<string>
@@ -130,16 +132,50 @@ class Clinic extends Model implements HasMedia
     {
         $this->addMediaCollection('logo')->singleFile();
         $this->addMediaCollection('cover')->singleFile();
+        $this->addMediaCollection('cover_mobile')->singleFile();
     }
 
     public function registerMediaConversions(?Media $media = null): void
     {
-        foreach (['large' => 1920, 'medium' => 800, 'thumb' => 300] as $name => $width) {
+        // Logo: free-form, Fit::Max (never upscales). Bounding box per conversion.
+        foreach ([
+            'large' => [1024, 1024],
+            'medium' => [512, 512],
+            'thumb' => [128, 128],
+        ] as $name => [$w, $h]) {
             $this->addMediaConversion($name)
-                ->width($width)
+                ->fit(Fit::Max, $w, $h)
                 ->format('webp')
-                ->quality(82)
-                ->performOnCollections('logo', 'cover')
+                ->quality(90)
+                ->performOnCollections('logo')
+                ->queued();
+        }
+
+        // Cover 16:9: exact crop — upload validation enforces min 1920×1080 so no upscaling.
+        foreach ([
+            'large' => [1920, 1080],
+            'medium' => [1280, 720],
+            'thumb' => [640, 360],
+        ] as $name => [$w, $h]) {
+            $this->addMediaConversion($name)
+                ->fit(Fit::Crop, $w, $h)
+                ->format('webp')
+                ->quality(90)
+                ->performOnCollections('cover')
+                ->queued();
+        }
+
+        // Cover mobile 1:1: exact crop — upload validation enforces min 1440×1440.
+        foreach ([
+            'large' => [1440, 1440],
+            'medium' => [720, 720],
+            'thumb' => [320, 320],
+        ] as $name => [$w, $h]) {
+            $this->addMediaConversion($name)
+                ->fit(Fit::Crop, $w, $h)
+                ->format('webp')
+                ->quality(90)
+                ->performOnCollections('cover_mobile')
                 ->queued();
         }
     }

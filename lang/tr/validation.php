@@ -86,7 +86,28 @@ return [
         'clinic_name' => 'Klinik adı',
         'vertical_id' => 'Klinik türü',
         'terms' => 'Kullanım koşulları',
+        // clinic profile
+        'name' => 'Klinik adı',
+        'slug' => 'URL adresi',
+        'description' => 'Açıklama',
+        'website' => 'Web sitesi',
+        'country_id' => 'Ülke',
+        'city_id' => 'Şehir',
+        'district' => 'İlçe',
+        'address' => 'Adres',
+        'postal_code' => 'Posta kodu',
+        'default_slot_duration_minutes' => 'Varsayılan randevu süresi',
+        'working_hours' => 'Çalışma saatleri',
+        'image' => 'Görsel',
     ],
+
+    'working_hours_closed_conflict' => ':attribute kapalı olarak işaretlenmiş günlerde açılış/kapanış saati belirtilemez.',
+    'working_hours_open_close_required' => ':attribute için açılış ve kapanış saati zorunludur.',
+    'working_hours_time_format' => ':attribute için geçerli bir saat formatı giriniz (SS:dd).',
+    'working_hours_close_after_open' => ':attribute kapanış saati açılış saatinden sonra olmalıdır.',
+    'working_hours_break_format' => ':attribute mola başlangıç ve bitiş saatini içermelidir.',
+    'working_hours_break_end_after_start' => ':attribute mola bitiş saati başlangıçtan sonra olmalıdır.',
+    'working_hours_break_within_hours' => ':attribute mola saatleri çalışma saatleri içinde olmalıdır.',
 
     'custom' => [],
 ];

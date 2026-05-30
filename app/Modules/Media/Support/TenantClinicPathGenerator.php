@@ -9,11 +9,20 @@ use Spatie\MediaLibrary\Support\PathGenerator\PathGenerator;
 
 /**
  * Stores every media file under a tenant + clinic prefix so file access stays
- * tenant-isolated. Intended hierarchy (patient/treatment media arrive in Faz 2):
+ * tenant-isolated. Path prefixes are the S3/CloudFront access-scoping unit
+ * (clinic staff → tenants/{t}/clinics/{c}/*; patient → users/{userId}/*).
  *
- *   tenants/{t}/clinics/{c}/{media}                                                clinic branding (logo/cover)
- *   tenants/{t}/clinics/{c}/patients/{patientId}/{media}                           patient-level media
- *   tenants/{t}/clinics/{c}/patients/{patientId}/treatments/{treatmentId}/{media}  treatment media (nested under its patient)
+ * Owner-rooted taxonomy (locked at Faz-1, extended in Faz 2 — add branches here,
+ * never move existing paths):
+ *
+ *   Clinic-owned (this feature, live now):
+ *     tenants/{t}/clinics/{c}/{mediaId}/                         clinic branding (logo / cover / cover_mobile)
+ *     tenants/{t}/clinics/{c}/patients/{p}/{mediaId}/            patient-level media
+ *     tenants/{t}/clinics/{c}/patients/{p}/treatments/{tr}/…     treatment media
+ *
+ *   Patient/user-owned, cross-clinic (Faz 2 — NOT live yet):
+ *     users/{userId}/{mediaId}/                                  avatar, Q&A uploads
+ *     (clinics see a patient's Faz-2 file via per-file signed URLs, not a prefix grant)
  *
  * A clinic-scoped owner (one carrying clinic_id) with no branch here throws, so
  * future patient/treatment media can never be stored without the prefix (KVKK).

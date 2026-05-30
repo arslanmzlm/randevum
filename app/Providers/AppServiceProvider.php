@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Models\Clinic;
 use App\Models\User;
+use App\Policies\ClinicPolicy;
 use App\Support\ClinicContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
@@ -31,11 +33,12 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * Restrict the admin-only dashboards (Pulse) to superadmins.
+     * Restrict the admin-only dashboards (Pulse) to superadmins and register policies.
      */
     protected function configureGates(): void
     {
         Gate::define('viewPulse', fn (User $user): bool => $user->hasRole('superadmin'));
+        Gate::policy(Clinic::class, ClinicPolicy::class);
     }
 
     /**
