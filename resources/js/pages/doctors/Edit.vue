@@ -43,7 +43,7 @@ function submit(): void {
 
 <template>
     <div class="flex flex-col gap-6">
-        <Head :title="doctor.display_name || t('doctor.edit_title')" />
+        <Head :title="t('doctor.edit_title')" />
 
         <PageHeader
             :title="doctor.display_name || t('doctor.edit_title')"
