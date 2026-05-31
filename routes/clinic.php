@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Catalog\Http\Controllers\ServiceController;
 use App\Modules\Core\Http\Controllers\ClinicController;
 use App\Modules\Core\Http\Controllers\DoctorController;
 use Illuminate\Support\Facades\Route;
@@ -26,4 +27,16 @@ Route::middleware('auth')->group(function () {
     Route::delete('/doctors/{doctor}', [DoctorController::class, 'destroy'])->name('doctors.destroy');
     Route::post('/doctors/{doctor}/avatar', [DoctorController::class, 'updateAvatar'])->name('doctors.avatar.update');
     Route::delete('/doctors/{doctor}/avatar', [DoctorController::class, 'removeAvatar'])->name('doctors.avatar.remove');
+});
+
+// Service catalog.
+// Literal segments (create) are declared BEFORE {service} so they are
+// not captured as a route-model-bound id.
+Route::middleware('auth')->group(function () {
+    Route::get('/services', [ServiceController::class, 'index'])->name('services.index');
+    Route::get('/services/create', [ServiceController::class, 'create'])->name('services.create');
+    Route::post('/services', [ServiceController::class, 'store'])->name('services.store');
+    Route::get('/services/{service}/edit', [ServiceController::class, 'edit'])->name('services.edit');
+    Route::put('/services/{service}', [ServiceController::class, 'update'])->name('services.update');
+    Route::delete('/services/{service}', [ServiceController::class, 'destroy'])->name('services.destroy');
 });

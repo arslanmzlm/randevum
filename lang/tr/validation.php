@@ -99,6 +99,11 @@ return [
         'default_slot_duration_minutes' => 'Varsayılan randevu süresi',
         'working_hours' => 'Çalışma saatleri',
         'image' => 'Görsel',
+        // service catalog
+        'price' => 'Fiyat',
+        'default_complaint' => 'Varsayılan şikayet',
+        'default_diagnosis' => 'Varsayılan tanı',
+        'default_treatment_process' => 'Varsayılan tedavi süreci',
         // doctor profile
         'title' => 'Ünvan',
         'specialization' => 'Uzmanlık',

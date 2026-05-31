@@ -228,6 +228,11 @@ return [
         'default_slot_duration_minutes' => 'default appointment duration',
         'working_hours' => 'working hours',
         'image' => 'image',
+        // service catalog
+        'price' => 'price',
+        'default_complaint' => 'default complaint',
+        'default_diagnosis' => 'default diagnosis',
+        'default_treatment_process' => 'default treatment process',
         // doctor profile
         'title' => 'title',
         'specialization' => 'specialization',

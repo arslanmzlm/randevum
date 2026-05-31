@@ -46,6 +46,7 @@ class HandleInertiaRequests extends Middleware
                 // Clinic-scoped capability flags for nav gating (team id already set by SetClinicContext).
                 'canManageClinic' => fn () => (bool) $request->user()?->can('clinic.update'),
                 'canManageDoctors' => fn () => (bool) $request->user()?->can('doctors.create'),
+                'canViewServices' => fn () => (bool) $request->user()?->can('services.viewAny'),
             ],
             'activeClinic' => fn () => $this->sharedClinic(),
             'flash' => [

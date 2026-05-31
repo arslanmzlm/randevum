@@ -23,4 +23,6 @@ export type Auth = {
     canManageClinic?: boolean;
     /** Owner or manager: may add/edit/remove doctors. */
     canManageDoctors?: boolean;
+    /** Owner, manager or doctor: may view the service catalog. */
+    canViewServices?: boolean;
 };

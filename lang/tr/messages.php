@@ -18,6 +18,12 @@ return [
         'media_removed' => 'Görsel kaldırıldı.',
     ],
 
+    'service' => [
+        'created' => 'Hizmet başarıyla oluşturuldu.',
+        'updated' => 'Hizmet güncellendi.',
+        'deleted' => 'Hizmet kaldırıldı.',
+    ],
+
     'doctor' => [
         'profile_created' => 'Doktor profili oluşturuldu.',
         'profile_updated' => 'Doktor profili güncellendi.',

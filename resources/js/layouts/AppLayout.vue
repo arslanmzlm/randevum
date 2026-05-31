@@ -4,6 +4,7 @@ import {
     IconArrowsMaximize,
     IconArrowsMinimize,
     IconBuildingHospital,
+    IconClipboardList,
     IconHome,
     IconLogout,
     IconSettings,
@@ -17,6 +18,7 @@ import { useContentWidth } from '@/composables/useContentWidth';
 import { account, dashboard, logout } from '@/routes';
 import { edit as clinicEdit } from '@/routes/clinic';
 import { index as doctorsIndex, mine as doctorsMine } from '@/routes/doctors';
+import { index as servicesIndex } from '@/routes/services';
 
 const { t } = useI18n();
 const page = usePage();
@@ -28,6 +30,9 @@ const canManageClinic = computed(
 );
 const canManageDoctors = computed(
     () => page.props.auth?.canManageDoctors === true,
+);
+const canViewServices = computed(
+    () => page.props.auth?.canViewServices === true,
 );
 const clinic = computed(() => page.props.activeClinic ?? null);
 const { width: contentWidth, toggle: toggleWidth } = useContentWidth();
@@ -62,6 +67,15 @@ const navItems = computed(() => [
                   label: t('nav.doctors'),
                   href: doctorsIndex().url,
                   icon: IconStethoscope,
+              },
+          ]
+        : []),
+    ...(canViewServices.value
+        ? [
+              {
+                  label: t('nav.services'),
+                  href: servicesIndex().url,
+                  icon: IconClipboardList,
               },
           ]
         : []),

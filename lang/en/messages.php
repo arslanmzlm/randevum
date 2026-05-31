@@ -18,6 +18,12 @@ return [
         'media_removed' => 'Image removed.',
     ],
 
+    'service' => [
+        'created' => 'Service created successfully.',
+        'updated' => 'Service updated.',
+        'deleted' => 'Service removed.',
+    ],
+
     'doctor' => [
         'profile_created' => 'Doctor profile created.',
         'profile_updated' => 'Doctor profile updated.',

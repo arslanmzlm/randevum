@@ -22,6 +22,7 @@ export const i18n = createI18n({
                 dashboard: 'Ana sayfa',
                 clinic: 'Klinik profili',
                 doctors: 'Doktorlar',
+                services: 'Hizmetler',
                 account: 'Hesabım',
                 profile_mine: 'Profilim',
             },
@@ -216,6 +217,50 @@ export const i18n = createI18n({
                     hint: 'Kare görsel, en az 256×256 piksel.',
                     remove_confirm:
                         'Profil fotoğrafını kaldırmak istediğinize emin misiniz?',
+                },
+            },
+            service: {
+                title: 'Hizmetler',
+                subtitle: 'Kliniğinizin hizmet kataloğunu yönetin.',
+                add: 'Hizmet Ekle',
+                edit: 'Düzenle',
+                remove: 'Kaldır',
+                remove_confirm:
+                    '{name} adlı hizmeti kaldırmak istediğinize emin misiniz?',
+                active: 'Aktif',
+                passive: 'Pasif',
+                empty: 'Henüz hizmet eklenmemiş.',
+                back: 'Geri',
+                create_title: 'Hizmet Ekle',
+                create_subtitle: 'Kataloğa yeni bir hizmet ekleyin.',
+                create_submit: 'Hizmeti Ekle',
+                edit_title: 'Hizmeti Düzenle',
+                edit_subtitle: 'Hizmet bilgilerini güncelleyin.',
+                save: 'Kaydet',
+                columns: {
+                    name: 'Hizmet',
+                    price: 'Ücret',
+                    status: 'Durum',
+                    actions: 'İşlemler',
+                },
+                sections: {
+                    info: 'Hizmet Bilgileri',
+                    templates: 'Varsayılan Klinik Metinleri',
+                },
+                fields: {
+                    name: 'Hizmet adı',
+                    description: 'Açıklama',
+                    price: 'Ücret',
+                    is_active: 'Aktif',
+                    default_complaint: 'Şikayet (varsayılan)',
+                    default_diagnosis: 'Tanı (varsayılan)',
+                    default_treatment_process: 'Tedavi süreci (varsayılan)',
+                },
+                hints: {
+                    is_active:
+                        'Pasif hizmetler tedavi ekranındaki listede görünmez.',
+                    templates:
+                        'Bu metinler tedavi eklerken ilgili alanlara otomatik gelir.',
                 },
             },
             password_reminder: {
