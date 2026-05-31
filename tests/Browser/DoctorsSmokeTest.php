@@ -3,6 +3,7 @@
 use App\Models\Clinic;
 use App\Models\Doctor;
 use App\Models\User;
+use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\PermissionRegistrar;
@@ -20,7 +21,7 @@ use Spatie\Permission\PermissionRegistrar;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    $this->seed(RoleSeeder::class);
+    $this->seed([RoleSeeder::class, PermissionSeeder::class]);
     app(PermissionRegistrar::class)->setPermissionsTeamId(null);
 });
 

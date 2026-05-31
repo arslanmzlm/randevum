@@ -3,6 +3,7 @@
 use App\Models\Clinic;
 use App\Models\User;
 use App\Support\ClinicContext;
+use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -13,7 +14,7 @@ use Spatie\Permission\PermissionRegistrar;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    $this->seed(RoleSeeder::class);
+    $this->seed([RoleSeeder::class, PermissionSeeder::class]);
     app(PermissionRegistrar::class)->setPermissionsTeamId(null);
     app(ClinicContext::class)->forget();
 });
@@ -119,6 +120,16 @@ it('a doctor of the same clinic gets 403 on GET /clinic', function (): void {
     clinicRole($doctor, 'doctor', $clinic->id);
 
     $this->actingAs($doctor)
+        ->get(route('clinic.edit'))
+        ->assertForbidden();
+});
+
+it('a manager gets 403 on GET /clinic (clinic edit is owner-only)', function (): void {
+    $clinic = Clinic::factory()->create();
+    $manager = User::factory()->create();
+    clinicRole($manager, 'manager', $clinic->id);
+
+    $this->actingAs($manager)
         ->get(route('clinic.edit'))
         ->assertForbidden();
 });
@@ -294,6 +305,18 @@ it('a doctor of the same clinic gets 403 on PUT /clinic', function (): void {
     clinicRole($doctor, 'doctor', $clinic->id);
 
     $this->actingAs($doctor)
+        ->put(route('clinic.update'), clinicUpdatePayload($clinic))
+        ->assertForbidden();
+
+    expect($clinic->fresh()->name)->toBe('Original Name');
+});
+
+it('a manager gets 403 on PUT /clinic and the DB is unchanged', function (): void {
+    $clinic = Clinic::factory()->create(['name' => 'Original Name']);
+    $manager = User::factory()->create();
+    clinicRole($manager, 'manager', $clinic->id);
+
+    $this->actingAs($manager)
         ->put(route('clinic.update'), clinicUpdatePayload($clinic))
         ->assertForbidden();
 

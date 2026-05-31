@@ -30,14 +30,14 @@ class DoctorController extends Controller
         $this->authorize('viewAny', Doctor::class);
 
         $user = $request->user();
-        $canManage = $user->hasRole('owner') || $user->hasRole('manager');
+        $canManage = $user->can('doctors.update');
         $hasOwnProfile = $user->doctor()->withoutGlobalScopes()->exists();
 
         return Inertia::render('doctors/Index', [
             'doctors' => $this->repository->forClinicList()->map(fn (Doctor $doctor) => (new DoctorResource($doctor))->resolve()),
             'canManage' => $canManage,
             'hasOwnProfile' => $hasOwnProfile,
-            'canCreateOwn' => $user->hasRole('owner') && ! $hasOwnProfile,
+            'canCreateOwn' => $user->can('doctors.createOwn') && ! $hasOwnProfile,
         ]);
     }
 
@@ -99,7 +99,7 @@ class DoctorController extends Controller
     {
         $this->authorize('update', $doctor);
 
-        $canManage = $request->user()->hasRole('owner') || $request->user()->hasRole('manager');
+        $canManage = $request->user()->can('doctors.update');
         $doctor->loadMissing('user');
 
         $this->profileService->update($doctor, $request->validated(), $canManage);
@@ -151,7 +151,7 @@ class DoctorController extends Controller
 
         return [
             'doctor' => (new DoctorResource($doctor))->resolve(),
-            'canManage' => $user->hasRole('owner') || $user->hasRole('manager'),
+            'canManage' => $user->can('doctors.update'),
             'canEditSelf' => $doctor->user_id === $user->id,
         ];
     }

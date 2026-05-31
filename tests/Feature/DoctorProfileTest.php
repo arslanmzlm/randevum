@@ -4,6 +4,7 @@ use App\Models\Clinic;
 use App\Models\Doctor;
 use App\Models\User;
 use App\Support\ClinicContext;
+use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -14,7 +15,7 @@ use Spatie\Permission\PermissionRegistrar;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    $this->seed(RoleSeeder::class);
+    $this->seed([RoleSeeder::class, PermissionSeeder::class]);
     app(PermissionRegistrar::class)->setPermissionsTeamId(null);
     app(ClinicContext::class)->forget();
 });
@@ -824,6 +825,82 @@ it('DELETE /doctors/{doctor} redirects to the doctors index with a success toast
         ->delete(route('doctors.destroy', $doctor))
         ->assertRedirect(route('doctors.index'))
         ->assertSessionHas('toasts');
+});
+
+// ---------------------------------------------------------------------------
+// Manager role — may manage doctors, but not self-create
+// ---------------------------------------------------------------------------
+
+it('manager can access the create page', function (): void {
+    $clinic = Clinic::factory()->create();
+    $manager = User::factory()->create();
+    drTestRole($manager, 'manager', $clinic->id);
+
+    $this->actingAs($manager)
+        ->get(route('doctors.create'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->component('doctors/Create'));
+});
+
+it('manager can add a new doctor', function (): void {
+    $clinic = Clinic::factory()->create();
+    $manager = User::factory()->create();
+    drTestRole($manager, 'manager', $clinic->id);
+
+    $this->actingAs($manager)
+        ->post(route('doctors.store'), drStorePayload(['email' => 'mgr.added@example.com']))
+        ->assertRedirect();
+
+    $newUser = User::where('email', 'mgr.added@example.com')->first();
+    expect($newUser)->not->toBeNull()
+        ->and(Doctor::withoutGlobalScopes()->where('user_id', $newUser->id)->exists())->toBeTrue();
+});
+
+it('manager can update any doctor profile', function (): void {
+    $clinic = Clinic::factory()->create();
+    $manager = User::factory()->create();
+    $doctorUser = User::factory()->create();
+    drTestRole($manager, 'manager', $clinic->id);
+
+    $doctor = Doctor::factory()->create([
+        'clinic_id' => $clinic->id,
+        'user_id' => $doctorUser->id,
+        'title' => null,
+    ]);
+
+    $this->actingAs($manager)
+        ->put(route('doctors.update', $doctor), drUpdatePayload(['title' => 'Uzm. Dr.']))
+        ->assertRedirect();
+
+    expect($doctor->fresh()->title)->toBe('Uzm. Dr.');
+});
+
+it('manager can soft-delete a doctor', function (): void {
+    $clinic = Clinic::factory()->create();
+    $manager = User::factory()->create();
+    $doctorUser = User::factory()->create();
+    drTestRole($manager, 'manager', $clinic->id);
+    drTestRole($doctorUser, 'doctor', $clinic->id);
+
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+
+    $this->actingAs($manager)
+        ->delete(route('doctors.destroy', $doctor))
+        ->assertRedirect();
+
+    expect(Doctor::withoutGlobalScopes()->find($doctor->id)->deleted_at)->not->toBeNull();
+});
+
+it('manager gets 403 on POST /doctors/self (self-create is owner-only)', function (): void {
+    $clinic = Clinic::factory()->create();
+    $manager = User::factory()->create();
+    drTestRole($manager, 'manager', $clinic->id);
+
+    $this->actingAs($manager)
+        ->post(route('doctors.storeOwn'))
+        ->assertForbidden();
+
+    expect(Doctor::withoutGlobalScopes()->where('user_id', $manager->id)->exists())->toBeFalse();
 });
 
 // ---------------------------------------------------------------------------

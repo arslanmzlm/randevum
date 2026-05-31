@@ -30,6 +30,11 @@ Follow the project's layering and conventions (they are in `.ai/guidelines/*` an
 - **Migrations** centrally in `database/migrations/` (`timestampsTz`, decimal money, timestamptz
   datetimes) — except a vertical, which keeps its own.
 - **State transitions** only in the Service layer, logged to `status_logs`.
+- **Authorization is permission-backed:** policies/gates and shared UI-capability flags call
+  `$user->can('<resource>.<ability>')`, never `hasRole(...)`. Add the feature's new permissions to
+  `database/seeders/PermissionSeeder.php` (attach to the baseline roles via `syncPermissions`),
+  keep "own-record" access as ownership logic in the policy, and gate via the controller's
+  `authorize()`. See the auth-permissions guideline.
 - Use Artisan generators (`ddev php artisan make:*`) where natural.
 - **Every command runs through `ddev`** (e.g. `ddev php artisan migrate`, `ddev composer ...`).
 

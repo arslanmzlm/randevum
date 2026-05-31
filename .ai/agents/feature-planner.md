@@ -34,6 +34,9 @@ sub-headings). Be concrete and decision-complete so the build phases need no gue
   relations/scopes (`BelongsToClinic` where clinic-owned), module placement under
   `app/Modules/<Module>/`, services/repositories (Controller→FormRequest→Service→Repo), routes/
   controllers/FormRequests/policies. Honor multi-tenancy, state-machine, deletion-retention rules.
+- **Authorization** — list the permissions the feature introduces (`<resource>.<ability>`, dot)
+  and which baseline roles hold each (the `PermissionSeeder` delta). Policies/UI flags check
+  `can()`, never `hasRole()`; note any "own-record" branch. See the auth-permissions guideline.
 - **Inertia props contract** — for each page: route name, controller, and the exact props shape
   (keys + types) the backend sends. This is the seam the frontend phase builds against.
 - **Frontend** — pages under `resources/js/pages/*`, components/layout, the matching dashboard

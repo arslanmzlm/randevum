@@ -8,13 +8,11 @@ use App\Models\User;
 class ClinicPolicy
 {
     /**
-     * Only the clinic owner may view or edit the clinic profile.
-     *
-     * SetClinicContext already called setPermissionsTeamId($clinicId), so
-     * hasRole('owner') is implicitly scoped to the active clinic.
+     * SetClinicContext already called setPermissionsTeamId($clinicId), so can()
+     * is implicitly scoped to the active clinic.
      */
     public function update(User $user, Clinic $clinic): bool
     {
-        return $user->hasRole('owner');
+        return $user->can('clinic.update');
     }
 }

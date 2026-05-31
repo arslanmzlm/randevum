@@ -8,43 +8,38 @@ use App\Models\User;
 class DoctorPolicy
 {
     /**
-     * Any authenticated user with an active clinic context may view the list.
+     * Permissions are clinic-scoped: SetClinicContext already called
+     * setPermissionsTeamId($clinicId), so can() resolves against the active clinic.
      */
     public function viewAny(User $user): bool
     {
-        return true;
+        return $user->can('doctors.viewAny');
     }
 
-    /**
-     * Owner or manager may add a new doctor to the clinic.
-     */
     public function create(User $user): bool
     {
-        return $user->hasRole('owner') || $user->hasRole('manager');
+        return $user->can('doctors.create');
     }
 
     /**
      * Owner may turn themselves into a doctor (solo-practitioner path).
-     * SetClinicContext already called setPermissionsTeamId($clinicId).
      */
     public function createOwn(User $user): bool
     {
-        return $user->hasRole('owner');
+        return $user->can('doctors.createOwn');
     }
 
     /**
-     * Owner/manager may edit any doctor; a doctor may edit their own profile.
+     * A doctor may always edit their own profile; otherwise the manage permission
+     * is required (ownership can't be expressed as a permission).
      */
     public function update(User $user, Doctor $doctor): bool
     {
-        return $user->hasRole('owner') || $user->hasRole('manager') || $doctor->user_id === $user->id;
+        return $doctor->user_id === $user->id || $user->can('doctors.update');
     }
 
-    /**
-     * Owner or manager may remove a doctor from the clinic.
-     */
     public function delete(User $user, Doctor $doctor): bool
     {
-        return $user->hasRole('owner') || $user->hasRole('manager');
+        return $user->can('doctors.delete');
     }
 }

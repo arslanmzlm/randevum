@@ -20,6 +20,9 @@ works. Read the whole run-file first — the *Approved spec* test list and the `
     clinic B's data.
   - **Arch** — if the feature added modules, confirm the dynamic boundary tests still pass; extend
     `tests/Feature/ArchTest.php` only if a new boundary needs covering.
+  - **Authorization** — for any feature with policies, seed `PermissionSeeder` alongside
+    `RoleSeeder` in `beforeEach`, and cover each relevant role's ALLOW *and* DENY (e.g. owner vs
+    manager vs doctor: who's permitted, who gets 403), plus the "own-record" path where it exists.
 - Cover state transitions, validation (FormRequest rules), and the service-layer business logic
   (edit/delete windows, balance derivation, stock side-effects) where the feature touches them.
 - Do **not** write browser tests here (the verify phase owns those).

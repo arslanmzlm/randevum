@@ -16,3 +16,11 @@
 - Seed 9 baseline roles (faz-0): the global + clinic-scoped sets above. Roles are global; clinic-scoped assignments carry `clinic_id`. `patient` assigned from Faz 2. Per-role intent / permission subsets: see `.ai/docs/data-model.md`.
 - A user "is a doctor" by having a `doctors` profile row (calendar visibility), NOT by holding the `doctor` role.
 - MVP authorization is seed-driven; NO permission-management UI (custom roles, overrides, self-lockout protection, matrix = Faz 3). Until then superadmin grants clinic permissions directly in the DB. Faz 3 custom roles are scoped to the creating clinic, invisible to others.
+
+## Authorizing (permission-backed, not role-name checks)
+
+- Authorize features on PERMISSIONS, never role names: policies/gates and the shared Inertia UI-capability flags call `$user->can('<perm>')` — do NOT branch on `hasRole(...)` for feature authorization. (Only platform-level global gates with no permission, e.g. Pulse/Horizon `superadmin`, may check the role directly.)
+- Define every permission in `database/seeders/PermissionSeeder.php` and attach it to the baseline roles with `syncPermissions` (authoritative — re-running heals drift). Add permissions INCREMENTALLY as each feature lands (only the abilities actually enforced) — never a full up-front matrix. Name them `<resource>.<ability>` (dot), aligned to the policy ability method (`doctors.update`, `clinic.update`). Run `PermissionSeeder` right after `RoleSeeder` in `DatabaseSeeder`.
+- "Own-record" access (e.g. a doctor editing their own profile) stays as ownership logic IN the policy alongside the `can()` check — it cannot be expressed as a permission: `return $doctor->user_id === $user->id || $user->can('doctors.update');`.
+- Permissions and roles are global rows (`clinic_id` null); the role→permission link is global, only the role→user assignment is clinic-scoped — so once `SetClinicContext` has called `setPermissionsTeamId($clinicId)`, `can()` is automatically scoped to the active clinic.
+- Keep the controller `authorize()` call as the single gate (route `can:` middleware doesn't fit context-resolved resources like the active clinic, which has no route-model binding).
