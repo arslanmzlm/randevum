@@ -4,18 +4,20 @@ import { IconPhoto, IconTrash, IconUpload } from '@tabler/icons-vue';
 import { useConfirm } from 'primevue/useconfirm';
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import {
-    remove as removeMedia,
-    update as updateMedia,
-} from '@/routes/clinic/media';
 
 const props = defineProps<{
-    collection: 'logo' | 'cover' | 'cover_mobile';
+    /** Current image URL, or null when none is set. */
     url: string | null;
     label: string;
     hint?: string;
     /** Tailwind aspect-ratio class for the preview tile (e.g. `aspect-video`). */
     aspectClass: string;
+    /** POST endpoint that stores the uploaded image (multipart). */
+    uploadUrl: string;
+    /** DELETE endpoint that clears the image. */
+    removeUrl: string;
+    /** Confirm-dialog message shown before removing. */
+    removeConfirm: string;
 }>();
 
 const { t } = useI18n();
@@ -38,7 +40,7 @@ function onFileChange(event: Event): void {
     }
 
     uploadForm.image = file;
-    uploadForm.post(updateMedia(props.collection).url, {
+    uploadForm.post(props.uploadUrl, {
         preserveScroll: true,
         forceFormData: true,
         onFinish: () => {
@@ -54,7 +56,7 @@ function onFileChange(event: Event): void {
 function remove(): void {
     confirm.require({
         header: t('common.confirm_title'),
-        message: t('clinic.media.remove_confirm'),
+        message: props.removeConfirm,
         rejectProps: {
             label: t('common.cancel'),
             severity: 'secondary',
@@ -62,7 +64,7 @@ function remove(): void {
         },
         acceptProps: { label: t('common.delete'), severity: 'danger' },
         accept: () => {
-            removeForm.delete(removeMedia(props.collection).url, {
+            removeForm.delete(props.removeUrl, {
                 preserveScroll: true,
             });
         },
@@ -89,7 +91,7 @@ function remove(): void {
                 class="flex size-full flex-col items-center justify-center gap-2 text-surface-400"
             >
                 <IconPhoto class="size-8" />
-                <span class="text-xs">{{ t('clinic.media.empty') }}</span>
+                <span class="text-xs">{{ t('common.media.empty') }}</span>
             </div>
 
             <div
@@ -97,7 +99,7 @@ function remove(): void {
                 class="absolute inset-0 flex items-center justify-center bg-surface-0/60"
             >
                 <span class="text-sm text-surface-600">{{
-                    t('clinic.media.uploading')
+                    t('common.media.uploading')
                 }}</span>
             </div>
         </div>
@@ -123,7 +125,7 @@ function remove(): void {
                 @click="pickFile"
             >
                 <IconUpload class="size-4" />
-                {{ t('clinic.media.upload') }}
+                {{ t('common.media.upload') }}
             </Button>
             <Button
                 v-if="url"
@@ -135,7 +137,7 @@ function remove(): void {
                 @click="remove"
             >
                 <IconTrash class="size-4" />
-                {{ t('clinic.media.remove') }}
+                {{ t('common.media.remove') }}
             </Button>
         </div>
     </div>

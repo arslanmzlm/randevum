@@ -99,6 +99,13 @@ return [
         'default_slot_duration_minutes' => 'Varsayılan randevu süresi',
         'working_hours' => 'Çalışma saatleri',
         'image' => 'Görsel',
+        // doctor profile
+        'title' => 'Ünvan',
+        'specialization' => 'Uzmanlık',
+        'bio' => 'Biyografi',
+        'license_number' => 'Lisans numarası',
+        'certificate' => 'Sertifikalar',
+        'is_active' => 'Aktif/Pasif durumu',
     ],
 
     'working_hours_closed_conflict' => ':attribute kapalı olarak işaretlenmiş günlerde açılış/kapanış saati belirtilemez.',

@@ -21,7 +21,9 @@ export const i18n = createI18n({
             nav: {
                 dashboard: 'Ana sayfa',
                 clinic: 'Klinik profili',
+                doctors: 'Doktorlar',
                 account: 'Hesabım',
+                profile_mine: 'Profilim',
             },
             auth: {
                 layout: {
@@ -159,12 +161,99 @@ export const i18n = createI18n({
                     logo_hint: 'Kare görsel, en az 128×128 piksel.',
                     cover_hint: '16:9 görsel, en az 1920×1080 piksel.',
                     cover_mobile_hint: 'Kare görsel, en az 1440×1440 piksel.',
-                    upload: 'Görsel yükle',
-                    remove: 'Kaldır',
                     remove_confirm:
                         'Bu görseli kaldırmak istediğinize emin misiniz?',
-                    empty: 'Görsel yok',
-                    uploading: 'Yükleniyor…',
+                },
+            },
+            doctor: {
+                title: 'Doktorlar',
+                subtitle: 'Kliniğinizin doktorlarını yönetin.',
+                add: 'Doktor Ekle',
+                create_own: 'Beni de doktor yap',
+                remove: 'Kaldır',
+                remove_confirm:
+                    '{name} adlı doktoru kaldırmak istediğinize emin misiniz?',
+                empty: 'Henüz doktor eklenmemiş.',
+                active: 'Aktif',
+                passive: 'Pasif',
+                edit: 'Düzenle',
+                back: 'Geri',
+                create_title: 'Doktor Ekle',
+                create_subtitle: 'Yeni bir doktor hesabı ve profili oluşturun.',
+                create_submit: 'Doktoru Ekle',
+                edit_title: 'Doktor Profili',
+                edit_subtitle: 'Doktor bilgilerini güncelleyin.',
+                save: 'Kaydet',
+                sections: {
+                    account: 'Hesap Bilgileri',
+                    info: 'Profil Bilgileri',
+                    about: 'Hakkında ve Sertifikalar',
+                    avatar: 'Profil Fotoğrafı',
+                },
+                fields: {
+                    name: 'Ad Soyad',
+                    first_name: 'Ad',
+                    last_name: 'Soyad',
+                    email: 'E-posta adresi',
+                    password: 'Geçici şifre',
+                    password_confirmation: 'Şifre tekrarı',
+                    title: 'Ünvan',
+                    specialization: 'Uzmanlık',
+                    bio: 'Hakkında',
+                    license_number: 'Diploma / Lisans no',
+                    certificate: 'Sertifikalar',
+                    is_active: 'Aktif',
+                    avatar: 'Profil fotoğrafı',
+                },
+                hints: {
+                    is_active: 'Pasif doktorlar randevu takviminde görünmez.',
+                    password: 'Doktor ilk girişte bu şifreyi değiştirebilir.',
+                    email_readonly:
+                        'Giriş e-postası kayıt sonrası değiştirilemez.',
+                    title: 'Tam adın önüne eklenir — örn. "Prof. Dr."',
+                },
+                avatar: {
+                    hint: 'Kare görsel, en az 256×256 piksel.',
+                    remove_confirm:
+                        'Profil fotoğrafını kaldırmak istediğinize emin misiniz?',
+                },
+            },
+            password_reminder: {
+                title: 'Şifrenizi güncelleyin',
+                message:
+                    'Hesabınız geçici bir şifre ile oluşturuldu. Güvenliğiniz için şifrenizi değiştirmenizi öneririz.',
+                change: 'Şifremi değiştir',
+                later: 'Daha sonra',
+            },
+            error: {
+                back_home: "Dashboard'a dön",
+                default: {
+                    title: 'Bir hata oluştu',
+                    message: 'Beklenmeyen bir hata oluştu.',
+                },
+                403: {
+                    title: 'Erişim reddedildi',
+                    message: 'Bu sayfayı görüntüleme yetkiniz yok.',
+                },
+                404: {
+                    title: 'Sayfa bulunamadı',
+                    message:
+                        'Aradığınız sayfa mevcut değil veya taşınmış olabilir.',
+                },
+                419: {
+                    title: 'Oturum süresi doldu',
+                    message:
+                        'Sayfa zaman aşımına uğradı. Lütfen tekrar deneyin.',
+                },
+                500: {
+                    title: 'Sunucu hatası',
+                    message:
+                        'Beklenmeyen bir hata oluştu. Lütfen daha sonra tekrar deneyin.',
+                },
+                503: {
+                    title: 'Servis kullanılamıyor',
+                    message:
+                        'Sistem şu anda bakımda. Lütfen daha sonra tekrar deneyin.',
                 },
             },
             admin: {
@@ -182,6 +271,12 @@ export const i18n = createI18n({
                 confirm_title: 'Emin misiniz?',
                 delete: 'Sil',
                 cancel: 'Vazgeç',
+                media: {
+                    empty: 'Görsel yok',
+                    uploading: 'Yükleniyor…',
+                    upload: 'Görsel yükle',
+                    remove: 'Kaldır',
+                },
             },
         },
     },

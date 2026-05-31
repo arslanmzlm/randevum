@@ -228,6 +228,13 @@ return [
         'default_slot_duration_minutes' => 'default appointment duration',
         'working_hours' => 'working hours',
         'image' => 'image',
+        // doctor profile
+        'title' => 'title',
+        'specialization' => 'specialization',
+        'bio' => 'biography',
+        'license_number' => 'license number',
+        'certificate' => 'certificates',
+        'is_active' => 'active/passive status',
     ],
 
 ];

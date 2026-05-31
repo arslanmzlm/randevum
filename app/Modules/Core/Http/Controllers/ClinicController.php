@@ -55,7 +55,7 @@ class ClinicController extends Controller
 
         $this->profileService->update($clinic, $request->validated());
 
-        Toast::success(__('clinic.profile_updated'));
+        Toast::success(__('messages.clinic.profile_updated'));
 
         return redirect()->back();
     }
@@ -70,7 +70,7 @@ class ClinicController extends Controller
 
         $this->mediaService->setImage($clinic, $collection, $request->file('image'));
 
-        Toast::success(__('clinic.media_updated'));
+        Toast::success(__('messages.clinic.media_updated'));
 
         return redirect()->back();
     }
@@ -85,7 +85,7 @@ class ClinicController extends Controller
 
         $this->mediaService->removeImage($clinic, $collection);
 
-        Toast::success(__('clinic.media_removed'));
+        Toast::success(__('messages.clinic.media_removed'));
 
         return redirect()->back();
     }

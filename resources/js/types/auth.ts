@@ -17,4 +17,10 @@ export type User = {
 export type Auth = {
     /** Null when the request is unauthenticated (e.g. login page). */
     user: User | null;
+    /** True when the current user has a doctor profile in the active clinic. */
+    isDoctor?: boolean;
+    /** Owner: may view/edit the clinic profile. */
+    canManageClinic?: boolean;
+    /** Owner or manager: may add/edit/remove doctors. */
+    canManageDoctors?: boolean;
 };

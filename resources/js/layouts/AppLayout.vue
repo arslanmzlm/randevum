@@ -6,19 +6,29 @@ import {
     IconBuildingHospital,
     IconHome,
     IconLogout,
+    IconSettings,
+    IconStethoscope,
     IconUserCircle,
 } from '@tabler/icons-vue';
-import { computed } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import AppToaster from '@/components/AppToaster.vue';
 import { useContentWidth } from '@/composables/useContentWidth';
 import { account, dashboard, logout } from '@/routes';
 import { edit as clinicEdit } from '@/routes/clinic';
+import { index as doctorsIndex, mine as doctorsMine } from '@/routes/doctors';
 
 const { t } = useI18n();
 const page = usePage();
 
 const user = computed(() => page.props.auth?.user ?? null);
+const isDoctor = computed(() => page.props.auth?.isDoctor === true);
+const canManageClinic = computed(
+    () => page.props.auth?.canManageClinic === true,
+);
+const canManageDoctors = computed(
+    () => page.props.auth?.canManageDoctors === true,
+);
 const clinic = computed(() => page.props.activeClinic ?? null);
 const { width: contentWidth, toggle: toggleWidth } = useContentWidth();
 const userName = computed(() => {
@@ -33,20 +43,64 @@ const userName = computed(() => {
     );
 });
 
-// Only routes that already exist. Features add their own entry as they land.
+// Only routes that already exist, gated by capability (a doctor sees neither the
+// clinic profile nor the doctors management entry). Features add their own as they land.
 const navItems = computed(() => [
     { label: t('nav.dashboard'), href: dashboard().url, icon: IconHome },
-    {
-        label: t('nav.clinic'),
-        href: clinicEdit().url,
-        icon: IconBuildingHospital,
-    },
+    ...(canManageClinic.value
+        ? [
+              {
+                  label: t('nav.clinic'),
+                  href: clinicEdit().url,
+                  icon: IconBuildingHospital,
+              },
+          ]
+        : []),
+    ...(canManageDoctors.value
+        ? [
+              {
+                  label: t('nav.doctors'),
+                  href: doctorsIndex().url,
+                  icon: IconStethoscope,
+              },
+          ]
+        : []),
 ]);
 
 // Account/secondary items pinned to the bottom, above logout.
 const bottomNavItems = computed(() => [
     { label: t('nav.account'), href: account().url, icon: IconUserCircle },
 ]);
+
+const userMenu = ref();
+// `tablerIcon` (not `icon`) because PrimeVue's MenuItem.icon is a string
+// (PrimeIcon class); we render a Tabler component in the #item slot instead.
+const userMenuItems = computed(() => [
+    ...(isDoctor.value
+        ? [
+              {
+                  label: t('nav.profile_mine'),
+                  tablerIcon: IconUserCircle,
+                  command: () => router.visit(doctorsMine().url),
+              },
+          ]
+        : []),
+    {
+        label: t('nav.account'),
+        tablerIcon: IconSettings,
+        command: () => router.visit(account().url),
+    },
+    { separator: true },
+    {
+        label: t('auth.logout'),
+        tablerIcon: IconLogout,
+        command: () => doLogout(),
+    },
+]);
+
+function toggleUserMenu(event: Event): void {
+    userMenu.value?.toggle(event);
+}
 
 function isActive(href: string): boolean {
     return page.url === href || page.url.startsWith(`${href}/`);
@@ -64,12 +118,58 @@ function linkClass(href: string): string[] {
 function doLogout(): void {
     router.post(logout().url);
 }
+
+// One-time, dismissible nudge to change the admin-set password on first-ever
+// login (driven off the shared `password_reminder` flash).
+const showPasswordReminder = ref(false);
+
+onMounted(() => {
+    const flash = page.props.flash as
+        | { password_reminder?: boolean }
+        | undefined;
+
+    if (flash?.password_reminder) {
+        showPasswordReminder.value = true;
+    }
+});
+
+function goToPasswordChange(): void {
+    showPasswordReminder.value = false;
+    router.visit(account().url);
+}
 </script>
 
 <template>
     <div class="flex h-screen overflow-hidden bg-surface-50">
         <AppToaster />
         <ConfirmDialog />
+
+        <Dialog
+            v-model:visible="showPasswordReminder"
+            modal
+            dismissable-mask
+            :draggable="false"
+            :header="t('password_reminder.title')"
+            class="w-full max-w-md"
+        >
+            <p class="text-sm text-surface-600">
+                {{ t('password_reminder.message') }}
+            </p>
+            <template #footer>
+                <Button
+                    type="button"
+                    severity="secondary"
+                    text
+                    :label="t('password_reminder.later')"
+                    @click="showPasswordReminder = false"
+                />
+                <Button
+                    type="button"
+                    :label="t('password_reminder.change')"
+                    @click="goToPasswordChange"
+                />
+            </template>
+        </Dialog>
 
         <aside
             class="hidden w-64 shrink-0 flex-col border-r border-surface-200 bg-surface-0 lg:flex"
@@ -127,12 +227,8 @@ function doLogout(): void {
 
         <div class="flex min-w-0 flex-1 flex-col overflow-hidden">
             <header
-                class="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-surface-200 bg-surface-0 px-6"
+                class="flex h-16 shrink-0 items-center justify-end gap-1 border-b border-surface-200 bg-surface-0 px-6"
             >
-                <p class="truncate text-lg font-medium text-surface-900">
-                    {{ t('app.greeting', { name: userName }) }}
-                </p>
-
                 <Button
                     type="button"
                     severity="secondary"
@@ -154,6 +250,39 @@ function doLogout(): void {
                         class="size-5"
                     />
                 </Button>
+
+                <Button
+                    type="button"
+                    severity="secondary"
+                    text
+                    class="gap-2"
+                    aria-haspopup="true"
+                    aria-controls="user-menu"
+                    @click="toggleUserMenu"
+                >
+                    <IconUserCircle class="size-5 shrink-0" />
+                    <span class="max-w-40 truncate">{{ userName }}</span>
+                </Button>
+
+                <Menu
+                    id="user-menu"
+                    ref="userMenu"
+                    :model="userMenuItems"
+                    :popup="true"
+                >
+                    <template #item="{ item, props: itemProps }">
+                        <a
+                            class="flex items-center gap-2"
+                            v-bind="itemProps.action"
+                        >
+                            <component
+                                :is="item.tablerIcon"
+                                class="size-4 shrink-0"
+                            />
+                            <span>{{ item.label }}</span>
+                        </a>
+                    </template>
+                </Menu>
             </header>
 
             <main class="flex-1 overflow-y-auto py-6 lg:py-8">

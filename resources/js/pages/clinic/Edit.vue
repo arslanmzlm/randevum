@@ -14,6 +14,10 @@ import PageHeader from '@/components/PageHeader.vue';
 import WorkingHoursEditor from '@/components/WorkingHoursEditor.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { update } from '@/routes/clinic';
+import {
+    remove as removeMedia,
+    update as updateMedia,
+} from '@/routes/clinic/media';
 import type {
     Clinic,
     ClinicCity,
@@ -302,24 +306,36 @@ function submit(): void {
 
                         <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
                             <ImageUploadField
-                                collection="logo"
                                 :url="clinic.logo_url"
                                 :label="t('clinic.media.logo')"
                                 :hint="t('clinic.media.logo_hint')"
+                                :upload-url="updateMedia('logo').url"
+                                :remove-url="removeMedia('logo').url"
+                                :remove-confirm="
+                                    t('clinic.media.remove_confirm')
+                                "
                                 aspect-class="aspect-square"
                             />
                             <ImageUploadField
-                                collection="cover"
                                 :url="clinic.cover_url"
                                 :label="t('clinic.media.cover')"
                                 :hint="t('clinic.media.cover_hint')"
+                                :upload-url="updateMedia('cover').url"
+                                :remove-url="removeMedia('cover').url"
+                                :remove-confirm="
+                                    t('clinic.media.remove_confirm')
+                                "
                                 aspect-class="aspect-video"
                             />
                             <ImageUploadField
-                                collection="cover_mobile"
                                 :url="clinic.cover_mobile_url"
                                 :label="t('clinic.media.cover_mobile')"
                                 :hint="t('clinic.media.cover_mobile_hint')"
+                                :upload-url="updateMedia('cover_mobile').url"
+                                :remove-url="removeMedia('cover_mobile').url"
+                                :remove-confirm="
+                                    t('clinic.media.remove_confirm')
+                                "
                                 aspect-class="aspect-square"
                             />
                         </div>
