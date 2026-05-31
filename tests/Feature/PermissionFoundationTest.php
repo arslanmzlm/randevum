@@ -15,7 +15,7 @@ beforeEach(function (): void {
     app(PermissionRegistrar::class)->setPermissionsTeamId(null);
 });
 
-it('grants the owner role the full clinic + doctor + service permission set', function (): void {
+it('grants the owner role the full clinic + doctor + service + product permission set', function (): void {
     $owner = Role::findByName('owner', 'web');
 
     expect($owner->permissions->pluck('name')->all())
@@ -30,10 +30,15 @@ it('grants the owner role the full clinic + doctor + service permission set', fu
             'services.create',
             'services.update',
             'services.delete',
+            'products.viewAny',
+            'products.create',
+            'products.update',
+            'products.delete',
+            'products.manageStock',
         ]);
 });
 
-it('grants the manager role doctor and service management but not clinic or self-create', function (): void {
+it('grants the manager role doctor, service and product management but not clinic or self-create', function (): void {
     $manager = Role::findByName('manager', 'web');
 
     expect($manager->permissions->pluck('name')->all())
@@ -46,12 +51,17 @@ it('grants the manager role doctor and service management but not clinic or self
             'services.create',
             'services.update',
             'services.delete',
+            'products.viewAny',
+            'products.create',
+            'products.update',
+            'products.delete',
+            'products.manageStock',
         ]);
 });
 
-it('grants the doctor role read-only access to doctors and services', function (): void {
+it('grants the doctor role read-only access to doctors, services and products', function (): void {
     expect(Role::findByName('doctor', 'web')->permissions->pluck('name')->all())
-        ->toEqualCanonicalizing(['doctors.viewAny', 'services.viewAny']);
+        ->toEqualCanonicalizing(['doctors.viewAny', 'services.viewAny', 'products.viewAny']);
 });
 
 it('grants receptionist and assistant read-only access to the doctor list only', function (string $role): void {

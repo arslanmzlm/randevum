@@ -7,6 +7,7 @@ import {
     IconClipboardList,
     IconHome,
     IconLogout,
+    IconPackage,
     IconSettings,
     IconStethoscope,
     IconUserCircle,
@@ -18,6 +19,7 @@ import { useContentWidth } from '@/composables/useContentWidth';
 import { account, dashboard, logout } from '@/routes';
 import { edit as clinicEdit } from '@/routes/clinic';
 import { index as doctorsIndex, mine as doctorsMine } from '@/routes/doctors';
+import { index as productsIndex } from '@/routes/products';
 import { index as servicesIndex } from '@/routes/services';
 
 const { t } = useI18n();
@@ -33,6 +35,9 @@ const canManageDoctors = computed(
 );
 const canViewServices = computed(
     () => page.props.auth?.canViewServices === true,
+);
+const canViewProducts = computed(
+    () => page.props.auth?.canViewProducts === true,
 );
 const clinic = computed(() => page.props.activeClinic ?? null);
 const { width: contentWidth, toggle: toggleWidth } = useContentWidth();
@@ -76,6 +81,15 @@ const navItems = computed(() => [
                   label: t('nav.services'),
                   href: servicesIndex().url,
                   icon: IconClipboardList,
+              },
+          ]
+        : []),
+    ...(canViewProducts.value
+        ? [
+              {
+                  label: t('nav.products'),
+                  href: productsIndex().url,
+                  icon: IconPackage,
               },
           ]
         : []),
@@ -124,8 +138,8 @@ function linkClass(href: string): string[] {
     return [
         'flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-colors',
         isActive(href)
-            ? 'bg-surface-100 text-surface-900'
-            : 'text-surface-500 hover:bg-surface-100 hover:text-surface-700',
+            ? 'bg-primary-50 text-primary-700'
+            : 'text-surface-500 hover:bg-primary-50 hover:text-primary-700',
     ];
 }
 

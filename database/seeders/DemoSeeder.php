@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\City;
 use App\Models\Clinic;
 use App\Models\Country;
+use App\Models\Doctor;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Vertical;
@@ -69,5 +70,37 @@ class DemoSeeder extends Seeder
         );
         $registrar->setPermissionsTeamId($clinic->id);
         $owner->assignRole('owner');
+
+        // demo doctors: user + clinic-scoped `doctor` role + doctor profile (calendar visibility
+        // comes from the profile row, not the role). Mirrors DoctorProfileService::addDoctor.
+        $doctors = [
+            ['first_name' => 'Mehmet', 'last_name' => 'Yılmaz', 'email' => 'mehmet@podosen.test', 'title' => 'Dr.', 'specialization' => 'Podoloji', 'license_number' => 'TR-10234'],
+            ['first_name' => 'Ayla', 'last_name' => 'Demir', 'email' => 'ayla@podosen.test', 'title' => 'Uzm. Dr.', 'specialization' => 'Diyabetik Ayak Bakımı', 'license_number' => 'TR-20456'],
+            ['first_name' => 'Canan', 'last_name' => 'Kaya', 'email' => 'canan@podosen.test', 'title' => 'Dr.', 'specialization' => 'Ortopedi', 'license_number' => 'TR-30678'],
+        ];
+
+        foreach ($doctors as $data) {
+            $doctorUser = User::firstOrCreate(
+                ['email' => $data['email']],
+                [
+                    'first_name' => $data['first_name'],
+                    'last_name' => $data['last_name'],
+                    'password' => Hash::make('password'),
+                    'email_verified_at' => now(),
+                ],
+            );
+            $doctorUser->assignRole('doctor');
+
+            Doctor::withoutGlobalScopes()->firstOrCreate(
+                ['user_id' => $doctorUser->id],
+                [
+                    'clinic_id' => $clinic->id,
+                    'title' => $data['title'],
+                    'specialization' => $data['specialization'],
+                    'license_number' => $data['license_number'],
+                    'is_active' => true,
+                ],
+            );
+        }
     }
 }

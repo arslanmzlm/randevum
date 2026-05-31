@@ -24,6 +24,13 @@ return [
         'deleted' => 'Hizmet kaldırıldı.',
     ],
 
+    'product' => [
+        'created' => 'Ürün başarıyla oluşturuldu.',
+        'updated' => 'Ürün güncellendi.',
+        'deleted' => 'Ürün kaldırıldı.',
+        'stock_updated' => 'Stok güncellendi.',
+    ],
+
     'doctor' => [
         'profile_created' => 'Doktor profili oluşturuldu.',
         'profile_updated' => 'Doktor profili güncellendi.',

@@ -24,6 +24,13 @@ return [
         'deleted' => 'Service removed.',
     ],
 
+    'product' => [
+        'created' => 'Product created successfully.',
+        'updated' => 'Product updated.',
+        'deleted' => 'Product removed.',
+        'stock_updated' => 'Stock updated.',
+    ],
+
     'doctor' => [
         'profile_created' => 'Doctor profile created.',
         'profile_updated' => 'Doctor profile updated.',

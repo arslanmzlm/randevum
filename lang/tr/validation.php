@@ -104,6 +104,12 @@ return [
         'default_complaint' => 'Varsayılan şikayet',
         'default_diagnosis' => 'Varsayılan tanı',
         'default_treatment_process' => 'Varsayılan tedavi süreci',
+        // product catalog
+        'brand' => 'Marka',
+        'category' => 'Kategori',
+        'sku' => 'Stok kodu',
+        'unit' => 'Birim',
+        'current_stock' => 'Mevcut stok',
         // doctor profile
         'title' => 'Ünvan',
         'specialization' => 'Uzmanlık',

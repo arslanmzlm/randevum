@@ -47,6 +47,7 @@ class HandleInertiaRequests extends Middleware
                 'canManageClinic' => fn () => (bool) $request->user()?->can('clinic.update'),
                 'canManageDoctors' => fn () => (bool) $request->user()?->can('doctors.create'),
                 'canViewServices' => fn () => (bool) $request->user()?->can('services.viewAny'),
+                'canViewProducts' => fn () => (bool) $request->user()?->can('products.viewAny'),
             ],
             'activeClinic' => fn () => $this->sharedClinic(),
             'flash' => [

@@ -1,7 +1,14 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
-import { IconClipboardList, IconPlus, IconTrash } from '@tabler/icons-vue';
+import { FilterMatchMode } from '@primevue/core/api';
+import {
+    IconClipboardList,
+    IconPlus,
+    IconSearch,
+    IconTrash,
+} from '@tabler/icons-vue';
 import { useConfirm } from 'primevue/useconfirm';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import ButtonLink from '@/components/ButtonLink.vue';
 import PageHeader from '@/components/PageHeader.vue';
@@ -15,6 +22,24 @@ const props = defineProps<ServiceIndexProps>();
 
 const { t, locale } = useI18n();
 const confirm = useConfirm();
+
+// Client-side filters (per-clinic catalog stays small — no server-side pagination needed):
+// free-text global search + an active/passive status filter (null = all).
+const filters = ref({
+    global: {
+        value: null as string | null,
+        matchMode: FilterMatchMode.CONTAINS,
+    },
+    is_active: {
+        value: null as boolean | null,
+        matchMode: FilterMatchMode.EQUALS,
+    },
+});
+
+const statusOptions = computed(() => [
+    { label: t('service.active'), value: true },
+    { label: t('service.passive'), value: false },
+]);
 
 const priceFormatter = new Intl.NumberFormat(locale.value, {
     style: 'currency',
@@ -66,11 +91,41 @@ function removeService(service: Service): void {
         <section
             class="rounded-xl border border-surface-200 bg-surface-0 p-2 sm:p-3"
         >
+            <div
+                v-if="services.length"
+                class="flex flex-col gap-2 p-2 sm:flex-row sm:items-center"
+            >
+                <IconField>
+                    <InputIcon>
+                        <IconSearch class="size-4 text-surface-400" />
+                    </InputIcon>
+                    <InputText
+                        v-model="filters.global.value"
+                        :placeholder="t('service.search_placeholder')"
+                        class="w-full sm:w-72"
+                    />
+                </IconField>
+                <Select
+                    v-model="filters.is_active.value"
+                    :options="statusOptions"
+                    option-label="label"
+                    option-value="value"
+                    :placeholder="t('service.filter_status')"
+                    show-clear
+                    class="w-full sm:w-44"
+                />
+            </div>
+
             <DataTable
                 v-if="services.length"
+                v-model:filters="filters"
                 :value="services"
                 data-key="id"
                 removable-sort
+                paginator
+                :rows="10"
+                :rows-per-page-options="[10, 25, 50]"
+                :global-filter-fields="['name', 'description']"
                 class="text-sm"
             >
                 <Column
@@ -151,6 +206,14 @@ function removeService(service: Service): void {
                         </div>
                     </template>
                 </Column>
+
+                <template #empty>
+                    <div
+                        class="px-6 py-10 text-center text-sm text-surface-500"
+                    >
+                        {{ t('service.empty_filtered') }}
+                    </div>
+                </template>
             </DataTable>
 
             <div

@@ -233,6 +233,12 @@ return [
         'default_complaint' => 'default complaint',
         'default_diagnosis' => 'default diagnosis',
         'default_treatment_process' => 'default treatment process',
+        // product catalog
+        'brand' => 'brand',
+        'category' => 'category',
+        'sku' => 'SKU',
+        'unit' => 'unit',
+        'current_stock' => 'current stock',
         // doctor profile
         'title' => 'title',
         'specialization' => 'specialization',

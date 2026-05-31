@@ -1,0 +1,68 @@
+<?php
+
+namespace App\Modules\Catalog\Repositories;
+
+use App\Models\Product;
+use Illuminate\Database\Eloquent\Collection;
+
+class ProductRepository
+{
+    /**
+     * All products for the active clinic, newest first.
+     *
+     * ClinicScope on Product filters to the active clinic automatically.
+     *
+     * @return Collection<int, Product>
+     */
+    public function allForActiveClinic(): Collection
+    {
+        return Product::query()->orderByDesc('id')->get();
+    }
+
+    /**
+     * Distinct non-null values of a catalog column for the active clinic, sorted — feeds the
+     * brand/category autocompletes. ClinicScope keeps it to the active clinic.
+     *
+     * @return list<string>
+     */
+    public function distinctValues(string $column): array
+    {
+        return Product::query()
+            ->whereNotNull($column)
+            ->distinct()
+            ->orderBy($column)
+            ->pluck($column)
+            ->all();
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function create(array $data): Product
+    {
+        return Product::create($data);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function update(Product $product, array $data): Product
+    {
+        $product->fill($data)->save();
+
+        return $product;
+    }
+
+    public function updateStock(Product $product, int $currentStock): Product
+    {
+        $product->current_stock = $currentStock;
+        $product->save();
+
+        return $product;
+    }
+
+    public function delete(Product $product): void
+    {
+        $product->delete();
+    }
+}

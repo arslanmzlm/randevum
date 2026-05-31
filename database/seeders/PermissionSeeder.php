@@ -27,6 +27,11 @@ class PermissionSeeder extends Seeder
         'services.create' => ['owner', 'manager'],
         'services.update' => ['owner', 'manager'],
         'services.delete' => ['owner', 'manager'],
+        'products.viewAny' => ['owner', 'manager', 'doctor'],
+        'products.create' => ['owner', 'manager'],
+        'products.update' => ['owner', 'manager'],
+        'products.delete' => ['owner', 'manager'],
+        'products.manageStock' => ['owner', 'manager'],
     ];
 
     public function run(): void

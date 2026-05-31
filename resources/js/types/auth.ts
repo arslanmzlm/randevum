@@ -25,4 +25,6 @@ export type Auth = {
     canManageDoctors?: boolean;
     /** Owner, manager or doctor: may view the service catalog. */
     canViewServices?: boolean;
+    /** Owner, manager or doctor: may view the product catalog. */
+    canViewProducts?: boolean;
 };

@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Modules\Verticals\Podiatry\Database\Seeders\PodiatryProductsSeeder;
+use App\Modules\Verticals\Podiatry\Database\Seeders\PodiatryServicesSeeder;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -18,6 +20,8 @@ class DatabaseSeeder extends Seeder
             CitySeeder::class,
             VerticalSeeder::class,
             DemoSeeder::class,
+            PodiatryServicesSeeder::class,
+            PodiatryProductsSeeder::class,
         ]);
     }
 }
