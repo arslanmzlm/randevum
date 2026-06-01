@@ -48,11 +48,13 @@ class HandleInertiaRequests extends Middleware
                 'canManageDoctors' => fn () => (bool) $request->user()?->can('doctors.create'),
                 'canViewServices' => fn () => (bool) $request->user()?->can('services.viewAny'),
                 'canViewProducts' => fn () => (bool) $request->user()?->can('products.viewAny'),
+                'canViewPatients' => fn () => (bool) $request->user()?->can('patients.viewAny'),
             ],
             'activeClinic' => fn () => $this->sharedClinic(),
             'flash' => [
                 'toasts' => fn () => $request->session()->get('toasts', []),
                 'password_reminder' => fn () => (bool) $request->session()->get('password_reminder', false),
+                'restorable_patient' => fn () => $request->session()->get('restorable_patient'),
             ],
         ];
     }

@@ -15,7 +15,7 @@ beforeEach(function (): void {
     app(PermissionRegistrar::class)->setPermissionsTeamId(null);
 });
 
-it('grants the owner role the full clinic + doctor + service + product permission set', function (): void {
+it('grants the owner role the full clinic + doctor + service + product + patient permission set', function (): void {
     $owner = Role::findByName('owner', 'web');
 
     expect($owner->permissions->pluck('name')->all())
@@ -35,10 +35,15 @@ it('grants the owner role the full clinic + doctor + service + product permissio
             'products.update',
             'products.delete',
             'products.manageStock',
+            'patients.viewAny',
+            'patients.view',
+            'patients.create',
+            'patients.update',
+            'patients.delete',
         ]);
 });
 
-it('grants the manager role doctor, service and product management but not clinic or self-create', function (): void {
+it('grants the manager role full management except clinic and self-create', function (): void {
     $manager = Role::findByName('manager', 'web');
 
     expect($manager->permissions->pluck('name')->all())
@@ -56,18 +61,48 @@ it('grants the manager role doctor, service and product management but not clini
             'products.update',
             'products.delete',
             'products.manageStock',
+            'patients.viewAny',
+            'patients.view',
+            'patients.create',
+            'patients.update',
+            'patients.delete',
         ]);
 });
 
-it('grants the doctor role read-only access to doctors, services and products', function (): void {
+it('grants the doctor role read access to catalog and full patient management', function (): void {
     expect(Role::findByName('doctor', 'web')->permissions->pluck('name')->all())
-        ->toEqualCanonicalizing(['doctors.viewAny', 'services.viewAny', 'products.viewAny']);
+        ->toEqualCanonicalizing([
+            'doctors.viewAny',
+            'services.viewAny',
+            'products.viewAny',
+            'patients.viewAny',
+            'patients.view',
+            'patients.create',
+            'patients.update',
+            'patients.delete',
+        ]);
 });
 
-it('grants receptionist and assistant read-only access to the doctor list only', function (string $role): void {
-    expect(Role::findByName($role, 'web')->permissions->pluck('name')->all())
-        ->toEqual(['doctors.viewAny']);
-})->with(['receptionist', 'assistant']);
+it('grants receptionist full patient management and doctor list access', function (): void {
+    expect(Role::findByName('receptionist', 'web')->permissions->pluck('name')->all())
+        ->toEqualCanonicalizing([
+            'doctors.viewAny',
+            'patients.viewAny',
+            'patients.view',
+            'patients.create',
+            'patients.update',
+            'patients.delete',
+        ]);
+});
+
+it('grants assistant read-only access to doctors and patients', function (): void {
+    expect(Role::findByName('assistant', 'web')->permissions->pluck('name')->all())
+        ->toEqualCanonicalizing([
+            'doctors.viewAny',
+            'patients.viewAny',
+            'patients.view',
+        ]);
+});
 
 it('leaves global roles without clinic-scoped permissions', function (string $role): void {
     expect(Role::findByName($role, 'web')->permissions)->toBeEmpty();

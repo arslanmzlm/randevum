@@ -110,6 +110,13 @@ return [
         'sku' => 'Stok kodu',
         'unit' => 'Birim',
         'current_stock' => 'Mevcut stok',
+        // patient record
+        'contact_phone' => 'Acil telefon numarası',
+        'birth_date' => 'Doğum tarihi',
+        'gender' => 'Cinsiyet',
+        'notification_enabled' => 'SMS bildirimleri',
+        'is_legacy' => 'Sistem öncesi hasta',
+        'notes' => 'Notlar',
         // doctor profile
         'title' => 'Ünvan',
         'specialization' => 'Uzmanlık',

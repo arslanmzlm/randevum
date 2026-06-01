@@ -31,6 +31,13 @@ return [
         'stock_updated' => 'Stock updated.',
     ],
 
+    'patient' => [
+        'created' => 'Patient record created successfully.',
+        'updated' => 'Patient details updated.',
+        'deleted' => 'Patient record deleted.',
+        'restored' => 'Patient record restored.',
+    ],
+
     'doctor' => [
         'profile_created' => 'Doctor profile created.',
         'profile_updated' => 'Doctor profile updated.',

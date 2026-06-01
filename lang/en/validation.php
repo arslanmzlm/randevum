@@ -239,6 +239,13 @@ return [
         'sku' => 'SKU',
         'unit' => 'unit',
         'current_stock' => 'current stock',
+        // patient record
+        'contact_phone' => 'emergency phone number',
+        'birth_date' => 'date of birth',
+        'gender' => 'gender',
+        'notification_enabled' => 'SMS notifications',
+        'is_legacy' => 'legacy patient',
+        'notes' => 'notes',
         // doctor profile
         'title' => 'title',
         'specialization' => 'specialization',

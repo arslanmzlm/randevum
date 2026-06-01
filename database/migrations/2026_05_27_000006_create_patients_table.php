@@ -17,12 +17,13 @@ return new class extends Migration
             $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete(); // MVP'de hep null
             $table->string('first_name', 100);
             $table->string('last_name', 100);
-            $table->string('phone', 20);
+            $table->string('phone', 20)->nullable(); // telefon zorunlu değil (legacy/eksik kayıt)
             $table->string('contact_phone', 20)->nullable(); // yakın (acil)
             $table->string('email')->nullable();
             $table->date('birth_date')->nullable();
             $table->string('gender')->nullable(); // App\Enums\Gender (cast + Rule::enum = source of truth)
             $table->boolean('notification_enabled')->default(true);
+            $table->boolean('is_legacy')->default(false); // sistem öncesi / migrate edilmiş kayıt
             $table->text('notes')->nullable(); // klinik-seviyesi gözlem
             $table->timestampsTz();
             $table->softDeletesTz();

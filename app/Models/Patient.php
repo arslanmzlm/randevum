@@ -30,6 +30,7 @@ class Patient extends Model
         'birth_date',
         'gender',
         'notification_enabled',
+        'is_legacy',
         'notes',
     ];
 
@@ -46,6 +47,7 @@ class Patient extends Model
             'birth_date' => 'date',
             'gender' => Gender::class,
             'notification_enabled' => 'boolean',
+            'is_legacy' => 'boolean',
         ];
     }
 

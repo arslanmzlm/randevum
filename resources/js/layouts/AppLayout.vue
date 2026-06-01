@@ -11,6 +11,7 @@ import {
     IconSettings,
     IconStethoscope,
     IconUserCircle,
+    IconUsers,
 } from '@tabler/icons-vue';
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -19,6 +20,7 @@ import { useContentWidth } from '@/composables/useContentWidth';
 import { account, dashboard, logout } from '@/routes';
 import { edit as clinicEdit } from '@/routes/clinic';
 import { index as doctorsIndex, mine as doctorsMine } from '@/routes/doctors';
+import { index as patientsIndex } from '@/routes/patients';
 import { index as productsIndex } from '@/routes/products';
 import { index as servicesIndex } from '@/routes/services';
 
@@ -38,6 +40,9 @@ const canViewServices = computed(
 );
 const canViewProducts = computed(
     () => page.props.auth?.canViewProducts === true,
+);
+const canViewPatients = computed(
+    () => page.props.auth?.canViewPatients === true,
 );
 const clinic = computed(() => page.props.activeClinic ?? null);
 const { width: contentWidth, toggle: toggleWidth } = useContentWidth();
@@ -72,6 +77,15 @@ const navItems = computed(() => [
                   label: t('nav.doctors'),
                   href: doctorsIndex().url,
                   icon: IconStethoscope,
+              },
+          ]
+        : []),
+    ...(canViewPatients.value
+        ? [
+              {
+                  label: t('nav.patients'),
+                  href: patientsIndex().url,
+                  icon: IconUsers,
               },
           ]
         : []),

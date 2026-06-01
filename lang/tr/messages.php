@@ -31,6 +31,13 @@ return [
         'stock_updated' => 'Stok güncellendi.',
     ],
 
+    'patient' => [
+        'created' => 'Hasta kaydı başarıyla oluşturuldu.',
+        'updated' => 'Hasta bilgileri güncellendi.',
+        'deleted' => 'Hasta kaydı silindi.',
+        'restored' => 'Hasta kaydı geri yüklendi.',
+    ],
+
     'doctor' => [
         'profile_created' => 'Doktor profili oluşturuldu.',
         'profile_updated' => 'Doktor profili güncellendi.',

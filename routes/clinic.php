@@ -4,6 +4,7 @@ use App\Modules\Catalog\Http\Controllers\ProductController;
 use App\Modules\Catalog\Http\Controllers\ServiceController;
 use App\Modules\Core\Http\Controllers\ClinicController;
 use App\Modules\Core\Http\Controllers\DoctorController;
+use App\Modules\Medical\Http\Controllers\PatientController;
 use Illuminate\Support\Facades\Route;
 
 // Clinic profile (authenticated owner).
@@ -28,6 +29,20 @@ Route::middleware('auth')->group(function () {
     Route::delete('/doctors/{doctor}', [DoctorController::class, 'destroy'])->name('doctors.destroy');
     Route::post('/doctors/{doctor}/avatar', [DoctorController::class, 'updateAvatar'])->name('doctors.avatar.update');
     Route::delete('/doctors/{doctor}/avatar', [DoctorController::class, 'removeAvatar'])->name('doctors.avatar.remove');
+});
+
+// Patient records.
+// Literal segments (create) are declared BEFORE {patient} so they are
+// not captured as a route-model-bound id.
+Route::middleware('auth')->group(function () {
+    Route::get('/patients', [PatientController::class, 'index'])->name('patients.index');
+    Route::get('/patients/create', [PatientController::class, 'create'])->name('patients.create');
+    Route::post('/patients', [PatientController::class, 'store'])->name('patients.store');
+    Route::get('/patients/{patient}', [PatientController::class, 'show'])->name('patients.show');
+    Route::get('/patients/{patient}/edit', [PatientController::class, 'edit'])->name('patients.edit');
+    Route::put('/patients/{patient}', [PatientController::class, 'update'])->name('patients.update');
+    Route::delete('/patients/{patient}', [PatientController::class, 'destroy'])->name('patients.destroy');
+    Route::post('/patients/{patient}/restore', [PatientController::class, 'restore'])->name('patients.restore');
 });
 
 // Service catalog.

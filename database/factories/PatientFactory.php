@@ -28,7 +28,18 @@ class PatientFactory extends Factory
             'birth_date' => fake()->optional()->date(),
             'gender' => fake()->randomElement([Gender::Male, Gender::Female, Gender::Other, null]),
             'notification_enabled' => true,
+            'is_legacy' => false,
             'notes' => null,
         ];
+    }
+
+    public function legacy(): static
+    {
+        return $this->state(['is_legacy' => true]);
+    }
+
+    public function trashed(): static
+    {
+        return $this->state(['deleted_at' => now()]);
     }
 }
