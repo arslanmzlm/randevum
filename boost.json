@@ -16,6 +16,7 @@
         "pest-testing",
         "inertia-vue-development",
         "tailwindcss-development",
+        "domain-rules",
         "figma-dashboard-reference"
     ]
 }

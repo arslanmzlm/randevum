@@ -16,6 +16,9 @@ Your prompt names the feature ID and the run-file path. Read the whole run-file 
 2. Invoke **`inertia-vue-development`** (Inertia v3 + Vue 3 patterns).
 3. Invoke **`tailwindcss-development`** (Tailwind v4 utilities/layers).
 4. Invoke **`wayfinder-development`** (typed route functions from `@/actions` and `@/routes`).
+5. Invoke the **`domain-rules`** skill only if the UI surfaces domain concepts (status labels &
+   transitions, balance/payment display, vertical patient/doctor labels) — read the matching
+   `rules/<domain>.md` so the UI reflects the decided behavior.
 
 ## Implement
 - Pages live in `resources/js/pages/*` (lowercase `pages`); patient pages under `pages/Patient/*`;

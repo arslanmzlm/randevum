@@ -11,6 +11,9 @@ works. Read the whole run-file first — the *Approved spec* test list and the `
 
 ## First, load skills
 - Invoke **`pest-testing`**.
+- Invoke the **`domain-rules`** skill and read the `rules/<domain>.md` for any domain the feature
+  touches when its rules drive assertions (state transitions, edit/delete windows, balance/stock,
+  SMS pipeline) — assert the decided behavior, not a guess.
 
 ## Write tests
 - Use `ddev php artisan make:test --pest <Name>` (feature) / `--unit` where appropriate. Use model

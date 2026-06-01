@@ -12,16 +12,20 @@ Your prompt names the feature ID and the run-file path (`.localdev/pipeline/runs
 
 ## First, load context (in this order)
 1. Invoke the **`laravel-best-practices`** skill (architecture lens).
-2. Invoke **`find-docs`** if the feature touches a library whose current API you must confirm.
-3. Read the feature's row in `.localdev/docs/features.md` (match the ID) — its note carries scope hints
+2. Invoke the **`domain-rules`** skill and read each `rules/<domain>.md` the feature touches
+   (clinical, scheduling, payments/stock, SMS, media, anamnesis, verticals, deletion/retention,
+   identity, state machines, runtime/ops) — these are the decided project conventions for the spec.
+3. Invoke **`find-docs`** if the feature touches a library whose current API you must confirm.
+4. Read the feature's row in `.localdev/docs/features.md` (match the ID) — its note carries scope hints
    and frequently cross-references other rows (e.g. "1.16 mekanizması") and docs; follow those.
-4. **Consult the relevant `.localdev/docs/*.md`, not just features.md** — important detail lives across
+5. **Consult the relevant `.localdev/docs/*.md`, not just features.md** — important detail lives across
    them. Always read `data-model.md` (schema, state enums, note levels) and `architecture.md`
    (module layout, auth, cross-module rules); check `open-questions.md` for decisions already made
    or still open on this feature (don't re-decide settled ones; surface open ones as `OPEN:`); skim
    `patterns.md` / `tech-stack.md` when relevant. (`features.md`'s header lists the related docs.)
-   Plus the matching `.ai/guidelines/*.md` rules (also merged into CLAUDE.md).
-5. If a screen matches, read the dashboard export `.localdev/dashboard/<name>.relaxed.html`
+   Plus the matching `.ai/guidelines/*.md` rules (also merged into CLAUDE.md) for cross-cutting
+   invariants, and the `domain-rules` skill (step 2) for the per-domain rules.
+6. If a screen matches, read the dashboard export `.localdev/dashboard/<name>.relaxed.html`
    (map via the `figma-dashboard-reference` skill's screen→feature table).
 
 ## Then write the spec

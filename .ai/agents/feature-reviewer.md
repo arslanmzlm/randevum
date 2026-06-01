@@ -10,6 +10,9 @@ Read the whole run-file first (spec + all prior phase sections + the changed-fil
 
 ## First, load skills
 - Invoke **`laravel-best-practices`** (use it as the review lens).
+- Invoke the **`domain-rules`** skill and read each `rules/<domain>.md` the diff touches — you review
+  against the decided project conventions (state-machine logging, deletion/retention windows,
+  payments/stock, messaging, etc.), which live there, not in CLAUDE.md.
 
 ## Run the project's own checks (via ddev)
 Run and capture results for each:

@@ -13,13 +13,17 @@ Your prompt names the feature ID and the run-file path. Read the whole run-file 
 
 ## First, load skills
 1. Invoke **`laravel-best-practices`** (always).
-2. Invoke **`wayfinder-development`** when you add routes the frontend will call.
-3. Invoke **`fortify-development`** for auth features; **`configuring-horizon`** / **`pulse-development`**
+2. Invoke the **`domain-rules`** skill and read each `rules/<domain>.md` your feature touches
+   (clinical, scheduling, payments/stock, SMS, media, anamnesis, verticals, deletion/retention,
+   identity, state machines, runtime/ops) — the decided conventions live there, not in CLAUDE.md.
+3. Invoke **`wayfinder-development`** when you add routes the frontend will call.
+4. Invoke **`fortify-development`** for auth features; **`configuring-horizon`** / **`pulse-development`**
    only if the feature touches queues/monitoring.
-4. Invoke **`find-docs`** before using an unfamiliar/version-sensitive library API.
+5. Invoke **`find-docs`** before using an unfamiliar/version-sensitive library API.
 
 ## Implement
-Follow the project's layering and conventions (they are in `.ai/guidelines/*` and CLAUDE.md):
+Follow the project's layering and conventions (cross-cutting invariants in `.ai/guidelines/*` /
+CLAUDE.md; per-domain rules in the `domain-rules` skill):
 - **Layering:** Controller → FormRequest → Service → Repository → Model. Controllers stay thin.
 - **Modules:** create files lazily under `app/Modules/<Module>/`; register the
   `<Module>ServiceProvider` in `bootstrap/providers.php` only once it has something to register.
