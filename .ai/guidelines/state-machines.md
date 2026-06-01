@@ -6,5 +6,5 @@
 - Enforce all transition rules in the Service layer — never scatter transition logic across controllers or models.
 - Treatment status drives side effects: `Draft` = no stock deduction, not in balance; `Completed` sets `completed_at`, deducts stock, enters balance; `Voided` returns stock and adjusts balance.
 - New appointments default to `Confirmed` (`Pending` is Faz 2); new cases default `Open`. Transactions MVP uses `Completed`/`Refunded` (`Pending` Faz 2).
-- Full per-entity transition maps (allowed states & edges): see `.ai/docs/data-model.md` "State enum'ları".
+- Full per-entity transition maps (allowed states & edges): see `.localdev/docs/data-model.md` "State enum'ları".
 - Spelling is always `Cancelled` (double-l) across every enum.

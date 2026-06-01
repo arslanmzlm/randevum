@@ -1,6 +1,6 @@
 ---
 name: figma-dashboard-reference
-description: "Use when building a Vue/Inertia screen that has a Figma→HTML export in .ai/dashboard/ (login, sign-up, dashboard/home, appointments list, create-appointment, detail, profile, balance). Explains how to read the *.relaxed.html / *.exact.html exports as a structural + visual reference (not code to copy), maps each export to its feature, and gives the rules for translating it into this project's PrimeVue + Tailwind + i18n stack. Trigger in the frontend phase of the feature pipeline or any time a dashboard screen is being implemented."
+description: "Use when building a Vue/Inertia screen that has a Figma→HTML export in .localdev/dashboard/ (login, sign-up, dashboard/home, appointments list, create-appointment, detail, profile, balance). Explains how to read the *.relaxed.html / *.exact.html exports as a structural + visual reference (not code to copy), maps each export to its feature, and gives the rules for translating it into this project's PrimeVue + Tailwind + i18n stack. Trigger in the frontend phase of the feature pipeline or any time a dashboard screen is being implemented."
 license: MIT
 metadata:
   author: randevum
@@ -8,12 +8,12 @@ metadata:
 
 # Figma dashboard reference
 
-`.ai/dashboard/` holds HTML exports of Figma frames — a **structural and visual reference** for
-re-implementing screens in this project, **not** code to copy. Full guidance: `.ai/dashboard/README.md`.
+`.localdev/dashboard/` holds HTML exports of Figma frames — a **structural and visual reference** for
+re-implementing screens in this project, **not** code to copy. Full guidance: `.localdev/dashboard/README.md`.
 
 ## Screen → feature map
 
-| Export (`.ai/dashboard/`) | Feature (`features.md`) | Builds toward |
+| Export (`.localdev/dashboard/`) | Feature (`features.md`) | Builds toward |
 |---|---|---|
 | `sign-in-4.{relaxed,exact}.html` | 1.2 | Login page |
 | `sign-up-4.{relaxed,exact}.html` | 1.1 | Registration / onboarding |

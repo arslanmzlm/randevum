@@ -1,6 +1,6 @@
 ---
 name: feature-frontend
-description: Pipeline FRONTEND phase. Builds the Inertia + Vue 3 + PrimeVue UI for a feature from the run-file's approved spec and the matching .ai/dashboard/ Figma export, consuming the backend's Inertia props contract. Frontend only.
+description: Pipeline FRONTEND phase. Builds the Inertia + Vue 3 + PrimeVue UI for a feature from the run-file's approved spec and the matching .localdev/dashboard/ Figma export, consuming the backend's Inertia props contract. Frontend only.
 tools: Read, Grep, Glob, Edit, Write, Bash, Skill
 model: opus
 ---
