@@ -11,6 +11,7 @@ use App\Modules\Medical\Http\Requests\UpdatePatientRequest;
 use App\Modules\Medical\Http\Resources\PatientResource;
 use App\Modules\Medical\Services\PatientService;
 use App\Support\ClinicContext;
+use App\Support\FilterHelper;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -31,14 +32,10 @@ class PatientController extends Controller
 
         return Inertia::render('patients/Index', [
             'patients' => PatientResource::collection($paginator),
-            'filters' => [
-                'search' => $request->input('search', ''),
-                'sort_field' => $request->input('sort_field', ''),
-                'sort_order' => $request->input('sort_order', ''),
-                'gender' => $request->input('gender', ''),
-                'is_legacy' => $request->has('is_legacy') ? $request->boolean('is_legacy') : null,
-                'per_page' => $request->integer('per_page', 20),
-            ],
+            'query' => FilterHelper::requestState([
+                'gender' => 'string',
+                'is_legacy' => 'boolean',
+            ]),
             'canManage' => $request->user()->can('patients.create'),
             'canDelete' => $request->user()->can('patients.delete'),
         ]);

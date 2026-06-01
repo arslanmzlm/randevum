@@ -1,25 +1,4 @@
-/**
- * Laravel paginated resource-collection shape (`Resource::collection($paginator)`):
- * data rows + nested `meta` (counts) + `links`. Reused by future server-side lists
- * and the planned 1.8b DataTable wrapper.
- */
-export type Paginated<T> = {
-    data: T[];
-    meta: {
-        current_page: number;
-        last_page: number;
-        per_page: number;
-        total: number;
-        from: number | null;
-        to: number | null;
-    };
-    links: {
-        first: string | null;
-        last: string | null;
-        prev: string | null;
-        next: string | null;
-    };
-};
+import type { Paginated, TableState } from '@/types/table';
 
 export type PatientGender = 'male' | 'female' | 'other';
 
@@ -43,20 +22,15 @@ export type Patient = {
     created_at: string;
 };
 
-/** Server-side list filter/sort/paginate state echoed back by the controller. */
-export type PatientFilters = {
-    search: string;
-    sort_field: string;
-    /** PrimeVue sort order serialized as a string: '1' asc, '-1' desc, '' none. */
-    sort_order: string;
+/** Server-side list JSON:API state echoed back by the controller. */
+export type PatientQuery = TableState<{
     gender: string;
     is_legacy: boolean | null;
-    per_page: number;
-};
+}>;
 
 export type PatientIndexProps = {
     patients: Paginated<Patient>;
-    filters: PatientFilters;
+    query: PatientQuery;
     canManage: boolean;
     canDelete: boolean;
 };

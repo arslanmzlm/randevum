@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Modules\Catalog\Repositories\ProductRepository;
 use App\Support\ClinicContext;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class ProductCatalogService
 {
@@ -14,6 +15,14 @@ class ProductCatalogService
         private ProductRepository $repository,
         private ClinicContext $clinicContext,
     ) {}
+
+    /**
+     * @return LengthAwarePaginator<Product>
+     */
+    public function paginateForActiveClinic(): LengthAwarePaginator
+    {
+        return $this->repository->paginateForActiveClinic();
+    }
 
     /**
      * @return Collection<int, Product>

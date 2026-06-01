@@ -12,6 +12,7 @@ use App\Modules\Catalog\Http\Resources\ProductResource;
 use App\Modules\Catalog\Services\ProductCatalogService;
 use App\Modules\Core\Support\Toast;
 use App\Support\ClinicContext;
+use App\Support\FilterHelper;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -28,8 +29,13 @@ class ProductController extends Controller
     {
         $this->authorize('viewAny', Product::class);
 
+        $paginator = $this->catalogService->paginateForActiveClinic();
+
         return Inertia::render('products/Index', [
-            'products' => $this->catalogService->listForActiveClinic()->map(fn (Product $p) => (new ProductResource($p))->resolve()),
+            'products' => ProductResource::collection($paginator),
+            'query' => FilterHelper::requestState([
+                'is_active' => 'boolean',
+            ]),
             'canManage' => $request->user()->can('products.create'),
             'currency' => $this->activeClinicCurrency(),
         ]);

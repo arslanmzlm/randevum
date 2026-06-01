@@ -1,3 +1,5 @@
+import type { Paginated, TableState } from '@/types/table';
+
 /** Canonical service shape emitted by ServiceResource (index + edit). */
 export type Service = {
     id: number;
@@ -12,8 +14,14 @@ export type Service = {
     is_active: boolean;
 };
 
+/** Server-side list JSON:API state echoed back by the controller. */
+export type ServiceQuery = TableState<{
+    is_active: boolean | null;
+}>;
+
 export type ServiceIndexProps = {
-    services: Service[];
+    services: Paginated<Service>;
+    query: ServiceQuery;
     canManage: boolean;
     /** ISO 4217 code of the active clinic, for price formatting. */
     currency: string;

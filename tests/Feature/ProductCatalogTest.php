@@ -116,8 +116,8 @@ it('index lists only the active clinic\'s products', function (): void {
         ->get(route('products.index'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->has('products', 1)
-            ->where('products.0.name', 'Product Alpha')
+            ->has('products.data', 1)
+            ->where('products.data.0.name', 'Product Alpha')
         );
 });
 
@@ -621,6 +621,117 @@ it('DELETE /products/{product} redirects with a success toast', function (): voi
         ->delete(route('products.destroy', $product))
         ->assertRedirect(route('products.index'))
         ->assertSessionHas('toasts');
+});
+
+// ---------------------------------------------------------------------------
+// GET /products — server-side paginator shape, search, sort, is_active filter
+// ---------------------------------------------------------------------------
+
+it('index returns a paginated shape with data and meta', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    pcTestRole($owner, 'owner', $clinic->id);
+
+    Product::factory()->count(3)->create(['clinic_id' => $clinic->id, 'vertical_id' => $clinic->vertical_id]);
+
+    $this->actingAs($owner)
+        ->get(route('products.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('products.data', 3)
+            ->has('products.meta')
+            ->where('products.meta.total', 3)
+        );
+});
+
+it('index echoes the filters prop', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    pcTestRole($owner, 'owner', $clinic->id);
+
+    $this->actingAs($owner)
+        ->get(route('products.index', ['filter' => ['search' => 'test'], 'per_page' => 10]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('query.filter.search', 'test')
+            ->where('query.per_page', 10)
+        );
+});
+
+it('index filters products by search on name', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    pcTestRole($owner, 'owner', $clinic->id);
+
+    Product::factory()->create(['clinic_id' => $clinic->id, 'vertical_id' => $clinic->vertical_id, 'name' => 'Silikon Ped']);
+    Product::factory()->create(['clinic_id' => $clinic->id, 'vertical_id' => $clinic->vertical_id, 'name' => 'Pansuman Seti']);
+
+    $this->actingAs($owner)
+        ->get(route('products.index', ['filter' => ['search' => 'Silikon']]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('products.data', 1)
+            ->where('products.data.0.name', 'Silikon Ped')
+        );
+});
+
+it('index filters products by search on sku', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    pcTestRole($owner, 'owner', $clinic->id);
+
+    Product::factory()->create(['clinic_id' => $clinic->id, 'vertical_id' => $clinic->vertical_id, 'name' => 'Ürün A', 'sku' => 'SKU-FIND-ME']);
+    Product::factory()->create(['clinic_id' => $clinic->id, 'vertical_id' => $clinic->vertical_id, 'name' => 'Ürün B', 'sku' => 'SKU-OTHER']);
+
+    $this->actingAs($owner)
+        ->get(route('products.index', ['filter' => ['search' => 'FIND-ME']]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->has('products.data', 1));
+});
+
+it('index filters products by is_active = true', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    pcTestRole($owner, 'owner', $clinic->id);
+
+    Product::factory()->create(['clinic_id' => $clinic->id, 'vertical_id' => $clinic->vertical_id, 'is_active' => true]);
+    Product::factory()->inactive()->create(['clinic_id' => $clinic->id, 'vertical_id' => $clinic->vertical_id]);
+
+    $this->actingAs($owner)
+        ->get(route('products.index', ['filter' => ['is_active' => '1']]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->has('products.data', 1));
+});
+
+it('index filters products by is_active = false', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    pcTestRole($owner, 'owner', $clinic->id);
+
+    Product::factory()->create(['clinic_id' => $clinic->id, 'vertical_id' => $clinic->vertical_id, 'is_active' => true]);
+    Product::factory()->inactive()->create(['clinic_id' => $clinic->id, 'vertical_id' => $clinic->vertical_id]);
+
+    $this->actingAs($owner)
+        ->get(route('products.index', ['filter' => ['is_active' => '0']]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->has('products.data', 1));
+});
+
+it('index sorts products by price ascending when sort_order is 1', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    pcTestRole($owner, 'owner', $clinic->id);
+
+    Product::factory()->create(['clinic_id' => $clinic->id, 'vertical_id' => $clinic->vertical_id, 'name' => 'Expensive', 'price' => '500.00']);
+    Product::factory()->create(['clinic_id' => $clinic->id, 'vertical_id' => $clinic->vertical_id, 'name' => 'Cheap', 'price' => '50.00']);
+
+    $this->actingAs($owner)
+        ->get(route('products.index', ['sort' => 'price']))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('products.data.0.name', 'Cheap')
+            ->where('products.data.1.name', 'Expensive')
+        );
 });
 
 // ---------------------------------------------------------------------------

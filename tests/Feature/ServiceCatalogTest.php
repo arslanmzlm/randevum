@@ -114,8 +114,8 @@ it('index lists only the active clinic\'s services', function (): void {
         ->get(route('services.index'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->has('services', 1)
-            ->where('services.0.name', 'Service Alpha')
+            ->has('services.data', 1)
+            ->where('services.data.0.name', 'Service Alpha')
         );
 });
 
@@ -540,6 +540,103 @@ it('DELETE /services/{service} redirects with a success toast', function (): voi
         ->delete(route('services.destroy', $service))
         ->assertRedirect(route('services.index'))
         ->assertSessionHas('toasts');
+});
+
+// ---------------------------------------------------------------------------
+// GET /services — server-side paginator shape, search, sort, is_active filter
+// ---------------------------------------------------------------------------
+
+it('index returns a paginated shape with data and meta', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    scTestRole($owner, 'owner', $clinic->id);
+
+    Service::factory()->count(3)->create(['clinic_id' => $clinic->id, 'vertical_id' => $clinic->vertical_id]);
+
+    $this->actingAs($owner)
+        ->get(route('services.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('services.data', 3)
+            ->has('services.meta')
+            ->where('services.meta.total', 3)
+        );
+});
+
+it('index echoes the filters prop', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    scTestRole($owner, 'owner', $clinic->id);
+
+    $this->actingAs($owner)
+        ->get(route('services.index', ['filter' => ['search' => 'test'], 'per_page' => 10]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('query.filter.search', 'test')
+            ->where('query.per_page', 10)
+        );
+});
+
+it('index filters services by search on name', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    scTestRole($owner, 'owner', $clinic->id);
+
+    Service::factory()->create(['clinic_id' => $clinic->id, 'vertical_id' => $clinic->vertical_id, 'name' => 'Ayak Bakımı']);
+    Service::factory()->create(['clinic_id' => $clinic->id, 'vertical_id' => $clinic->vertical_id, 'name' => 'El Bakımı']);
+
+    $this->actingAs($owner)
+        ->get(route('services.index', ['filter' => ['search' => 'Ayak']]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('services.data', 1)
+            ->where('services.data.0.name', 'Ayak Bakımı')
+        );
+});
+
+it('index filters services by is_active = true', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    scTestRole($owner, 'owner', $clinic->id);
+
+    Service::factory()->create(['clinic_id' => $clinic->id, 'vertical_id' => $clinic->vertical_id, 'is_active' => true]);
+    Service::factory()->inactive()->create(['clinic_id' => $clinic->id, 'vertical_id' => $clinic->vertical_id]);
+
+    $this->actingAs($owner)
+        ->get(route('services.index', ['filter' => ['is_active' => '1']]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->has('services.data', 1));
+});
+
+it('index filters services by is_active = false', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    scTestRole($owner, 'owner', $clinic->id);
+
+    Service::factory()->create(['clinic_id' => $clinic->id, 'vertical_id' => $clinic->vertical_id, 'is_active' => true]);
+    Service::factory()->inactive()->create(['clinic_id' => $clinic->id, 'vertical_id' => $clinic->vertical_id]);
+
+    $this->actingAs($owner)
+        ->get(route('services.index', ['filter' => ['is_active' => '0']]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->has('services.data', 1));
+});
+
+it('index sorts services by price ascending when sort_order is 1', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    scTestRole($owner, 'owner', $clinic->id);
+
+    Service::factory()->create(['clinic_id' => $clinic->id, 'vertical_id' => $clinic->vertical_id, 'name' => 'Expensive', 'price' => '500.00']);
+    Service::factory()->create(['clinic_id' => $clinic->id, 'vertical_id' => $clinic->vertical_id, 'name' => 'Cheap', 'price' => '100.00']);
+
+    $this->actingAs($owner)
+        ->get(route('services.index', ['sort' => 'price']))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('services.data.0.name', 'Cheap')
+            ->where('services.data.1.name', 'Expensive')
+        );
 });
 
 // ---------------------------------------------------------------------------

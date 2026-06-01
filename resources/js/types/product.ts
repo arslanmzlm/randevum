@@ -1,3 +1,5 @@
+import type { Paginated, TableState } from '@/types/table';
+
 /** Canonical product shape emitted by ProductResource (index + edit). */
 export type Product = {
     id: number;
@@ -14,8 +16,14 @@ export type Product = {
     is_active: boolean;
 };
 
+/** Server-side list JSON:API state echoed back by the controller. */
+export type ProductQuery = TableState<{
+    is_active: boolean | null;
+}>;
+
 export type ProductIndexProps = {
-    products: Product[];
+    products: Paginated<Product>;
+    query: ProductQuery;
     canManage: boolean;
     /** ISO 4217 code of the active clinic, for price formatting. */
     currency: string;

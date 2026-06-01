@@ -2,15 +2,24 @@
 
 namespace App\Support;
 
+use BackedEnum;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
  * Fluent server-side filter/sort/paginate wrapper over an Eloquent Builder.
- * Reads PrimeVue-lazy request params (search, sort_field, sort_order, per_page).
- * No clinic logic — ClinicScope on the model already handles tenant isolation.
  *
- * @template TModel of \Illuminate\Database\Eloquent\Model
+ * Reads JSON:API-style request params: filters are namespaced under `filter[...]`
+ * (e.g. `?filter[gender]=male`), sorting is a single `sort` param with a `-` prefix
+ * for descending (`?sort=-created_at`). Pagination stays flat (`page` / `per_page`)
+ * to match Laravel's paginator and PrimeVue's lazy events. Each method applies its
+ * constraint only when a usable value is present, so an absent param is a no-op.
+ *
+ * No tenant logic lives here: ClinicScope on the model already isolates clinics.
+ *
+ * @template TModel of Model
  */
 class FilterHelper
 {
@@ -20,73 +29,90 @@ class FilterHelper
     private function __construct(private Builder $query) {}
 
     /**
-     * @param  Builder<TModel>  $query
+     * Start a filter chain for a model class or an already-constrained builder.
+     *
+     * @param  Builder<TModel>|class-string<TModel>  $subject
      * @return self<TModel>
      */
-    public static function query(Builder $query): self
+    public static function for(Builder|string $subject): self
     {
-        return new self($query);
+        return new self(is_string($subject) ? $subject::query() : $subject);
     }
 
     /**
-     * Apply a LIKE search across the given fields when `request('search')` is non-empty.
+     * Apply a LIKE search across the given fields when `filter[search]` is non-empty.
      *
      * @return self<TModel>
      */
     public function search(string ...$fields): self
     {
-        $term = request('search');
+        $term = request()->input('filter.search');
 
-        if (filled($term)) {
-            $this->query->where(function (Builder $q) use ($fields, $term): void {
-                $first = true;
-                foreach ($fields as $field) {
-                    if ($first) {
-                        $q->whereLike($field, "%{$term}%");
-                        $first = false;
-                    } else {
-                        $q->orWhereLike($field, "%{$term}%");
-                    }
-                }
-            });
+        if (blank($term) || ! is_string($term) || $fields === []) {
+            return $this;
         }
+
+        $this->query->where(function (Builder $query) use ($fields, $term): void {
+            foreach ($fields as $index => $field) {
+                $index === 0
+                    ? $query->whereLike($field, "%{$term}%")
+                    : $query->orWhereLike($field, "%{$term}%");
+            }
+        });
 
         return $this;
     }
 
     /**
-     * Apply sorting from `sort_field` + `sort_order` request params.
-     * Falls back to `orderByDesc('id')` when the field is absent or not in the allowed list.
-     * sort_order: 1 = ASC, -1 = DESC (PrimeVue convention).
+     * Apply sorting from the `sort` param (`name` asc, `-name` desc), restricted to
+     * the allowed columns. Falls back to `orderByDesc('id')` otherwise.
      *
      * @return self<TModel>
      */
     public function sort(string ...$allowed): self
     {
-        $field = request('sort_field');
-        $order = request('sort_order');
+        $sort = request()->input('sort');
 
-        if ($field && in_array($field, $allowed, true)) {
-            $direction = ($order === '-1') ? 'desc' : 'asc';
-            $this->query->orderBy($field, $direction);
-        } else {
-            $this->query->orderByDesc('id');
+        if (is_string($sort) && $sort !== '') {
+            $field = ltrim($sort, '-');
+
+            if (in_array($field, $allowed, true)) {
+                $this->query->orderBy($field, str_starts_with($sort, '-') ? 'desc' : 'asc');
+
+                return $this;
+            }
         }
+
+        $this->query->orderByDesc('id');
 
         return $this;
     }
 
     /**
-     * Apply exact-match filters for any non-null value in the map.
+     * Exact-match filter reading `filter[<column>]` from the request. Columns ending
+     * in `_id` are treated as integer foreign keys: a non-numeric value is ignored
+     * (guards against a SQL error on a bigint column) and the value is cast to int.
+     * Other columns match the raw value. Empty/absent params are no-ops.
      *
-     * @param  array<string, mixed>  $exact  ['field' => value|null]
      * @return self<TModel>
      */
-    public function filter(array $exact): self
+    public function exact(string ...$columns): self
     {
-        foreach ($exact as $field => $value) {
-            if (! is_null($value)) {
-                $this->query->where($field, $value);
+        foreach ($columns as $column) {
+            $value = request()->input("filter.{$column}");
+
+            if (blank($value)) {
+                continue;
+            }
+
+            if (str_ends_with($column, '_id')) {
+                if (! is_numeric($value)) {
+                    continue;
+                }
+
+                $this->query->where($column, (int) $value);
+            } else {
+                $this->query->where($column, $value);
             }
         }
 
@@ -94,14 +120,190 @@ class FilterHelper
     }
 
     /**
-     * Paginate using the `per_page` request param (capped at the default when absent).
+     * Three-state boolean filter from `filter[<column>]`: filter when present and
+     * non-empty (`1`→true, `0`→false), skip when absent — so "all / only-true /
+     * only-false" are all expressible.
+     *
+     * @return self<TModel>
+     */
+    public function boolean(string ...$columns): self
+    {
+        foreach ($columns as $column) {
+            $key = "filter.{$column}";
+
+            if (request()->has($key) && request()->input($key) !== '') {
+                $this->query->where($column, request()->boolean($key));
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * Exact-match enum filter from `filter[<column>]`, validated against its backed
+     * enum; an absent or invalid value is ignored.
+     *
+     * @param  array<string, class-string<BackedEnum>>  $map  ['column' => Enum::class]
+     * @return self<TModel>
+     */
+    public function enum(array $map): self
+    {
+        foreach ($map as $column => $enum) {
+            $value = request()->enum("filter.{$column}", $enum);
+
+            if ($value !== null) {
+                $this->query->where($column, $value->value);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * Multi-value enum filter from a comma-separated `filter[<column>]`
+     * (`?filter[status]=open,closed`). Invalid members are dropped; empty is a no-op.
+     *
+     * @param  array<string, class-string<BackedEnum>>  $map  ['column' => Enum::class]
+     * @return self<TModel>
+     */
+    public function enumMultiple(array $map): self
+    {
+        foreach ($map as $column => $enum) {
+            $raw = request()->input("filter.{$column}");
+
+            if (blank($raw) || ! is_string($raw)) {
+                continue;
+            }
+
+            $values = array_values(array_filter(array_map(
+                static fn (string $case): ?BackedEnum => $enum::tryFrom(trim($case)),
+                explode(',', $raw),
+            )));
+
+            if ($values !== []) {
+                $this->query->whereIn($column, array_map(static fn (BackedEnum $e) => $e->value, $values));
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * Exact-day filter on date/datetime columns: matches rows whose `$column` falls
+     * on the date given by `filter[<column>]`. Unparseable input is ignored.
+     *
+     * @return self<TModel>
+     */
+    public function date(string ...$columns): self
+    {
+        foreach ($columns as $column) {
+            $value = rescue(fn () => request()->date("filter.{$column}"), null, report: false);
+
+            if ($value !== null) {
+                $this->query->whereDate($column, $value);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * Inclusive date-range filter on a single column, bounded by `filter[<startParam>]`
+     * and `filter[<endParam>]`. Day boundaries resolve in `$timezone` (default: app
+     * timezone) — pass the clinic timezone for clinic-local ranges. Either bound may
+     * be omitted.
+     *
+     * @return self<TModel>
+     */
+    public function dateRange(
+        string $column,
+        string $startParam = 'start_date',
+        string $endParam = 'end_date',
+        ?string $timezone = null,
+    ): self {
+        $tz = $timezone ?? config('app.timezone');
+
+        $start = rescue(fn () => request()->date("filter.{$startParam}", tz: $tz), null, report: false);
+        $end = rescue(fn () => request()->date("filter.{$endParam}", tz: $tz), null, report: false);
+
+        if ($start !== null) {
+            $this->query->where($column, '>=', $start->startOfDay());
+        }
+
+        if ($end !== null) {
+            $this->query->where($column, '<=', $end->endOfDay());
+        }
+
+        return $this;
+    }
+
+    /**
+     * Soft-delete visibility toggle from `filter[<param>]` (model must use SoftDeletes):
+     * `with` includes trashed rows, `only` returns just trashed; absent keeps the
+     * default scope.
+     *
+     * @return self<TModel>
+     */
+    public function trashed(string $param = 'trashed'): self
+    {
+        match (request()->input("filter.{$param}")) {
+            'with' => $this->query->withTrashed(),
+            'only' => $this->query->onlyTrashed(),
+            default => null,
+        };
+
+        return $this;
+    }
+
+    /**
+     * Build the JSON:API list-state prop the frontend re-seeds from (same shape as the
+     * URL query and the serialized reload payload): the `filter` bag (`search` is always
+     * included; each declared filter is read from `filter[<column>]` and cast by type),
+     * the single `sort` token, and `per_page`. A `boolean`/`integer` filter is `null`
+     * when absent (three-state); a `string` filter defaults to `''`.
+     *
+     * @param  array<string, 'string'|'boolean'|'integer'>  $filters  column => type
+     * @return array{filter: array<string, mixed>, sort: string, per_page: int}
+     */
+    public static function requestState(array $filters = [], int $perPage = 20): array
+    {
+        $bag = ['search' => request()->input('filter.search', '')];
+
+        foreach ($filters as $column => $type) {
+            $key = "filter.{$column}";
+            $present = request()->has($key) && request()->input($key) !== '';
+
+            $bag[$column] = match ($type) {
+                'boolean' => $present ? request()->boolean($key) : null,
+                'integer' => $present ? request()->integer($key) : null,
+                default => request()->input($key, ''),
+            };
+        }
+
+        return [
+            'filter' => $bag,
+            'sort' => request()->input('sort', ''),
+            'per_page' => request()->integer('per_page', $perPage),
+        ];
+    }
+
+    /**
+     * Paginate using the `per_page` request param (falling back to the default).
      *
      * @return LengthAwarePaginator<TModel>
      */
     public function paginate(int $perPage = 20): LengthAwarePaginator
     {
-        $size = request()->integer('per_page', $perPage);
+        return $this->query->paginate(request()->integer('per_page', $perPage))->withQueryString();
+    }
 
-        return $this->query->paginate($size)->withQueryString();
+    /**
+     * Resolve the built query as a full collection (no pagination).
+     *
+     * @return Collection<int, TModel>
+     */
+    public function get(): Collection
+    {
+        return $this->query->get();
     }
 }

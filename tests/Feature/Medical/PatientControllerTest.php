@@ -70,7 +70,7 @@ it('owner can access GET /patients and the Index component is rendered', functio
         ->assertInertia(fn ($page) => $page
             ->component('patients/Index')
             ->has('patients')
-            ->has('filters')
+            ->has('query')
             ->has('canManage')
             ->has('canDelete')
         );
@@ -160,7 +160,7 @@ it('index search filters by first_name', function (): void {
     Patient::factory()->create(['clinic_id' => $clinic->id, 'first_name' => 'Fatma', 'last_name' => 'Kaya', 'phone' => '05322222222']);
 
     $this->actingAs($owner)
-        ->get(route('patients.index', ['search' => 'Ahmet']))
+        ->get(route('patients.index', ['filter' => ['search' => 'Ahmet']]))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->where('patients.meta.total', 1)
@@ -177,7 +177,7 @@ it('index search filters by last_name', function (): void {
     Patient::factory()->create(['clinic_id' => $clinic->id, 'first_name' => 'Veli', 'last_name' => 'Demir', 'phone' => '05322222222']);
 
     $this->actingAs($owner)
-        ->get(route('patients.index', ['search' => 'Çelik']))
+        ->get(route('patients.index', ['filter' => ['search' => 'Çelik']]))
         ->assertOk()
         ->assertInertia(fn ($page) => $page->where('patients.meta.total', 1));
 });
@@ -190,7 +190,7 @@ it('index returns all when search term is empty', function (): void {
     Patient::factory()->count(4)->create(['clinic_id' => $clinic->id]);
 
     $this->actingAs($owner)
-        ->get(route('patients.index', ['search' => '']))
+        ->get(route('patients.index', ['filter' => ['search' => '']]))
         ->assertOk()
         ->assertInertia(fn ($page) => $page->where('patients.meta.total', 4));
 });
@@ -204,7 +204,7 @@ it('index sort_field + sort_order=1 orders ascending by first_name', function ()
     Patient::factory()->create(['clinic_id' => $clinic->id, 'first_name' => 'Ayşe', 'phone' => '05322222222']);
 
     $this->actingAs($owner)
-        ->get(route('patients.index', ['sort_field' => 'first_name', 'sort_order' => '1']))
+        ->get(route('patients.index', ['sort' => 'first_name']))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->where('patients.data.0.first_name', 'Ayşe')
@@ -221,7 +221,7 @@ it('index sort_field + sort_order=-1 orders descending by first_name', function 
     Patient::factory()->create(['clinic_id' => $clinic->id, 'first_name' => 'Zeynep', 'phone' => '05322222222']);
 
     $this->actingAs($owner)
-        ->get(route('patients.index', ['sort_field' => 'first_name', 'sort_order' => '-1']))
+        ->get(route('patients.index', ['sort' => '-first_name']))
         ->assertOk()
         ->assertInertia(fn ($page) => $page->where('patients.data.0.first_name', 'Zeynep'));
 });
@@ -236,7 +236,7 @@ it('index gender filter returns only matching patients', function (): void {
     Patient::factory()->create(['clinic_id' => $clinic->id, 'gender' => 'female', 'phone' => '05333333333']);
 
     $this->actingAs($owner)
-        ->get(route('patients.index', ['gender' => 'female']))
+        ->get(route('patients.index', ['filter' => ['gender' => 'female']]))
         ->assertOk()
         ->assertInertia(fn ($page) => $page->where('patients.meta.total', 2));
 });
@@ -251,7 +251,7 @@ it('index is_legacy filter returns only legacy patients', function (): void {
     Patient::factory()->create(['clinic_id' => $clinic->id, 'phone' => '05333333333']);
 
     $this->actingAs($owner)
-        ->get(route('patients.index', ['is_legacy' => '1']))
+        ->get(route('patients.index', ['filter' => ['is_legacy' => '1']]))
         ->assertOk()
         ->assertInertia(fn ($page) => $page->where('patients.meta.total', 2));
 });
@@ -262,9 +262,9 @@ it('index filters prop reflects the submitted search value', function (): void {
     ptcRole($owner, 'owner', $clinic->id);
 
     $this->actingAs($owner)
-        ->get(route('patients.index', ['search' => 'test-term']))
+        ->get(route('patients.index', ['filter' => ['search' => 'test-term']]))
         ->assertOk()
-        ->assertInertia(fn ($page) => $page->where('filters.search', 'test-term'));
+        ->assertInertia(fn ($page) => $page->where('query.filter.search', 'test-term'));
 });
 
 it('index lists only the active clinic\'s patients (ClinicScope)', function (): void {

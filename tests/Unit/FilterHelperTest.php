@@ -1,7 +1,9 @@
 <?php
 
+use App\Enums\Gender;
 use App\Models\Clinic;
 use App\Models\Patient;
+use App\Models\User;
 use App\Support\ClinicContext;
 use App\Support\FilterHelper;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -16,7 +18,7 @@ beforeEach(function (): void {
 });
 
 // ---------------------------------------------------------------------------
-// search()
+// search() — reads filter[search]
 // ---------------------------------------------------------------------------
 
 it('search filters records that match a field', function (): void {
@@ -26,9 +28,9 @@ it('search filters records that match a field', function (): void {
     Patient::factory()->create(['clinic_id' => $clinic->id, 'first_name' => 'Ahmet', 'phone' => '05311111111']);
     Patient::factory()->create(['clinic_id' => $clinic->id, 'first_name' => 'Fatma', 'phone' => '05322222222']);
 
-    request()->replace(['search' => 'Ahmet']);
+    request()->replace(['filter' => ['search' => 'Ahmet']]);
 
-    $result = FilterHelper::query(Patient::query())
+    $result = FilterHelper::for(Patient::class)
         ->search('first_name', 'last_name', 'phone')
         ->paginate();
 
@@ -45,9 +47,9 @@ it('search matches across multiple fields (OR logic)', function (): void {
     Patient::factory()->create(['clinic_id' => $clinic->id, 'first_name' => 'Hasan', 'last_name' => 'Demir', 'phone' => '05333333333']);
 
     // "Veli" matches first_name of row 2 AND last_name of row 1
-    request()->replace(['search' => 'Veli']);
+    request()->replace(['filter' => ['search' => 'Veli']]);
 
-    $result = FilterHelper::query(Patient::query())
+    $result = FilterHelper::for(Patient::class)
         ->search('first_name', 'last_name', 'phone')
         ->paginate();
 
@@ -60,9 +62,9 @@ it('search ignores empty string and returns all records', function (): void {
 
     Patient::factory()->count(3)->create(['clinic_id' => $clinic->id]);
 
-    request()->replace(['search' => '']);
+    request()->replace(['filter' => ['search' => '']]);
 
-    $result = FilterHelper::query(Patient::query())
+    $result = FilterHelper::for(Patient::class)
         ->search('first_name', 'last_name', 'phone')
         ->paginate();
 
@@ -77,7 +79,7 @@ it('search ignores absent search param and returns all records', function (): vo
 
     request()->replace([]);
 
-    $result = FilterHelper::query(Patient::query())
+    $result = FilterHelper::for(Patient::class)
         ->search('first_name', 'last_name', 'phone')
         ->paginate();
 
@@ -85,88 +87,100 @@ it('search ignores absent search param and returns all records', function (): vo
 });
 
 // ---------------------------------------------------------------------------
-// sort()
+// sort() — reads `sort` (`-` prefix = desc)
 // ---------------------------------------------------------------------------
 
-it('sort with sort_order=1 orders ascending', function (): void {
+it('sort without a prefix orders ascending', function (): void {
     $clinic = Clinic::factory()->create();
     app(ClinicContext::class)->set($clinic->id);
 
     Patient::factory()->create(['clinic_id' => $clinic->id, 'first_name' => 'Zeynep', 'phone' => '05311111111']);
     Patient::factory()->create(['clinic_id' => $clinic->id, 'first_name' => 'Ayşe', 'phone' => '05322222222']);
 
-    request()->replace(['sort_field' => 'first_name', 'sort_order' => '1']);
+    request()->replace(['sort' => 'first_name']);
 
-    $result = FilterHelper::query(Patient::query())->sort('first_name', 'last_name', 'created_at')->paginate();
+    $result = FilterHelper::for(Patient::class)->sort('first_name', 'last_name', 'created_at')->paginate();
 
     expect($result->items()[0]->first_name)->toBe('Ayşe');
 });
 
-it('sort with sort_order=-1 orders descending', function (): void {
+it('sort with a `-` prefix orders descending', function (): void {
     $clinic = Clinic::factory()->create();
     app(ClinicContext::class)->set($clinic->id);
 
     Patient::factory()->create(['clinic_id' => $clinic->id, 'first_name' => 'Ayşe', 'phone' => '05311111111']);
     Patient::factory()->create(['clinic_id' => $clinic->id, 'first_name' => 'Zeynep', 'phone' => '05322222222']);
 
-    request()->replace(['sort_field' => 'first_name', 'sort_order' => '-1']);
+    request()->replace(['sort' => '-first_name']);
 
-    $result = FilterHelper::query(Patient::query())->sort('first_name', 'last_name', 'created_at')->paginate();
+    $result = FilterHelper::for(Patient::class)->sort('first_name', 'last_name', 'created_at')->paginate();
 
     expect($result->items()[0]->first_name)->toBe('Zeynep');
 });
 
-it('sort falls back to orderByDesc(id) when sort_field is absent', function (): void {
+it('sort falls back to orderByDesc(id) when sort is absent', function (): void {
     $clinic = Clinic::factory()->create();
     app(ClinicContext::class)->set($clinic->id);
 
-    $first = Patient::factory()->create(['clinic_id' => $clinic->id, 'phone' => '05311111111']);
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'phone' => '05311111111']);
     $second = Patient::factory()->create(['clinic_id' => $clinic->id, 'phone' => '05322222222']);
 
     request()->replace([]);
 
-    $result = FilterHelper::query(Patient::query())->sort('first_name', 'last_name', 'created_at')->paginate();
+    $result = FilterHelper::for(Patient::class)->sort('first_name', 'last_name', 'created_at')->paginate();
 
     // Highest id first
     expect($result->items()[0]->id)->toBe($second->id);
 });
 
-it('sort ignores a sort_field not in the allowed list (falls back to id desc)', function (): void {
+it('sort ignores a field not in the allowed list (falls back to id desc)', function (): void {
     $clinic = Clinic::factory()->create();
     app(ClinicContext::class)->set($clinic->id);
 
-    $first = Patient::factory()->create(['clinic_id' => $clinic->id, 'phone' => '05311111111']);
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'phone' => '05311111111']);
     $second = Patient::factory()->create(['clinic_id' => $clinic->id, 'phone' => '05322222222']);
 
-    request()->replace(['sort_field' => 'malicious_field', 'sort_order' => '1']);
+    request()->replace(['sort' => 'malicious_field']);
 
-    $result = FilterHelper::query(Patient::query())->sort('first_name', 'last_name', 'created_at')->paginate();
+    $result = FilterHelper::for(Patient::class)->sort('first_name', 'last_name', 'created_at')->paginate();
 
     // Falls back to id desc
     expect($result->items()[0]->id)->toBe($second->id);
 });
 
 // ---------------------------------------------------------------------------
-// filter()
+// exact() — reads filter[<column>]; `_id` columns get a numeric guard
 // ---------------------------------------------------------------------------
 
-it('filter applies exact-match where for non-null values', function (): void {
+it('exact matches a plain column value from the request', function (): void {
     $clinic = Clinic::factory()->create();
     app(ClinicContext::class)->set($clinic->id);
 
-    Patient::factory()->legacy()->create(['clinic_id' => $clinic->id, 'phone' => '05311111111']);
-    Patient::factory()->create(['clinic_id' => $clinic->id, 'phone' => '05322222222']);
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'gender' => 'female', 'phone' => '05311111111']);
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'gender' => 'male', 'phone' => '05322222222']);
 
-    request()->replace([]);
+    request()->replace(['filter' => ['gender' => 'female']]);
 
-    $result = FilterHelper::query(Patient::query())
-        ->filter(['is_legacy' => true])
-        ->paginate();
-
-    expect($result->total())->toBe(1);
+    expect(FilterHelper::for(Patient::class)->exact('gender')->paginate()->total())->toBe(1);
 });
 
-it('filter skips null values (does not filter on null fields)', function (): void {
+it('exact on an _id column matches when numeric and is ignored when not', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+
+    $user = User::factory()->create();
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $user->id, 'phone' => '05311111111']);
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'user_id' => null, 'phone' => '05322222222']);
+
+    request()->replace(['filter' => ['user_id' => (string) $user->id]]);
+    expect(FilterHelper::for(Patient::class)->exact('user_id')->paginate()->total())->toBe(1);
+
+    // Non-numeric on an _id column → ignored (guards against a bigint SQL error).
+    request()->replace(['filter' => ['user_id' => 'abc']]);
+    expect(FilterHelper::for(Patient::class)->exact('user_id')->paginate()->total())->toBe(2);
+});
+
+it('exact skips empty or absent params', function (): void {
     $clinic = Clinic::factory()->create();
     app(ClinicContext::class)->set($clinic->id);
 
@@ -174,32 +188,11 @@ it('filter skips null values (does not filter on null fields)', function (): voi
 
     request()->replace([]);
 
-    $result = FilterHelper::query(Patient::query())
-        ->filter(['is_legacy' => null, 'gender' => null])
-        ->paginate();
-
-    expect($result->total())->toBe(3);
-});
-
-it('filter can combine multiple non-null filters (AND logic)', function (): void {
-    $clinic = Clinic::factory()->create();
-    app(ClinicContext::class)->set($clinic->id);
-
-    Patient::factory()->legacy()->create(['clinic_id' => $clinic->id, 'gender' => 'female', 'phone' => '05311111111']);
-    Patient::factory()->legacy()->create(['clinic_id' => $clinic->id, 'gender' => 'male', 'phone' => '05322222222']);
-    Patient::factory()->create(['clinic_id' => $clinic->id, 'gender' => 'female', 'phone' => '05333333333']);
-
-    request()->replace([]);
-
-    $result = FilterHelper::query(Patient::query())
-        ->filter(['is_legacy' => true, 'gender' => 'female'])
-        ->paginate();
-
-    expect($result->total())->toBe(1);
+    expect(FilterHelper::for(Patient::class)->exact('gender', 'user_id')->paginate()->total())->toBe(3);
 });
 
 // ---------------------------------------------------------------------------
-// paginate()
+// paginate() — flat per_page
 // ---------------------------------------------------------------------------
 
 it('paginate respects per_page from the request', function (): void {
@@ -210,7 +203,7 @@ it('paginate respects per_page from the request', function (): void {
 
     request()->replace(['per_page' => '3']);
 
-    $result = FilterHelper::query(Patient::query())->sort('first_name')->paginate();
+    $result = FilterHelper::for(Patient::class)->sort('first_name')->paginate();
 
     expect($result->perPage())->toBe(3)
         ->and($result->count())->toBe(3)
@@ -225,7 +218,146 @@ it('paginate uses the default per_page when not in the request', function (): vo
 
     request()->replace([]);
 
-    $result = FilterHelper::query(Patient::query())->sort('first_name')->paginate(20);
+    $result = FilterHelper::for(Patient::class)->sort('first_name')->paginate(20);
 
     expect($result->perPage())->toBe(20);
+});
+
+// ---------------------------------------------------------------------------
+// boolean() — reads filter[<column>]
+// ---------------------------------------------------------------------------
+
+it('boolean filters to true / false / all across the three states', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+
+    Patient::factory()->legacy()->create(['clinic_id' => $clinic->id, 'phone' => '05311111111']);
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'is_legacy' => false, 'phone' => '05322222222']);
+
+    request()->replace(['filter' => ['is_legacy' => '1']]);
+    expect(FilterHelper::for(Patient::class)->boolean('is_legacy')->paginate()->total())->toBe(1);
+
+    request()->replace(['filter' => ['is_legacy' => '0']]);
+    expect(FilterHelper::for(Patient::class)->boolean('is_legacy')->paginate()->total())->toBe(1);
+
+    request()->replace([]);
+    expect(FilterHelper::for(Patient::class)->boolean('is_legacy')->paginate()->total())->toBe(2);
+});
+
+// ---------------------------------------------------------------------------
+// enum() — reads filter[<column>]
+// ---------------------------------------------------------------------------
+
+it('enum filters by a valid backed-enum value and ignores an invalid one', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'gender' => 'female', 'phone' => '05311111111']);
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'gender' => 'male', 'phone' => '05322222222']);
+
+    request()->replace(['filter' => ['gender' => 'female']]);
+    expect(FilterHelper::for(Patient::class)->enum(['gender' => Gender::class])->paginate()->total())->toBe(1);
+
+    // Invalid enum value → filter ignored, all rows returned.
+    request()->replace(['filter' => ['gender' => 'not-a-gender']]);
+    expect(FilterHelper::for(Patient::class)->enum(['gender' => Gender::class])->paginate()->total())->toBe(2);
+});
+
+// ---------------------------------------------------------------------------
+// enumMultiple() — reads filter[<column>] (csv)
+// ---------------------------------------------------------------------------
+
+it('enumMultiple filters by a comma-separated list and drops invalid members', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'gender' => 'female', 'phone' => '05311111111']);
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'gender' => 'male', 'phone' => '05322222222']);
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'gender' => 'other', 'phone' => '05333333333']);
+
+    request()->replace(['filter' => ['gender' => 'female,male,bogus']]);
+
+    $result = FilterHelper::for(Patient::class)->enumMultiple(['gender' => Gender::class])->paginate();
+
+    expect($result->total())->toBe(2);
+});
+
+// ---------------------------------------------------------------------------
+// date() — reads filter[<column>]
+// ---------------------------------------------------------------------------
+
+it('date matches rows on the given day', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'birth_date' => '1990-05-20', 'phone' => '05311111111']);
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'birth_date' => '1985-12-01', 'phone' => '05322222222']);
+
+    request()->replace(['filter' => ['birth_date' => '1990-05-20']]);
+
+    $result = FilterHelper::for(Patient::class)->date('birth_date')->paginate();
+
+    expect($result->total())->toBe(1);
+});
+
+// ---------------------------------------------------------------------------
+// dateRange() — reads filter[start_date] / filter[end_date]
+// ---------------------------------------------------------------------------
+
+it('dateRange filters inclusively between the start and end days', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'created_at' => '2026-01-10 12:00:00', 'phone' => '05311111111']);
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'created_at' => '2026-02-15 12:00:00', 'phone' => '05322222222']);
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'created_at' => '2026-03-20 12:00:00', 'phone' => '05333333333']);
+
+    request()->replace(['filter' => ['start_date' => '2026-01-01', 'end_date' => '2026-02-28']]);
+
+    $result = FilterHelper::for(Patient::class)
+        ->dateRange('created_at', timezone: 'UTC')
+        ->paginate();
+
+    expect($result->total())->toBe(2);
+});
+
+// ---------------------------------------------------------------------------
+// trashed() — reads filter[trashed]
+// ---------------------------------------------------------------------------
+
+it('trashed toggles soft-deleted visibility (default / with / only)', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'phone' => '05311111111']);
+    $deleted = Patient::factory()->create(['clinic_id' => $clinic->id, 'phone' => '05322222222']);
+    $deleted->delete();
+
+    request()->replace([]);
+    expect(FilterHelper::for(Patient::class)->trashed()->paginate()->total())->toBe(1);
+
+    request()->replace(['filter' => ['trashed' => 'with']]);
+    expect(FilterHelper::for(Patient::class)->trashed()->paginate()->total())->toBe(2);
+
+    request()->replace(['filter' => ['trashed' => 'only']]);
+    expect(FilterHelper::for(Patient::class)->trashed()->paginate()->total())->toBe(1);
+});
+
+// ---------------------------------------------------------------------------
+// get()
+// ---------------------------------------------------------------------------
+
+it('get returns the filtered rows as a collection without pagination', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'first_name' => 'Ahmet', 'phone' => '05311111111']);
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'first_name' => 'Fatma', 'phone' => '05322222222']);
+
+    request()->replace(['filter' => ['search' => 'Ahmet']]);
+
+    $result = FilterHelper::for(Patient::class)->search('first_name', 'last_name')->get();
+
+    expect($result)->toHaveCount(1)
+        ->and($result->first()->first_name)->toBe('Ahmet');
 });

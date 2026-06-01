@@ -3,10 +3,27 @@
 namespace App\Modules\Catalog\Repositories;
 
 use App\Models\Service;
+use App\Support\FilterHelper;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class ServiceRepository
 {
+    /**
+     * Paginated list for the active clinic with server-side search / sort / filter.
+     * ClinicScope on Service restricts results to the active clinic automatically.
+     *
+     * @return LengthAwarePaginator<Service>
+     */
+    public function paginateForActiveClinic(): LengthAwarePaginator
+    {
+        return FilterHelper::for(Service::class)
+            ->search('name', 'description')
+            ->sort('name', 'price', 'is_active', 'created_at')
+            ->boolean('is_active')
+            ->paginate();
+    }
+
     /**
      * All services for the active clinic, newest first.
      *

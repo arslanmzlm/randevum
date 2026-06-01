@@ -2,6 +2,7 @@
 
 namespace App\Modules\Medical\Repositories;
 
+use App\Enums\Gender;
 use App\Models\Patient;
 use App\Support\FilterHelper;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -16,13 +17,11 @@ class PatientRepository
      */
     public function paginateForActiveClinic(): LengthAwarePaginator
     {
-        return FilterHelper::query(Patient::query())
+        return FilterHelper::for(Patient::class)
             ->search('first_name', 'last_name', 'phone')
             ->sort('first_name', 'last_name', 'created_at')
-            ->filter([
-                'gender' => request('gender') ?: null,
-                'is_legacy' => request()->has('is_legacy') ? request()->boolean('is_legacy') : null,
-            ])
+            ->enum(['gender' => Gender::class])
+            ->boolean('is_legacy')
             ->paginate();
     }
 

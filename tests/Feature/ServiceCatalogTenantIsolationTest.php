@@ -63,7 +63,7 @@ it("clinic A's index never exposes clinic B's services", function (): void {
     $this->actingAs($ownerA)
         ->get(route('services.index'))
         ->assertOk()
-        ->assertInertia(fn ($page) => $page->has('services', 0));
+        ->assertInertia(fn ($page) => $page->has('services.data', 0));
 });
 
 it("clinic A's index response body does not contain clinic B's service name", function (): void {
@@ -139,8 +139,8 @@ it("owner A sees only clinic A's services and not clinic B's when both exist", f
         ->get(route('services.index'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->has('services', 1)
-            ->where('services.0.id', $serviceA->id)
+            ->has('services.data', 1)
+            ->where('services.data.0.id', $serviceA->id)
         );
 });
 
@@ -170,5 +170,5 @@ it('a service created by owner A is not visible to owner B', function (): void {
     $this->actingAs($ownerB)
         ->get(route('services.index'))
         ->assertOk()
-        ->assertInertia(fn ($page) => $page->has('services', 0));
+        ->assertInertia(fn ($page) => $page->has('services.data', 0));
 });

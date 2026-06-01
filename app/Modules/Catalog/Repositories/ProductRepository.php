@@ -3,10 +3,27 @@
 namespace App\Modules\Catalog\Repositories;
 
 use App\Models\Product;
+use App\Support\FilterHelper;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class ProductRepository
 {
+    /**
+     * Paginated list for the active clinic with server-side search / sort / filter.
+     * ClinicScope on Product restricts results to the active clinic automatically.
+     *
+     * @return LengthAwarePaginator<Product>
+     */
+    public function paginateForActiveClinic(): LengthAwarePaginator
+    {
+        return FilterHelper::for(Product::class)
+            ->search('name', 'brand', 'category', 'sku')
+            ->sort('name', 'price', 'current_stock', 'is_active', 'created_at')
+            ->boolean('is_active')
+            ->paginate();
+    }
+
     /**
      * All products for the active clinic, newest first.
      *

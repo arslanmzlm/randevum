@@ -7,6 +7,7 @@ use App\Models\Service;
 use App\Modules\Catalog\Repositories\ServiceRepository;
 use App\Support\ClinicContext;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class ServiceCatalogService
 {
@@ -14,6 +15,14 @@ class ServiceCatalogService
         private ServiceRepository $repository,
         private ClinicContext $clinicContext,
     ) {}
+
+    /**
+     * @return LengthAwarePaginator<Service>
+     */
+    public function paginateForActiveClinic(): LengthAwarePaginator
+    {
+        return $this->repository->paginateForActiveClinic();
+    }
 
     /**
      * @return Collection<int, Service>

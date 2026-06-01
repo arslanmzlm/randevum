@@ -11,6 +11,7 @@ use App\Modules\Catalog\Http\Resources\ServiceResource;
 use App\Modules\Catalog\Services\ServiceCatalogService;
 use App\Modules\Core\Support\Toast;
 use App\Support\ClinicContext;
+use App\Support\FilterHelper;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -27,8 +28,13 @@ class ServiceController extends Controller
     {
         $this->authorize('viewAny', Service::class);
 
+        $paginator = $this->catalogService->paginateForActiveClinic();
+
         return Inertia::render('services/Index', [
-            'services' => $this->catalogService->listForActiveClinic()->map(fn (Service $s) => (new ServiceResource($s))->resolve()),
+            'services' => ServiceResource::collection($paginator),
+            'query' => FilterHelper::requestState([
+                'is_active' => 'boolean',
+            ]),
             'canManage' => $request->user()->can('services.create'),
             'currency' => $this->activeClinicCurrency(),
         ]);

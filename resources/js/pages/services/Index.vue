@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
-import { FilterMatchMode } from '@primevue/core/api';
 import {
     IconClipboardList,
     IconPlus,
@@ -8,12 +7,14 @@ import {
     IconTrash,
 } from '@tabler/icons-vue';
 import { useConfirm } from 'primevue/useconfirm';
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import ButtonLink from '@/components/ButtonLink.vue';
+import DataTableWrapper from '@/components/DataTableWrapper.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import { useTableFilters } from '@/composables/useTableFilters';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { create, destroy, edit } from '@/routes/services';
+import { create, destroy, edit, index } from '@/routes/services';
 import type { Service, ServiceIndexProps } from '@/types/service';
 
 defineOptions({ layout: AppLayout });
@@ -23,18 +24,30 @@ const props = defineProps<ServiceIndexProps>();
 const { t, locale } = useI18n();
 const confirm = useConfirm();
 
-// Client-side filters (per-clinic catalog stays small — no server-side pagination needed):
-// free-text global search + an active/passive status filter (null = all).
-const filters = ref({
-    global: {
-        value: null as string | null,
-        matchMode: FilterMatchMode.CONTAINS,
-    },
-    is_active: {
-        value: null as boolean | null,
-        matchMode: FilterMatchMode.EQUALS,
-    },
-});
+const { state, loading, first, sortField, sortOrder, onPage, onSort } =
+    useTableFilters<{ is_active: boolean | null }>({
+        url: index().url,
+        only: ['services', 'query'],
+        currentPage: props.services.meta.current_page,
+        search: props.query.filter.search,
+        sort: props.query.sort,
+        perPage: props.query.per_page,
+        filters: {
+            is_active: {
+                type: 'boolean',
+                value: props.query.filter.is_active,
+            },
+        },
+    });
+
+const hasActiveFilters = computed(
+    () => !!state.search || state.is_active !== null,
+);
+
+// Big empty state only when the clinic genuinely has no services (not a filtered miss).
+const showEmptyState = computed(
+    () => props.services.meta.total === 0 && !hasActiveFilters.value,
+);
 
 const statusOptions = computed(() => [
     { label: t('service.active'), value: true },
@@ -88,46 +101,51 @@ function removeService(service: Service): void {
             </template>
         </PageHeader>
 
+        <div
+            v-if="showEmptyState"
+            class="flex flex-col items-center justify-center gap-3 rounded-xl border border-surface-200 bg-surface-0 px-6 py-16 text-center"
+        >
+            <IconClipboardList class="size-10 text-surface-300" />
+            <p class="text-sm text-surface-500">{{ t('service.empty') }}</p>
+        </div>
+
         <section
+            v-else
             class="rounded-xl border border-surface-200 bg-surface-0 p-2 sm:p-3"
         >
-            <div
-                v-if="services.length"
-                class="flex flex-col gap-2 p-2 sm:flex-row sm:items-center"
+            <DataTableWrapper
+                :value="services.data"
+                :total-records="services.meta.total"
+                :rows="state.per_page"
+                :first="first"
+                :loading="loading"
+                :sort-field="sortField"
+                :sort-order="sortOrder"
+                @page="onPage"
+                @sort="onSort"
             >
-                <IconField>
-                    <InputIcon>
-                        <IconSearch class="size-4 text-surface-400" />
-                    </InputIcon>
-                    <InputText
-                        v-model="filters.global.value"
-                        :placeholder="t('service.search_placeholder')"
-                        class="w-full sm:w-72"
+                <template #toolbar>
+                    <IconField>
+                        <InputIcon>
+                            <IconSearch class="size-4 text-surface-400" />
+                        </InputIcon>
+                        <InputText
+                            v-model="state.search"
+                            :placeholder="t('service.search_placeholder')"
+                            class="w-full sm:w-72"
+                        />
+                    </IconField>
+                    <Select
+                        v-model="state.is_active"
+                        :options="statusOptions"
+                        option-label="label"
+                        option-value="value"
+                        :placeholder="t('service.filter_status')"
+                        show-clear
+                        class="w-full sm:w-44"
                     />
-                </IconField>
-                <Select
-                    v-model="filters.is_active.value"
-                    :options="statusOptions"
-                    option-label="label"
-                    option-value="value"
-                    :placeholder="t('service.filter_status')"
-                    show-clear
-                    class="w-full sm:w-44"
-                />
-            </div>
+                </template>
 
-            <DataTable
-                v-if="services.length"
-                v-model:filters="filters"
-                :value="services"
-                data-key="id"
-                removable-sort
-                paginator
-                :rows="10"
-                :rows-per-page-options="[10, 25, 50]"
-                :global-filter-fields="['name', 'description']"
-                class="text-sm"
-            >
                 <Column
                     field="name"
                     :header="t('service.columns.name')"
@@ -214,15 +232,7 @@ function removeService(service: Service): void {
                         {{ t('service.empty_filtered') }}
                     </div>
                 </template>
-            </DataTable>
-
-            <div
-                v-else
-                class="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center"
-            >
-                <IconClipboardList class="size-10 text-surface-300" />
-                <p class="text-sm text-surface-500">{{ t('service.empty') }}</p>
-            </div>
+            </DataTableWrapper>
         </section>
     </div>
 </template>
