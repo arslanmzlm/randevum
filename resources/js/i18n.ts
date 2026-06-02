@@ -336,6 +336,10 @@ export const i18n = createI18n({
                 empty: 'Henüz hasta eklenmemiş.',
                 empty_filtered: 'Aramayla eşleşen hasta yok.',
                 search_placeholder: 'Ad, soyad veya telefon ara...',
+                quick_find_placeholder: 'Hasta ara (ad veya telefon)…',
+                quick_find_no_results: 'Eşleşen hasta yok',
+                quick_find_min_chars:
+                    'Aramak için en az {count} karakter yazın',
                 filter_gender: 'Cinsiyet',
                 filter_legacy: 'Kayıt türü',
                 legacy_badge: 'Sistem öncesi',

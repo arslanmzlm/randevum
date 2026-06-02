@@ -6,6 +6,7 @@ use App\Models\City;
 use App\Models\Clinic;
 use App\Models\Country;
 use App\Models\Doctor;
+use App\Models\Patient;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Vertical;
@@ -101,6 +102,14 @@ class DemoSeeder extends Seeder
                     'is_active' => true,
                 ],
             );
+        }
+
+        // Demo patients for the clinic — top up to 100 so list/search screens have
+        // realistic data. Idempotent: only creates the shortfall on re-seed.
+        $existing = Patient::withoutGlobalScopes()->where('clinic_id', $clinic->id)->count();
+
+        if ($existing < 100) {
+            Patient::factory()->count(100 - $existing)->create(['clinic_id' => $clinic->id]);
         }
     }
 }

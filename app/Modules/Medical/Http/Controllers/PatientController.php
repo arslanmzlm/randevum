@@ -9,9 +9,11 @@ use App\Modules\Medical\Exceptions\TrashedPhoneConflictException;
 use App\Modules\Medical\Http\Requests\StorePatientRequest;
 use App\Modules\Medical\Http\Requests\UpdatePatientRequest;
 use App\Modules\Medical\Http\Resources\PatientResource;
+use App\Modules\Medical\Http\Resources\PatientSearchResource;
 use App\Modules\Medical\Services\PatientService;
 use App\Support\ClinicContext;
 use App\Support\FilterHelper;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -39,6 +41,17 @@ class PatientController extends Controller
             'canManage' => $request->user()->can('patients.create'),
             'canDelete' => $request->user()->can('patients.delete'),
         ]);
+    }
+
+    public function search(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Patient::class);
+
+        $q = $request->string('q')->value();
+
+        return PatientSearchResource::collection(
+            $this->patientService->search($q)
+        )->response($request);
     }
 
     public function create(): Response

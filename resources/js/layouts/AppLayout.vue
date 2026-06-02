@@ -16,13 +16,15 @@ import {
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import AppToaster from '@/components/AppToaster.vue';
+import PatientSearchSelect from '@/components/PatientSearchSelect.vue';
 import { useContentWidth } from '@/composables/useContentWidth';
 import { account, dashboard, logout } from '@/routes';
 import { edit as clinicEdit } from '@/routes/clinic';
 import { index as doctorsIndex, mine as doctorsMine } from '@/routes/doctors';
-import { index as patientsIndex } from '@/routes/patients';
+import { index as patientsIndex, show as patientShow } from '@/routes/patients';
 import { index as productsIndex } from '@/routes/products';
 import { index as servicesIndex } from '@/routes/services';
+import type { PatientSearchResult } from '@/types/patient';
 
 const { t } = useI18n();
 const page = usePage();
@@ -161,6 +163,10 @@ function doLogout(): void {
     router.post(logout().url);
 }
 
+function goToPatient(patient: PatientSearchResult): void {
+    router.visit(patientShow(patient.id).url);
+}
+
 // One-time, dismissible nudge to change the admin-set password on first-ever
 // login (driven off the shared `password_reminder` flash).
 const showPasswordReminder = ref(false);
@@ -269,62 +275,72 @@ function goToPasswordChange(): void {
 
         <div class="flex min-w-0 flex-1 flex-col overflow-hidden">
             <header
-                class="flex h-16 shrink-0 items-center justify-end gap-1 border-b border-surface-200 bg-surface-0 px-6"
+                class="flex h-16 shrink-0 items-center justify-between gap-2 border-b border-surface-200 bg-surface-0 px-6"
             >
-                <Button
-                    type="button"
-                    severity="secondary"
-                    text
-                    rounded
-                    :aria-label="
-                        contentWidth === 'fluid'
-                            ? t('app.width.collapse')
-                            : t('app.width.expand')
-                    "
-                    @click="toggleWidth"
-                >
-                    <component
-                        :is="
-                            contentWidth === 'fluid'
-                                ? IconArrowsMinimize
-                                : IconArrowsMaximize
-                        "
-                        class="size-5"
+                <div class="min-w-0 flex-1">
+                    <PatientSearchSelect
+                        v-if="canViewPatients"
+                        class="w-full max-w-xs"
+                        @select="goToPatient"
                     />
-                </Button>
+                </div>
 
-                <Button
-                    type="button"
-                    severity="secondary"
-                    text
-                    class="gap-2"
-                    aria-haspopup="true"
-                    aria-controls="user-menu"
-                    @click="toggleUserMenu"
-                >
-                    <IconUserCircle class="size-5 shrink-0" />
-                    <span class="max-w-40 truncate">{{ userName }}</span>
-                </Button>
+                <div class="flex shrink-0 items-center gap-1">
+                    <Button
+                        type="button"
+                        severity="secondary"
+                        text
+                        rounded
+                        :aria-label="
+                            contentWidth === 'fluid'
+                                ? t('app.width.collapse')
+                                : t('app.width.expand')
+                        "
+                        @click="toggleWidth"
+                    >
+                        <component
+                            :is="
+                                contentWidth === 'fluid'
+                                    ? IconArrowsMinimize
+                                    : IconArrowsMaximize
+                            "
+                            class="size-5"
+                        />
+                    </Button>
 
-                <Menu
-                    id="user-menu"
-                    ref="userMenu"
-                    :model="userMenuItems"
-                    :popup="true"
-                >
-                    <template #item="{ item, props: itemProps }">
-                        <a
-                            class="flex items-center gap-2"
-                            v-bind="itemProps.action"
-                        >
-                            <component
-                                :is="item.tablerIcon"
-                                class="size-4 shrink-0"
-                            />
-                            <span>{{ item.label }}</span>
-                        </a>
-                    </template>
-                </Menu>
+                    <Button
+                        type="button"
+                        severity="secondary"
+                        text
+                        class="gap-2"
+                        aria-haspopup="true"
+                        aria-controls="user-menu"
+                        @click="toggleUserMenu"
+                    >
+                        <IconUserCircle class="size-5 shrink-0" />
+                        <span class="max-w-40 truncate">{{ userName }}</span>
+                    </Button>
+
+                    <Menu
+                        id="user-menu"
+                        ref="userMenu"
+                        :model="userMenuItems"
+                        :popup="true"
+                    >
+                        <template #item="{ item, props: itemProps }">
+                            <a
+                                class="flex items-center gap-2"
+                                v-bind="itemProps.action"
+                            >
+                                <component
+                                    :is="item.tablerIcon"
+                                    class="size-4 shrink-0"
+                                />
+                                <span>{{ item.label }}</span>
+                            </a>
+                        </template>
+                    </Menu>
+                </div>
             </header>
 
             <main class="flex-1 overflow-y-auto py-6 lg:py-8">

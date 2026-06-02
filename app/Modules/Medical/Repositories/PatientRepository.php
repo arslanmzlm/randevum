@@ -5,7 +5,9 @@ namespace App\Modules\Medical\Repositories;
 use App\Enums\Gender;
 use App\Models\Patient;
 use App\Support\FilterHelper;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 class PatientRepository
 {
@@ -51,6 +53,47 @@ class PatientRepository
     public function restore(Patient $patient): void
     {
         $patient->restore();
+    }
+
+    /**
+     * Capped name+phone typeahead lookup for the active clinic.
+     *
+     * Returns an empty collection when $term is shorter than 2 chars.
+     * ClinicScope and SoftDeletes scopes apply automatically.
+     * Phones are stored E.164 (+90…); callers strip non-digits and leading 0
+     * so national digits form a substring match against the stored value.
+     *
+     * @return Collection<int, Patient>
+     */
+    public function search(string $term): Collection
+    {
+        $term = trim($term);
+
+        if (mb_strlen($term) < 2) {
+            return new Collection;
+        }
+
+        $digits = preg_replace('/\D/', '', $term) ?? '';
+        $nationalDigits = $digits !== '' ? ltrim($digits, '0') : '';
+
+        return Patient::query()
+            ->where(function ($q) use ($term, $nationalDigits): void {
+                // Match the fragment against either name part AND the joined
+                // "first last" so a full-name query ("Mehmet Yılmaz") still hits.
+                // whereLike on a raw concat keeps the driver-correct LIKE/ILIKE
+                // mapping (raw ILIKE would break the sqlite test connection).
+                $q->whereLike('first_name', "%{$term}%")
+                    ->orWhereLike('last_name', "%{$term}%")
+                    ->orWhereLike(DB::raw("first_name || ' ' || last_name"), "%{$term}%");
+
+                if ($nationalDigits !== '') {
+                    $q->orWhereLike('phone', "%{$nationalDigits}%");
+                }
+            })
+            ->orderBy('first_name')
+            ->orderBy('last_name')
+            ->limit(10)
+            ->get();
     }
 
     /**

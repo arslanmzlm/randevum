@@ -22,6 +22,16 @@ export type Patient = {
     created_at: string;
 };
 
+/**
+ * Slim patient typeahead result from the `patients.search` JSON endpoint
+ * (PatientSearchResource) — only what the quick-find option needs to render.
+ */
+export type PatientSearchResult = {
+    id: number;
+    full_name: string;
+    phone: string | null;
+};
+
 /** Server-side list JSON:API state echoed back by the controller. */
 export type PatientQuery = TableState<{
     gender: string;

@@ -5,6 +5,7 @@ namespace App\Modules\Medical\Services;
 use App\Models\Patient;
 use App\Modules\Medical\Exceptions\TrashedPhoneConflictException;
 use App\Modules\Medical\Repositories\PatientRepository;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class PatientService
@@ -17,6 +18,16 @@ class PatientService
     public function listForActiveClinic(): LengthAwarePaginator
     {
         return $this->repository->paginateForActiveClinic();
+    }
+
+    /**
+     * Name+phone typeahead lookup for the active clinic.
+     *
+     * @return Collection<int, Patient>
+     */
+    public function search(string $term): Collection
+    {
+        return $this->repository->search($term);
     }
 
     /**
