@@ -64,6 +64,11 @@ class PatientService
         return $this->repository->update($patient, $data);
     }
 
+    public function updateNotes(Patient $patient, ?string $notes): Patient
+    {
+        return $this->repository->update($patient, ['notes' => $notes]);
+    }
+
     public function delete(Patient $patient): void
     {
         $this->repository->delete($patient);

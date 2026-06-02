@@ -35,4 +35,9 @@ class PatientPolicy
     {
         return $user->can('patients.delete');
     }
+
+    public function updateNotes(User $user, Patient $patient): bool
+    {
+        return $user->can('patients.note.update');
+    }
 }

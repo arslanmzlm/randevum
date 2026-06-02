@@ -37,6 +37,7 @@ class PermissionSeeder extends Seeder
         'patients.create' => ['owner', 'manager', 'doctor', 'receptionist'],
         'patients.update' => ['owner', 'manager', 'doctor', 'receptionist'],
         'patients.delete' => ['owner', 'manager', 'doctor', 'receptionist'],
+        'patients.note.update' => ['owner', 'manager', 'doctor', 'receptionist'],
     ];
 
     public function run(): void

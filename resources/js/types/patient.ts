@@ -73,6 +73,13 @@ export type PatientShowProps = {
     patient: Patient;
     treatments: unknown[];
     canManage: boolean;
+    /** Gates the inline note quick-edit; = can('patients.note.update'). */
+    canEditNotes: boolean;
+};
+
+/** Payload for the inline patient-level note quick-edit endpoint. */
+export type PatientNotesFormData = {
+    notes: string;
 };
 
 export type PatientEditProps = {

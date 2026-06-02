@@ -7,6 +7,7 @@ use App\Models\Patient;
 use App\Modules\Core\Support\Toast;
 use App\Modules\Medical\Exceptions\TrashedPhoneConflictException;
 use App\Modules\Medical\Http\Requests\StorePatientRequest;
+use App\Modules\Medical\Http\Requests\UpdatePatientNotesRequest;
 use App\Modules\Medical\Http\Requests\UpdatePatientRequest;
 use App\Modules\Medical\Http\Resources\PatientResource;
 use App\Modules\Medical\Http\Resources\PatientSearchResource;
@@ -87,6 +88,7 @@ class PatientController extends Controller
             'patient' => (new PatientResource($patient))->resolve(),
             'treatments' => [],
             'canManage' => $request->user()->can('patients.update'),
+            'canEditNotes' => $request->user()->can('patients.note.update'),
         ]);
     }
 
@@ -119,6 +121,17 @@ class PatientController extends Controller
         Toast::success(__('messages.patient.deleted'));
 
         return redirect()->route('patients.index');
+    }
+
+    public function updateNotes(UpdatePatientNotesRequest $request, Patient $patient): RedirectResponse
+    {
+        $this->authorize('updateNotes', $patient);
+
+        $this->patientService->updateNotes($patient, $request->validated()['notes'] ?? null);
+
+        Toast::success(__('messages.patient.notes_updated'));
+
+        return redirect()->route('patients.show', $patient);
     }
 
     public function restore(int $patient): RedirectResponse

@@ -36,6 +36,7 @@ return [
         'updated' => 'Hasta bilgileri güncellendi.',
         'deleted' => 'Hasta kaydı silindi.',
         'restored' => 'Hasta kaydı geri yüklendi.',
+        'notes_updated' => 'Hasta notu güncellendi.',
     ],
 
     'doctor' => [

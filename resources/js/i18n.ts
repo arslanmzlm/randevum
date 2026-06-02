@@ -398,6 +398,9 @@ export const i18n = createI18n({
                 notifications_off: 'Kapalı',
                 not_specified: 'Belirtilmemiş',
                 no_notes: 'Bu hasta için not eklenmemiş.',
+                notes_edit: 'Notu düzenle',
+                notes_placeholder:
+                    'Hasta ile ilgili genel not — örn. "Diyabetik, adrenalin yok"',
                 no_treatments: 'Bu hasta için henüz tedavi kaydı yok.',
                 no_treatments_hint:
                     'Tedaviler eklendiğinde burada listelenecek.',

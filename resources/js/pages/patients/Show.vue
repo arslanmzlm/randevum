@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, router } from '@inertiajs/vue3';
+import { Head, router, useForm } from '@inertiajs/vue3';
 import {
     IconArrowLeft,
     IconCalendarEvent,
@@ -11,13 +11,14 @@ import {
     IconUser,
 } from '@tabler/icons-vue';
 import { useConfirm } from 'primevue/useconfirm';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import ButtonLink from '@/components/ButtonLink.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { destroy, edit, index } from '@/routes/patients';
-import type { PatientShowProps } from '@/types/patient';
+import { update as updateNotes } from '@/routes/patients/notes';
+import type { PatientNotesFormData, PatientShowProps } from '@/types/patient';
 
 defineOptions({ layout: AppLayout });
 
@@ -78,6 +79,33 @@ const contactRows = computed(() => [
         value: genderLabel.value,
     },
 ]);
+
+const editingNotes = ref(false);
+
+const notesForm = useForm<PatientNotesFormData>({
+    notes: props.patient.notes ?? '',
+});
+
+function startEditNotes(): void {
+    notesForm.clearErrors();
+    notesForm.notes = props.patient.notes ?? '';
+    editingNotes.value = true;
+}
+
+function cancelEditNotes(): void {
+    notesForm.clearErrors();
+    notesForm.notes = props.patient.notes ?? '';
+    editingNotes.value = false;
+}
+
+function saveNotes(): void {
+    notesForm.patch(updateNotes(props.patient.id).url, {
+        preserveScroll: true,
+        onSuccess: () => {
+            editingNotes.value = false;
+        },
+    });
+}
 
 function removePatient(): void {
     confirm.require({
@@ -205,16 +233,69 @@ function removePatient(): void {
                         <h3 class="text-sm font-semibold text-surface-900">
                             {{ t('patient.sections.notes') }}
                         </h3>
+                        <Button
+                            v-if="canEditNotes && !editingNotes"
+                            type="button"
+                            severity="secondary"
+                            outlined
+                            size="small"
+                            class="ml-auto"
+                            :label="t('patient.notes_edit')"
+                            @click="startEditNotes"
+                        >
+                            <template #icon>
+                                <IconPencil class="size-4" />
+                            </template>
+                        </Button>
                     </header>
-                    <p
-                        v-if="patient.notes"
-                        class="text-sm whitespace-pre-line text-surface-700"
-                    >
-                        {{ patient.notes }}
-                    </p>
-                    <p v-else class="text-sm text-surface-400">
-                        {{ t('patient.no_notes') }}
-                    </p>
+
+                    <template v-if="editingNotes">
+                        <Textarea
+                            v-model="notesForm.notes"
+                            rows="4"
+                            auto-resize
+                            fluid
+                            :invalid="Boolean(notesForm.errors.notes)"
+                            :placeholder="t('patient.notes_placeholder')"
+                            :aria-label="t('patient.sections.notes')"
+                        />
+                        <small
+                            v-if="notesForm.errors.notes"
+                            class="text-red-500"
+                        >
+                            {{ notesForm.errors.notes }}
+                        </small>
+                        <div class="flex justify-end gap-2">
+                            <Button
+                                type="button"
+                                severity="secondary"
+                                outlined
+                                size="small"
+                                :label="t('common.cancel')"
+                                :disabled="notesForm.processing"
+                                @click="cancelEditNotes"
+                            />
+                            <Button
+                                type="button"
+                                size="small"
+                                :label="t('patient.save')"
+                                :loading="notesForm.processing"
+                                @click="saveNotes"
+                            />
+                        </div>
+                    </template>
+
+                    <template v-else>
+                        <p
+                            v-if="patient.notes"
+                            class="text-sm whitespace-pre-line text-surface-700"
+                        >
+                            {{ patient.notes }}
+                        </p>
+                        <p v-else class="text-sm text-surface-400">
+                            {{ t('patient.no_notes') }}
+                        </p>
+                    </template>
                 </div>
             </section>
 

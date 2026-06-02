@@ -36,6 +36,7 @@ return [
         'updated' => 'Patient details updated.',
         'deleted' => 'Patient record deleted.',
         'restored' => 'Patient record restored.',
+        'notes_updated' => 'Patient note updated.',
     ],
 
     'doctor' => [

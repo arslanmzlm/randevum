@@ -43,6 +43,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/patients/{patient}/edit', [PatientController::class, 'edit'])->name('patients.edit');
     Route::put('/patients/{patient}', [PatientController::class, 'update'])->name('patients.update');
     Route::delete('/patients/{patient}', [PatientController::class, 'destroy'])->name('patients.destroy');
+    Route::patch('/patients/{patient}/notes', [PatientController::class, 'updateNotes'])->name('patients.notes.update');
     Route::post('/patients/{patient}/restore', [PatientController::class, 'restore'])->name('patients.restore');
 });
 
