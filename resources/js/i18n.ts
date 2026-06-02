@@ -25,6 +25,7 @@ export const i18n = createI18n({
                 patients: 'Hastalar',
                 services: 'Hizmetler',
                 products: 'Ürünler',
+                availability: 'İzin ve Kapalı Günler',
                 account: 'Hesabım',
                 profile_mine: 'Profilim',
             },
@@ -323,6 +324,44 @@ export const i18n = createI18n({
                         'Stok negatife düşebilir; başlangıç değeri boş bırakılırsa 0 kabul edilir.',
                     stock: 'Stok adedini hızlıca güncelleyin. Negatif değer girilebilir.',
                 },
+            },
+            availability: {
+                title: 'İzin ve Kapalı Günler',
+                subtitle:
+                    'Doktorların izin, rapor ve kapalı günlerini yönetin.',
+                add: 'İzin / Kapalı Gün Ekle',
+                dialog_title: 'Müsaitlik İstisnası Ekle',
+                scope_doctor: 'Tek doktor',
+                scope_clinic: 'Tüm klinik',
+                clinic_wide_hint:
+                    'Seçilen tarih(ler) tüm aktif doktorlar için kapalı olarak işaretlenir.',
+                all_day: 'Tüm gün',
+                all_day_badge: 'Tüm gün',
+                filter_doctor: 'Doktor',
+                fields: {
+                    doctor: 'Doktor',
+                    date_range: 'Tarih aralığı',
+                    starts_at: 'Başlangıç',
+                    ends_at: 'Bitiş',
+                    reason: 'Açıklama',
+                },
+                columns: {
+                    doctor: 'Doktor',
+                    range: 'Tarih / Saat',
+                    reason: 'Açıklama',
+                    created_by: 'Ekleyen',
+                    actions: 'İşlemler',
+                },
+                empty: 'Yaklaşan müsaitlik istisnası yok.',
+                empty_filtered: 'Seçilen doktor için yaklaşan istisna yok.',
+                empty_has_past:
+                    'Yaklaşan istisna yok. Geçmiş kayıtlar için "Geçmişi göster"i açın.',
+                show_past: 'Geçmişi göster',
+                past_badge: 'Geçmiş',
+                remove: 'Kaldır',
+                remove_confirm:
+                    'Bu müsaitlik istisnasını kaldırmak istediğinize emin misiniz?',
+                save: 'Kaydet',
             },
             patient: {
                 title: 'Hastalar',

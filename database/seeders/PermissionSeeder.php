@@ -38,6 +38,9 @@ class PermissionSeeder extends Seeder
         'patients.update' => ['owner', 'manager', 'doctor', 'receptionist'],
         'patients.delete' => ['owner', 'manager', 'doctor', 'receptionist'],
         'patients.note.update' => ['owner', 'manager', 'doctor', 'receptionist'],
+        // schedule exceptions — doctor manages own via policy ownership branch (not a permission)
+        'scheduleExceptions.viewAny' => ['owner', 'manager', 'doctor', 'receptionist', 'assistant'],
+        'scheduleExceptions.manage' => ['owner', 'manager', 'receptionist'],
     ];
 
     public function run(): void

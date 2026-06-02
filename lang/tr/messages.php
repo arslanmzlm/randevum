@@ -39,6 +39,12 @@ return [
         'notes_updated' => 'Hasta notu güncellendi.',
     ],
 
+    'schedule_exception' => [
+        'added' => 'Müsaitlik istisnası eklendi.',
+        'clinic_wide_added' => 'Klinik geneli kapatma tüm doktorlar için oluşturuldu.',
+        'removed' => 'Müsaitlik istisnası kaldırıldı.',
+    ],
+
     'doctor' => [
         'profile_created' => 'Doktor profili oluşturuldu.',
         'profile_updated' => 'Doktor profili güncellendi.',

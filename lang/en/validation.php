@@ -246,6 +246,10 @@ return [
         'notification_enabled' => 'SMS notifications',
         'is_legacy' => 'legacy patient',
         'notes' => 'notes',
+        // schedule exceptions
+        'scope' => 'scope',
+        'starts_at' => 'start date',
+        'ends_at' => 'end date',
         // doctor profile
         'title' => 'title',
         'specialization' => 'specialization',

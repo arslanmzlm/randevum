@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Core\CoreServiceProvider;
 use App\Modules\Identity\IdentityServiceProvider;
 use App\Modules\Media\MediaServiceProvider;
 use App\Modules\Messaging\MessagingServiceProvider;
@@ -12,6 +13,7 @@ return [
     AppServiceProvider::class,
     FortifyServiceProvider::class,
     HorizonServiceProvider::class,
+    CoreServiceProvider::class,
     IdentityServiceProvider::class,
     MediaServiceProvider::class,
     MessagingServiceProvider::class,

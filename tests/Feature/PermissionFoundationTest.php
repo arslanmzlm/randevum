@@ -15,7 +15,7 @@ beforeEach(function (): void {
     app(PermissionRegistrar::class)->setPermissionsTeamId(null);
 });
 
-it('grants the owner role the full clinic + doctor + service + product + patient permission set', function (): void {
+it('grants the owner role the full clinic + doctor + service + product + patient + availability permission set', function (): void {
     $owner = Role::findByName('owner', 'web');
 
     expect($owner->permissions->pluck('name')->all())
@@ -41,6 +41,8 @@ it('grants the owner role the full clinic + doctor + service + product + patient
             'patients.update',
             'patients.delete',
             'patients.note.update',
+            'scheduleExceptions.viewAny',
+            'scheduleExceptions.manage',
         ]);
 });
 
@@ -68,6 +70,8 @@ it('grants the manager role full management except clinic and self-create', func
             'patients.update',
             'patients.delete',
             'patients.note.update',
+            'scheduleExceptions.viewAny',
+            'scheduleExceptions.manage',
         ]);
 });
 
@@ -83,6 +87,7 @@ it('grants the doctor role read access to catalog and full patient management', 
             'patients.update',
             'patients.delete',
             'patients.note.update',
+            'scheduleExceptions.viewAny',
         ]);
 });
 
@@ -96,15 +101,18 @@ it('grants receptionist full patient management and doctor list access', functio
             'patients.update',
             'patients.delete',
             'patients.note.update',
+            'scheduleExceptions.viewAny',
+            'scheduleExceptions.manage',
         ]);
 });
 
-it('grants assistant read-only access to doctors and patients', function (): void {
+it('grants assistant read-only access to doctors, patients, and availability', function (): void {
     expect(Role::findByName('assistant', 'web')->permissions->pluck('name')->all())
         ->toEqualCanonicalizing([
             'doctors.viewAny',
             'patients.viewAny',
             'patients.view',
+            'scheduleExceptions.viewAny',
         ]);
 });
 

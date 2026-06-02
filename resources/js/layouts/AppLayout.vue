@@ -4,6 +4,7 @@ import {
     IconArrowsMaximize,
     IconArrowsMinimize,
     IconBuildingHospital,
+    IconCalendarOff,
     IconClipboardList,
     IconHome,
     IconLogout,
@@ -23,6 +24,7 @@ import { edit as clinicEdit } from '@/routes/clinic';
 import { index as doctorsIndex, mine as doctorsMine } from '@/routes/doctors';
 import { index as patientsIndex, show as patientShow } from '@/routes/patients';
 import { index as productsIndex } from '@/routes/products';
+import { index as availabilityIndex } from '@/routes/schedule-exceptions';
 import { index as servicesIndex } from '@/routes/services';
 import type { PatientSearchResult } from '@/types/patient';
 
@@ -45,6 +47,9 @@ const canViewProducts = computed(
 );
 const canViewPatients = computed(
     () => page.props.auth?.canViewPatients === true,
+);
+const canViewAvailability = computed(
+    () => page.props.auth?.canViewAvailability === true,
 );
 const clinic = computed(() => page.props.activeClinic ?? null);
 const { width: contentWidth, toggle: toggleWidth } = useContentWidth();
@@ -106,6 +111,15 @@ const navItems = computed(() => [
                   label: t('nav.products'),
                   href: productsIndex().url,
                   icon: IconPackage,
+              },
+          ]
+        : []),
+    ...(canViewAvailability.value
+        ? [
+              {
+                  label: t('nav.availability'),
+                  href: availabilityIndex().url,
+                  icon: IconCalendarOff,
               },
           ]
         : []),

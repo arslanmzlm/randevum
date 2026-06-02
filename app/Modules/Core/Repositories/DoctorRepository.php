@@ -42,4 +42,31 @@ class DoctorRepository
     {
         $doctor->delete();
     }
+
+    /**
+     * All active doctors in the active clinic with their user loaded.
+     *
+     * ClinicScope on Doctor already limits results to the active clinic.
+     *
+     * @return Collection<int, Doctor>
+     */
+    public function activeForClinic(): Collection
+    {
+        return Doctor::with('user')
+            ->where('is_active', true)
+            ->orderBy('id')
+            ->get();
+    }
+
+    /**
+     * Find a single clinic doctor by profile id (active or inactive).
+     *
+     * Returns null when the doctor does not exist in the active clinic.
+     */
+    public function findForClinic(int $doctorId): ?Doctor
+    {
+        return Doctor::with('user')
+            ->where('id', $doctorId)
+            ->first();
+    }
 }

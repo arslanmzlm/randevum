@@ -5,6 +5,7 @@ use App\Modules\Catalog\Http\Controllers\ServiceController;
 use App\Modules\Core\Http\Controllers\ClinicController;
 use App\Modules\Core\Http\Controllers\DoctorController;
 use App\Modules\Medical\Http\Controllers\PatientController;
+use App\Modules\Scheduling\Http\Controllers\ScheduleExceptionController;
 use Illuminate\Support\Facades\Route;
 
 // Clinic profile (authenticated owner).
@@ -57,6 +58,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/services/{service}/edit', [ServiceController::class, 'edit'])->name('services.edit');
     Route::put('/services/{service}', [ServiceController::class, 'update'])->name('services.update');
     Route::delete('/services/{service}', [ServiceController::class, 'destroy'])->name('services.destroy');
+});
+
+// Doctor availability / schedule exceptions.
+Route::middleware('auth')->group(function () {
+    Route::get('/schedule-exceptions', [ScheduleExceptionController::class, 'index'])->name('schedule-exceptions.index');
+    Route::post('/schedule-exceptions', [ScheduleExceptionController::class, 'store'])->name('schedule-exceptions.store');
+    Route::delete('/schedule-exceptions/{scheduleException}', [ScheduleExceptionController::class, 'destroy'])->name('schedule-exceptions.destroy');
 });
 
 // Product catalog.

@@ -29,4 +29,6 @@ export type Auth = {
     canViewProducts?: boolean;
     /** Clinic staff with patients.viewAny: may view the patient list. */
     canViewPatients?: boolean;
+    /** Clinic staff with scheduleExceptions.viewAny: may view the availability screen. */
+    canViewAvailability?: boolean;
 };

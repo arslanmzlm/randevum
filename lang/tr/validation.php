@@ -117,6 +117,10 @@ return [
         'notification_enabled' => 'SMS bildirimleri',
         'is_legacy' => 'Sistem öncesi hasta',
         'notes' => 'Notlar',
+        // schedule exceptions
+        'scope' => 'Kapsam',
+        'starts_at' => 'Başlangıç tarihi',
+        'ends_at' => 'Bitiş tarihi',
         // doctor profile
         'title' => 'Ünvan',
         'specialization' => 'Uzmanlık',

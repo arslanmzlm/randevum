@@ -39,6 +39,12 @@ return [
         'notes_updated' => 'Patient note updated.',
     ],
 
+    'schedule_exception' => [
+        'added' => 'Availability exception added.',
+        'clinic_wide_added' => 'Clinic-wide closure created for all doctors.',
+        'removed' => 'Availability exception removed.',
+    ],
+
     'doctor' => [
         'profile_created' => 'Doctor profile created.',
         'profile_updated' => 'Doctor profile updated.',
