@@ -15,7 +15,7 @@ import {
     IconUserCircle,
     IconUsers,
 } from '@tabler/icons-vue';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import AppToaster from '@/components/AppToaster.vue';
 import PatientSearchSelect from '@/components/PatientSearchSelect.vue';
@@ -191,8 +191,24 @@ function doLogout(): void {
     router.post(logout().url);
 }
 
+const patientSearch = ref<{ focus: () => void } | null>(null);
+
 function goToPatient(patient: PatientSearchResult): void {
     router.visit(patientShow(patient.id).url);
+}
+
+// Ctrl/Cmd+K focuses the sidebar patient search from anywhere in the shell.
+function onSearchShortcut(event: KeyboardEvent): void {
+    if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'k') {
+        return;
+    }
+
+    if (!canViewPatients.value) {
+        return;
+    }
+
+    event.preventDefault();
+    patientSearch.value?.focus();
 }
 
 // One-time, dismissible nudge to change the admin-set password on first-ever
@@ -207,6 +223,12 @@ onMounted(() => {
     if (flash?.password_reminder) {
         showPasswordReminder.value = true;
     }
+
+    window.addEventListener('keydown', onSearchShortcut);
+});
+
+onBeforeUnmount(() => {
+    window.removeEventListener('keydown', onSearchShortcut);
 });
 
 function goToPasswordChange(): void {
@@ -265,6 +287,14 @@ function goToPasswordChange(): void {
                 </span>
             </div>
 
+            <div v-if="canViewPatients" class="px-3 pb-2">
+                <PatientSearchSelect
+                    ref="patientSearch"
+                    class="w-full"
+                    @select="goToPatient"
+                />
+            </div>
+
             <nav class="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-4">
                 <Link
                     v-for="item in navItems"
@@ -303,16 +333,8 @@ function goToPasswordChange(): void {
 
         <div class="flex min-w-0 flex-1 flex-col overflow-hidden">
             <header
-                class="flex h-16 shrink-0 items-center justify-between gap-2 border-b border-surface-200 bg-surface-0 px-6"
+                class="flex h-16 shrink-0 items-center justify-end gap-2 border-b border-surface-200 bg-surface-0 px-6"
             >
-                <div class="min-w-0 flex-1">
-                    <PatientSearchSelect
-                        v-if="canViewPatients"
-                        class="w-full max-w-xs"
-                        @select="goToPatient"
-                    />
-                </div>
-
                 <div class="flex shrink-0 items-center gap-1">
                     <Button
                         type="button"

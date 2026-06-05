@@ -102,6 +102,15 @@ async function runSearch(query: string): Promise<void> {
 function onItemSelect(event: { value: PatientSearchResult }): void {
     emit('select', event.value);
 }
+
+const autocomplete = ref();
+
+// Lets a parent (e.g. the sidebar's Ctrl/Cmd+K shortcut) focus the input.
+function focus(): void {
+    autocomplete.value?.$el?.querySelector('input')?.focus();
+}
+
+defineExpose({ focus });
 </script>
 
 <template>
@@ -110,6 +119,7 @@ function onItemSelect(event: { value: PatientSearchResult }): void {
             <IconUserSearch class="size-4 text-surface-400" />
         </InputIcon>
         <AutoComplete
+            ref="autocomplete"
             v-model="model"
             :suggestions="suggestions"
             option-label="full_name"
