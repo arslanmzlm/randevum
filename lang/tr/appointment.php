@@ -1,0 +1,37 @@
+<?php
+
+return [
+
+    'title' => 'Randevu Oluştur',
+    'created' => ':patient için :time randevusu oluşturuldu.',
+
+    'fields' => [
+        'patient' => 'Hasta',
+        'doctor' => 'Doktor',
+        'service' => 'Hizmet',
+        'starts_at' => 'Randevu tarihi ve saati',
+        'duration_minutes' => 'Süre (dakika)',
+        'is_walk_in' => 'Randevusuz hasta',
+    ],
+
+    'hints' => [
+        'service' => 'Hizmet seçilirse süre otomatik belirlenir.',
+        'duration_minutes' => 'Boş bırakılırsa hizmet veya klinik varsayılanı kullanılır.',
+        'is_walk_in' => 'Randevusuz hastalar çalışma saatleri dışında kabul edilmez; çakışma ve izin kontrolü uygulanmaz.',
+    ],
+
+    'walk_in_label' => 'Randevusuz (walk-in)',
+
+    'new_patient_link' => 'Yeni hasta ekle',
+
+    'errors' => [
+        'outside_hours' => 'Seçilen saat, kliniğin çalışma saatleri veya mola dışında.',
+        'exception' => 'Seçilen saatte doktorun izni veya kapalı günü mevcut.',
+        'conflict' => 'Seçilen saatte doktorun başka bir randevusu bulunuyor.',
+        'doctor_not_allowed' => 'Yalnızca kendi adınıza randevu oluşturabilirsiniz.',
+        'phone_trashed' => 'Bu telefon numarası silinmiş bir hastaya ait. Hasta ekranından geri yükleyin.',
+    ],
+
+    'submit' => 'Randevu Oluştur',
+
+];

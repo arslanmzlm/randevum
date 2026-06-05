@@ -5,6 +5,7 @@ import PrimeVue from 'primevue/config';
 import ConfirmationService from 'primevue/confirmationservice';
 import ToastService from 'primevue/toastservice';
 import { i18n } from './i18n';
+import { trLocale } from './primevue-locale';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -42,6 +43,7 @@ createInertiaApp({
     },
     withApp: (app) => {
         app.use(PrimeVue, {
+            locale: trLocale,
             theme: {
                 preset: AppPreset,
                 options: {

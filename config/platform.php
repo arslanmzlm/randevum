@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\AppointmentStatus;
+
 return [
 
     /*
@@ -31,8 +33,7 @@ return [
     */
 
     'appointment' => [
-        // TODO: reference AppointmentStatus enum once it exists; allowed set is provisional (decide later).
-        'hard_delete_allowed_statuses' => ['confirmed'],
+        'hard_delete_allowed_statuses' => [AppointmentStatus::Confirmed->value],
     ],
 
     /*

@@ -11,8 +11,15 @@ const props = withDefaults(
     defineProps<{
         autofocus?: boolean;
         placeholder?: string;
+        disabled?: boolean;
+        invalid?: boolean;
     }>(),
-    { autofocus: false, placeholder: undefined },
+    {
+        autofocus: false,
+        placeholder: undefined,
+        disabled: false,
+        invalid: false,
+    },
 );
 
 const emit = defineEmits<{
@@ -108,8 +115,11 @@ function onItemSelect(event: { value: PatientSearchResult }): void {
             option-label="full_name"
             :loading="loading"
             :autofocus="autofocus"
+            :disabled="disabled"
+            :invalid="invalid"
             :placeholder="placeholderText"
             :complete-on-focus="false"
+            show-clear
             input-class="w-full pl-10"
             fluid
             @complete="onComplete"

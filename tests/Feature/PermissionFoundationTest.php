@@ -43,6 +43,8 @@ it('grants the owner role the full clinic + doctor + service + product + patient
             'patients.note.update',
             'scheduleExceptions.viewAny',
             'scheduleExceptions.manage',
+            'appointments.create',
+            'appointments.assignDoctor',
         ]);
 });
 
@@ -72,6 +74,8 @@ it('grants the manager role full management except clinic and self-create', func
             'patients.note.update',
             'scheduleExceptions.viewAny',
             'scheduleExceptions.manage',
+            'appointments.create',
+            'appointments.assignDoctor',
         ]);
 });
 
@@ -88,6 +92,7 @@ it('grants the doctor role read access to catalog and full patient management', 
             'patients.delete',
             'patients.note.update',
             'scheduleExceptions.viewAny',
+            'appointments.create',
         ]);
 });
 
@@ -103,6 +108,8 @@ it('grants receptionist full patient management and doctor list access', functio
             'patients.note.update',
             'scheduleExceptions.viewAny',
             'scheduleExceptions.manage',
+            'appointments.create',
+            'appointments.assignDoctor',
         ]);
 });
 

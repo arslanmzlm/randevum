@@ -134,7 +134,7 @@ function removeProduct(product: Product): void {
                     :label="t('product.add')"
                 >
                     <template #icon>
-                        <IconPlus class="size-4" />
+                        <IconPlus />
                     </template>
                 </ButtonLink>
             </template>
@@ -244,7 +244,7 @@ function removeProduct(product: Product): void {
                                 v-tooltip.top="t('product.update_stock')"
                                 @click="openStockDialog(data)"
                             >
-                                <IconStack2 class="size-4" />
+                                <IconStack2 />
                             </Button>
                         </div>
                     </template>
@@ -290,7 +290,7 @@ function removeProduct(product: Product): void {
                                 :aria-label="t('product.remove')"
                                 @click="removeProduct(data)"
                             >
-                                <IconTrash class="size-4" />
+                                <IconTrash />
                             </Button>
                         </div>
                     </template>

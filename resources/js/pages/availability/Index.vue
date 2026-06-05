@@ -204,7 +204,7 @@ function removeException(exception: ScheduleException): void {
                     @click="openDialog"
                 >
                     <template #icon>
-                        <IconPlus class="size-4" />
+                        <IconPlus />
                     </template>
                 </Button>
             </template>
@@ -325,7 +325,7 @@ function removeException(exception: ScheduleException): void {
                                 :aria-label="t('availability.remove')"
                                 @click="removeException(data)"
                             >
-                                <IconTrash class="size-4" />
+                                <IconTrash />
                             </Button>
                         </div>
                     </template>

@@ -142,7 +142,7 @@ function removePatient(): void {
                     outlined
                 >
                     <template #icon>
-                        <IconArrowLeft class="size-4" />
+                        <IconArrowLeft />
                     </template>
                 </ButtonLink>
                 <ButtonLink
@@ -151,7 +151,7 @@ function removePatient(): void {
                     :label="t('patient.edit')"
                 >
                     <template #icon>
-                        <IconPencil class="size-4" />
+                        <IconPencil />
                     </template>
                 </ButtonLink>
                 <Button
@@ -163,7 +163,7 @@ function removePatient(): void {
                     @click="removePatient"
                 >
                     <template #icon>
-                        <IconTrash class="size-4" />
+                        <IconTrash />
                     </template>
                 </Button>
             </template>
@@ -244,7 +244,7 @@ function removePatient(): void {
                             @click="startEditNotes"
                         >
                             <template #icon>
-                                <IconPencil class="size-4" />
+                                <IconPencil />
                             </template>
                         </Button>
                     </header>

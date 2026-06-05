@@ -31,4 +31,6 @@ export type Auth = {
     canViewPatients?: boolean;
     /** Clinic staff with scheduleExceptions.viewAny: may view the availability screen. */
     canViewAvailability?: boolean;
+    /** Clinic staff with appointments.create: may open the create-appointment form. */
+    canCreateAppointments?: boolean;
 };

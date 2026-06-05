@@ -106,7 +106,7 @@ function acceptRestore(): void {
                     outlined
                 >
                     <template #icon>
-                        <IconArrowLeft class="size-4" />
+                        <IconArrowLeft />
                     </template>
                 </ButtonLink>
             </template>

@@ -41,6 +41,10 @@ class PermissionSeeder extends Seeder
         // schedule exceptions — doctor manages own via policy ownership branch (not a permission)
         'scheduleExceptions.viewAny' => ['owner', 'manager', 'doctor', 'receptionist', 'assistant'],
         'scheduleExceptions.manage' => ['owner', 'manager', 'receptionist'],
+        // appointments
+        'appointments.create' => ['owner', 'manager', 'doctor', 'receptionist'],
+        // Book on behalf of any doctor. Without it, a doctor is locked to their own profile.
+        'appointments.assignDoctor' => ['owner', 'manager', 'receptionist'],
     ];
 
     public function run(): void

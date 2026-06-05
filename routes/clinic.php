@@ -5,6 +5,7 @@ use App\Modules\Catalog\Http\Controllers\ServiceController;
 use App\Modules\Core\Http\Controllers\ClinicController;
 use App\Modules\Core\Http\Controllers\DoctorController;
 use App\Modules\Medical\Http\Controllers\PatientController;
+use App\Modules\Scheduling\Http\Controllers\AppointmentController;
 use App\Modules\Scheduling\Http\Controllers\ScheduleExceptionController;
 use Illuminate\Support\Facades\Route;
 
@@ -58,6 +59,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/services/{service}/edit', [ServiceController::class, 'edit'])->name('services.edit');
     Route::put('/services/{service}', [ServiceController::class, 'update'])->name('services.update');
     Route::delete('/services/{service}', [ServiceController::class, 'destroy'])->name('services.destroy');
+});
+
+// Appointments — manual/walk-in creation.
+// Literal 'create' is declared BEFORE any future {appointment} segment.
+Route::middleware('auth')->group(function () {
+    Route::get('/appointments/create', [AppointmentController::class, 'create'])->name('appointments.create');
+    Route::post('/appointments', [AppointmentController::class, 'store'])->name('appointments.store');
 });
 
 // Doctor availability / schedule exceptions.

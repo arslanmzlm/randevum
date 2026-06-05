@@ -46,4 +46,26 @@
     .form-group {
         @apply flex flex-col gap-1.5;
     }
+
+    /* Tabler SVG icons inside PrimeVue buttons are sized here, per button size, instead of a
+       per-call inline `size-*` utility — the button box is fixed, so the icon should track it.
+       Label↔icon spacing comes from the button's own gap; never add mr/ml on the icon. */
+    .p-button svg {
+        width: 1rem;
+        height: 1rem;
+    }
+    .p-button-sm svg {
+        width: 0.875rem;
+        height: 0.875rem;
+    }
+    .p-button-lg svg {
+        width: 1.25rem;
+        height: 1.25rem;
+    }
+
+    /* An inline DatePicker has no input to carry the invalid border, so put it on the panel
+       itself — reuse the same red as invalid text inputs (InputText/InputMask). */
+    .datepicker-invalid .p-datepicker-panel {
+        border-color: var(--p-inputtext-invalid-border-color);
+    }
 }

@@ -20,6 +20,7 @@ export const i18n = createI18n({
             },
             nav: {
                 dashboard: 'Ana sayfa',
+                appointments_create: 'Randevu Oluştur',
                 clinic: 'Klinik profili',
                 doctors: 'Doktorlar',
                 patients: 'Hastalar',
@@ -450,6 +451,46 @@ export const i18n = createI18n({
                     accept: 'Geri yükle',
                     reject: 'Vazgeç',
                 },
+            },
+            appointment: {
+                title: 'Randevu Oluştur',
+                subtitle:
+                    'Telefonla veya randevusuz gelen hastalar için manuel randevu oluşturun.',
+                sections: {
+                    patient: 'Hasta',
+                    datetime: 'Tarih ve Saat',
+                    details: 'Randevu Detayları',
+                },
+                fields: {
+                    patient: 'Mevcut hastayı ara',
+                    doctor: 'Doktor',
+                    service: 'Hizmet',
+                    date: 'Tarih',
+                    time: 'Saat',
+                    duration_minutes: 'Süre (dakika)',
+                    is_walk_in: 'Randevusuz hasta',
+                },
+                new_patient: {
+                    divider: 'veya yeni hasta oluştur',
+                    first_name: 'Ad',
+                    last_name: 'Soyad',
+                    phone: 'Telefon',
+                    email: 'E-posta',
+                    hint: 'Temel bilgilerle hızlı kayıt oluşturulur. Detaylı giriş için "Detaylı hasta ekle" bağlantısını kullanın.',
+                },
+                clear_patient: 'Seçimi kaldır',
+                hints: {
+                    service: 'Hizmet seçilirse süre otomatik belirlenir.',
+                    duration_minutes:
+                        'Boş bırakılırsa hizmet veya klinik varsayılanı kullanılır.',
+                    is_walk_in:
+                        'Randevusuz (kapıdan) gelen hasta için işaretleyin. İşaretlendiğinde, doktorun o saatte başka bir randevusu veya izni olsa bile randevu oluşturulur; yalnızca kliniğin çalışma saatleri kontrol edilir.',
+                },
+                time_placeholder: 'SS:DD',
+                patient_placeholder: 'Ad veya telefon ile ara…',
+                new_patient_link: 'Detaylı hasta ekle',
+                service_option: '{name} · {minutes} dk',
+                submit: 'Randevu Oluştur',
             },
             password_reminder: {
                 title: 'Şifrenizi güncelleyin',

@@ -1,0 +1,101 @@
+<?php
+
+namespace App\Modules\Scheduling\Http\Controllers;
+
+use App\Http\Controllers\Controller;
+use App\Models\Appointment;
+use App\Models\Clinic;
+use App\Models\Patient;
+use App\Models\Service;
+use App\Modules\Core\Contracts\DoctorDirectoryContract;
+use App\Modules\Core\Support\Toast;
+use App\Modules\Scheduling\Http\Requests\StoreAppointmentRequest;
+use App\Modules\Scheduling\Services\AppointmentService;
+use App\Support\ClinicContext;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class AppointmentController extends Controller
+{
+    public function __construct(
+        private AppointmentService $service,
+        private DoctorDirectoryContract $doctorDirectory,
+        private ClinicContext $clinicContext,
+    ) {}
+
+    public function create(Request $request): Response
+    {
+        $this->authorize('create', Appointment::class);
+
+        $clinic = Clinic::findOrFail($this->clinicContext->id());
+
+        $doctors = $this->doctorDirectory->activeForClinic()
+            ->map(fn ($d) => ['id' => $d->id, 'display_name' => $d->display_name]);
+
+        $services = Service::active()
+            ->select(['id', 'name', 'duration_minutes', 'price'])
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Service $s) => [
+                'id' => $s->id,
+                'name' => $s->name,
+                'duration_minutes' => $s->duration_minutes,
+                'price' => $s->price,
+            ]);
+
+        $preselectedPatient = null;
+        if ($patientId = $request->integer('patient_id')) {
+            $patient = Patient::find($patientId);
+            if ($patient) {
+                $preselectedPatient = [
+                    'id' => $patient->id,
+                    'full_name' => trim($patient->first_name.' '.$patient->last_name),
+                    'phone' => $patient->getRawOriginal('phone'),
+                ];
+            }
+        }
+
+        $user = $request->user();
+
+        return Inertia::render('appointments/Create', [
+            'doctors' => $doctors,
+            'services' => $services,
+            'defaultSlotDuration' => $clinic->default_slot_duration_minutes,
+            'workingHours' => $clinic->working_hours,
+            'timezone' => $clinic->timezone,
+            'preselectedPatient' => $preselectedPatient,
+            // Cross-doctor booking gate: without it the doctor select locks to the user's own profile.
+            'canAssignDoctor' => $user->can('appointments.assignDoctor'),
+            'ownDoctorId' => $user->doctor?->id,
+        ]);
+    }
+
+    public function store(StoreAppointmentRequest $request): RedirectResponse
+    {
+        $this->authorize('create', Appointment::class);
+
+        $appointment = $this->service->create($request->validated(), $request->user());
+
+        $appointment->loadMissing('patient');
+
+        $patientName = trim(
+            $appointment->patient->first_name.' '.$appointment->patient->last_name
+        );
+        $slot = $appointment->starts_at
+            ->setTimezone($this->activeClinicTimezone())
+            ->format('d.m.Y H:i');
+
+        Toast::success(__('appointment.created', ['patient' => $patientName, 'time' => $slot]));
+
+        return to_route('appointments.create');
+    }
+
+    private function activeClinicTimezone(): string
+    {
+        $clinic = Clinic::find($this->clinicContext->id());
+
+        return $clinic?->timezone ?? 'UTC';
+    }
+}

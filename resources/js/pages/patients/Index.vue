@@ -95,7 +95,7 @@ function removePatient(patient: Patient): void {
                     :label="t('patient.add')"
                 >
                     <template #icon>
-                        <IconPlus class="size-4" />
+                        <IconPlus />
                     </template>
                 </ButtonLink>
             </template>
@@ -114,7 +114,7 @@ function removePatient(patient: Patient): void {
                 size="small"
             >
                 <template #icon>
-                    <IconPlus class="size-4" />
+                    <IconPlus />
                 </template>
             </ButtonLink>
         </div>
@@ -245,7 +245,7 @@ function removePatient(patient: Patient): void {
                                 :aria-label="t('patient.remove')"
                                 @click="removePatient(data)"
                             >
-                                <IconTrash class="size-4" />
+                                <IconTrash />
                             </Button>
                         </div>
                     </template>

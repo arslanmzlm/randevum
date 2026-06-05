@@ -2,11 +2,14 @@
 
 namespace App\Providers;
 
+use App\Models\Appointment;
 use App\Models\Clinic;
 use App\Models\User;
+use App\Policies\AppointmentPolicy;
 use App\Policies\ClinicPolicy;
 use App\Support\ClinicContext;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -30,6 +33,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->configureGates();
+        $this->configureMorphMap();
     }
 
     /**
@@ -39,6 +43,19 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::define('viewPulse', fn (User $user): bool => $user->hasRole('superadmin'));
         Gate::policy(Clinic::class, ClinicPolicy::class);
+        Gate::policy(Appointment::class, AppointmentPolicy::class);
+    }
+
+    /**
+     * Non-enforcing morph map so status_logs (and future polymorphic tables) persist
+     * slug strings instead of class names. Non-enforcing so Spatie MediaLibrary's
+     * class-name model_type rows remain unaffected.
+     */
+    protected function configureMorphMap(): void
+    {
+        Relation::morphMap([
+            'appointment' => Appointment::class,
+        ]);
     }
 
     /**

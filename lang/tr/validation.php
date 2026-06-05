@@ -121,6 +121,16 @@ return [
         'scope' => 'Kapsam',
         'starts_at' => 'Başlangıç tarihi',
         'ends_at' => 'Bitiş tarihi',
+        // appointments
+        'patient_id' => 'Hasta',
+        'doctor_id' => 'Doktor',
+        'service_id' => 'Hizmet',
+        'duration_minutes' => 'Süre',
+        'is_walk_in' => 'Randevusuz hasta',
+        'new_patient.first_name' => 'Ad',
+        'new_patient.last_name' => 'Soyad',
+        'new_patient.phone' => 'Telefon',
+        'new_patient.email' => 'E-posta adresi',
         // doctor profile
         'title' => 'Ünvan',
         'specialization' => 'Uzmanlık',

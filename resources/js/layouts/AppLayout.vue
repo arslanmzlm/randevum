@@ -5,6 +5,7 @@ import {
     IconArrowsMinimize,
     IconBuildingHospital,
     IconCalendarOff,
+    IconCalendarPlus,
     IconClipboardList,
     IconHome,
     IconLogout,
@@ -20,6 +21,7 @@ import AppToaster from '@/components/AppToaster.vue';
 import PatientSearchSelect from '@/components/PatientSearchSelect.vue';
 import { useContentWidth } from '@/composables/useContentWidth';
 import { account, dashboard, logout } from '@/routes';
+import { create as appointmentCreate } from '@/routes/appointments';
 import { edit as clinicEdit } from '@/routes/clinic';
 import { index as doctorsIndex, mine as doctorsMine } from '@/routes/doctors';
 import { index as patientsIndex, show as patientShow } from '@/routes/patients';
@@ -51,6 +53,9 @@ const canViewPatients = computed(
 const canViewAvailability = computed(
     () => page.props.auth?.canViewAvailability === true,
 );
+const canCreateAppointments = computed(
+    () => page.props.auth?.canCreateAppointments === true,
+);
 const clinic = computed(() => page.props.activeClinic ?? null);
 const { width: contentWidth, toggle: toggleWidth } = useContentWidth();
 const userName = computed(() => {
@@ -69,6 +74,15 @@ const userName = computed(() => {
 // clinic profile nor the doctors management entry). Features add their own as they land.
 const navItems = computed(() => [
     { label: t('nav.dashboard'), href: dashboard().url, icon: IconHome },
+    ...(canCreateAppointments.value
+        ? [
+              {
+                  label: t('nav.appointments_create'),
+                  href: appointmentCreate().url,
+                  icon: IconCalendarPlus,
+              },
+          ]
+        : []),
     ...(canManageClinic.value
         ? [
               {

@@ -92,7 +92,7 @@ function removeDoctor(doctor: Doctor): void {
                     @click="createOwnProfile"
                 >
                     <template #icon>
-                        <IconStethoscope class="size-4" />
+                        <IconStethoscope />
                     </template>
                 </Button>
 
@@ -102,7 +102,7 @@ function removeDoctor(doctor: Doctor): void {
                     :label="t('doctor.add')"
                 >
                     <template #icon>
-                        <IconPlus class="size-4" />
+                        <IconPlus />
                     </template>
                 </ButtonLink>
             </template>
@@ -198,7 +198,7 @@ function removeDoctor(doctor: Doctor): void {
                             :aria-label="t('doctor.remove')"
                             @click="removeDoctor(doctor)"
                         >
-                            <IconTrash class="size-4" />
+                            <IconTrash />
                         </Button>
                     </li>
                 </ul>

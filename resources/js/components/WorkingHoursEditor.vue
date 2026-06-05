@@ -79,7 +79,7 @@ function copyMondayToAll(): void {
                 size="small"
                 @click="copyMondayToAll"
             >
-                <IconCopy class="size-4" />
+                <IconCopy />
                 {{ t('clinic.hours.copy_to_all') }}
             </Button>
         </div>
@@ -180,7 +180,7 @@ function copyMondayToAll(): void {
                             :aria-label="t('clinic.hours.remove_break')"
                             @click="toggleBreak(day, false)"
                         >
-                            <IconX class="size-4" />
+                            <IconX />
                         </Button>
                     </template>
 
@@ -192,7 +192,7 @@ function copyMondayToAll(): void {
                         size="small"
                         @click="toggleBreak(day, true)"
                     >
-                        <IconCoffee class="size-4" />
+                        <IconCoffee />
                         {{ t('clinic.hours.add_break') }}
                     </Button>
                 </div>

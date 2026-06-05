@@ -3,12 +3,13 @@
 namespace App\Modules\Medical\Services;
 
 use App\Models\Patient;
+use App\Modules\Medical\Contracts\PatientRegistrarContract;
 use App\Modules\Medical\Exceptions\TrashedPhoneConflictException;
 use App\Modules\Medical\Repositories\PatientRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
-class PatientService
+class PatientService implements PatientRegistrarContract
 {
     public function __construct(private PatientRepository $repository) {}
 

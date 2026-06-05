@@ -250,6 +250,16 @@ return [
         'scope' => 'scope',
         'starts_at' => 'start date',
         'ends_at' => 'end date',
+        // appointments
+        'patient_id' => 'patient',
+        'doctor_id' => 'doctor',
+        'service_id' => 'service',
+        'duration_minutes' => 'duration',
+        'is_walk_in' => 'walk-in patient',
+        'new_patient.first_name' => 'first name',
+        'new_patient.last_name' => 'last name',
+        'new_patient.phone' => 'phone',
+        'new_patient.email' => 'email address',
         // doctor profile
         'title' => 'title',
         'specialization' => 'specialization',

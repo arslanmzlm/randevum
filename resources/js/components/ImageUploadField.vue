@@ -124,7 +124,7 @@ function remove(): void {
                 :loading="uploadForm.processing"
                 @click="pickFile"
             >
-                <IconUpload class="size-4" />
+                <IconUpload />
                 {{ t('common.media.upload') }}
             </Button>
             <Button
@@ -136,7 +136,7 @@ function remove(): void {
                 :loading="removeForm.processing"
                 @click="remove"
             >
-                <IconTrash class="size-4" />
+                <IconTrash />
                 {{ t('common.media.remove') }}
             </Button>
         </div>

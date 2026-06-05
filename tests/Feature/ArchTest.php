@@ -53,6 +53,12 @@ foreach ($modules as $module) {
         ->expect("{$self}\\Repositories")
         ->toOnlyBeUsedIn($self);
 
+    // Core is the shared kernel — its Services are importable by any module.
+    // Only non-Core modules enforce service privacy.
+    if ($module === 'Core') {
+        continue;
+    }
+
     // Concrete services are module-internal: cross-module calls go through Contracts/* only.
     arch("module {$module}: services stay internal")
         ->expect("{$self}\\Services")

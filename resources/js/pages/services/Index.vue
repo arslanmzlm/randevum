@@ -95,7 +95,7 @@ function removeService(service: Service): void {
                     :label="t('service.add')"
                 >
                     <template #icon>
-                        <IconPlus class="size-4" />
+                        <IconPlus />
                     </template>
                 </ButtonLink>
             </template>
@@ -219,7 +219,7 @@ function removeService(service: Service): void {
                                 :aria-label="t('service.remove')"
                                 @click="removeService(data)"
                             >
-                                <IconTrash class="size-4" />
+                                <IconTrash />
                             </Button>
                         </div>
                     </template>

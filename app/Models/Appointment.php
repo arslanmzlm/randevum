@@ -1,0 +1,128 @@
+<?php
+
+namespace App\Models;
+
+use App\Enums\AppointmentStatus;
+use App\Models\Concerns\BelongsToClinic;
+use Database\Factories\AppointmentFactory;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+class Appointment extends Model
+{
+    /** @use HasFactory<AppointmentFactory> */
+    use BelongsToClinic, HasFactory, SoftDeletes;
+
+    /**
+     * @var list<string>
+     */
+    protected $fillable = [
+        'clinic_id',
+        'patient_id',
+        'doctor_id',
+        'case_id',
+        'appointment_type_id',
+        'starts_at',
+        'ends_at',
+        'status',
+        'is_walk_in',
+        'reminder_24h_sent',
+        'reminder_1h_sent',
+        'created_by',
+    ];
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'clinic_id' => 'integer',
+            'patient_id' => 'integer',
+            'doctor_id' => 'integer',
+            'case_id' => 'integer',
+            'appointment_type_id' => 'integer',
+            'created_by' => 'integer',
+            'starts_at' => 'datetime',
+            'ends_at' => 'datetime',
+            'status' => AppointmentStatus::class,
+            'is_walk_in' => 'boolean',
+            'reminder_24h_sent' => 'boolean',
+            'reminder_1h_sent' => 'boolean',
+        ];
+    }
+
+    /**
+     * @return BelongsTo<Clinic, $this>
+     */
+    public function clinic(): BelongsTo
+    {
+        return $this->belongsTo(Clinic::class);
+    }
+
+    /**
+     * @return BelongsTo<Patient, $this>
+     */
+    public function patient(): BelongsTo
+    {
+        return $this->belongsTo(Patient::class);
+    }
+
+    /**
+     * @return BelongsTo<Doctor, $this>
+     */
+    public function doctor(): BelongsTo
+    {
+        return $this->belongsTo(Doctor::class);
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * @return MorphMany<StatusLog, $this>
+     */
+    public function statusLogs(): MorphMany
+    {
+        return $this->morphMany(StatusLog::class, 'loggable');
+    }
+
+    /**
+     * @param  Builder<Appointment>  $query
+     */
+    public function scopeForDoctor(Builder $query, int $doctorId): void
+    {
+        $query->where('doctor_id', $doctorId);
+    }
+
+    /**
+     * Strict overlap: back-to-back slots (ends_at == next starts_at) do not conflict.
+     *
+     * @param  Builder<Appointment>  $query
+     */
+    public function scopeOverlapping(Builder $query, mixed $start, mixed $end): void
+    {
+        $query->where('starts_at', '<', $end)->where('ends_at', '>', $start);
+    }
+
+    /**
+     * @param  Builder<Appointment>  $query
+     * @param  list<AppointmentStatus>  $statuses
+     */
+    public function scopeWithStatus(Builder $query, array $statuses): void
+    {
+        $query->whereIn('status', array_map(
+            fn (AppointmentStatus $s) => $s->value,
+            $statuses,
+        ));
+    }
+}
