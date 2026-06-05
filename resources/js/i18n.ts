@@ -261,6 +261,7 @@ export const i18n = createI18n({
                     name: 'Hizmet adı',
                     description: 'Açıklama',
                     price: 'Ücret',
+                    duration_minutes: 'Süre (dk)',
                     is_active: 'Aktif',
                     default_complaint: 'Şikayet (varsayılan)',
                     default_diagnosis: 'Tanı (varsayılan)',
@@ -269,6 +270,8 @@ export const i18n = createI18n({
                 hints: {
                     is_active:
                         'Pasif hizmetler tedavi ekranındaki listede görünmez.',
+                    duration_minutes:
+                        'Randevu oluştururken bu hizmet seçilirse süre otomatik dolar. Boş bırakılırsa kliniğin varsayılan süresi kullanılır.',
                     templates:
                         'Bu metinler tedavi eklerken ilgili alanlara otomatik gelir.',
                 },

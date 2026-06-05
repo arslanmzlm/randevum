@@ -314,6 +314,61 @@ it('store rejects a description longer than 2000 characters', function (): void 
         ->assertSessionHasErrors('description');
 });
 
+it('store persists duration_minutes', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    scTestRole($owner, 'owner', $clinic->id);
+
+    $this->actingAs($owner)
+        ->post(route('services.store'), scStorePayload(['name' => 'Timed', 'duration_minutes' => 45]));
+
+    $service = Service::withoutGlobalScopes()->where('name', 'Timed')->first();
+
+    expect($service)->not->toBeNull()
+        ->and($service->duration_minutes)->toBe(45);
+});
+
+it('store rejects a duration_minutes below the 5-minute minimum', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    scTestRole($owner, 'owner', $clinic->id);
+
+    $this->actingAs($owner)
+        ->post(route('services.store'), scStorePayload(['duration_minutes' => 3]))
+        ->assertSessionHasErrors('duration_minutes');
+});
+
+it('store allows an empty duration_minutes (falls back to clinic default)', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    scTestRole($owner, 'owner', $clinic->id);
+
+    $this->actingAs($owner)
+        ->post(route('services.store'), scStorePayload(['name' => 'No Duration', 'duration_minutes' => null]))
+        ->assertSessionHasNoErrors();
+
+    expect(Service::withoutGlobalScopes()->where('name', 'No Duration')->first()->duration_minutes)
+        ->toBeNull();
+});
+
+it('update persists duration_minutes', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    scTestRole($owner, 'owner', $clinic->id);
+
+    $service = Service::factory()->create([
+        'clinic_id' => $clinic->id,
+        'vertical_id' => $clinic->vertical_id,
+        'duration_minutes' => null,
+    ]);
+
+    $this->actingAs($owner)
+        ->put(route('services.update', $service), scStorePayload(['duration_minutes' => 60]))
+        ->assertRedirect(route('services.index'));
+
+    expect($service->fresh()->duration_minutes)->toBe(60);
+});
+
 it('store rejects a default_complaint longer than 5000 characters', function (): void {
     $clinic = Clinic::factory()->create();
     $owner = User::factory()->create();

@@ -37,10 +37,14 @@ const doctorOptions = computed(() =>
 // Service select shows the slot length so staff know which duration it sets.
 const serviceOptions = computed(() =>
     props.services.map((service) => ({
-        label: t('appointment.service_option', {
-            name: service.name,
-            minutes: service.duration_minutes,
-        }),
+        // Services without a set duration fall back to the clinic default, so show the
+        // bare name rather than an empty "· dk" suffix.
+        label: service.duration_minutes
+            ? t('appointment.service_option', {
+                  name: service.name,
+                  minutes: service.duration_minutes,
+              })
+            : service.name,
         value: service.id,
     })),
 );
@@ -81,9 +85,8 @@ watch(
     () => form.service_id,
     (id) => {
         const service = props.services.find((s) => s.id === id);
-        form.duration_minutes = service
-            ? service.duration_minutes
-            : props.defaultSlotDuration;
+        form.duration_minutes =
+            service?.duration_minutes ?? props.defaultSlotDuration;
     },
 );
 

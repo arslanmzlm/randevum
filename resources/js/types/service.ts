@@ -33,6 +33,8 @@ export type ServiceFormData = {
     description: string;
     /** null on a fresh create form so the currency input renders empty, not ₺0,00. */
     price: number | null;
+    /** Drives the appointment slot length; null falls back to the clinic default. */
+    duration_minutes: number | null;
     default_complaint: string;
     default_diagnosis: string;
     default_treatment_process: string;

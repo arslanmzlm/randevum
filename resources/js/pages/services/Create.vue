@@ -23,6 +23,7 @@ const form = useForm<ServiceFormData>({
     name: '',
     description: '',
     price: null,
+    duration_minutes: null,
     default_complaint: '',
     default_diagnosis: '',
     default_treatment_process: '',
@@ -92,6 +93,22 @@ function submit(): void {
                                 :currency="currency"
                                 :min="0"
                                 :max-fraction-digits="2"
+                                fluid
+                            />
+                        </FormField>
+
+                        <FormField
+                            :label="t('service.fields.duration_minutes')"
+                            :error="form.errors.duration_minutes"
+                            :hint="t('service.hints.duration_minutes')"
+                        >
+                            <InputNumber
+                                v-model="form.duration_minutes"
+                                suffix=" dk"
+                                :min="5"
+                                :max="480"
+                                :step="5"
+                                show-buttons
                                 fluid
                             />
                         </FormField>
