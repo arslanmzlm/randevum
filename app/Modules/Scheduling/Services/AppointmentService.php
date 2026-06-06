@@ -3,9 +3,9 @@
 namespace App\Modules\Scheduling\Services;
 
 use App\Enums\AppointmentStatus;
+use App\Enums\AvailabilityReason;
 use App\Models\Appointment;
 use App\Models\Clinic;
-use App\Models\Service;
 use App\Models\User;
 use App\Modules\Core\Services\StatusLogService;
 use App\Modules\Medical\Contracts\PatientRegistrarContract;
@@ -39,7 +39,11 @@ class AppointmentService
     {
         $clinic = Clinic::findOrFail($this->clinicContext->id());
 
-        $duration = $this->resolveDuration($data, $clinic);
+        $duration = $this->availabilityService->resolveDuration(
+            ! empty($data['duration_minutes']) ? (int) $data['duration_minutes'] : null,
+            ! empty($data['service_id']) ? (int) $data['service_id'] : null,
+            $clinic,
+        );
         $isWalkIn = (bool) ($data['is_walk_in'] ?? false);
         $doctorId = (int) $data['doctor_id'];
 
@@ -57,6 +61,7 @@ class AppointmentService
             $appointment = $this->repository->create([
                 'patient_id' => $patientId,
                 'doctor_id' => $doctorId,
+                'service_id' => ! empty($data['service_id']) ? (int) $data['service_id'] : null,
                 'starts_at' => $startsAt,
                 'ends_at' => $endsAt,
                 'status' => AppointmentStatus::Confirmed->value,
@@ -97,51 +102,23 @@ class AppointmentService
     }
 
     /**
-     * Resolve slot duration with priority:
-     * explicit override → selected service duration_minutes → clinic default.
-     */
-    private function resolveDuration(array $data, Clinic $clinic): int
-    {
-        if (! empty($data['duration_minutes'])) {
-            return (int) $data['duration_minutes'];
-        }
-
-        if (! empty($data['service_id'])) {
-            $service = Service::find((int) $data['service_id']);
-            if ($service?->duration_minutes) {
-                return $service->duration_minutes;
-            }
-        }
-
-        return $clinic->default_slot_duration_minutes ?? 30;
-    }
-
-    /**
-     * Run each availability layer in order and throw a specific ValidationException
+     * Run each availability layer in order and throw a typed ValidationException
      * per layer so the frontend can display a meaningful inline error on starts_at.
      */
     private function assertAvailable(Clinic $clinic, int $doctorId, mixed $startsAt, mixed $endsAt, bool $isWalkIn): void
     {
-        if (! $this->availabilityService->insideWorkingHours($clinic, $startsAt, $endsAt)) {
-            throw ValidationException::withMessages([
-                'starts_at' => [__('appointment.errors.outside_hours')],
-            ]);
-        }
+        $reason = $this->availabilityService->unavailableReason($doctorId, $startsAt, $endsAt, $isWalkIn, $clinic);
 
-        if ($isWalkIn) {
+        if ($reason === null) {
             return;
         }
 
-        if ($this->availabilityService->hasScheduleExceptionOverlap($doctorId, $startsAt, $endsAt)) {
-            throw ValidationException::withMessages([
-                'starts_at' => [__('appointment.errors.exception')],
-            ]);
-        }
-
-        if ($this->repository->hasConflictingAppointment($doctorId, $startsAt, $endsAt)) {
-            throw ValidationException::withMessages([
-                'starts_at' => [__('appointment.errors.conflict')],
-            ]);
-        }
+        throw ValidationException::withMessages([
+            'starts_at' => [match ($reason) {
+                AvailabilityReason::OutsideHours => __('appointment.errors.outside_hours'),
+                AvailabilityReason::ScheduleException => __('appointment.errors.exception'),
+                AvailabilityReason::Conflict => __('appointment.errors.conflict'),
+            }],
+        ]);
     }
 }

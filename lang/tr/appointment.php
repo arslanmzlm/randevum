@@ -34,4 +34,26 @@ return [
 
     'submit' => 'Randevu Oluştur',
 
+    'availability' => [
+        'checking' => 'Müsaitlik kontrol ediliyor…',
+        'available' => 'Bu saat müsait.',
+        'unavailable' => 'Bu saat müsait değil.',
+    ],
+
+    'day_schedule' => [
+        'title' => 'Günün Randevuları',
+        'empty' => 'Bu gün için randevu bulunmuyor.',
+        'loading' => 'Randevular yükleniyor…',
+        'walk_in' => 'Walk-in',
+        'status' => [
+            'pending' => 'Bekliyor',
+            'confirmed' => 'Onaylandı',
+            'rescheduled' => 'Yeniden Planlandı',
+            'arrived' => 'Geldi',
+            'completed' => 'Tamamlandı',
+            'cancelled' => 'İptal',
+            'no_show' => 'Gelmedi',
+        ],
+    ],
+
 ];

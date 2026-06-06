@@ -1,10 +1,12 @@
 <?php
 
 use App\Enums\AppointmentStatus;
+use App\Enums\AvailabilityReason;
 use App\Models\Appointment;
 use App\Models\Clinic;
 use App\Models\Doctor;
 use App\Models\ScheduleException;
+use App\Models\Service;
 use App\Models\User;
 use App\Modules\Scheduling\Repositories\AppointmentRepository;
 use App\Modules\Scheduling\Services\AvailabilityService;
@@ -468,4 +470,206 @@ test('clinic B schedule exception does not block doctor A when ClinicContext is 
     $service = app(AvailabilityService::class);
 
     expect($service->hasScheduleExceptionOverlap($doctorA->id, $start, $end))->toBeFalse();
+});
+
+// ---------------------------------------------------------------------------
+// AvailabilityService::unavailableReason — typed reason enum per layer
+// ---------------------------------------------------------------------------
+
+test('unavailableReason returns OutsideHours when slot is before opening time', function (): void {
+    $clinic = Clinic::factory()->create(['timezone' => 'Europe/Istanbul']);
+    app(ClinicContext::class)->set($clinic->id);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+    $service = app(AvailabilityService::class);
+
+    $monday = Carbon::now('Europe/Istanbul')->next(Carbon::MONDAY);
+    $start = $monday->copy()->setTime(8, 0, 0)->utc();
+    $end = $start->copy()->addMinutes(30);
+
+    expect($service->unavailableReason($doctor->id, $start, $end, false, $clinic))
+        ->toBe(AvailabilityReason::OutsideHours);
+});
+
+test('unavailableReason returns ScheduleException when an exception overlaps', function (): void {
+    $clinic = Clinic::factory()->create(['timezone' => 'Europe/Istanbul']);
+    app(ClinicContext::class)->set($clinic->id);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+    $service = app(AvailabilityService::class);
+
+    $monday = Carbon::now('Europe/Istanbul')->next(Carbon::MONDAY);
+    $start = $monday->copy()->setTime(10, 0, 0)->utc();
+    $end = $start->copy()->addMinutes(30);
+
+    ScheduleException::factory()->create([
+        'clinic_id' => $clinic->id,
+        'doctor_id' => $doctor->id,
+        'starts_at' => $start->copy()->subMinutes(30),
+        'ends_at' => $start->copy()->addMinutes(15),
+    ]);
+
+    expect($service->unavailableReason($doctor->id, $start, $end, false, $clinic))
+        ->toBe(AvailabilityReason::ScheduleException);
+});
+
+test('unavailableReason returns Conflict when a Confirmed appointment overlaps', function (): void {
+    $clinic = Clinic::factory()->create(['timezone' => 'Europe/Istanbul']);
+    app(ClinicContext::class)->set($clinic->id);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+    $service = app(AvailabilityService::class);
+
+    $monday = Carbon::now('Europe/Istanbul')->next(Carbon::MONDAY);
+    $start = $monday->copy()->setTime(10, 0, 0)->utc();
+    $end = $start->copy()->addMinutes(30);
+
+    Appointment::factory()->create([
+        'clinic_id' => $clinic->id,
+        'doctor_id' => $doctor->id,
+        'starts_at' => $start->copy()->subMinutes(30),
+        'ends_at' => $start->copy()->addMinutes(15),
+        'status' => AppointmentStatus::Confirmed,
+    ]);
+
+    expect($service->unavailableReason($doctor->id, $start, $end, false, $clinic))
+        ->toBe(AvailabilityReason::Conflict);
+});
+
+test('unavailableReason returns null for a clean slot (no blockers)', function (): void {
+    $clinic = Clinic::factory()->create(['timezone' => 'Europe/Istanbul']);
+    app(ClinicContext::class)->set($clinic->id);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+    $service = app(AvailabilityService::class);
+
+    $monday = Carbon::now('Europe/Istanbul')->next(Carbon::MONDAY);
+    $start = $monday->copy()->setTime(10, 0, 0)->utc();
+    $end = $start->copy()->addMinutes(30);
+
+    expect($service->unavailableReason($doctor->id, $start, $end, false, $clinic))->toBeNull();
+});
+
+test('unavailableReason returns null for walk-in when a schedule exception overlaps (layer 2 bypassed)', function (): void {
+    $clinic = Clinic::factory()->create(['timezone' => 'Europe/Istanbul']);
+    app(ClinicContext::class)->set($clinic->id);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+    $service = app(AvailabilityService::class);
+
+    $monday = Carbon::now('Europe/Istanbul')->next(Carbon::MONDAY);
+    $start = $monday->copy()->setTime(10, 0, 0)->utc();
+    $end = $start->copy()->addMinutes(30);
+
+    ScheduleException::factory()->create([
+        'clinic_id' => $clinic->id,
+        'doctor_id' => $doctor->id,
+        'starts_at' => $start->copy()->subMinutes(30),
+        'ends_at' => $start->copy()->addMinutes(15),
+    ]);
+
+    expect($service->unavailableReason($doctor->id, $start, $end, true, $clinic))->toBeNull();
+});
+
+test('unavailableReason returns null for walk-in when a Confirmed appointment overlaps (layer 3 bypassed)', function (): void {
+    $clinic = Clinic::factory()->create(['timezone' => 'Europe/Istanbul']);
+    app(ClinicContext::class)->set($clinic->id);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+    $service = app(AvailabilityService::class);
+
+    $monday = Carbon::now('Europe/Istanbul')->next(Carbon::MONDAY);
+    $start = $monday->copy()->setTime(10, 0, 0)->utc();
+    $end = $start->copy()->addMinutes(30);
+
+    Appointment::factory()->create([
+        'clinic_id' => $clinic->id,
+        'doctor_id' => $doctor->id,
+        'starts_at' => $start->copy()->subMinutes(30),
+        'ends_at' => $start->copy()->addMinutes(15),
+        'status' => AppointmentStatus::Confirmed,
+    ]);
+
+    expect($service->unavailableReason($doctor->id, $start, $end, true, $clinic))->toBeNull();
+});
+
+test('unavailableReason returns OutsideHours for walk-in outside working hours (layer 1 always applies)', function (): void {
+    $clinic = Clinic::factory()->create(['timezone' => 'Europe/Istanbul']);
+    app(ClinicContext::class)->set($clinic->id);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+    $service = app(AvailabilityService::class);
+
+    $monday = Carbon::now('Europe/Istanbul')->next(Carbon::MONDAY);
+    $start = $monday->copy()->setTime(8, 0, 0)->utc();
+    $end = $start->copy()->addMinutes(30);
+
+    expect($service->unavailableReason($doctor->id, $start, $end, true, $clinic))
+        ->toBe(AvailabilityReason::OutsideHours);
+});
+
+test('unavailableReason returns OutsideHours before ScheduleException (layer ordering)', function (): void {
+    // Both layer 1 and layer 2 would fail — layer 1 (OutsideHours) must be returned first.
+    $clinic = Clinic::factory()->create(['timezone' => 'Europe/Istanbul']);
+    app(ClinicContext::class)->set($clinic->id);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+    $service = app(AvailabilityService::class);
+
+    $monday = Carbon::now('Europe/Istanbul')->next(Carbon::MONDAY);
+    // 08:00 — before opening
+    $start = $monday->copy()->setTime(8, 0, 0)->utc();
+    $end = $start->copy()->addMinutes(30);
+
+    ScheduleException::factory()->create([
+        'clinic_id' => $clinic->id,
+        'doctor_id' => $doctor->id,
+        'starts_at' => $start->copy()->subMinutes(30),
+        'ends_at' => $start->copy()->addMinutes(60),
+    ]);
+
+    expect($service->unavailableReason($doctor->id, $start, $end, false, $clinic))
+        ->toBe(AvailabilityReason::OutsideHours);
+});
+
+// ---------------------------------------------------------------------------
+// AvailabilityService::resolveDuration — priority chain
+// ---------------------------------------------------------------------------
+
+test('resolveDuration uses explicit duration_minutes override when provided', function (): void {
+    $clinic = Clinic::factory()->create(['default_slot_duration_minutes' => 30]);
+    $service = app(AvailabilityService::class);
+
+    expect($service->resolveDuration(60, null, $clinic))->toBe(60);
+});
+
+test('resolveDuration uses service duration_minutes when no explicit override', function (): void {
+    $clinic = Clinic::factory()->create(['default_slot_duration_minutes' => 30]);
+    $svc = Service::factory()->create(['clinic_id' => $clinic->id, 'duration_minutes' => 45]);
+    $service = app(AvailabilityService::class);
+
+    expect($service->resolveDuration(null, $svc->id, $clinic))->toBe(45);
+});
+
+test('resolveDuration falls back to clinic default when neither override nor service provided', function (): void {
+    $clinic = Clinic::factory()->create(['default_slot_duration_minutes' => 30]);
+    $service = app(AvailabilityService::class);
+
+    expect($service->resolveDuration(null, null, $clinic))->toBe(30);
+});
+
+test('resolveDuration falls back to clinic default when service has null duration_minutes', function (): void {
+    $clinic = Clinic::factory()->create(['default_slot_duration_minutes' => 30]);
+    $svc = Service::factory()->create(['clinic_id' => $clinic->id, 'duration_minutes' => null]);
+    $service = app(AvailabilityService::class);
+
+    expect($service->resolveDuration(null, $svc->id, $clinic))->toBe(30);
+});
+
+test('resolveDuration explicit override beats service duration', function (): void {
+    $clinic = Clinic::factory()->create(['default_slot_duration_minutes' => 30]);
+    $svc = Service::factory()->create(['clinic_id' => $clinic->id, 'duration_minutes' => 45]);
+    $service = app(AvailabilityService::class);
+
+    expect($service->resolveDuration(90, $svc->id, $clinic))->toBe(90);
 });

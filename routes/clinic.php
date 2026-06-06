@@ -61,10 +61,12 @@ Route::middleware('auth')->group(function () {
     Route::delete('/services/{service}', [ServiceController::class, 'destroy'])->name('services.destroy');
 });
 
-// Appointments — manual/walk-in creation.
-// Literal 'create' is declared BEFORE any future {appointment} segment.
+// Appointments — manual/walk-in creation + pre-check probes.
+// Literal segments (create, availability, day-schedule) are declared BEFORE any future {appointment} segment.
 Route::middleware('auth')->group(function () {
     Route::get('/appointments/create', [AppointmentController::class, 'create'])->name('appointments.create');
+    Route::get('/appointments/availability', [AppointmentController::class, 'availability'])->middleware('throttle:60,1')->name('appointments.availability');
+    Route::get('/appointments/day-schedule', [AppointmentController::class, 'daySchedule'])->middleware('throttle:60,1')->name('appointments.day-schedule');
     Route::post('/appointments', [AppointmentController::class, 'store'])->name('appointments.store');
 });
 

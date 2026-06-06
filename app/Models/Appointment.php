@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\AppointmentStatus;
 use App\Models\Concerns\BelongsToClinic;
+use Carbon\CarbonInterface;
 use Database\Factories\AppointmentFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -26,6 +27,7 @@ class Appointment extends Model
         'doctor_id',
         'case_id',
         'appointment_type_id',
+        'service_id',
         'starts_at',
         'ends_at',
         'status',
@@ -46,6 +48,7 @@ class Appointment extends Model
             'doctor_id' => 'integer',
             'case_id' => 'integer',
             'appointment_type_id' => 'integer',
+            'service_id' => 'integer',
             'created_by' => 'integer',
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
@@ -78,6 +81,16 @@ class Appointment extends Model
     public function doctor(): BelongsTo
     {
         return $this->belongsTo(Doctor::class);
+    }
+
+    /**
+     * The service the patient is booked for (visit intent). Nullable.
+     *
+     * @return BelongsTo<Service, $this>
+     */
+    public function service(): BelongsTo
+    {
+        return $this->belongsTo(Service::class);
     }
 
     /**
@@ -124,5 +137,18 @@ class Appointment extends Model
             fn (AppointmentStatus $s) => $s->value,
             $statuses,
         ));
+    }
+
+    /**
+     * Appointments that overlap a calendar day window (UTC), excluding Cancelled.
+     * Uses strict overlap: starts_at < dayEnd AND ends_at > dayStart.
+     *
+     * @param  Builder<Appointment>  $query
+     */
+    public function scopeForDay(Builder $query, CarbonInterface $dayStartUtc, CarbonInterface $dayEndUtc): void
+    {
+        $query->where('starts_at', '<', $dayEndUtc)
+            ->where('ends_at', '>', $dayStartUtc)
+            ->where('status', '!=', AppointmentStatus::Cancelled->value);
     }
 }

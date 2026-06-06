@@ -34,4 +34,26 @@ return [
 
     'submit' => 'Create Appointment',
 
+    'availability' => [
+        'checking' => 'Checking availability…',
+        'available' => 'This slot is available.',
+        'unavailable' => 'This slot is not available.',
+    ],
+
+    'day_schedule' => [
+        'title' => "Doctor's Day",
+        'empty' => 'No appointments for this day.',
+        'loading' => 'Loading appointments…',
+        'walk_in' => 'Walk-in',
+        'status' => [
+            'pending' => 'Pending',
+            'confirmed' => 'Confirmed',
+            'rescheduled' => 'Rescheduled',
+            'arrived' => 'Arrived',
+            'completed' => 'Completed',
+            'cancelled' => 'Cancelled',
+            'no_show' => 'No-show',
+        ],
+    ],
+
 ];

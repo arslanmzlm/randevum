@@ -1,4 +1,9 @@
+import type { InertiaForm } from '@inertiajs/vue3';
+import type { AppointmentStatus, AvailabilityReason } from '@/types/enums';
 import type { PatientSearchResult } from '@/types/patient';
+
+// Re-export so existing imports from '@/types/appointment' keep working.
+export type { AppointmentStatus, AvailabilityReason };
 
 /** Active-clinic doctor option for the create-appointment doctor select. */
 export type AppointmentDoctorOption = {
@@ -60,4 +65,25 @@ export type AppointmentFormData = {
     time: string;
     duration_minutes: number | null;
     is_walk_in: boolean;
+};
+
+/** The create-appointment Inertia form, passed to the field partial components. */
+export type AppointmentForm = InertiaForm<AppointmentFormData>;
+
+/** Response of the `appointments.availability` pre-check (reason null ⇔ available). */
+export type AvailabilityCheckResponse = {
+    available: boolean;
+    reason: AvailabilityReason | null;
+};
+
+/** One row of the selected-day panel (`appointments.day-schedule`). */
+export type DayScheduleEntry = {
+    id: number;
+    start_time: string;
+    end_time: string;
+    status: AppointmentStatus;
+    is_walk_in: boolean;
+    patient_name: string;
+    /** What the patient is booked for; null when no service was chosen. */
+    service_name: string | null;
 };

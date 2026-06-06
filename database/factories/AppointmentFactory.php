@@ -29,6 +29,7 @@ class AppointmentFactory extends Factory
             'doctor_id' => Doctor::factory(),
             'case_id' => null,
             'appointment_type_id' => null,
+            'service_id' => null,
             'starts_at' => $startsAt,
             'ends_at' => $endsAt,
             'status' => AppointmentStatus::Confirmed,

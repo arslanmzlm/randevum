@@ -2,8 +2,10 @@
 
 namespace App\Modules\Scheduling\Services;
 
+use App\Enums\AvailabilityReason;
 use App\Models\Clinic;
 use App\Models\ScheduleException;
+use App\Models\Service;
 use App\Modules\Scheduling\Repositories\AppointmentRepository;
 use Carbon\Carbon;
 
@@ -69,26 +71,55 @@ class AvailabilityService
     }
 
     /**
+     * Run each availability layer in order and return the first failing reason,
+     * or null when the slot is available. Walk-ins bypass layers 2 & 3.
+     */
+    public function unavailableReason(int $doctorId, mixed $start, mixed $end, bool $isWalkIn, Clinic $clinic): ?AvailabilityReason
+    {
+        if (! $this->insideWorkingHours($clinic, $start, $end)) {
+            return AvailabilityReason::OutsideHours;
+        }
+
+        if ($isWalkIn) {
+            return null;
+        }
+
+        if ($this->hasScheduleExceptionOverlap($doctorId, $start, $end)) {
+            return AvailabilityReason::ScheduleException;
+        }
+
+        if ($this->appointmentRepository->hasConflictingAppointment($doctorId, $start, $end)) {
+            return AvailabilityReason::Conflict;
+        }
+
+        return null;
+    }
+
+    /**
      * Combined check: layer 1 always; layers 2 & 3 only when !$isWalkIn.
      */
     public function isAvailable(int $doctorId, mixed $start, mixed $end, bool $isWalkIn, Clinic $clinic): bool
     {
-        if (! $this->insideWorkingHours($clinic, $start, $end)) {
-            return false;
+        return $this->unavailableReason($doctorId, $start, $end, $isWalkIn, $clinic) === null;
+    }
+
+    /**
+     * Resolve slot duration with priority:
+     * explicit override → selected service duration_minutes → clinic default.
+     */
+    public function resolveDuration(?int $durationMinutes, ?int $serviceId, Clinic $clinic): int
+    {
+        if ($durationMinutes !== null) {
+            return $durationMinutes;
         }
 
-        if ($isWalkIn) {
-            return true;
+        if ($serviceId !== null) {
+            $service = Service::find($serviceId);
+            if ($service?->duration_minutes) {
+                return $service->duration_minutes;
+            }
         }
 
-        if ($this->hasScheduleExceptionOverlap($doctorId, $start, $end)) {
-            return false;
-        }
-
-        if ($this->appointmentRepository->hasConflictingAppointment($doctorId, $start, $end)) {
-            return false;
-        }
-
-        return true;
+        return $clinic->default_slot_duration_minutes ?? 30;
     }
 }

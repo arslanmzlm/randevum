@@ -9,9 +9,14 @@ use App\Models\Patient;
 use App\Models\Service;
 use App\Modules\Core\Contracts\DoctorDirectoryContract;
 use App\Modules\Core\Support\Toast;
+use App\Modules\Scheduling\Http\Requests\CheckAvailabilityRequest;
+use App\Modules\Scheduling\Http\Requests\DayScheduleRequest;
 use App\Modules\Scheduling\Http\Requests\StoreAppointmentRequest;
 use App\Modules\Scheduling\Services\AppointmentService;
+use App\Modules\Scheduling\Services\AvailabilityService;
 use App\Support\ClinicContext;
+use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -21,6 +26,7 @@ class AppointmentController extends Controller
 {
     public function __construct(
         private AppointmentService $service,
+        private AvailabilityService $availabilityService,
         private DoctorDirectoryContract $doctorDirectory,
         private ClinicContext $clinicContext,
     ) {}
@@ -90,6 +96,73 @@ class AppointmentController extends Controller
         Toast::success(__('appointment.created', ['patient' => $patientName, 'time' => $slot]));
 
         return to_route('appointments.create');
+    }
+
+    /**
+     * Read-only pre-check: returns whether a doctor+slot is available and, if not, why.
+     * Reuses AvailabilityService — no separate layer logic.
+     */
+    public function availability(CheckAvailabilityRequest $request): JsonResponse
+    {
+        $this->authorize('create', Appointment::class);
+
+        $clinic = Clinic::findOrFail($this->clinicContext->id());
+        $validated = $request->validated();
+
+        $startsAt = Carbon::parse($validated['starts_at'], $clinic->timezone)->utc();
+        $duration = $this->availabilityService->resolveDuration(
+            isset($validated['duration_minutes']) ? (int) $validated['duration_minutes'] : null,
+            isset($validated['service_id']) ? (int) $validated['service_id'] : null,
+            $clinic,
+        );
+        $endsAt = $startsAt->copy()->addMinutes($duration);
+
+        $reason = $this->availabilityService->unavailableReason(
+            (int) $validated['doctor_id'],
+            $startsAt,
+            $endsAt,
+            (bool) ($validated['is_walk_in'] ?? false),
+            $clinic,
+        );
+
+        return response()->json([
+            'available' => $reason === null,
+            'reason' => $reason?->value,
+        ]);
+    }
+
+    /**
+     * Returns the active clinic's appointments for a given doctor on a given date,
+     * formatted for the day-schedule advisory panel on the create form.
+     */
+    public function daySchedule(DayScheduleRequest $request): JsonResponse
+    {
+        $this->authorize('create', Appointment::class);
+
+        $clinic = Clinic::findOrFail($this->clinicContext->id());
+        $validated = $request->validated();
+        $tz = $clinic->timezone;
+
+        $dayStart = Carbon::createFromFormat('Y-m-d', $validated['date'], $tz)->startOfDay()->utc();
+        $dayEnd = $dayStart->copy()->addDay();
+
+        $appointments = Appointment::forDoctor((int) $validated['doctor_id'])
+            ->forDay($dayStart, $dayEnd)
+            ->with(['patient', 'service'])
+            ->orderBy('starts_at')
+            ->get();
+
+        return response()->json([
+            'data' => $appointments->map(fn (Appointment $a) => [
+                'id' => $a->id,
+                'start_time' => $a->starts_at->setTimezone($tz)->format('H:i'),
+                'end_time' => $a->ends_at->setTimezone($tz)->format('H:i'),
+                'status' => $a->status->value,
+                'is_walk_in' => $a->is_walk_in,
+                'patient_name' => trim($a->patient->first_name.' '.$a->patient->last_name),
+                'service_name' => $a->service?->name,
+            ])->values(),
+        ]);
     }
 
     private function activeClinicTimezone(): string

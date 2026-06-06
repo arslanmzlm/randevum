@@ -251,6 +251,49 @@ it('ends_at is computed from service duration_minutes when service_id is provide
         ->and((int) $appointment->starts_at->diffInMinutes($appointment->ends_at))->toBe(45);
 });
 
+it('persists the chosen service_id on the appointment (visit intent)', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    caRole($owner, 'owner', $clinic->id);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+    $service = Service::factory()->create(['clinic_id' => $clinic->id]);
+
+    $this->actingAs($owner)
+        ->post(route('appointments.store'), caPayload($patient->id, $doctor->id, [
+            'service_id' => $service->id,
+        ]))
+        ->assertRedirect();
+
+    $appointment = Appointment::withoutGlobalScopes()
+        ->where('clinic_id', $clinic->id)
+        ->latest()
+        ->first();
+
+    expect($appointment->service_id)->toBe($service->id);
+});
+
+it('leaves service_id null when no service is chosen', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    caRole($owner, 'owner', $clinic->id);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+
+    $this->actingAs($owner)
+        ->post(route('appointments.store'), caPayload($patient->id, $doctor->id, ['service_id' => null]))
+        ->assertRedirect();
+
+    $appointment = Appointment::withoutGlobalScopes()
+        ->where('clinic_id', $clinic->id)
+        ->latest()
+        ->first();
+
+    expect($appointment->service_id)->toBeNull();
+});
+
 it('ends_at falls back to clinic default_slot_duration_minutes when no service or override', function (): void {
     $clinic = Clinic::factory()->create(['default_slot_duration_minutes' => 30]);
     $owner = User::factory()->create();
