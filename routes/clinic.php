@@ -6,6 +6,7 @@ use App\Modules\Core\Http\Controllers\ClinicController;
 use App\Modules\Core\Http\Controllers\DoctorController;
 use App\Modules\Medical\Http\Controllers\PatientController;
 use App\Modules\Scheduling\Http\Controllers\AppointmentController;
+use App\Modules\Scheduling\Http\Controllers\AppointmentTypeController;
 use App\Modules\Scheduling\Http\Controllers\ScheduleExceptionController;
 use Illuminate\Support\Facades\Route;
 
@@ -59,6 +60,17 @@ Route::middleware('auth')->group(function () {
     Route::get('/services/{service}/edit', [ServiceController::class, 'edit'])->name('services.edit');
     Route::put('/services/{service}', [ServiceController::class, 'update'])->name('services.update');
     Route::delete('/services/{service}', [ServiceController::class, 'destroy'])->name('services.destroy');
+});
+
+// Appointment types (settings / CRUD).
+// Literal segment (create) declared BEFORE {appointmentType} so it is not captured as a bound id.
+Route::middleware('auth')->group(function () {
+    Route::get('/appointment-types', [AppointmentTypeController::class, 'index'])->name('appointment-types.index');
+    Route::get('/appointment-types/create', [AppointmentTypeController::class, 'create'])->name('appointment-types.create');
+    Route::post('/appointment-types', [AppointmentTypeController::class, 'store'])->name('appointment-types.store');
+    Route::get('/appointment-types/{appointmentType}/edit', [AppointmentTypeController::class, 'edit'])->name('appointment-types.edit');
+    Route::put('/appointment-types/{appointmentType}', [AppointmentTypeController::class, 'update'])->name('appointment-types.update');
+    Route::delete('/appointment-types/{appointmentType}', [AppointmentTypeController::class, 'destroy'])->name('appointment-types.destroy');
 });
 
 // Appointments — manual/walk-in creation + pre-check probes.

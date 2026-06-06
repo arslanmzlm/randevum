@@ -45,6 +45,12 @@ return [
         'removed' => 'Availability exception removed.',
     ],
 
+    'appointment_type' => [
+        'created' => 'Appointment type created successfully.',
+        'updated' => 'Appointment type updated.',
+        'deleted' => 'Appointment type removed.',
+    ],
+
     'doctor' => [
         'profile_created' => 'Doctor profile created.',
         'profile_updated' => 'Doctor profile updated.',

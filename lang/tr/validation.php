@@ -121,7 +121,11 @@ return [
         'scope' => 'Kapsam',
         'starts_at' => 'Başlangıç tarihi',
         'ends_at' => 'Bitiş tarihi',
+        // appointment types
+        'color' => 'Renk',
+        'default_duration_minutes' => 'Varsayılan süre',
         // appointments
+        'appointment_type_id' => 'Randevu türü',
         'patient_id' => 'Hasta',
         'doctor_id' => 'Doktor',
         'service_id' => 'Hizmet',

@@ -42,6 +42,7 @@ class AppointmentService
         $duration = $this->availabilityService->resolveDuration(
             ! empty($data['duration_minutes']) ? (int) $data['duration_minutes'] : null,
             ! empty($data['service_id']) ? (int) $data['service_id'] : null,
+            ! empty($data['appointment_type_id']) ? (int) $data['appointment_type_id'] : null,
             $clinic,
         );
         $isWalkIn = (bool) ($data['is_walk_in'] ?? false);
@@ -61,6 +62,7 @@ class AppointmentService
             $appointment = $this->repository->create([
                 'patient_id' => $patientId,
                 'doctor_id' => $doctorId,
+                'appointment_type_id' => ! empty($data['appointment_type_id']) ? (int) $data['appointment_type_id'] : null,
                 'service_id' => ! empty($data['service_id']) ? (int) $data['service_id'] : null,
                 'starts_at' => $startsAt,
                 'ends_at' => $endsAt,

@@ -18,6 +18,7 @@ export const tr = {
         patients: 'Hastalar',
         services: 'Hizmetler',
         products: 'Ürünler',
+        appointment_types: 'Randevu Türleri',
         availability: 'İzin ve Kapalı Günler',
         account: 'Hesabım',
         profile_mine: 'Profilim',
@@ -262,6 +263,51 @@ export const tr = {
                 'Bu metinler tedavi eklerken ilgili alanlara otomatik gelir.',
         },
     },
+    appointment_type: {
+        title: 'Randevu Türleri',
+        subtitle:
+            'Takvimde renkle ayrışan randevu türlerini (muayene, kontrol, seans) yönetin.',
+        add: 'Tür Ekle',
+        edit: 'Düzenle',
+        remove: 'Kaldır',
+        remove_confirm:
+            '{name} adlı randevu türünü kaldırmak istediğinize emin misiniz?',
+        active: 'Aktif',
+        passive: 'Pasif',
+        empty: 'Henüz randevu türü eklenmemiş.',
+        empty_filtered: 'Aramayla eşleşen randevu türü yok.',
+        search_placeholder: 'Randevu türü ara...',
+        filter_status: 'Durum',
+        minutes: '{minutes} dk',
+        back: 'Geri',
+        create_title: 'Randevu Türü Ekle',
+        create_subtitle: 'Yeni bir randevu türü tanımlayın.',
+        create_submit: 'Türü Ekle',
+        edit_title: 'Randevu Türünü Düzenle',
+        edit_subtitle: 'Randevu türü bilgilerini güncelleyin.',
+        save: 'Kaydet',
+        columns: {
+            name: 'Tür',
+            duration: 'Varsayılan süre',
+            status: 'Durum',
+            actions: 'İşlemler',
+        },
+        sections: {
+            info: 'Tür Bilgileri',
+        },
+        fields: {
+            name: 'Tür adı',
+            color: 'Takvim rengi',
+            default_duration_minutes: 'Varsayılan süre (dk)',
+            is_active: 'Aktif',
+        },
+        hints: {
+            color: 'Takvimde bu türdeki randevular bu renkle gösterilir.',
+            default_duration_minutes:
+                'Randevu oluştururken hizmet seçilmezse bu süre kullanılır.',
+            is_active: 'Pasif türler randevu oluşturma ekranında listelenmez.',
+        },
+    },
     product: {
         title: 'Ürünler',
         subtitle: 'Kliniğinizin ürün ve stok kataloğunu yönetin.',
@@ -450,6 +496,7 @@ export const tr = {
             patient: 'Mevcut hastayı ara',
             doctor: 'Doktor',
             service: 'Hizmet',
+            appointment_type: 'Randevu türü',
             date: 'Tarih',
             time: 'Saat',
             duration_minutes: 'Süre (dakika)',
@@ -466,6 +513,8 @@ export const tr = {
         clear_patient: 'Seçimi kaldır',
         hints: {
             service: 'Hizmet seçilirse süre otomatik belirlenir.',
+            appointment_type:
+                'Hizmet seçilmezse süre randevu türünün varsayılanından belirlenir.',
             duration_minutes:
                 'Boş bırakılırsa hizmet veya klinik varsayılanı kullanılır.',
             is_walk_in:

@@ -2,6 +2,7 @@
 
 use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
+use App\Models\AppointmentType;
 use App\Models\Clinic;
 use App\Models\Doctor;
 use App\Models\Patient;
@@ -1043,4 +1044,157 @@ it('a receptionist (has assignDoctor) can book for any doctor', function (): voi
         ->where('doctor_id', $doctor->id)
         ->exists()
     )->toBeTrue();
+});
+
+// ---------------------------------------------------------------------------
+// POST /appointments — appointment_type_id integration
+// ---------------------------------------------------------------------------
+
+it('posting with appointment_type_id persists it on the appointment', function (): void {
+    $clinic = Clinic::factory()->create(['default_slot_duration_minutes' => 30]);
+    $owner = User::factory()->create();
+    caRole($owner, 'owner', $clinic->id);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+    $type = AppointmentType::factory()->create([
+        'clinic_id' => $clinic->id,
+        'vertical_id' => $clinic->vertical_id,
+        'default_duration_minutes' => 40,
+    ]);
+
+    $this->actingAs($owner)
+        ->post(route('appointments.store'), caPayload($patient->id, $doctor->id, [
+            'appointment_type_id' => $type->id,
+        ]))
+        ->assertRedirect(route('appointments.create'));
+
+    $appointment = Appointment::withoutGlobalScopes()
+        ->where('clinic_id', $clinic->id)
+        ->latest()
+        ->first();
+
+    expect($appointment)->not->toBeNull()
+        ->and($appointment->appointment_type_id)->toBe($type->id);
+});
+
+it('ends_at is derived from appointment type default duration when no service or explicit override', function (): void {
+    $clinic = Clinic::factory()->create(['default_slot_duration_minutes' => 30]);
+    $owner = User::factory()->create();
+    caRole($owner, 'owner', $clinic->id);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+    $type = AppointmentType::factory()->create([
+        'clinic_id' => $clinic->id,
+        'vertical_id' => $clinic->vertical_id,
+        'default_duration_minutes' => 40,
+    ]);
+
+    $this->actingAs($owner)
+        ->post(route('appointments.store'), caPayload($patient->id, $doctor->id, [
+            'appointment_type_id' => $type->id,
+        ]))
+        ->assertRedirect();
+
+    $appointment = Appointment::withoutGlobalScopes()
+        ->where('clinic_id', $clinic->id)
+        ->latest()
+        ->first();
+
+    expect($appointment)->not->toBeNull()
+        ->and((int) $appointment->starts_at->diffInMinutes($appointment->ends_at))->toBe(40);
+});
+
+it('service duration beats appointment type default in the priority chain', function (): void {
+    $clinic = Clinic::factory()->create(['default_slot_duration_minutes' => 30]);
+    $owner = User::factory()->create();
+    caRole($owner, 'owner', $clinic->id);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+    $service = Service::factory()->create(['clinic_id' => $clinic->id, 'duration_minutes' => 45]);
+    $type = AppointmentType::factory()->create([
+        'clinic_id' => $clinic->id,
+        'vertical_id' => $clinic->vertical_id,
+        'default_duration_minutes' => 60,
+    ]);
+
+    $this->actingAs($owner)
+        ->post(route('appointments.store'), caPayload($patient->id, $doctor->id, [
+            'service_id' => $service->id,
+            'appointment_type_id' => $type->id,
+        ]))
+        ->assertRedirect();
+
+    $appointment = Appointment::withoutGlobalScopes()
+        ->where('clinic_id', $clinic->id)
+        ->latest()
+        ->first();
+
+    // Service (45 min) wins over type default (60 min).
+    expect($appointment)->not->toBeNull()
+        ->and((int) $appointment->starts_at->diffInMinutes($appointment->ends_at))->toBe(45);
+});
+
+it('store rejects an inactive appointment_type_id with a validation error', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    caRole($owner, 'owner', $clinic->id);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+    $inactiveType = AppointmentType::factory()->inactive()->create([
+        'clinic_id' => $clinic->id,
+        'vertical_id' => $clinic->vertical_id,
+    ]);
+
+    $this->actingAs($owner)
+        ->post(route('appointments.store'), caPayload($patient->id, $doctor->id, [
+            'appointment_type_id' => $inactiveType->id,
+        ]))
+        ->assertSessionHasErrors('appointment_type_id');
+});
+
+it('store rejects an appointment_type_id belonging to another clinic', function (): void {
+    $clinicA = Clinic::factory()->create();
+    $clinicB = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    caRole($owner, 'owner', $clinicA->id);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinicA->id, 'user_id' => $doctorUser->id]);
+    $patient = Patient::factory()->create(['clinic_id' => $clinicA->id]);
+    $typeB = AppointmentType::factory()->create([
+        'clinic_id' => $clinicB->id,
+        'vertical_id' => $clinicB->vertical_id,
+    ]);
+
+    $this->actingAs($owner)
+        ->post(route('appointments.store'), caPayload($patient->id, $doctor->id, [
+            'appointment_type_id' => $typeB->id,
+        ]))
+        ->assertSessionHasErrors('appointment_type_id');
+});
+
+it('GET /appointments/create exposes active appointment types in appointmentTypes prop', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    caRole($owner, 'owner', $clinic->id);
+
+    AppointmentType::factory()->create([
+        'clinic_id' => $clinic->id,
+        'vertical_id' => $clinic->vertical_id,
+        'is_active' => true,
+    ]);
+    AppointmentType::factory()->inactive()->create([
+        'clinic_id' => $clinic->id,
+        'vertical_id' => $clinic->vertical_id,
+    ]);
+
+    $this->actingAs($owner)
+        ->get(route('appointments.create'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('appointmentTypes', 1)
+        );
 });

@@ -84,6 +84,14 @@ class Appointment extends Model
     }
 
     /**
+     * @return BelongsTo<AppointmentType, $this>
+     */
+    public function appointmentType(): BelongsTo
+    {
+        return $this->belongsTo(AppointmentType::class);
+    }
+
+    /**
      * The service the patient is booked for (visit intent). Nullable.
      *
      * @return BelongsTo<Service, $this>

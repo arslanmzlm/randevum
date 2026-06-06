@@ -65,6 +65,21 @@ const { state, entries } = useDaySchedule(() => {
                     >
                         {{ entry.service_name }}
                     </span>
+                    <span
+                        v-if="entry.appointment_type"
+                        class="flex items-center gap-1.5 text-xs text-surface-400"
+                    >
+                        <span
+                            class="size-2.5 shrink-0 rounded-full"
+                            :style="{
+                                backgroundColor: entry.appointment_type.color,
+                            }"
+                            :aria-hidden="true"
+                        />
+                        <span class="truncate">{{
+                            entry.appointment_type.name
+                        }}</span>
+                    </span>
                 </div>
                 <div class="flex shrink-0 items-center gap-2">
                     <Tag

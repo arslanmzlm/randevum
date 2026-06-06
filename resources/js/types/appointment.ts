@@ -19,6 +19,14 @@ export type AppointmentServiceOption = {
     price: string;
 };
 
+/** Active appointment-type option — drives the slot duration (and calendar color) when no service is chosen. */
+export type AppointmentTypeOption = {
+    id: number;
+    name: string;
+    color: string;
+    default_duration_minutes: number;
+};
+
 /** A single weekday's clinic working-hours window (mirrors clinics.working_hours JSON). */
 export type WorkingHoursDay = {
     closed?: true;
@@ -33,6 +41,7 @@ export type WorkingHours = Record<string, WorkingHoursDay>;
 export type AppointmentCreateProps = {
     doctors: AppointmentDoctorOption[];
     services: AppointmentServiceOption[];
+    appointmentTypes: AppointmentTypeOption[];
     defaultSlotDuration: number;
     workingHours: WorkingHours;
     timezone: string;
@@ -61,6 +70,7 @@ export type AppointmentFormData = {
     new_patient: NewPatientFormData;
     doctor_id: number | null;
     service_id: number | null;
+    appointment_type_id: number | null;
     date: Date | null;
     time: string;
     duration_minutes: number | null;
@@ -86,4 +96,6 @@ export type DayScheduleEntry = {
     patient_name: string;
     /** What the patient is booked for; null when no service was chosen. */
     service_name: string | null;
+    /** The booked appointment type (name + calendar color); null when none was chosen. */
+    appointment_type: { name: string; color: string } | null;
 };

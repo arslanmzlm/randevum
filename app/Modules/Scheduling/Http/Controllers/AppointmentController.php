@@ -4,6 +4,7 @@ namespace App\Modules\Scheduling\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
+use App\Models\AppointmentType;
 use App\Models\Clinic;
 use App\Models\Patient;
 use App\Models\Service;
@@ -13,6 +14,7 @@ use App\Modules\Scheduling\Http\Requests\CheckAvailabilityRequest;
 use App\Modules\Scheduling\Http\Requests\DayScheduleRequest;
 use App\Modules\Scheduling\Http\Requests\StoreAppointmentRequest;
 use App\Modules\Scheduling\Services\AppointmentService;
+use App\Modules\Scheduling\Services\AppointmentTypeService;
 use App\Modules\Scheduling\Services\AvailabilityService;
 use App\Support\ClinicContext;
 use Carbon\Carbon;
@@ -26,6 +28,7 @@ class AppointmentController extends Controller
 {
     public function __construct(
         private AppointmentService $service,
+        private AppointmentTypeService $appointmentTypeService,
         private AvailabilityService $availabilityService,
         private DoctorDirectoryContract $doctorDirectory,
         private ClinicContext $clinicContext,
@@ -51,6 +54,14 @@ class AppointmentController extends Controller
                 'price' => $s->price,
             ]);
 
+        $appointmentTypes = $this->appointmentTypeService->listActiveForClinic()
+            ->map(fn (AppointmentType $t) => [
+                'id' => $t->id,
+                'name' => $t->name,
+                'color' => $t->color,
+                'default_duration_minutes' => $t->default_duration_minutes,
+            ]);
+
         $preselectedPatient = null;
         if ($patientId = $request->integer('patient_id')) {
             $patient = Patient::find($patientId);
@@ -68,6 +79,7 @@ class AppointmentController extends Controller
         return Inertia::render('appointments/Create', [
             'doctors' => $doctors,
             'services' => $services,
+            'appointmentTypes' => $appointmentTypes,
             'defaultSlotDuration' => $clinic->default_slot_duration_minutes,
             'workingHours' => $clinic->working_hours,
             'timezone' => $clinic->timezone,
@@ -113,6 +125,7 @@ class AppointmentController extends Controller
         $duration = $this->availabilityService->resolveDuration(
             isset($validated['duration_minutes']) ? (int) $validated['duration_minutes'] : null,
             isset($validated['service_id']) ? (int) $validated['service_id'] : null,
+            isset($validated['appointment_type_id']) ? (int) $validated['appointment_type_id'] : null,
             $clinic,
         );
         $endsAt = $startsAt->copy()->addMinutes($duration);
@@ -148,7 +161,7 @@ class AppointmentController extends Controller
 
         $appointments = Appointment::forDoctor((int) $validated['doctor_id'])
             ->forDay($dayStart, $dayEnd)
-            ->with(['patient', 'service'])
+            ->with(['patient', 'service', 'appointmentType'])
             ->orderBy('starts_at')
             ->get();
 
@@ -161,6 +174,9 @@ class AppointmentController extends Controller
                 'is_walk_in' => $a->is_walk_in,
                 'patient_name' => trim($a->patient->first_name.' '.$a->patient->last_name),
                 'service_name' => $a->service?->name,
+                'appointment_type' => $a->appointmentType
+                    ? ['name' => $a->appointmentType->name, 'color' => $a->appointmentType->color]
+                    : null,
             ])->values(),
         ]);
     }

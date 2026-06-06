@@ -3,6 +3,7 @@
 use App\Enums\AppointmentStatus;
 use App\Enums\AvailabilityReason;
 use App\Models\Appointment;
+use App\Models\AppointmentType;
 use App\Models\Clinic;
 use App\Models\Doctor;
 use App\Models\ScheduleException;
@@ -640,7 +641,7 @@ test('resolveDuration uses explicit duration_minutes override when provided', fu
     $clinic = Clinic::factory()->create(['default_slot_duration_minutes' => 30]);
     $service = app(AvailabilityService::class);
 
-    expect($service->resolveDuration(60, null, $clinic))->toBe(60);
+    expect($service->resolveDuration(60, null, null, $clinic))->toBe(60);
 });
 
 test('resolveDuration uses service duration_minutes when no explicit override', function (): void {
@@ -648,14 +649,14 @@ test('resolveDuration uses service duration_minutes when no explicit override', 
     $svc = Service::factory()->create(['clinic_id' => $clinic->id, 'duration_minutes' => 45]);
     $service = app(AvailabilityService::class);
 
-    expect($service->resolveDuration(null, $svc->id, $clinic))->toBe(45);
+    expect($service->resolveDuration(null, $svc->id, null, $clinic))->toBe(45);
 });
 
 test('resolveDuration falls back to clinic default when neither override nor service provided', function (): void {
     $clinic = Clinic::factory()->create(['default_slot_duration_minutes' => 30]);
     $service = app(AvailabilityService::class);
 
-    expect($service->resolveDuration(null, null, $clinic))->toBe(30);
+    expect($service->resolveDuration(null, null, null, $clinic))->toBe(30);
 });
 
 test('resolveDuration falls back to clinic default when service has null duration_minutes', function (): void {
@@ -663,7 +664,7 @@ test('resolveDuration falls back to clinic default when service has null duratio
     $svc = Service::factory()->create(['clinic_id' => $clinic->id, 'duration_minutes' => null]);
     $service = app(AvailabilityService::class);
 
-    expect($service->resolveDuration(null, $svc->id, $clinic))->toBe(30);
+    expect($service->resolveDuration(null, $svc->id, null, $clinic))->toBe(30);
 });
 
 test('resolveDuration explicit override beats service duration', function (): void {
@@ -671,5 +672,32 @@ test('resolveDuration explicit override beats service duration', function (): vo
     $svc = Service::factory()->create(['clinic_id' => $clinic->id, 'duration_minutes' => 45]);
     $service = app(AvailabilityService::class);
 
-    expect($service->resolveDuration(90, $svc->id, $clinic))->toBe(90);
+    expect($service->resolveDuration(90, $svc->id, null, $clinic))->toBe(90);
+});
+
+test('resolveDuration uses appointment type default when no explicit override or service duration', function (): void {
+    $clinic = Clinic::factory()->create(['default_slot_duration_minutes' => 30]);
+    $type = AppointmentType::factory()->create(['clinic_id' => $clinic->id, 'default_duration_minutes' => 40]);
+    $service = app(AvailabilityService::class);
+
+    expect($service->resolveDuration(null, null, $type->id, $clinic))->toBe(40);
+});
+
+test('resolveDuration service duration beats appointment type default', function (): void {
+    $clinic = Clinic::factory()->create(['default_slot_duration_minutes' => 30]);
+    $svc = Service::factory()->create(['clinic_id' => $clinic->id, 'duration_minutes' => 45]);
+    $type = AppointmentType::factory()->create(['clinic_id' => $clinic->id, 'default_duration_minutes' => 40]);
+    $service = app(AvailabilityService::class);
+
+    expect($service->resolveDuration(null, $svc->id, $type->id, $clinic))->toBe(45);
+});
+
+test('resolveDuration falls back to clinic default when appointment type has no duration and service also null', function (): void {
+    $clinic = Clinic::factory()->create(['default_slot_duration_minutes' => 30]);
+    $svc = Service::factory()->create(['clinic_id' => $clinic->id, 'duration_minutes' => null]);
+    $type = AppointmentType::factory()->create(['clinic_id' => $clinic->id, 'default_duration_minutes' => 0]);
+    $service = app(AvailabilityService::class);
+
+    // AppointmentType with 0 duration is falsy — falls through to clinic default.
+    expect($service->resolveDuration(null, $svc->id, $type->id, $clinic))->toBe(30);
 });

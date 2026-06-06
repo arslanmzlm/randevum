@@ -63,6 +63,13 @@ class StoreAppointmentRequest extends FormRequest
                 'integer',
                 Rule::exists('doctors', 'id')->where('clinic_id', $clinicId),
             ],
+            'appointment_type_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('appointment_types', 'id')
+                    ->where('clinic_id', $clinicId)
+                    ->where('is_active', true),
+            ],
             'service_id' => [
                 'nullable',
                 'integer',

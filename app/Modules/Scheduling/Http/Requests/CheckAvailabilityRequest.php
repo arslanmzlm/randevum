@@ -29,6 +29,13 @@ class CheckAvailabilityRequest extends FormRequest
             ],
             'starts_at' => ['required', 'date'],
             'duration_minutes' => ['nullable', 'integer', 'min:5', 'max:480'],
+            'appointment_type_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('appointment_types', 'id')
+                    ->where('clinic_id', $clinicId)
+                    ->where('is_active', true),
+            ],
             'service_id' => [
                 'nullable',
                 'integer',

@@ -6,6 +6,7 @@ use App\Models\Clinic;
 use App\Models\Country;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Modules\Identity\Events\ClinicRegistered;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -22,7 +23,8 @@ class ClinicRegistrationService
      */
     public function register(array $data): User
     {
-        return DB::transaction(function () use ($data): User {
+        /** @var array{user: User, clinic: Clinic} $result */
+        $result = DB::transaction(function () use ($data): array {
             $tenant = Tenant::create(['name' => $data['clinic_name']]);
 
             $countryId = Country::where('code', 'TR')->value('id');
@@ -47,8 +49,13 @@ class ClinicRegistrationService
             app(PermissionRegistrar::class)->setPermissionsTeamId($clinic->id);
             $user->assignRole('owner');
 
-            return $user;
+            return ['user' => $user, 'clinic' => $clinic];
         });
+
+        // Dispatch after the transaction commits so listeners see persisted rows.
+        event(new ClinicRegistered($result['clinic']));
+
+        return $result['user'];
     }
 
     private function uniqueSlug(string $clinicName): string

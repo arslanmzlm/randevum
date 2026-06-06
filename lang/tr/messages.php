@@ -45,6 +45,12 @@ return [
         'removed' => 'Müsaitlik istisnası kaldırıldı.',
     ],
 
+    'appointment_type' => [
+        'created' => 'Randevu türü başarıyla oluşturuldu.',
+        'updated' => 'Randevu türü güncellendi.',
+        'deleted' => 'Randevu türü kaldırıldı.',
+    ],
+
     'doctor' => [
         'profile_created' => 'Doktor profili oluşturuldu.',
         'profile_updated' => 'Doktor profili güncellendi.',

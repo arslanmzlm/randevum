@@ -15,8 +15,7 @@ return new class extends Migration
             $table->foreignId('doctor_id')->constrained('doctors')->cascadeOnDelete();
             // Forward-compat: cases table ships in 1.11; FK added by editing this migration inline then.
             $table->unsignedBigInteger('case_id')->nullable();
-            // Forward-compat: appointment_types table does not exist yet (Faz 2 / 1.31).
-            $table->unsignedBigInteger('appointment_type_id')->nullable();
+            $table->foreignId('appointment_type_id')->nullable()->constrained('appointment_types')->nullOnDelete();
             // What the patient is coming in for (visit intent) — customer requirement. Nullable +
             // soft reference: a soft-deleted service must not break the appointment. Distinct from
             // treatment_services (what was actually performed + priced, 1.10).

@@ -12,6 +12,7 @@ import {
     IconPackage,
     IconSettings,
     IconStethoscope,
+    IconTags,
     IconUserCircle,
     IconUsers,
 } from '@tabler/icons-vue';
@@ -21,6 +22,7 @@ import AppToaster from '@/components/AppToaster.vue';
 import PatientSearchSelect from '@/components/PatientSearchSelect.vue';
 import { useContentWidth } from '@/composables/useContentWidth';
 import { account, dashboard, logout } from '@/routes';
+import { index as appointmentTypesIndex } from '@/routes/appointment-types';
 import { create as appointmentCreate } from '@/routes/appointments';
 import { edit as clinicEdit } from '@/routes/clinic';
 import { index as doctorsIndex, mine as doctorsMine } from '@/routes/doctors';
@@ -46,6 +48,9 @@ const canViewServices = computed(
 );
 const canViewProducts = computed(
     () => page.props.auth?.canViewProducts === true,
+);
+const canManageAppointmentTypes = computed(
+    () => page.props.auth?.canManageAppointmentTypes === true,
 );
 const canViewPatients = computed(
     () => page.props.auth?.canViewPatients === true,
@@ -125,6 +130,15 @@ const navItems = computed(() => [
                   label: t('nav.products'),
                   href: productsIndex().url,
                   icon: IconPackage,
+              },
+          ]
+        : []),
+    ...(canManageAppointmentTypes.value
+        ? [
+              {
+                  label: t('nav.appointment_types'),
+                  href: appointmentTypesIndex().url,
+                  icon: IconTags,
               },
           ]
         : []),

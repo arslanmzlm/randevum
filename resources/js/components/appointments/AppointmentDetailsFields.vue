@@ -4,15 +4,30 @@ import { useI18n } from 'vue-i18n';
 import FormField from '@/components/FormField.vue';
 import { useAppointmentForm } from './formContext';
 
-defineProps<{
+const props = defineProps<{
     doctorOptions: Array<{ label: string; value: number }>;
     serviceOptions: Array<{ label: string; value: number }>;
+    appointmentTypeOptions: Array<{
+        label: string;
+        value: number;
+        color: string;
+    }>;
     doctorLocked: boolean;
 }>();
 
 const { t } = useI18n();
 
 const form = useAppointmentForm();
+
+// PrimeVue Select's #value slot hands back the raw value, not the option, so resolve
+// the chosen type's label/color from the option list to render the colored swatch.
+function colorFor(value: number): string | undefined {
+    return props.appointmentTypeOptions.find((o) => o.value === value)?.color;
+}
+
+function labelFor(value: number): string | undefined {
+    return props.appointmentTypeOptions.find((o) => o.value === value)?.label;
+}
 </script>
 
 <template>
@@ -40,6 +55,50 @@ const form = useAppointmentForm();
                     :disabled="doctorLocked"
                     fluid
                 />
+            </FormField>
+
+            <FormField
+                v-if="appointmentTypeOptions.length"
+                :label="t('appointment.fields.appointment_type')"
+                :error="form.errors.appointment_type_id"
+                :hint="t('appointment.hints.appointment_type')"
+            >
+                <Select
+                    v-model="form.appointment_type_id"
+                    :options="appointmentTypeOptions"
+                    option-label="label"
+                    option-value="value"
+                    show-clear
+                    fluid
+                >
+                    <template #value="{ value }">
+                        <span
+                            v-if="value !== null && value !== undefined"
+                            class="flex items-center gap-2"
+                        >
+                            <span
+                                class="size-3 shrink-0 rounded-full"
+                                :style="{ backgroundColor: colorFor(value) }"
+                                :aria-hidden="true"
+                            />
+                            {{ labelFor(value) }}
+                        </span>
+                        <!-- FloatLabel passes no placeholder; a non-breaking space keeps the
+                             empty label the same height as a selected value (variant="in"
+                             reserves the floated-label row), matching the sibling selects. -->
+                        <span v-else>&nbsp;</span>
+                    </template>
+                    <template #option="{ option }">
+                        <span class="flex items-center gap-2">
+                            <span
+                                class="size-3 shrink-0 rounded-full"
+                                :style="{ backgroundColor: option.color }"
+                                :aria-hidden="true"
+                            />
+                            {{ option.label }}
+                        </span>
+                    </template>
+                </Select>
             </FormField>
 
             <FormField

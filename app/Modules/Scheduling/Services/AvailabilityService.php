@@ -3,6 +3,7 @@
 namespace App\Modules\Scheduling\Services;
 
 use App\Enums\AvailabilityReason;
+use App\Models\AppointmentType;
 use App\Models\Clinic;
 use App\Models\ScheduleException;
 use App\Models\Service;
@@ -105,9 +106,9 @@ class AvailabilityService
 
     /**
      * Resolve slot duration with priority:
-     * explicit override → selected service duration_minutes → clinic default.
+     * explicit override → service duration_minutes → appointment type default → clinic default.
      */
-    public function resolveDuration(?int $durationMinutes, ?int $serviceId, Clinic $clinic): int
+    public function resolveDuration(?int $durationMinutes, ?int $serviceId, ?int $appointmentTypeId, Clinic $clinic): int
     {
         if ($durationMinutes !== null) {
             return $durationMinutes;
@@ -117,6 +118,13 @@ class AvailabilityService
             $service = Service::find($serviceId);
             if ($service?->duration_minutes) {
                 return $service->duration_minutes;
+            }
+        }
+
+        if ($appointmentTypeId !== null) {
+            $type = AppointmentType::find($appointmentTypeId);
+            if ($type?->default_duration_minutes) {
+                return $type->default_duration_minutes;
             }
         }
 

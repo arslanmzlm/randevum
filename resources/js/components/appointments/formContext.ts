@@ -1,5 +1,5 @@
-import { inject,  provide } from 'vue';
-import type {InjectionKey} from 'vue';
+import { inject, provide } from 'vue';
+import type { InjectionKey } from 'vue';
 import type { AppointmentForm } from '@/types/appointment';
 
 // The create-appointment form is shared mutable state across the field partials. Provide/inject

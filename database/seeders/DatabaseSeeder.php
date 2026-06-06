@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Modules\Verticals\Podiatry\Database\Seeders\PodiatryAppointmentTypesSeeder;
 use App\Modules\Verticals\Podiatry\Database\Seeders\PodiatryProductsSeeder;
 use App\Modules\Verticals\Podiatry\Database\Seeders\PodiatryServicesSeeder;
 use Illuminate\Database\Seeder;
@@ -22,6 +23,7 @@ class DatabaseSeeder extends Seeder
             DemoSeeder::class,
             PodiatryServicesSeeder::class,
             PodiatryProductsSeeder::class,
+            PodiatryAppointmentTypesSeeder::class,
             // Last: needs the demo clinic/doctors/patients AND the vertical's services to exist.
             DemoAppointmentsSeeder::class,
         ]);

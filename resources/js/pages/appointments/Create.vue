@@ -43,12 +43,25 @@ const serviceOptions = computed(() =>
     })),
 );
 
+// Type options carry the calendar color so the select renders a colored dot per option.
+const appointmentTypeOptions = computed(() =>
+    props.appointmentTypes.map((type) => ({
+        label: t('appointment.service_option', {
+            name: type.name,
+            minutes: type.default_duration_minutes,
+        }),
+        value: type.id,
+        color: type.color,
+    })),
+);
+
 const form = useForm<AppointmentFormData>({
     patient_id: props.preselectedPatient?.id ?? null,
     new_patient: { first_name: '', last_name: '', phone: '', email: '' },
     // Auto-select the user's own doctor profile when they have one (owner-as-doctor / doctor role).
     doctor_id: props.ownDoctorId ?? null,
     service_id: null,
+    appointment_type_id: null,
     date: null,
     time: '',
     duration_minutes: props.defaultSlotDuration,
@@ -58,13 +71,19 @@ const form = useForm<AppointmentFormData>({
 // Shared with the field partials (PatientPicker / DateTimeFields / AppointmentDetailsFields).
 provideAppointmentForm(form);
 
-// Selecting a service drives the slot length; clearing it falls back to the clinic default.
+// Mirrors the backend resolveDuration priority: service duration → appointment-type
+// default → clinic default. Editing the duration field afterward is the explicit override.
 watch(
-    () => form.service_id,
-    (id) => {
-        const service = props.services.find((s) => s.id === id);
+    [() => form.service_id, () => form.appointment_type_id],
+    ([serviceId, typeId]) => {
+        const serviceDuration = props.services.find(
+            (s) => s.id === serviceId,
+        )?.duration_minutes;
+        const typeDuration = props.appointmentTypes.find(
+            (t) => t.id === typeId,
+        )?.default_duration_minutes;
         form.duration_minutes =
-            service?.duration_minutes ?? props.defaultSlotDuration;
+            serviceDuration ?? typeDuration ?? props.defaultSlotDuration;
     },
 );
 
@@ -78,6 +97,7 @@ form.transform((data) => ({
     new_patient: data.patient_id ? null : data.new_patient,
     doctor_id: data.doctor_id,
     service_id: data.service_id,
+    appointment_type_id: data.appointment_type_id,
     starts_at: combineDateTime(data.date, data.time),
     duration_minutes: data.duration_minutes,
     is_walk_in: data.is_walk_in,
@@ -110,6 +130,7 @@ function submit(): void {
                     <AppointmentDetailsFields
                         :doctor-options="doctorOptions"
                         :service-options="serviceOptions"
+                        :appointment-type-options="appointmentTypeOptions"
                         :doctor-locked="doctorLocked"
                     />
                 </div>

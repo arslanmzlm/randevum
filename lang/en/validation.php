@@ -250,7 +250,11 @@ return [
         'scope' => 'scope',
         'starts_at' => 'start date',
         'ends_at' => 'end date',
+        // appointment types
+        'color' => 'color',
+        'default_duration_minutes' => 'default duration',
         // appointments
+        'appointment_type_id' => 'appointment type',
         'patient_id' => 'patient',
         'doctor_id' => 'doctor',
         'service_id' => 'service',
