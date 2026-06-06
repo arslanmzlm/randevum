@@ -75,7 +75,7 @@ class DemoSeeder extends Seeder
         // demo doctors: user + clinic-scoped `doctor` role + doctor profile (calendar visibility
         // comes from the profile row, not the role). Mirrors DoctorProfileService::addDoctor.
         $doctors = [
-            ['first_name' => 'Mehmet', 'last_name' => 'Yılmaz', 'email' => 'mehmet@podosen.test', 'title' => 'Dr.', 'specialization' => 'Podoloji', 'license_number' => 'TR-10234'],
+            ['first_name' => 'Mehmet', 'last_name' => 'Yılmaz', 'email' => 'doctor@podosen.test', 'title' => 'Dr.', 'specialization' => 'Podoloji', 'license_number' => 'TR-10234'],
             ['first_name' => 'Ayla', 'last_name' => 'Demir', 'email' => 'ayla@podosen.test', 'title' => 'Uzm. Dr.', 'specialization' => 'Diyabetik Ayak Bakımı', 'license_number' => 'TR-20456'],
             ['first_name' => 'Canan', 'last_name' => 'Kaya', 'email' => 'canan@podosen.test', 'title' => 'Dr.', 'specialization' => 'Ortopedi', 'license_number' => 'TR-30678'],
         ];
@@ -111,5 +111,8 @@ class DemoSeeder extends Seeder
         if ($existing < 100) {
             Patient::factory()->count(100 - $existing)->create(['clinic_id' => $clinic->id]);
         }
+
+        // Appointments are seeded by DemoAppointmentsSeeder (runs last) so they can reference the
+        // vertical's services, which are seeded after this seeder.
     }
 }
