@@ -71,7 +71,7 @@ it('owner can access GET /doctors and the index component is rendered', function
         ->assertInertia(fn ($page) => $page
             ->component('doctors/Index')
             ->has('doctors')
-            ->has('canManage')
+            ->has('auth.permissions')
             ->has('hasOwnProfile')
         );
 });
@@ -85,14 +85,14 @@ it('index canManage is true for owner and false for doctor role', function (): v
 
     $this->actingAs($owner)
         ->get(route('doctors.index'))
-        ->assertInertia(fn ($page) => $page->where('canManage', true));
+        ->assertInertia(fn ($page) => $page->where('auth.permissions', fn ($p) => $p->contains('doctors.update')));
 
     app(ClinicContext::class)->forget();
     app(PermissionRegistrar::class)->setPermissionsTeamId(null);
 
     $this->actingAs($doctorUser)
         ->get(route('doctors.index'))
-        ->assertInertia(fn ($page) => $page->where('canManage', false));
+        ->assertInertia(fn ($page) => $page->where('auth.permissions', fn ($p) => ! $p->contains('doctors.update')));
 });
 
 it('index lists only the active clinic\'s doctors', function (): void {
@@ -252,7 +252,7 @@ it('owner can access the edit page for any clinic doctor', function (): void {
         ->assertInertia(fn ($page) => $page
             ->component('doctors/Edit')
             ->where('doctor.id', $doctor->id)
-            ->has('canManage')
+            ->has('auth.permissions')
             ->has('canEditSelf')
         );
 });

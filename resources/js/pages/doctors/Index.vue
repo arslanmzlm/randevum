@@ -12,6 +12,7 @@ import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import ButtonLink from '@/components/ButtonLink.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import { useCan } from '@/composables/useCan';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { create, destroy, edit, storeOwn } from '@/routes/doctors';
 import type { Doctor, DoctorIndexProps } from '@/types/doctor';
@@ -22,6 +23,8 @@ const props = defineProps<DoctorIndexProps>();
 
 const { t } = useI18n();
 const confirm = useConfirm();
+const { can } = useCan();
+const canManage = computed(() => can('doctors.update'));
 
 const ownForm = useForm({});
 

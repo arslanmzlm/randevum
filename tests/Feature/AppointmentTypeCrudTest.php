@@ -64,7 +64,7 @@ it('owner can access GET /appointment-types and the Index component is rendered'
         ->assertInertia(fn ($page) => $page
             ->component('appointment-types/Index')
             ->has('appointmentTypes')
-            ->has('canManage')
+            ->has('auth.permissions')
         );
 });
 
@@ -75,7 +75,7 @@ it('index canManage is true for owner', function (): void {
 
     $this->actingAs($owner)
         ->get(route('appointment-types.index'))
-        ->assertInertia(fn ($page) => $page->where('canManage', true));
+        ->assertInertia(fn ($page) => $page->where('auth.permissions', fn ($p) => $p->contains('appointmentTypes.create')));
 });
 
 it('index canManage is false for doctor role', function (): void {
@@ -86,7 +86,7 @@ it('index canManage is false for doctor role', function (): void {
     $this->actingAs($doctorUser)
         ->get(route('appointment-types.index'))
         ->assertOk()
-        ->assertInertia(fn ($page) => $page->where('canManage', false));
+        ->assertInertia(fn ($page) => $page->where('auth.permissions', fn ($p) => ! $p->contains('appointmentTypes.create')));
 });
 
 it('manager can access GET /appointment-types and canManage is true', function (): void {
@@ -97,7 +97,7 @@ it('manager can access GET /appointment-types and canManage is true', function (
     $this->actingAs($manager)
         ->get(route('appointment-types.index'))
         ->assertOk()
-        ->assertInertia(fn ($page) => $page->where('canManage', true));
+        ->assertInertia(fn ($page) => $page->where('auth.permissions', fn ($p) => $p->contains('appointmentTypes.create')));
 });
 
 it('doctor can access GET /appointment-types (read-only)', function (): void {

@@ -71,8 +71,7 @@ it('owner can access GET /patients and the Index component is rendered', functio
             ->component('patients/Index')
             ->has('patients')
             ->has('query')
-            ->has('canManage')
-            ->has('canDelete')
+            ->has('auth.permissions')
         );
 });
 
@@ -86,7 +85,7 @@ it('assistant can access GET /patients (read-only, canManage false)', function (
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->component('patients/Index')
-            ->where('canManage', false)
+            ->where('auth.permissions', fn ($p) => ! $p->contains('patients.create'))
         );
 });
 
@@ -99,14 +98,14 @@ it('index canManage is true for owner and false for assistant', function (): voi
 
     $this->actingAs($owner)
         ->get(route('patients.index'))
-        ->assertInertia(fn ($page) => $page->where('canManage', true));
+        ->assertInertia(fn ($page) => $page->where('auth.permissions', fn ($p) => $p->contains('patients.create')));
 
     app(ClinicContext::class)->forget();
     app(PermissionRegistrar::class)->setPermissionsTeamId(null);
 
     $this->actingAs($assistant)
         ->get(route('patients.index'))
-        ->assertInertia(fn ($page) => $page->where('canManage', false));
+        ->assertInertia(fn ($page) => $page->where('auth.permissions', fn ($p) => ! $p->contains('patients.create')));
 });
 
 it('index canDelete follows the delete permission (true for doctor, false for assistant)', function (): void {
@@ -118,14 +117,14 @@ it('index canDelete follows the delete permission (true for doctor, false for as
 
     $this->actingAs($doctor)
         ->get(route('patients.index'))
-        ->assertInertia(fn ($page) => $page->where('canDelete', true));
+        ->assertInertia(fn ($page) => $page->where('auth.permissions', fn ($p) => $p->contains('patients.delete')));
 
     app(ClinicContext::class)->forget();
     app(PermissionRegistrar::class)->setPermissionsTeamId(null);
 
     $this->actingAs($assistant)
         ->get(route('patients.index'))
-        ->assertInertia(fn ($page) => $page->where('canDelete', false));
+        ->assertInertia(fn ($page) => $page->where('auth.permissions', fn ($p) => ! $p->contains('patients.delete')));
 });
 
 // ---------------------------------------------------------------------------
@@ -339,7 +338,7 @@ it('owner can access the show page and Show component renders', function (): voi
             ->has('patient')
             ->where('patient.id', $patient->id)
             ->has('treatments')
-            ->has('canManage')
+            ->has('auth.permissions')
         );
 });
 

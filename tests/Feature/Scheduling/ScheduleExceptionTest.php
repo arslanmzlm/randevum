@@ -69,7 +69,7 @@ it('owner can access GET /schedule-exceptions and the Index component is rendere
             ->component('availability/Index')
             ->has('exceptions')
             ->has('doctors')
-            ->has('canManage')
+            ->has('auth.permissions')
             ->has('ownDoctorId')
             ->has('timezone')
         );
@@ -92,7 +92,7 @@ it('canManage is true for owner', function (): void {
 
     $this->actingAs($owner)
         ->get(route('schedule-exceptions.index'))
-        ->assertInertia(fn ($page) => $page->where('canManage', true));
+        ->assertInertia(fn ($page) => $page->where('auth.permissions', fn ($p) => $p->contains('scheduleExceptions.manage')));
 });
 
 it('canManage is true for manager', function (): void {
@@ -102,7 +102,7 @@ it('canManage is true for manager', function (): void {
 
     $this->actingAs($manager)
         ->get(route('schedule-exceptions.index'))
-        ->assertInertia(fn ($page) => $page->where('canManage', true));
+        ->assertInertia(fn ($page) => $page->where('auth.permissions', fn ($p) => $p->contains('scheduleExceptions.manage')));
 });
 
 it('canManage is true for receptionist', function (): void {
@@ -112,7 +112,7 @@ it('canManage is true for receptionist', function (): void {
 
     $this->actingAs($receptionist)
         ->get(route('schedule-exceptions.index'))
-        ->assertInertia(fn ($page) => $page->where('canManage', true));
+        ->assertInertia(fn ($page) => $page->where('auth.permissions', fn ($p) => $p->contains('scheduleExceptions.manage')));
 });
 
 it('canManage is false for doctor role', function (): void {
@@ -122,7 +122,7 @@ it('canManage is false for doctor role', function (): void {
 
     $this->actingAs($doctorUser)
         ->get(route('schedule-exceptions.index'))
-        ->assertInertia(fn ($page) => $page->where('canManage', false));
+        ->assertInertia(fn ($page) => $page->where('auth.permissions', fn ($p) => ! $p->contains('scheduleExceptions.manage')));
 });
 
 it('canManage is false for assistant role', function (): void {
@@ -133,7 +133,7 @@ it('canManage is false for assistant role', function (): void {
     $this->actingAs($assistant)
         ->get(route('schedule-exceptions.index'))
         ->assertOk()
-        ->assertInertia(fn ($page) => $page->where('canManage', false));
+        ->assertInertia(fn ($page) => $page->where('auth.permissions', fn ($p) => ! $p->contains('scheduleExceptions.manage')));
 });
 
 it('ownDoctorId is set to doctors.id when the user has a profile', function (): void {

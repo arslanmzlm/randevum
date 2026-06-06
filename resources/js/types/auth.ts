@@ -19,20 +19,9 @@ export type Auth = {
     user: User | null;
     /** True when the current user has a doctor profile in the active clinic. */
     isDoctor?: boolean;
-    /** Owner: may view/edit the clinic profile. */
-    canManageClinic?: boolean;
-    /** Owner or manager: may add/edit/remove doctors. */
-    canManageDoctors?: boolean;
-    /** Owner, manager or doctor: may view the service catalog. */
-    canViewServices?: boolean;
-    /** Owner, manager or doctor: may view the product catalog. */
-    canViewProducts?: boolean;
-    /** Owner or manager: may manage clinic appointment types. */
-    canManageAppointmentTypes?: boolean;
-    /** Clinic staff with patients.viewAny: may view the patient list. */
-    canViewPatients?: boolean;
-    /** Clinic staff with scheduleExceptions.viewAny: may view the availability screen. */
-    canViewAvailability?: boolean;
-    /** Clinic staff with appointments.create: may open the create-appointment form. */
-    canCreateAppointments?: boolean;
+    /**
+     * Active-clinic-scoped permission names. Read via `useCan()` — never branch on roles.
+     * Client gating is UX only; the server still enforces every action with `authorize()`.
+     */
+    permissions: string[];
 };

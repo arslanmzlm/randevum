@@ -6,11 +6,13 @@ import {
     IconPhoto,
     IconUser,
 } from '@tabler/icons-vue';
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import ButtonLink from '@/components/ButtonLink.vue';
 import FormField from '@/components/FormField.vue';
 import ImageUploadField from '@/components/ImageUploadField.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import { useCan } from '@/composables/useCan';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { index, update } from '@/routes/doctors';
 import {
@@ -24,6 +26,8 @@ defineOptions({ layout: AppLayout });
 const props = defineProps<DoctorEditProps>();
 
 const { t } = useI18n();
+const { can } = useCan();
+const canManage = computed(() => can('doctors.update'));
 
 const form = useForm({
     first_name: props.doctor.first_name,

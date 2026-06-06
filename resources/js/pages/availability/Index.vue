@@ -6,6 +6,7 @@ import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import FormField from '@/components/FormField.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import { useCan } from '@/composables/useCan';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { destroy, index, store } from '@/routes/schedule-exceptions';
 import type {
@@ -20,6 +21,9 @@ const props = defineProps<AvailabilityIndexProps>();
 
 const { t, locale } = useI18n();
 const confirm = useConfirm();
+const { can } = useCan();
+// scheduleExceptions.manage: clinic-wide + other-doctor add (self-only otherwise).
+const canManage = computed(() => can('scheduleExceptions.manage'));
 
 const doctorFilter = ref<number | null>(null);
 
@@ -98,7 +102,7 @@ const doctorOptions = computed(() =>
 
 // Manage-capable users add for anyone/clinic-wide; a doctor adds only for their
 // own profile. A read-only assistant (no manage, no profile) can't add at all.
-const canAdd = computed(() => props.canManage || props.ownDoctorId !== null);
+const canAdd = computed(() => canManage.value || props.ownDoctorId !== null);
 
 const scopeOptions = computed(() => [
     { label: t('availability.scope_doctor'), value: 'doctor' as const },
@@ -107,7 +111,7 @@ const scopeOptions = computed(() => [
 
 const form = useForm<ScheduleExceptionFormData>({
     scope: 'doctor',
-    doctor_id: props.canManage ? null : props.ownDoctorId,
+    doctor_id: canManage.value ? null : props.ownDoctorId,
     is_all_day: false,
     starts_at: '',
     ends_at: '',
@@ -118,7 +122,7 @@ function openDialog(): void {
     form.reset();
     form.clearErrors();
     form.scope = 'doctor';
-    form.doctor_id = props.canManage ? null : props.ownDoctorId;
+    form.doctor_id = canManage.value ? null : props.ownDoctorId;
     rangeDates.value = null;
     startDateTime.value = null;
     endDateTime.value = null;

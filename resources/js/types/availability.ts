@@ -23,8 +23,6 @@ export type AvailabilityDoctorOption = {
 export type AvailabilityIndexProps = {
     exceptions: ScheduleException[];
     doctors: AvailabilityDoctorOption[];
-    /** scheduleExceptions.manage: clinic-wide + other-doctor add. */
-    canManage: boolean;
     /** The user's own doctors.id, for the self-only add path; null otherwise. */
     ownDoctorId: number | null;
     /** Active clinic timezone — for date/time pickers + list formatting. */

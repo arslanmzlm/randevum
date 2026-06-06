@@ -7,6 +7,7 @@ import { useI18n } from 'vue-i18n';
 import ButtonLink from '@/components/ButtonLink.vue';
 import DataTableWrapper from '@/components/DataTableWrapper.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import { useCan } from '@/composables/useCan';
 import { useTableFilters } from '@/composables/useTableFilters';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { create, destroy, edit, index, show } from '@/routes/patients';
@@ -18,6 +19,9 @@ const props = defineProps<PatientIndexProps>();
 
 const { t } = useI18n();
 const confirm = useConfirm();
+const { can } = useCan();
+const canManage = computed(() => can('patients.create'));
+const canDelete = computed(() => can('patients.delete'));
 
 const { state, loading, first, sortField, sortOrder, onPage, onSort } =
     useTableFilters<{ gender: string | null; is_legacy: boolean | null }>({

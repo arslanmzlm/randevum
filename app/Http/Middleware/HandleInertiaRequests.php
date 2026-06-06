@@ -43,15 +43,10 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
                 'isDoctor' => fn () => $request->user()?->doctor !== null,
-                // Clinic-scoped capability flags for nav gating (team id already set by SetClinicContext).
-                'canManageClinic' => fn () => (bool) $request->user()?->can('clinic.update'),
-                'canManageDoctors' => fn () => (bool) $request->user()?->can('doctors.create'),
-                'canViewServices' => fn () => (bool) $request->user()?->can('services.viewAny'),
-                'canViewProducts' => fn () => (bool) $request->user()?->can('products.viewAny'),
-                'canManageAppointmentTypes' => fn () => (bool) $request->user()?->can('appointmentTypes.create'),
-                'canViewPatients' => fn () => (bool) $request->user()?->can('patients.viewAny'),
-                'canViewAvailability' => fn () => (bool) $request->user()?->can('scheduleExceptions.viewAny'),
-                'canCreateAppointments' => fn () => (bool) $request->user()?->can('appointments.create'),
+                // Active-clinic-scoped permission names (team id set by SetClinicContext). The
+                // frontend reads these via useCan(); server authorize() still enforces. Ownership/
+                // instance checks (e.g. own doctor profile) stay as per-page props, not here.
+                'permissions' => fn () => $request->user()?->getAllPermissions()->pluck('name')->all() ?? [],
             ],
             'activeClinic' => fn () => $this->sharedClinic(),
             'flash' => [

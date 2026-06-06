@@ -30,12 +30,10 @@ class DoctorController extends Controller
         $this->authorize('viewAny', Doctor::class);
 
         $user = $request->user();
-        $canManage = $user->can('doctors.update');
         $hasOwnProfile = $user->doctor()->withoutGlobalScopes()->exists();
 
         return Inertia::render('doctors/Index', [
             'doctors' => $this->repository->forClinicList()->map(fn (Doctor $doctor) => (new DoctorResource($doctor))->resolve()),
-            'canManage' => $canManage,
             'hasOwnProfile' => $hasOwnProfile,
             'canCreateOwn' => $user->can('doctors.createOwn') && ! $hasOwnProfile,
         ]);
@@ -151,7 +149,8 @@ class DoctorController extends Controller
 
         return [
             'doctor' => (new DoctorResource($doctor))->resolve(),
-            'canManage' => $user->can('doctors.update'),
+            // Ownership stays a page prop — it cannot be expressed as a permission. The
+            // doctors.update gate is read on the client via useCan().
             'canEditSelf' => $doctor->user_id === $user->id,
         ];
     }

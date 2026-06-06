@@ -32,7 +32,6 @@ class AppointmentTypeController extends Controller
             'query' => FilterHelper::requestState([
                 'is_active' => 'boolean',
             ]),
-            'canManage' => $request->user()->can('appointmentTypes.create'),
         ]);
     }
 

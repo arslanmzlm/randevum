@@ -62,7 +62,7 @@ it('show emits canEditNotes=true for owner', function (): void {
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->component('patients/Show')
-            ->where('canEditNotes', true)
+            ->where('auth.permissions', fn ($p) => $p->contains('patients.note.update'))
         );
 });
 
@@ -76,7 +76,7 @@ it('show emits canEditNotes=true for doctor', function (): void {
     $this->actingAs($doctor)
         ->get(route('patients.show', $patient))
         ->assertOk()
-        ->assertInertia(fn ($page) => $page->where('canEditNotes', true));
+        ->assertInertia(fn ($page) => $page->where('auth.permissions', fn ($p) => $p->contains('patients.note.update')));
 });
 
 it('show emits canEditNotes=true for receptionist', function (): void {
@@ -89,7 +89,7 @@ it('show emits canEditNotes=true for receptionist', function (): void {
     $this->actingAs($receptionist)
         ->get(route('patients.show', $patient))
         ->assertOk()
-        ->assertInertia(fn ($page) => $page->where('canEditNotes', true));
+        ->assertInertia(fn ($page) => $page->where('auth.permissions', fn ($p) => $p->contains('patients.note.update')));
 });
 
 it('show emits canEditNotes=false for assistant', function (): void {
@@ -102,10 +102,10 @@ it('show emits canEditNotes=false for assistant', function (): void {
     $this->actingAs($assistant)
         ->get(route('patients.show', $patient))
         ->assertOk()
-        ->assertInertia(fn ($page) => $page->where('canEditNotes', false));
+        ->assertInertia(fn ($page) => $page->where('auth.permissions', fn ($p) => ! $p->contains('patients.note.update')));
 });
 
-it('canEditNotes and canManage are independent flags (assistant has neither)', function (): void {
+it('note-edit and update are independent permissions (assistant has neither)', function (): void {
     $clinic = Clinic::factory()->create();
     $assistant = User::factory()->create();
     pntRole($assistant, 'assistant', $clinic->id);
@@ -115,8 +115,8 @@ it('canEditNotes and canManage are independent flags (assistant has neither)', f
     $this->actingAs($assistant)
         ->get(route('patients.show', $patient))
         ->assertInertia(fn ($page) => $page
-            ->where('canManage', false)
-            ->where('canEditNotes', false)
+            ->where('auth.permissions', fn ($p) => ! $p->contains('patients.update')
+                && ! $p->contains('patients.note.update'))
         );
 });
 

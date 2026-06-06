@@ -18,7 +18,6 @@ export type AppointmentTypeQuery = TableState<{
 export type AppointmentTypeIndexProps = {
     appointmentTypes: Paginated<AppointmentType>;
     query: AppointmentTypeQuery;
-    canManage: boolean;
 };
 
 /** Editable fields shared by the create and edit forms. */

@@ -35,7 +35,6 @@ class ServiceController extends Controller
             'query' => FilterHelper::requestState([
                 'is_active' => 'boolean',
             ]),
-            'canManage' => $request->user()->can('services.create'),
             'currency' => $this->activeClinicCurrency(),
         ]);
     }

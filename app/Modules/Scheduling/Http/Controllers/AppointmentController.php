@@ -84,8 +84,6 @@ class AppointmentController extends Controller
             'workingHours' => $clinic->working_hours,
             'timezone' => $clinic->timezone,
             'preselectedPatient' => $preselectedPatient,
-            // Cross-doctor booking gate: without it the doctor select locks to the user's own profile.
-            'canAssignDoctor' => $user->can('appointments.assignDoctor'),
             'ownDoctorId' => $user->doctor?->id,
         ]);
     }

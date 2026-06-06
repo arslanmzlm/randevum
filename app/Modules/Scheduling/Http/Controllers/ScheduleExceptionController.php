@@ -40,7 +40,6 @@ class ScheduleExceptionController extends Controller
         return Inertia::render('availability/Index', [
             'exceptions' => $exceptions,
             'doctors' => $doctors->map(fn ($d) => ['id' => $d->id, 'display_name' => $d->display_name]),
-            'canManage' => $user->can('scheduleExceptions.manage'),
             'ownDoctorId' => $user->doctor?->id,
             'timezone' => $this->activeClinicTimezone(),
             'showPast' => $showPast,

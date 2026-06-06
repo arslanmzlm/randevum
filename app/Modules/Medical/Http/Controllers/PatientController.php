@@ -39,8 +39,6 @@ class PatientController extends Controller
                 'gender' => 'string',
                 'is_legacy' => 'boolean',
             ]),
-            'canManage' => $request->user()->can('patients.create'),
-            'canDelete' => $request->user()->can('patients.delete'),
         ]);
     }
 
@@ -87,8 +85,6 @@ class PatientController extends Controller
         return Inertia::render('patients/Show', [
             'patient' => (new PatientResource($patient))->resolve(),
             'treatments' => [],
-            'canManage' => $request->user()->can('patients.update'),
-            'canEditNotes' => $request->user()->can('patients.note.update'),
         ]);
     }
 

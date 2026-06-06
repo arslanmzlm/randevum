@@ -24,7 +24,6 @@ export type ProductQuery = TableState<{
 export type ProductIndexProps = {
     products: Paginated<Product>;
     query: ProductQuery;
-    canManage: boolean;
     /** ISO 4217 code of the active clinic, for price formatting. */
     currency: string;
 };

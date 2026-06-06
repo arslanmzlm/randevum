@@ -46,8 +46,6 @@ export type AppointmentCreateProps = {
     workingHours: WorkingHours;
     timezone: string;
     preselectedPatient: PatientSearchResult | null;
-    /** appointments.assignDoctor — when false the doctor select locks to ownDoctorId. */
-    canAssignDoctor: boolean;
     /** The user's own doctors.id (auto-selected); null when they have no doctor profile. */
     ownDoctorId: number | null;
 };

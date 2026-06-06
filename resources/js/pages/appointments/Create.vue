@@ -8,6 +8,7 @@ import DaySchedulePanel from '@/components/appointments/DaySchedulePanel.vue';
 import { provideAppointmentForm } from '@/components/appointments/formContext';
 import PatientPicker from '@/components/appointments/PatientPicker.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import { useCan } from '@/composables/useCan';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { store } from '@/routes/appointments';
 import type {
@@ -21,6 +22,7 @@ defineOptions({ layout: AppLayout });
 const props = defineProps<AppointmentCreateProps>();
 
 const { t } = useI18n();
+const { can } = useCan();
 
 const doctorOptions = computed(() =>
     props.doctors.map((doctor) => ({
@@ -88,7 +90,7 @@ watch(
 );
 
 // Without permission to book for others, the doctor select is locked to the user's own profile.
-const doctorLocked = computed(() => !props.canAssignDoctor);
+const doctorLocked = computed(() => !can('appointments.assignDoctor'));
 
 form.transform((data) => ({
     // Mode is derived from which side was used — a picked patient wins over typed fields.

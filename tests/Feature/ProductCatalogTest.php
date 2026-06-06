@@ -69,7 +69,7 @@ it('owner can access GET /products and the Index component is rendered', functio
         ->assertInertia(fn ($page) => $page
             ->component('products/Index')
             ->has('products')
-            ->has('canManage')
+            ->has('auth.permissions')
         );
 });
 
@@ -82,14 +82,14 @@ it('index canManage is true for owner and false for doctor role', function (): v
 
     $this->actingAs($owner)
         ->get(route('products.index'))
-        ->assertInertia(fn ($page) => $page->where('canManage', true));
+        ->assertInertia(fn ($page) => $page->where('auth.permissions', fn ($p) => $p->contains('products.create')));
 
     app(ClinicContext::class)->forget();
     app(PermissionRegistrar::class)->setPermissionsTeamId(null);
 
     $this->actingAs($doctorUser)
         ->get(route('products.index'))
-        ->assertInertia(fn ($page) => $page->where('canManage', false));
+        ->assertInertia(fn ($page) => $page->where('auth.permissions', fn ($p) => ! $p->contains('products.create')));
 });
 
 it('manager can access GET /products and canManage is true', function (): void {
@@ -100,7 +100,7 @@ it('manager can access GET /products and canManage is true', function (): void {
     $this->actingAs($manager)
         ->get(route('products.index'))
         ->assertOk()
-        ->assertInertia(fn ($page) => $page->where('canManage', true));
+        ->assertInertia(fn ($page) => $page->where('auth.permissions', fn ($p) => $p->contains('products.create')));
 });
 
 it('index lists only the active clinic\'s products', function (): void {

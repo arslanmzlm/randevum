@@ -21,13 +21,13 @@ export type Doctor = {
 
 export type DoctorIndexProps = {
     doctors: Doctor[];
-    canManage: boolean;
     hasOwnProfile: boolean;
+    /** Permission + instance state (no own profile yet) — stays a page prop. */
     canCreateOwn: boolean;
 };
 
 export type DoctorEditProps = {
     doctor: Doctor;
-    canManage: boolean;
+    /** Ownership — cannot be a permission, stays a page prop. */
     canEditSelf: boolean;
 };

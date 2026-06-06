@@ -36,7 +36,6 @@ class ProductController extends Controller
             'query' => FilterHelper::requestState([
                 'is_active' => 'boolean',
             ]),
-            'canManage' => $request->user()->can('products.create'),
             'currency' => $this->activeClinicCurrency(),
         ]);
     }

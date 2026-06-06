@@ -15,6 +15,7 @@ import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import ButtonLink from '@/components/ButtonLink.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import { useCan } from '@/composables/useCan';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { destroy, edit, index } from '@/routes/patients';
 import { update as updateNotes } from '@/routes/patients/notes';
@@ -26,6 +27,9 @@ const props = defineProps<PatientShowProps>();
 
 const { t, locale } = useI18n();
 const confirm = useConfirm();
+const { can } = useCan();
+const canManage = computed(() => can('patients.update'));
+const canEditNotes = computed(() => can('patients.note.update'));
 
 const dateFormatter = new Intl.DateTimeFormat(locale.value, {
     day: '2-digit',

@@ -67,7 +67,7 @@ it('owner can access GET /services and the Index component is rendered', functio
         ->assertInertia(fn ($page) => $page
             ->component('services/Index')
             ->has('services')
-            ->has('canManage')
+            ->has('auth.permissions')
         );
 });
 
@@ -80,14 +80,14 @@ it('index canManage is true for owner and false for doctor role', function (): v
 
     $this->actingAs($owner)
         ->get(route('services.index'))
-        ->assertInertia(fn ($page) => $page->where('canManage', true));
+        ->assertInertia(fn ($page) => $page->where('auth.permissions', fn ($p) => $p->contains('services.create')));
 
     app(ClinicContext::class)->forget();
     app(PermissionRegistrar::class)->setPermissionsTeamId(null);
 
     $this->actingAs($doctorUser)
         ->get(route('services.index'))
-        ->assertInertia(fn ($page) => $page->where('canManage', false));
+        ->assertInertia(fn ($page) => $page->where('auth.permissions', fn ($p) => ! $p->contains('services.create')));
 });
 
 it('manager can access GET /services and canManage is true', function (): void {
@@ -98,7 +98,7 @@ it('manager can access GET /services and canManage is true', function (): void {
     $this->actingAs($manager)
         ->get(route('services.index'))
         ->assertOk()
-        ->assertInertia(fn ($page) => $page->where('canManage', true));
+        ->assertInertia(fn ($page) => $page->where('auth.permissions', fn ($p) => $p->contains('services.create')));
 });
 
 it('index lists only the active clinic\'s services', function (): void {

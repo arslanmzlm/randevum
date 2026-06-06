@@ -22,7 +22,6 @@ export type ServiceQuery = TableState<{
 export type ServiceIndexProps = {
     services: Paginated<Service>;
     query: ServiceQuery;
-    canManage: boolean;
     /** ISO 4217 code of the active clinic, for price formatting. */
     currency: string;
 };

@@ -20,6 +20,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import AppToaster from '@/components/AppToaster.vue';
 import PatientSearchSelect from '@/components/PatientSearchSelect.vue';
+import { useCan } from '@/composables/useCan';
 import { useContentWidth } from '@/composables/useContentWidth';
 import { account, dashboard, logout } from '@/routes';
 import { index as appointmentTypesIndex } from '@/routes/appointment-types';
@@ -37,30 +38,9 @@ const page = usePage();
 
 const user = computed(() => page.props.auth?.user ?? null);
 const isDoctor = computed(() => page.props.auth?.isDoctor === true);
-const canManageClinic = computed(
-    () => page.props.auth?.canManageClinic === true,
-);
-const canManageDoctors = computed(
-    () => page.props.auth?.canManageDoctors === true,
-);
-const canViewServices = computed(
-    () => page.props.auth?.canViewServices === true,
-);
-const canViewProducts = computed(
-    () => page.props.auth?.canViewProducts === true,
-);
-const canManageAppointmentTypes = computed(
-    () => page.props.auth?.canManageAppointmentTypes === true,
-);
-const canViewPatients = computed(
-    () => page.props.auth?.canViewPatients === true,
-);
-const canViewAvailability = computed(
-    () => page.props.auth?.canViewAvailability === true,
-);
-const canCreateAppointments = computed(
-    () => page.props.auth?.canCreateAppointments === true,
-);
+const { can } = useCan();
+// Reused in the template (sidebar search) + the Ctrl/Cmd+K handler, so kept as a computed.
+const canViewPatients = computed(() => can('patients.viewAny'));
 const clinic = computed(() => page.props.activeClinic ?? null);
 const { width: contentWidth, toggle: toggleWidth } = useContentWidth();
 const userName = computed(() => {
@@ -79,7 +59,7 @@ const userName = computed(() => {
 // clinic profile nor the doctors management entry). Features add their own as they land.
 const navItems = computed(() => [
     { label: t('nav.dashboard'), href: dashboard().url, icon: IconHome },
-    ...(canCreateAppointments.value
+    ...(can('appointments.create')
         ? [
               {
                   label: t('nav.appointments_create'),
@@ -88,7 +68,7 @@ const navItems = computed(() => [
               },
           ]
         : []),
-    ...(canManageClinic.value
+    ...(can('clinic.update')
         ? [
               {
                   label: t('nav.clinic'),
@@ -97,7 +77,7 @@ const navItems = computed(() => [
               },
           ]
         : []),
-    ...(canManageDoctors.value
+    ...(can('doctors.create')
         ? [
               {
                   label: t('nav.doctors'),
@@ -115,7 +95,7 @@ const navItems = computed(() => [
               },
           ]
         : []),
-    ...(canViewServices.value
+    ...(can('services.viewAny')
         ? [
               {
                   label: t('nav.services'),
@@ -124,7 +104,7 @@ const navItems = computed(() => [
               },
           ]
         : []),
-    ...(canViewProducts.value
+    ...(can('products.viewAny')
         ? [
               {
                   label: t('nav.products'),
@@ -133,7 +113,7 @@ const navItems = computed(() => [
               },
           ]
         : []),
-    ...(canManageAppointmentTypes.value
+    ...(can('appointmentTypes.create')
         ? [
               {
                   label: t('nav.appointment_types'),
@@ -142,7 +122,7 @@ const navItems = computed(() => [
               },
           ]
         : []),
-    ...(canViewAvailability.value
+    ...(can('scheduleExceptions.viewAny')
         ? [
               {
                   label: t('nav.availability'),
