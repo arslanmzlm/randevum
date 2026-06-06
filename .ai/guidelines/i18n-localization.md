@@ -2,7 +2,7 @@
 
 - Always use the translate helper (`__('...')`) for user-facing strings — even when no translation exists yet. Never hardcode literal Turkish (or any) UI strings.
 - Source all patient/entity terminology (`hasta`/`danışan`/`müşteri`, doctor/patient labels) from lang keys, e.g. `__('verticals.<slug>::vertical.patient_label')`. Each vertical ships `lang/tr/vertical.php` + `lang/en/vertical.php` with `name`, `patient_label`, `doctor_label`.
-- Mirror frontend strings via `vue-i18n`.
+- Mirror frontend strings via `vue-i18n`. Each locale's message tree lives in its OWN file under `resources/js/locales/<lang>.ts` (`export const <lang> = {...}`); `resources/js/i18n.ts` stays a slim registry that imports them and registers `messages`. Add a language by adding its file there — never inline a locale tree back into `i18n.ts`.
 - Validation field display names come from `lang/<locale>/validation.php` `attributes` (auto-resolved) — never pass a custom-attributes array inline to `Validator::make`/FormRequest. Turkish attribute values start with an uppercase letter (e.g. `'Ad'`, `'E-posta adresi'`).
 - DB timestamps are ALWAYS stored in UTC (Laravel default) — do not override.
 - Never assume a single country. Always derive timezone, locale, currency, and date/time/money formatting from config — never from inlined constants.
