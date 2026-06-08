@@ -13,6 +13,7 @@ use App\Modules\Medical\Exceptions\TrashedPhoneConflictException;
 use App\Modules\Scheduling\Repositories\AppointmentRepository;
 use App\Support\ClinicContext;
 use Carbon\Carbon;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -25,6 +26,34 @@ class AppointmentService
         private PatientRegistrarContract $patientRegistrar,
         private ClinicContext $clinicContext,
     ) {}
+
+    /**
+     * Paginated appointment list for the active clinic, scoped to the user's visibility.
+     *
+     * Users with `appointments.viewAll` see every doctor's appointments (further narrowable
+     * by the doctor filter in the request). Users without it are hard-scoped to their own
+     * doctor profile; a user with no profile receives an empty paginator.
+     *
+     * @return LengthAwarePaginator<Appointment>
+     */
+    public function listForActiveClinic(User $user): LengthAwarePaginator
+    {
+        $clinic = Clinic::findOrFail($this->clinicContext->id());
+
+        if ($user->can('appointments.viewAll')) {
+            $doctorIds = null;
+        } else {
+            $ownId = $user->doctor?->id;
+
+            if ($ownId === null) {
+                return new LengthAwarePaginator([], 0, 20);
+            }
+
+            $doctorIds = [$ownId];
+        }
+
+        return $this->repository->paginateForActiveClinic($doctorIds, $clinic->timezone);
+    }
 
     /**
      * Create a Confirmed appointment, enforcing the 3-layer availability check,

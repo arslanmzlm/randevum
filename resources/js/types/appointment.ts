@@ -1,9 +1,41 @@
 import type { InertiaForm } from '@inertiajs/vue3';
 import type { AppointmentStatus, AvailabilityReason } from '@/types/enums';
 import type { PatientSearchResult } from '@/types/patient';
+import type { Paginated, TableState } from '@/types/table';
 
 // Re-export so existing imports from '@/types/appointment' keep working.
 export type { AppointmentStatus, AvailabilityReason };
+
+/** One row of the appointment index list (mirrors AppointmentResource). */
+export type AppointmentListItem = {
+    id: number;
+    patient_id: number;
+    patient_name: string;
+    doctor_id: number;
+    doctor_name: string;
+    service_name: string | null;
+    appointment_type: { name: string; color: string } | null;
+    status: AppointmentStatus;
+    is_walk_in: boolean;
+    /** ISO 8601 UTC timestamp. */
+    starts_at: string;
+    /** ISO 8601 UTC timestamp. */
+    ends_at: string;
+};
+
+/** Server-side list JSON:API state echoed back by the appointment index controller. */
+export type AppointmentListQuery = TableState<{
+    status: string;
+    doctor_id: number | null;
+    start_date: string;
+    end_date: string;
+}>;
+
+export type AppointmentIndexProps = {
+    appointments: Paginated<AppointmentListItem>;
+    doctors: AppointmentDoctorOption[];
+    query: AppointmentListQuery;
+};
 
 /** Active-clinic doctor option for the create-appointment doctor select. */
 export type AppointmentDoctorOption = {

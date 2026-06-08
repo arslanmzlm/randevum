@@ -4,7 +4,9 @@ namespace App\Modules\Scheduling\Repositories;
 
 use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
+use App\Support\FilterHelper;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class AppointmentRepository
 {
@@ -14,6 +16,40 @@ class AppointmentRepository
     public function create(array $data): Appointment
     {
         return Appointment::create($data);
+    }
+
+    /**
+     * Server-side paginated list of appointments for the active clinic, applying
+     * request-driven search/filter/sort via FilterHelper.
+     *
+     * ClinicScope auto-isolates the tenant — no explicit clinic_id filter needed.
+     *
+     * @param  list<int>|null  $doctorIds  null = all doctors; non-null = constrain to these ids
+     * @return LengthAwarePaginator<Appointment>
+     */
+    public function paginateForActiveClinic(?array $doctorIds, string $timezone): LengthAwarePaginator
+    {
+        $query = Appointment::query()
+            ->with(['patient', 'doctor.user', 'service', 'appointmentType']);
+
+        if ($doctorIds !== null) {
+            $query->whereIn('doctor_id', $doctorIds);
+        }
+
+        $helper = FilterHelper::for($query)
+            ->searchRelation('patient', 'first_name', 'last_name', 'phone')
+            ->enumMultiple(['status' => AppointmentStatus::class])
+            ->exact('doctor_id')
+            ->dateRange('starts_at', 'start_date', 'end_date', $timezone);
+
+        // User-supplied sort wins; fall back to newest-first by starts_at.
+        if (request()->filled('sort')) {
+            $helper->sort('starts_at', 'created_at', 'status');
+        } else {
+            $query->orderByDesc('starts_at');
+        }
+
+        return $helper->paginate();
     }
 
     /**

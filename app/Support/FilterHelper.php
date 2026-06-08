@@ -64,6 +64,32 @@ class FilterHelper
     }
 
     /**
+     * Apply a LIKE search across columns on a related model when `filter[search]` is non-empty.
+     * Mirrors search() but constrains a relation — use when the searchable fields live on a
+     * related row (e.g. patient name/phone on the `patients` relation, not the owning table).
+     *
+     * @return self<TModel>
+     */
+    public function searchRelation(string $relation, string ...$fields): self
+    {
+        $term = request()->input('filter.search');
+
+        if (blank($term) || ! is_string($term) || $fields === []) {
+            return $this;
+        }
+
+        $this->query->whereHas($relation, function (Builder $query) use ($fields, $term): void {
+            foreach ($fields as $index => $field) {
+                $index === 0
+                    ? $query->whereLike($field, "%{$term}%")
+                    : $query->orWhereLike($field, "%{$term}%");
+            }
+        });
+
+        return $this;
+    }
+
+    /**
      * Apply sorting from the `sort` param (`name` asc, `-name` desc), restricted to
      * the allowed columns. Falls back to `orderByDesc('id')` otherwise.
      *

@@ -13,10 +13,12 @@ use App\Modules\Core\Support\Toast;
 use App\Modules\Scheduling\Http\Requests\CheckAvailabilityRequest;
 use App\Modules\Scheduling\Http\Requests\DayScheduleRequest;
 use App\Modules\Scheduling\Http\Requests\StoreAppointmentRequest;
+use App\Modules\Scheduling\Http\Resources\AppointmentResource;
 use App\Modules\Scheduling\Services\AppointmentService;
 use App\Modules\Scheduling\Services\AppointmentTypeService;
 use App\Modules\Scheduling\Services\AvailabilityService;
 use App\Support\ClinicContext;
+use App\Support\FilterHelper;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -33,6 +35,30 @@ class AppointmentController extends Controller
         private DoctorDirectoryContract $doctorDirectory,
         private ClinicContext $clinicContext,
     ) {}
+
+    public function index(Request $request): Response
+    {
+        $this->authorize('viewAny', Appointment::class);
+
+        $paginator = $this->service->listForActiveClinic($request->user());
+
+        $doctors = $request->user()->can('appointments.viewAll')
+            ? $this->doctorDirectory->activeForClinic()
+                ->map(fn ($d) => ['id' => $d->id, 'display_name' => $d->display_name])
+                ->values()
+            : [];
+
+        return Inertia::render('appointments/Index', [
+            'appointments' => AppointmentResource::collection($paginator),
+            'doctors' => $doctors,
+            'query' => FilterHelper::requestState([
+                'status' => 'string',
+                'doctor_id' => 'integer',
+                'start_date' => 'string',
+                'end_date' => 'string',
+            ]),
+        ]);
+    }
 
     public function create(Request $request): Response
     {

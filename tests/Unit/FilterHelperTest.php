@@ -1,7 +1,9 @@
 <?php
 
 use App\Enums\Gender;
+use App\Models\Appointment;
 use App\Models\Clinic;
+use App\Models\Doctor;
 use App\Models\Patient;
 use App\Models\User;
 use App\Support\ClinicContext;
@@ -360,4 +362,87 @@ it('get returns the filtered rows as a collection without pagination', function 
 
     expect($result)->toHaveCount(1)
         ->and($result->first()->first_name)->toBe('Ahmet');
+});
+
+// ---------------------------------------------------------------------------
+// searchRelation() — reads filter[search], searches on a related model
+// ---------------------------------------------------------------------------
+
+it('searchRelation matches records whose related model has a matching field', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+
+    $matchPatient = Patient::factory()->create(['clinic_id' => $clinic->id, 'first_name' => 'Ahmet', 'phone' => '05311111111']);
+    $noMatchPatient = Patient::factory()->create(['clinic_id' => $clinic->id, 'first_name' => 'Fatma', 'phone' => '05322222222']);
+
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id]);
+
+    Appointment::factory()->create(['clinic_id' => $clinic->id, 'patient_id' => $matchPatient->id, 'doctor_id' => $doctor->id]);
+    Appointment::factory()->create(['clinic_id' => $clinic->id, 'patient_id' => $noMatchPatient->id, 'doctor_id' => $doctor->id]);
+
+    request()->replace(['filter' => ['search' => 'Ahmet']]);
+
+    $result = FilterHelper::for(Appointment::class)
+        ->searchRelation('patient', 'first_name', 'last_name', 'phone')
+        ->paginate();
+
+    expect($result->total())->toBe(1)
+        ->and($result->items()[0]->patient_id)->toBe($matchPatient->id);
+});
+
+it('searchRelation with no match returns an empty result', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id, 'first_name' => 'Ali', 'phone' => '05311111111']);
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id]);
+
+    Appointment::factory()->create(['clinic_id' => $clinic->id, 'patient_id' => $patient->id, 'doctor_id' => $doctor->id]);
+
+    request()->replace(['filter' => ['search' => 'Xxxxxxxxxx']]);
+
+    $result = FilterHelper::for(Appointment::class)
+        ->searchRelation('patient', 'first_name', 'last_name', 'phone')
+        ->paginate();
+
+    expect($result->total())->toBe(0);
+});
+
+it('searchRelation ignores empty search and returns all records', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id]);
+    Appointment::factory()->count(3)->create(['clinic_id' => $clinic->id, 'doctor_id' => $doctor->id]);
+
+    request()->replace(['filter' => ['search' => '']]);
+
+    $result = FilterHelper::for(Appointment::class)
+        ->searchRelation('patient', 'first_name', 'last_name', 'phone')
+        ->paginate();
+
+    expect($result->total())->toBe(3);
+});
+
+it('searchRelation matches across multiple fields on the relation (OR logic)', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+
+    // "Veli" matches first_name of patient1 AND last_name of patient2
+    $patient1 = Patient::factory()->create(['clinic_id' => $clinic->id, 'first_name' => 'Veli', 'last_name' => 'Can', 'phone' => '05311111111']);
+    $patient2 = Patient::factory()->create(['clinic_id' => $clinic->id, 'first_name' => 'Ali', 'last_name' => 'Veli', 'phone' => '05322222222']);
+    $patient3 = Patient::factory()->create(['clinic_id' => $clinic->id, 'first_name' => 'Hasan', 'last_name' => 'Demir', 'phone' => '05333333333']);
+
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id]);
+    Appointment::factory()->create(['clinic_id' => $clinic->id, 'patient_id' => $patient1->id, 'doctor_id' => $doctor->id]);
+    Appointment::factory()->create(['clinic_id' => $clinic->id, 'patient_id' => $patient2->id, 'doctor_id' => $doctor->id]);
+    Appointment::factory()->create(['clinic_id' => $clinic->id, 'patient_id' => $patient3->id, 'doctor_id' => $doctor->id]);
+
+    request()->replace(['filter' => ['search' => 'Veli']]);
+
+    $result = FilterHelper::for(Appointment::class)
+        ->searchRelation('patient', 'first_name', 'last_name', 'phone')
+        ->paginate();
+
+    expect($result->total())->toBe(2);
 });

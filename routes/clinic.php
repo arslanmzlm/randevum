@@ -82,8 +82,9 @@ Route::middleware('auth')->group(function () {
 });
 
 // Appointments — manual/walk-in creation + pre-check probes.
-// Literal segments (create, availability, day-schedule) are declared BEFORE any future {appointment} segment.
+// Literal segments (index, create, availability, day-schedule) are declared BEFORE any future {appointment} segment.
 Route::middleware('auth')->group(function () {
+    Route::get('/appointments', [AppointmentController::class, 'index'])->name('appointments.index');
     Route::get('/appointments/create', [AppointmentController::class, 'create'])->name('appointments.create');
     Route::get('/appointments/availability', [AppointmentController::class, 'availability'])->middleware('throttle:60,1')->name('appointments.availability');
     Route::get('/appointments/day-schedule', [AppointmentController::class, 'daySchedule'])->middleware('throttle:60,1')->name('appointments.day-schedule');

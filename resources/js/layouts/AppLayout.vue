@@ -9,6 +9,7 @@ import {
     IconCalendarWeek,
     IconClipboardList,
     IconHome,
+    IconListDetails,
     IconLogout,
     IconPackage,
     IconSettings,
@@ -25,7 +26,10 @@ import { useCan } from '@/composables/useCan';
 import { useContentWidth } from '@/composables/useContentWidth';
 import { account, dashboard, logout } from '@/routes';
 import { index as appointmentTypesIndex } from '@/routes/appointment-types';
-import { create as appointmentCreate } from '@/routes/appointments';
+import {
+    create as appointmentCreate,
+    index as appointmentsIndex,
+} from '@/routes/appointments';
 import { index as calendarIndex } from '@/routes/calendar';
 import { edit as clinicEdit } from '@/routes/clinic';
 import { index as doctorsIndex, mine as doctorsMine } from '@/routes/doctors';
@@ -67,6 +71,15 @@ const navItems = computed(() => [
                   label: t('nav.calendar'),
                   href: calendarIndex().url,
                   icon: IconCalendarWeek,
+              },
+          ]
+        : []),
+    ...(can('appointments.viewAny')
+        ? [
+              {
+                  label: t('nav.appointments'),
+                  href: appointmentsIndex().url,
+                  icon: IconListDetails,
               },
           ]
         : []),

@@ -13,6 +13,7 @@ export const tr = {
     nav: {
         dashboard: 'Ana sayfa',
         calendar: 'Takvim',
+        appointments: 'Randevular',
         appointments_create: 'Randevu Oluştur',
         clinic: 'Klinik profili',
         doctors: 'Doktorlar',
@@ -552,6 +553,24 @@ export const tr = {
             loading: 'Randevular yükleniyor…',
             walk_in: 'Walk-in',
         },
+    },
+    appointment_list: {
+        title: 'Randevular',
+        subtitle: 'Kliniğinizin tüm randevularını görüntüleyin ve filtreleyin.',
+        search_placeholder: 'Hasta adı veya telefon ile ara…',
+        filter_status: 'Durum',
+        filter_doctor: 'Doktor',
+        filter_date_range: 'Tarih aralığı',
+        columns: {
+            datetime: 'Tarih / Saat',
+            patient: 'Hasta',
+            doctor: 'Doktor',
+            service: 'Hizmet / Tür',
+            status: 'Durum',
+        },
+        walk_in_badge: 'Randevusuz',
+        empty: 'Henüz randevu bulunmuyor.',
+        empty_filtered: 'Seçilen filtrelere uygun randevu bulunamadı.',
     },
     calendar: {
         title: 'Takvim',

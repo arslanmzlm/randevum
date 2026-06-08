@@ -463,7 +463,7 @@ function onSelectEvent(
 </script>
 
 <template>
-    <div class="viewport-content flex flex-col gap-6">
+    <div class="flex viewport-content flex-col gap-6">
         <Head :title="t('calendar.title')" />
 
         <PageHeader

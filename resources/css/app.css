@@ -50,6 +50,13 @@
     }
 }
 
+/* Centers the left-anchored DatePicker overlay under the input: +half the input (8rem=w-64), -half the panel. */
+@utility daterange-panel-centered {
+    @variant sm {
+        transform: translateX(calc(8rem - 50%));
+    }
+}
+
 @layer components {
     /* Vertical form-field stack (label + control + error/hint). */
     .form-group {
