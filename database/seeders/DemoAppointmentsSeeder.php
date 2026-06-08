@@ -131,27 +131,34 @@ class DemoAppointmentsSeeder extends Seeder
     }
 
     /**
-     * A plausible status for the day: today is in-progress, past days are wrapped up, future
-     * days are still booked.
+     * A plausible, varied status for the day: past days are wrapped up (completed, the odd
+     * cancellation / no-show), today is in-progress, future days are still on the books with the
+     * occasional reschedule or cancellation. Weighted by repetition; spans the MVP statuses (which
+     * the calendar shows) so the demo isn't a wall of one colour.
      */
     private function demoStatus(Carbon $day): AppointmentStatus
     {
         return match (true) {
             $day->isToday() => fake()->randomElement([
-                AppointmentStatus::Confirmed,
                 AppointmentStatus::Arrived,
-                AppointmentStatus::Pending,
+                AppointmentStatus::Confirmed,
+                AppointmentStatus::Confirmed,
+                AppointmentStatus::Completed,
+                AppointmentStatus::Cancelled,
             ]),
             $day->isPast() => fake()->randomElement([
                 AppointmentStatus::Completed,
                 AppointmentStatus::Completed,
-                AppointmentStatus::Arrived,
+                AppointmentStatus::Completed,
+                AppointmentStatus::Cancelled,
                 AppointmentStatus::NoShow,
             ]),
             default => fake()->randomElement([
                 AppointmentStatus::Confirmed,
                 AppointmentStatus::Confirmed,
-                AppointmentStatus::Pending,
+                AppointmentStatus::Confirmed,
+                AppointmentStatus::Rescheduled,
+                AppointmentStatus::Cancelled,
             ]),
         };
     }

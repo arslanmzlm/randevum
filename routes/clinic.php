@@ -7,6 +7,7 @@ use App\Modules\Core\Http\Controllers\DoctorController;
 use App\Modules\Medical\Http\Controllers\PatientController;
 use App\Modules\Scheduling\Http\Controllers\AppointmentController;
 use App\Modules\Scheduling\Http\Controllers\AppointmentTypeController;
+use App\Modules\Scheduling\Http\Controllers\CalendarController;
 use App\Modules\Scheduling\Http\Controllers\ScheduleExceptionController;
 use Illuminate\Support\Facades\Route;
 
@@ -71,6 +72,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/appointment-types/{appointmentType}/edit', [AppointmentTypeController::class, 'edit'])->name('appointment-types.edit');
     Route::put('/appointment-types/{appointmentType}', [AppointmentTypeController::class, 'update'])->name('appointment-types.update');
     Route::delete('/appointment-types/{appointmentType}', [AppointmentTypeController::class, 'destroy'])->name('appointment-types.destroy');
+});
+
+// Calendar — month / week / day view of the clinic's appointments (read-only).
+// Literal segment (events) declared before any future {calendar} wildcard.
+Route::middleware('auth')->group(function () {
+    Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
+    Route::get('/calendar/events', [CalendarController::class, 'events'])->middleware('throttle:60,1')->name('calendar.events');
 });
 
 // Appointments — manual/walk-in creation + pre-check probes.

@@ -41,9 +41,11 @@ export type ClinicVertical = { id: number; name: string };
 export type ClinicCountry = { id: number; name: string; code: string };
 export type ClinicCity = { id: number; name: string };
 
-/** Curated clinic identity shared on every page (shell logo + name). */
+/** Curated clinic identity shared on every page (shell logo + name + tz for date formatting). */
 export type SharedClinic = {
     id: number;
     name: string;
     logo_url: string | null;
+    /** Clinic IANA timezone — single source for useDateTime()/calendar local rendering. */
+    timezone: string;
 };

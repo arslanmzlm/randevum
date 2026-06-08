@@ -15,6 +15,7 @@ import PhoneInput from '@/components/PhoneInput.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { index, restore, store } from '@/routes/patients';
 import type { PatientFormData, RestorablePatient } from '@/types/patient';
+import { toDateString } from '@/utils/datetime';
 
 defineOptions({ layout: AppLayout });
 
@@ -28,14 +29,6 @@ const genderOptions = computed(() => [
 ]);
 
 const maxBirthDate = new Date();
-
-function toYmd(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-
-    return `${year}-${month}-${day}`;
-}
 
 const form = useForm<PatientFormData>({
     first_name: '',
@@ -52,7 +45,7 @@ const form = useForm<PatientFormData>({
 
 form.transform((data) => ({
     ...data,
-    birth_date: data.birth_date ? toYmd(data.birth_date) : null,
+    birth_date: data.birth_date ? toDateString(data.birth_date) : null,
 }));
 
 function submit(): void {

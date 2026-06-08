@@ -7,6 +7,7 @@ import { useI18n } from 'vue-i18n';
 import FormField from '@/components/FormField.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import { useCan } from '@/composables/useCan';
+import { useDateTime } from '@/composables/useDateTime';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { destroy, index, store } from '@/routes/schedule-exceptions';
 import type {
@@ -19,9 +20,10 @@ defineOptions({ layout: AppLayout });
 
 const props = defineProps<AvailabilityIndexProps>();
 
-const { t, locale } = useI18n();
+const { t } = useI18n();
 const confirm = useConfirm();
 const { can } = useCan();
+const { formatRange, isPast } = useDateTime();
 // scheduleExceptions.manage: clinic-wide + other-doctor add (self-only otherwise).
 const canManage = computed(() => can('scheduleExceptions.manage'));
 
@@ -47,45 +49,14 @@ const filteredExceptions = computed(() => {
     return props.exceptions.filter((e) => e.doctor_id === doctorFilter.value);
 });
 
-const dateFmt = new Intl.DateTimeFormat(locale.value, {
-    timeZone: props.timezone,
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-});
-const dateTimeFmt = new Intl.DateTimeFormat(locale.value, {
-    timeZone: props.timezone,
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-});
-const timeFmt = new Intl.DateTimeFormat(locale.value, {
-    timeZone: props.timezone,
-    hour: '2-digit',
-    minute: '2-digit',
-});
-
-function formatRange(exception: ScheduleException): string {
-    const start = new Date(exception.starts_at);
-    const end = new Date(exception.ends_at);
-    const startDate = dateFmt.format(start);
-    const endDate = dateFmt.format(end);
-
-    if (exception.is_all_day) {
-        return startDate === endDate ? startDate : `${startDate} – ${endDate}`;
-    }
-
-    if (startDate === endDate) {
-        return `${startDate} ${timeFmt.format(start)} – ${timeFmt.format(end)}`;
-    }
-
-    return `${dateTimeFmt.format(start)} – ${dateTimeFmt.format(end)}`;
+function formatExceptionRange(exception: ScheduleException): string {
+    return formatRange(exception.starts_at, exception.ends_at, {
+        allDay: exception.is_all_day,
+    });
 }
 
-function isPast(exception: ScheduleException): boolean {
-    return new Date(exception.ends_at).getTime() < Date.now();
+function isExceptionPast(exception: ScheduleException): boolean {
+    return isPast(exception.ends_at);
 }
 
 const dialogVisible = ref(false);
@@ -278,7 +249,7 @@ function removeException(exception: ScheduleException): void {
                     <template #body="{ data }">
                         <div class="flex items-center gap-2">
                             <span class="text-surface-700">
-                                {{ formatRange(data) }}
+                                {{ formatExceptionRange(data) }}
                             </span>
                             <Tag
                                 v-if="data.is_all_day"
@@ -286,7 +257,7 @@ function removeException(exception: ScheduleException): void {
                                 :value="t('availability.all_day_badge')"
                             />
                             <Tag
-                                v-if="isPast(data)"
+                                v-if="isExceptionPast(data)"
                                 severity="secondary"
                                 :value="t('availability.past_badge')"
                             />

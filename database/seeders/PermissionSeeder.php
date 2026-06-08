@@ -42,6 +42,11 @@ class PermissionSeeder extends Seeder
         'scheduleExceptions.viewAny' => ['owner', 'manager', 'doctor', 'receptionist', 'assistant'],
         'scheduleExceptions.manage' => ['owner', 'manager', 'receptionist'],
         // appointments
+        // Open the calendar / appointment list.
+        'appointments.viewAny' => ['owner', 'manager', 'doctor', 'receptionist', 'assistant'],
+        // See every doctor's appointments (absent → scoped to own doctors.id).
+        // Doctors are excluded so they see only their own; non-doctor roles need full view.
+        'appointments.viewAll' => ['owner', 'manager', 'receptionist', 'assistant'],
         'appointments.create' => ['owner', 'manager', 'doctor', 'receptionist'],
         // Book on behalf of any doctor. Without it, a doctor is locked to their own profile.
         'appointments.assignDoctor' => ['owner', 'manager', 'receptionist'],

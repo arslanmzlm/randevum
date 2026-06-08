@@ -80,6 +80,8 @@ class HandleInertiaRequests extends Middleware
             'id' => $clinic->id,
             'name' => $clinic->name,
             'logo_url' => $clinic->imageUrl('logo', 'thumb'),
+            // Shared globally so useDateTime() and the calendar read tz from one source.
+            'timezone' => $clinic->timezone,
         ];
     }
 }

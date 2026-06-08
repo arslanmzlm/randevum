@@ -43,4 +43,25 @@ class ScheduleExceptionRepository
     {
         $exception->delete();
     }
+
+    /**
+     * Schedule exceptions that overlap [startUtc, endUtc] for the given doctor(s).
+     * ClinicScope is applied automatically.
+     *
+     * @param  int|list<int>  $doctorIds
+     * @return Collection<int, ScheduleException>
+     */
+    public function inRange(int|array $doctorIds, mixed $startUtc, mixed $endUtc): Collection
+    {
+        $query = ScheduleException::overlapping($startUtc, $endUtc)
+            ->orderBy('starts_at');
+
+        if (is_array($doctorIds)) {
+            $query->whereIn('doctor_id', $doctorIds);
+        } else {
+            $query->forDoctor($doctorIds);
+        }
+
+        return $query->get();
+    }
 }

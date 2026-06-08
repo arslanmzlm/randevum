@@ -5,6 +5,7 @@ import type {
 } from 'primevue/datatable';
 import { computed, reactive, ref, watch } from 'vue';
 import type { SortOrderString } from '@/types/table';
+import { parseDateString, toDateString } from '@/utils/datetime';
 
 /**
  * Owns the server-side lazy-list state machine shared by every `DataTable` list:
@@ -66,7 +67,7 @@ function parseValue(type: FilterType, raw: string): FilterValue {
         case 'boolean':
             return raw === '1' || raw === 'true';
         case 'date':
-            return new Date(raw);
+            return parseDateString(raw);
         case 'array':
             return raw.split(',');
         default:
@@ -80,11 +81,7 @@ function serializeValue(type: FilterType, value: FilterValue): string | number {
     }
 
     if (type === 'date' && value instanceof Date) {
-        const year = value.getFullYear();
-        const month = String(value.getMonth() + 1).padStart(2, '0');
-        const day = String(value.getDate()).padStart(2, '0');
-
-        return `${year}-${month}-${day}`;
+        return toDateString(value);
     }
 
     if (type === 'array' && Array.isArray(value)) {

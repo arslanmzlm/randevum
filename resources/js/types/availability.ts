@@ -25,8 +25,6 @@ export type AvailabilityIndexProps = {
     doctors: AvailabilityDoctorOption[];
     /** The user's own doctors.id, for the self-only add path; null otherwise. */
     ownDoctorId: number | null;
-    /** Active clinic timezone — for date/time pickers + list formatting. */
-    timezone: string;
     /** Whether the list currently includes past exceptions (driven by the ?show_past param). */
     showPast: boolean;
     /** Upcoming view only: true when past exceptions exist, to offer the "show past" hint. */

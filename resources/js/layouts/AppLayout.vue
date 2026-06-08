@@ -6,6 +6,7 @@ import {
     IconBuildingHospital,
     IconCalendarOff,
     IconCalendarPlus,
+    IconCalendarWeek,
     IconClipboardList,
     IconHome,
     IconLogout,
@@ -25,6 +26,7 @@ import { useContentWidth } from '@/composables/useContentWidth';
 import { account, dashboard, logout } from '@/routes';
 import { index as appointmentTypesIndex } from '@/routes/appointment-types';
 import { create as appointmentCreate } from '@/routes/appointments';
+import { index as calendarIndex } from '@/routes/calendar';
 import { edit as clinicEdit } from '@/routes/clinic';
 import { index as doctorsIndex, mine as doctorsMine } from '@/routes/doctors';
 import { index as patientsIndex, show as patientShow } from '@/routes/patients';
@@ -59,6 +61,15 @@ const userName = computed(() => {
 // clinic profile nor the doctors management entry). Features add their own as they land.
 const navItems = computed(() => [
     { label: t('nav.dashboard'), href: dashboard().url, icon: IconHome },
+    ...(can('appointments.viewAny')
+        ? [
+              {
+                  label: t('nav.calendar'),
+                  href: calendarIndex().url,
+                  icon: IconCalendarWeek,
+              },
+          ]
+        : []),
     ...(can('appointments.create')
         ? [
               {

@@ -15,6 +15,7 @@ import PhoneInput from '@/components/PhoneInput.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { index, show, update } from '@/routes/patients';
 import type { PatientEditProps, PatientFormData } from '@/types/patient';
+import { parseDateString, toDateString } from '@/utils/datetime';
 
 defineOptions({ layout: AppLayout });
 
@@ -29,25 +30,6 @@ const genderOptions = computed(() => [
 ]);
 
 const maxBirthDate = new Date();
-
-function toYmd(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-
-    return `${year}-${month}-${day}`;
-}
-
-// Build a local-midnight Date from the Y-m-d string so the picker doesn't shift a day.
-function fromYmd(value: string | null): Date | null {
-    if (!value) {
-        return null;
-    }
-
-    const [year, month, day] = value.split('-').map(Number);
-
-    return new Date(year, month - 1, day);
-}
 
 // Stored phones are E.164 (+90…); the mask works on the 10-digit national part.
 function toNationalDigits(value: string | null): string {
@@ -66,7 +48,9 @@ const form = useForm<PatientFormData>({
     phone: toNationalDigits(props.patient.phone),
     contact_phone: toNationalDigits(props.patient.contact_phone),
     email: props.patient.email ?? '',
-    birth_date: fromYmd(props.patient.birth_date),
+    birth_date: props.patient.birth_date
+        ? parseDateString(props.patient.birth_date)
+        : null,
     gender: props.patient.gender,
     notification_enabled: props.patient.notification_enabled,
     is_legacy: props.patient.is_legacy,
@@ -75,7 +59,7 @@ const form = useForm<PatientFormData>({
 
 form.transform((data) => ({
     ...data,
-    birth_date: data.birth_date ? toYmd(data.birth_date) : null,
+    birth_date: data.birth_date ? toDateString(data.birth_date) : null,
 }));
 
 function submit(): void {

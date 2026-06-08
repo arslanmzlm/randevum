@@ -1,0 +1,597 @@
+<script setup lang="ts">
+import { Head } from '@inertiajs/vue3';
+import {
+    IconCalendarPlus,
+    IconChevronLeft,
+    IconChevronRight,
+    IconLoader2,
+} from '@tabler/icons-vue';
+import { useElementSize, useNow } from '@vueuse/core';
+import {
+    addDays,
+    addMonths,
+    addWeeks,
+    endOfDay,
+    endOfMonth,
+    endOfWeek,
+    startOfDay,
+    startOfMonth,
+    startOfWeek,
+    subDays,
+    subMonths,
+    subWeeks,
+} from 'date-fns';
+import { computed, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
+import ButtonLink from '@/components/ButtonLink.vue';
+import AppointmentPopover from '@/components/calendar/AppointmentPopover.vue';
+import CalendarMonthGrid from '@/components/calendar/CalendarMonthGrid.vue';
+import CalendarTimeGrid from '@/components/calendar/CalendarTimeGrid.vue';
+import PageHeader from '@/components/PageHeader.vue';
+import { useCalendarEvents } from '@/composables/useCalendarEvents';
+import { useCan } from '@/composables/useCan';
+import { useDateTime } from '@/composables/useDateTime';
+import AppLayout from '@/layouts/AppLayout.vue';
+import { create as appointmentCreate } from '@/routes/appointments';
+import type {
+    CalendarColumn,
+    CalendarDaySummary,
+    CalendarEventDto,
+    CalendarIndexProps,
+    CalendarView,
+} from '@/types/calendar';
+import type { WeekDay } from '@/types/clinic';
+import type { AppointmentStatus } from '@/types/enums';
+import {
+    DEFAULT_CALENDAR_STATUSES,
+    MVP_APPOINTMENT_STATUSES,
+} from '@/utils/appointmentStatus';
+import { wallClockDate, wallClockMinutes } from '@/utils/calendarLayout';
+import { parseDateString, toDateString } from '@/utils/datetime';
+
+defineOptions({ layout: AppLayout });
+
+const props = defineProps<CalendarIndexProps>();
+
+const { t, locale } = useI18n();
+const { can } = useCan();
+const { formatMonthYear, formatFullDate, formatLongDate, parseUtc } =
+    useDateTime();
+const canViewAll = computed(() => can('appointments.viewAll'));
+
+// A doctor with full visibility defaults to their own column; a non-doctor (owner/manager/
+// reception) defaults to all doctors. Without viewAll the filter is hidden and the server forces own.
+const doctorFilter = ref<number | null>(
+    canViewAll.value ? (props.ownDoctorId ?? null) : null,
+);
+const statuses = ref<AppointmentStatus[]>([...DEFAULT_CALENDAR_STATUSES]);
+
+const activeView = ref<CalendarView>(props.defaultView);
+const viewDate = ref<Date>(new Date());
+
+// The fetch range derived from view + date, so events refetch on every navigation. Month fetches
+// the full visible grid (≤6 weeks).
+const range = computed<{ start: Date; end: Date }>(() => {
+    const d = viewDate.value;
+
+    if (activeView.value === 'month') {
+        return {
+            start: startOfWeek(startOfMonth(d), { weekStartsOn: 1 }),
+            end: endOfWeek(endOfMonth(d), { weekStartsOn: 1 }),
+        };
+    }
+
+    if (activeView.value === 'day') {
+        return { start: startOfDay(d), end: endOfDay(d) };
+    }
+
+    return {
+        start: startOfWeek(d, { weekStartsOn: 1 }),
+        end: endOfWeek(d, { weekStartsOn: 1 }),
+    };
+});
+
+const currentTitle = computed(() => {
+    if (activeView.value === 'month') {
+        return formatMonthYear(viewDate.value);
+    }
+
+    if (activeView.value === 'day') {
+        return formatFullDate(viewDate.value);
+    }
+
+    const weekStart = startOfWeek(viewDate.value, { weekStartsOn: 1 });
+    const weekEnd = endOfWeek(viewDate.value, { weekStartsOn: 1 });
+    const sameMonth =
+        weekStart.getMonth() === weekEnd.getMonth() &&
+        weekStart.getFullYear() === weekEnd.getFullYear();
+
+    // Long form, e.g. "1 – 7 Haziran 2026" (same month) or "28 Haziran – 4 Temmuz 2026".
+    return sameMonth
+        ? `${weekStart.getDate()} – ${formatLongDate(weekEnd)}`
+        : `${formatLongDate(weekStart)} – ${formatLongDate(weekEnd)}`;
+});
+
+const WEEK_ORDER: WeekDay[] = [
+    'monday',
+    'tuesday',
+    'wednesday',
+    'thursday',
+    'friday',
+    'saturday',
+    'sunday',
+];
+
+function toMinutes(time: string): number {
+    const [h, m] = time.split(':').map(Number);
+
+    return h * 60 + m;
+}
+
+const openDays = computed(() =>
+    WEEK_ORDER.map((day) => ({ day, hours: props.workingHours?.[day] })).filter(
+        (
+            entry,
+        ): entry is {
+            day: WeekDay;
+            hours: {
+                open: string;
+                close: string;
+                break: [string, string] | null;
+            };
+        } => Boolean(entry.hours && !('closed' in entry.hours)),
+    ),
+);
+
+const workingFrom = computed(() =>
+    openDays.value.length === 0
+        ? 8 * 60
+        : Math.min(...openDays.value.map((d) => toMinutes(d.hours.open))),
+);
+const workingTo = computed(() =>
+    openDays.value.length === 0
+        ? 20 * 60
+        : Math.max(...openDays.value.map((d) => toMinutes(d.hours.close))),
+);
+
+// Appointments outside working hours (walk-ins, exceptions to the schedule) shouldn't be clipped:
+// expand the time axis to the hour around the earliest/latest appointment. Leave blocks don't
+// expand it (an all-day leave would otherwise force a 00:00–24:00 axis).
+const eventBounds = computed(() => {
+    let min = Infinity;
+    let max = -Infinity;
+
+    for (const a of data.value) {
+        min = Math.min(min, wallClockMinutes(a.start));
+        max = Math.max(max, wallClockMinutes(a.end));
+    }
+
+    return { min, max };
+});
+
+const timeFrom = computed(() =>
+    data.value.length > 0 && eventBounds.value.min < workingFrom.value
+        ? Math.floor(eventBounds.value.min / 60) * 60
+        : workingFrom.value,
+);
+const timeTo = computed(() =>
+    data.value.length > 0 && eventBounds.value.max > workingTo.value
+        ? Math.ceil(eventBounds.value.max / 60) * 60
+        : workingTo.value,
+);
+
+// Per-doctor columns only when an all-access user views a single day across every doctor.
+const schedulesActive = computed(
+    () =>
+        canViewAll.value &&
+        activeView.value === 'day' &&
+        doctorFilter.value === null &&
+        props.doctors.length > 1,
+);
+
+// Stable per-doctor accent (cycled) — shared by the day-view column header dot and the month-view
+// daily summary dot, so a doctor reads as the same colour across views.
+const DOCTOR_PALETTE = [
+    'var(--p-blue-400)',
+    'var(--p-green-400)',
+    'var(--p-purple-400)',
+    'var(--p-orange-400)',
+    'var(--p-pink-400)',
+    'var(--p-teal-400)',
+];
+function doctorColor(doctorId: number): string {
+    const idx = props.doctors.findIndex((d) => d.id === doctorId);
+
+    return DOCTOR_PALETTE[(idx < 0 ? 0 : idx) % DOCTOR_PALETTE.length];
+}
+
+const fetchParams = computed(() => ({
+    start: toDateString(range.value.start),
+    end: toDateString(range.value.end),
+    doctorId: doctorFilter.value,
+    statuses: statuses.value,
+}));
+
+const { state, data, exceptions } = useCalendarEvents(() => fetchParams.value);
+
+// Live clock in the clinic timezone, ticking each minute — drives the now-line + today highlight.
+const now = useNow({ interval: 60_000 });
+const clinicNow = computed(() => parseUtc(now.value));
+const todayKey = computed(() => toDateString(clinicNow.value));
+const nowMinutes = computed(
+    () => clinicNow.value.getHours() * 60 + clinicNow.value.getMinutes(),
+);
+
+// Stretch the time rows so the grid fills the body height (no inner scroll when it fits), down to a
+// readable minimum per slot; the grid scrolls only when even the minimum would overflow.
+const calendarBody = ref<HTMLElement>();
+const { height: bodyHeight } = useElementSize(calendarBody);
+// Column-header row (~44) + the grid's top/bottom scroll padding (~20) — kept out of the fillable
+// area so the grid still fits without scroll when the working window is short.
+const HEADER_RESERVE = 64;
+const MIN_SLOT_PX = 26;
+const minutesSpan = computed(() => Math.max(1, timeTo.value - timeFrom.value));
+const pxPerMinute = computed(() => {
+    const minPx = MIN_SLOT_PX / props.defaultSlotDuration;
+    const available = bodyHeight.value - HEADER_RESERVE;
+
+    if (available <= 0) {
+        return minPx;
+    }
+
+    return Math.max(minPx, available / minutesSpan.value);
+});
+
+function eventsForDate(date: string): CalendarEventDto[] {
+    return data.value.filter((a) => wallClockDate(a.start) === date);
+}
+function exceptionsForDate(date: string) {
+    return exceptions.value.filter(
+        (e) => wallClockDate(e.start) <= date && wallClockDate(e.end) >= date,
+    );
+}
+
+// Greyed (non-interactive) before-open / lunch break / after-close bands for a column's weekday.
+function closedBandsFor(date: Date) {
+    const weekday = WEEK_ORDER[(date.getDay() + 6) % 7];
+    const hours = props.workingHours?.[weekday];
+
+    if (!hours) {
+        return [];
+    }
+
+    if ('closed' in hours) {
+        return [{ fromMin: timeFrom.value, toMin: timeTo.value }];
+    }
+
+    const bands: { fromMin: number; toMin: number; label?: string }[] = [];
+    const open = toMinutes(hours.open);
+    const close = toMinutes(hours.close);
+
+    if (open > timeFrom.value) {
+        bands.push({ fromMin: timeFrom.value, toMin: open });
+    }
+
+    if (hours.break) {
+        bands.push({
+            fromMin: toMinutes(hours.break[0]),
+            toMin: toMinutes(hours.break[1]),
+            label: t('calendar.break'),
+        });
+    }
+
+    if (close < timeTo.value) {
+        bands.push({ fromMin: close, toMin: timeTo.value });
+    }
+
+    return bands;
+}
+
+const weekdayFormatter = computed(
+    () => new Intl.DateTimeFormat(locale.value, { weekday: 'short' }),
+);
+
+const gridColumns = computed<CalendarColumn[]>(() => {
+    if (activeView.value === 'month') {
+        return [];
+    }
+
+    if (activeView.value === 'week') {
+        const start = startOfWeek(viewDate.value, { weekStartsOn: 1 });
+        const cols: CalendarColumn[] = [];
+
+        for (let i = 0; i < 7; i += 1) {
+            const date = addDays(start, i);
+            const weekday = WEEK_ORDER[(date.getDay() + 6) % 7];
+            const hours = props.workingHours?.[weekday];
+
+            // Fully-closed weekdays are dropped from the week view.
+            if (hours && 'closed' in hours) {
+                continue;
+            }
+
+            const ds = toDateString(date);
+            cols.push({
+                key: ds,
+                date,
+                label: weekdayFormatter.value.format(date),
+                sublabel: String(date.getDate()),
+                isToday: ds === todayKey.value,
+                events: eventsForDate(ds),
+                exceptions: exceptionsForDate(ds),
+                closedBands: closedBandsFor(date),
+            });
+        }
+
+        return cols;
+    }
+
+    const date = viewDate.value;
+    const ds = toDateString(date);
+    const dayEvents = eventsForDate(ds);
+    const dayExceptions = exceptionsForDate(ds);
+
+    if (schedulesActive.value) {
+        return props.doctors.map((d) => ({
+            key: `doc-${d.id}`,
+            date,
+            label: d.display_name,
+            tintColor: doctorColor(d.id),
+            isToday: ds === todayKey.value,
+            events: dayEvents.filter((e) => e.doctor_id === d.id),
+            exceptions: dayExceptions.filter((e) => e.doctor_id === d.id),
+            closedBands: closedBandsFor(date),
+        }));
+    }
+
+    return [
+        {
+            key: ds,
+            date,
+            label: '',
+            isToday: ds === todayKey.value,
+            events: dayEvents,
+            exceptions: dayExceptions,
+            closedBands: closedBandsFor(date),
+        },
+    ];
+});
+
+// Month view: ONE chip per doctor per day, keyed by date for the grid cell lookup.
+const summariesByDate = computed(() => {
+    const byKey = new Map<string, CalendarDaySummary>();
+
+    for (const a of data.value) {
+        const date = wallClockDate(a.start);
+        const key = `${date}-${a.doctor_id}`;
+        const existing = byKey.get(key);
+
+        if (existing) {
+            existing.count += 1;
+        } else {
+            byKey.set(key, {
+                date,
+                doctorId: a.doctor_id,
+                doctorName: a.doctor_name,
+                count: 1,
+            });
+        }
+    }
+
+    const byDate = new Map<string, CalendarDaySummary[]>();
+
+    for (const summary of byKey.values()) {
+        const arr = byDate.get(summary.date) ?? [];
+        arr.push(summary);
+        byDate.set(summary.date, arr);
+    }
+
+    for (const arr of byDate.values()) {
+        arr.sort(
+            (a, b) =>
+                props.doctors.findIndex((d) => d.id === a.doctorId) -
+                props.doctors.findIndex((d) => d.id === b.doctorId),
+        );
+    }
+
+    return byDate;
+});
+
+const doctorOptions = computed(() =>
+    props.doctors.map((d) => ({ label: d.display_name, value: d.id })),
+);
+const statusOptions = computed(() =>
+    MVP_APPOINTMENT_STATUSES.map((status) => ({
+        label: t(`appointment.status.${status}`),
+        value: status,
+    })),
+);
+const viewOptions = computed(() => [
+    { label: t('calendar.views.month'), value: 'month' as const },
+    { label: t('calendar.views.week'), value: 'week' as const },
+    { label: t('calendar.views.day'), value: 'day' as const },
+]);
+
+const isLoading = computed(
+    () => state.value === 'loading' || state.value === 'idle',
+);
+const isEmpty = computed(
+    () => state.value === 'loaded' && data.value.length === 0,
+);
+
+function onMonthCellClick(date: Date): void {
+    viewDate.value = date;
+    activeView.value = 'day';
+}
+
+// Month doctor-summary click: drill into that day filtered to the clicked doctor.
+function onSummaryClick(date: string, doctorId: number): void {
+    if (canViewAll.value) {
+        doctorFilter.value = doctorId;
+    }
+
+    viewDate.value = parseDateString(date);
+    activeView.value = 'day';
+}
+
+function goPrev(): void {
+    const shift = { month: subMonths, week: subWeeks, day: subDays }[
+        activeView.value
+    ];
+    viewDate.value = shift(viewDate.value, 1);
+}
+
+function goNext(): void {
+    const shift = { month: addMonths, week: addWeeks, day: addDays }[
+        activeView.value
+    ];
+    viewDate.value = shift(viewDate.value, 1);
+}
+
+function goToday(): void {
+    viewDate.value = new Date();
+}
+
+const popover = ref<InstanceType<typeof AppointmentPopover>>();
+
+function onSelectEvent(
+    domEvent: MouseEvent,
+    appointment: CalendarEventDto,
+): void {
+    popover.value?.show(domEvent, appointment);
+}
+</script>
+
+<template>
+    <div class="viewport-content flex flex-col gap-6">
+        <Head :title="t('calendar.title')" />
+
+        <PageHeader
+            class="shrink-0"
+            :title="t('calendar.title')"
+            :description="t('calendar.subtitle')"
+            :breadcrumbs="[{ label: t('nav.calendar') }]"
+        >
+            <template #actions>
+                <ButtonLink
+                    :href="appointmentCreate().url"
+                    :label="t('calendar.create')"
+                >
+                    <template #icon>
+                        <IconCalendarPlus />
+                    </template>
+                </ButtonLink>
+            </template>
+        </PageHeader>
+
+        <div class="flex max-h-240 min-h-0 flex-1 flex-col">
+            <div
+                class="flex shrink-0 flex-col gap-3 rounded-t-xl border border-surface-200 bg-surface-0 p-3 lg:flex-row lg:items-center lg:justify-between"
+            >
+                <div class="flex items-center gap-2">
+                    <Button
+                        type="button"
+                        severity="secondary"
+                        text
+                        rounded
+                        :aria-label="t('calendar.prev')"
+                        @click="goPrev"
+                    >
+                        <IconChevronLeft class="size-5" />
+                    </Button>
+                    <Button
+                        type="button"
+                        severity="secondary"
+                        outlined
+                        size="small"
+                        :label="t('calendar.today')"
+                        @click="goToday"
+                    />
+                    <Button
+                        type="button"
+                        severity="secondary"
+                        text
+                        rounded
+                        :aria-label="t('calendar.next')"
+                        @click="goNext"
+                    >
+                        <IconChevronRight class="size-5" />
+                    </Button>
+                    <h2
+                        class="ml-1 min-w-0 truncate text-base font-semibold text-surface-900"
+                    >
+                        {{ currentTitle }}
+                    </h2>
+                    <IconLoader2
+                        v-if="isLoading"
+                        class="size-4 shrink-0 animate-spin text-surface-400"
+                        :aria-label="t('calendar.loading')"
+                    />
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2">
+                    <Select
+                        v-if="canViewAll && doctors.length > 0"
+                        v-model="doctorFilter"
+                        :options="doctorOptions"
+                        option-label="label"
+                        option-value="value"
+                        :placeholder="t('calendar.all_doctors')"
+                        show-clear
+                        class="w-full sm:w-52"
+                    />
+                    <MultiSelect
+                        v-model="statuses"
+                        :options="statusOptions"
+                        option-label="label"
+                        option-value="value"
+                        :placeholder="t('calendar.filter_status')"
+                        :max-selected-labels="MVP_APPOINTMENT_STATUSES.length"
+                        class="w-full sm:w-56"
+                    />
+                    <SelectButton
+                        v-model="activeView"
+                        :options="viewOptions"
+                        option-label="label"
+                        option-value="value"
+                        :allow-empty="false"
+                        :aria-label="t('calendar.title')"
+                    />
+                </div>
+            </div>
+
+            <div
+                ref="calendarBody"
+                class="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-b-xl border border-t-0 border-surface-200 bg-surface-0"
+            >
+                <CalendarMonthGrid
+                    v-if="activeView === 'month'"
+                    :view-date="viewDate"
+                    :summaries="summariesByDate"
+                    :today-key="todayKey"
+                    :doctor-color="doctorColor"
+                    @cell-click="onMonthCellClick"
+                    @summary-click="onSummaryClick"
+                />
+                <CalendarTimeGrid
+                    v-else
+                    :columns="gridColumns"
+                    :from-minutes="timeFrom"
+                    :to-minutes="timeTo"
+                    :px-per-minute="pxPerMinute"
+                    :now-minutes="nowMinutes"
+                    @select="onSelectEvent"
+                />
+
+                <p
+                    v-if="isEmpty"
+                    class="pointer-events-none absolute inset-x-0 bottom-4 text-center text-sm text-surface-400"
+                >
+                    {{ t('calendar.no_events') }}
+                </p>
+            </div>
+        </div>
+
+        <AppointmentPopover ref="popover" />
+    </div>
+</template>

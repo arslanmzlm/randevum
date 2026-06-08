@@ -21,3 +21,36 @@ export const APPOINTMENT_STATUS_SEVERITY: Record<AppointmentStatus, string> = {
 export function appointmentStatusSeverity(status: AppointmentStatus): string {
     return APPOINTMENT_STATUS_SEVERITY[status] ?? 'secondary';
 }
+
+// Concrete colour per status for surfaces that paint (calendar chip border/fill) rather than use a
+// PrimeVue severity Tag. Aligned to the severities above but with distinct hues so confirmed vs
+// arrived read apart at a glance. The appointment-type colour is shown separately (a small dot).
+export const APPOINTMENT_STATUS_COLOR: Record<AppointmentStatus, string> = {
+    pending: 'var(--p-amber-500)',
+    confirmed: 'var(--p-blue-500)',
+    rescheduled: 'var(--p-violet-500)',
+    arrived: 'var(--p-teal-500)',
+    completed: 'var(--p-green-500)',
+    cancelled: 'var(--p-red-500)',
+    no_show: 'var(--p-rose-500)',
+};
+
+export function appointmentStatusColor(status: AppointmentStatus): string {
+    return APPOINTMENT_STATUS_COLOR[status] ?? 'var(--p-surface-400)';
+}
+
+/**
+ * Statuses selectable in MVP filters — Pending/NoShow are Faz 2, so excluded.
+ * Order drives the filter MultiSelect option order.
+ */
+export const MVP_APPOINTMENT_STATUSES: AppointmentStatus[] = [
+    'confirmed',
+    'rescheduled',
+    'arrived',
+    'completed',
+    'cancelled',
+];
+
+/** Default calendar visibility — all MVP statuses except `cancelled` (opt-in via the filter). */
+export const DEFAULT_CALENDAR_STATUSES: AppointmentStatus[] =
+    MVP_APPOINTMENT_STATUSES.filter((status) => status !== 'cancelled');

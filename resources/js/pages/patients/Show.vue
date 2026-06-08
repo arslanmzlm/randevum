@@ -16,6 +16,7 @@ import { useI18n } from 'vue-i18n';
 import ButtonLink from '@/components/ButtonLink.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import { useCan } from '@/composables/useCan';
+import { useDateTime } from '@/composables/useDateTime';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { destroy, edit, index } from '@/routes/patients';
 import { update as updateNotes } from '@/routes/patients/notes';
@@ -25,25 +26,19 @@ defineOptions({ layout: AppLayout });
 
 const props = defineProps<PatientShowProps>();
 
-const { t, locale } = useI18n();
+const { t } = useI18n();
 const confirm = useConfirm();
 const { can } = useCan();
+const { formatDateOnly } = useDateTime();
 const canManage = computed(() => can('patients.update'));
 const canEditNotes = computed(() => can('patients.note.update'));
-
-const dateFormatter = new Intl.DateTimeFormat(locale.value, {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-});
 
 const birthDateLabel = computed(() => {
     if (!props.patient.birth_date) {
         return t('patient.not_specified');
     }
 
-    const [year, month, day] = props.patient.birth_date.split('-').map(Number);
-    const formatted = dateFormatter.format(new Date(year, month - 1, day));
+    const formatted = formatDateOnly(props.patient.birth_date);
 
     return props.patient.age !== null
         ? `${formatted} · ${t('patient.age_value', { age: props.patient.age })}`

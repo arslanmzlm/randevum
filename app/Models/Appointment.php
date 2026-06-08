@@ -148,15 +148,24 @@ class Appointment extends Model
     }
 
     /**
+     * Strict-overlap range filter: any appointment whose window overlaps [start, end).
+     * Does NOT exclude Cancelled — apply scopeWithStatus separately for status filtering.
+     *
+     * @param  Builder<Appointment>  $query
+     */
+    public function scopeInRange(Builder $query, mixed $startUtc, mixed $endUtc): void
+    {
+        $query->where('starts_at', '<', $endUtc)->where('ends_at', '>', $startUtc);
+    }
+
+    /**
      * Appointments that overlap a calendar day window (UTC), excluding Cancelled.
-     * Uses strict overlap: starts_at < dayEnd AND ends_at > dayStart.
      *
      * @param  Builder<Appointment>  $query
      */
     public function scopeForDay(Builder $query, CarbonInterface $dayStartUtc, CarbonInterface $dayEndUtc): void
     {
-        $query->where('starts_at', '<', $dayEndUtc)
-            ->where('ends_at', '>', $dayStartUtc)
+        $query->inRange($dayStartUtc, $dayEndUtc)
             ->where('status', '!=', AppointmentStatus::Cancelled->value);
     }
 }

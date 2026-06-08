@@ -41,6 +41,15 @@
     }
 }
 
+/* Fills the viewport below the app chrome so a self-scrolling page (e.g. the calendar) doesn't grow
+   past it. Reserve = AppLayout header (h-16 = 4rem) + <main> padding (py-6 = 3rem, lg:py-8 = 4rem). */
+@utility viewport-content {
+    height: calc(100dvh - 7rem);
+    @variant lg {
+        height: calc(100dvh - 8rem);
+    }
+}
+
 @layer components {
     /* Vertical form-field stack (label + control + error/hint). */
     .form-group {
