@@ -42,4 +42,13 @@ class DoctorPolicy
     {
         return $user->can('doctors.delete');
     }
+
+    /**
+     * Offboarding is a managerial action — no ownership branch.
+     * Self-offboard is additionally guarded in DoctorProfileService::offboard().
+     */
+    public function offboard(User $user, Doctor $doctor): bool
+    {
+        return $user->can('doctors.offboard');
+    }
 }

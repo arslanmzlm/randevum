@@ -23,6 +23,7 @@ class PermissionSeeder extends Seeder
         'doctors.update' => ['owner', 'manager'],
         'doctors.delete' => ['owner', 'manager'],
         'doctors.createOwn' => ['owner'],
+        'doctors.offboard' => ['owner', 'manager'],
         'services.viewAny' => ['owner', 'manager', 'doctor'],
         'services.create' => ['owner', 'manager'],
         'services.update' => ['owner', 'manager'],

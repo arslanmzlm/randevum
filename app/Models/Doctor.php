@@ -32,6 +32,7 @@ class Doctor extends Model implements HasMedia
         'license_number',
         'certificate',
         'is_active',
+        'left_at',
     ];
 
     /**
@@ -43,6 +44,7 @@ class Doctor extends Model implements HasMedia
             'user_id' => 'integer',
             'clinic_id' => 'integer',
             'is_active' => 'boolean',
+            'left_at' => 'datetime',
         ];
     }
 
@@ -54,6 +56,16 @@ class Doctor extends Model implements HasMedia
     protected function displayName(): Attribute
     {
         return Attribute::get(fn (): string => trim("{$this->title} {$this->user?->name}"));
+    }
+
+    /**
+     * True when the doctor has been offboarded (left_at is set).
+     *
+     * @return Attribute<bool, never>
+     */
+    protected function isOffboarded(): Attribute
+    {
+        return Attribute::get(fn (): bool => $this->left_at !== null);
     }
 
     /**

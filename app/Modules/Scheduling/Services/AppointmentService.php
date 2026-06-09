@@ -7,6 +7,7 @@ use App\Enums\AvailabilityReason;
 use App\Models\Appointment;
 use App\Models\Clinic;
 use App\Models\User;
+use App\Modules\Core\Contracts\AppointmentCancellationContract;
 use App\Modules\Core\Services\StatusLogService;
 use App\Modules\Medical\Contracts\PatientRegistrarContract;
 use App\Modules\Medical\Exceptions\TrashedPhoneConflictException;
@@ -18,7 +19,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
-class AppointmentService
+class AppointmentService implements AppointmentCancellationContract
 {
     /**
      * Statuses eligible for bulk cancellation.
@@ -296,6 +297,34 @@ class AppointmentService
         });
 
         return $appointments->count();
+    }
+
+    /**
+     * Cancel all future Confirmed/Rescheduled appointments for the given doctor.
+     * Must be called from inside an outer DB::transaction — contains no inner transaction.
+     * Returns the number of appointments cancelled (0 when none).
+     */
+    public function cancelFutureForDoctor(int $doctorProfileId, ?string $reason, User $actor): int
+    {
+        $appointments = $this->repository->cancellableFutureForDoctor($doctorProfileId, self::BULK_CANCELLABLE_STATUSES);
+
+        if ($appointments->isEmpty()) {
+            return 0;
+        }
+
+        foreach ($appointments as $appointment) {
+            $this->transitionToCancelled($appointment, $reason, $actor);
+        }
+
+        return $appointments->count();
+    }
+
+    /**
+     * Count upcoming cancellable appointments for the doctor. Read-only.
+     */
+    public function countCancellableFutureForDoctor(int $doctorProfileId): int
+    {
+        return $this->repository->countCancellableFutureForDoctor($doctorProfileId, self::BULK_CANCELLABLE_STATUSES);
     }
 
     /**

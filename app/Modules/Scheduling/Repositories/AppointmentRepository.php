@@ -102,6 +102,38 @@ class AppointmentRepository
     }
 
     /**
+     * Future Confirmed/Rescheduled appointments for the given doctor, starting now or later.
+     *
+     * ClinicScope auto-isolates the tenant — no explicit clinic_id filter needed.
+     *
+     * @param  list<AppointmentStatus>  $statuses
+     * @return Collection<int, Appointment>
+     */
+    public function cancellableFutureForDoctor(int $doctorId, array $statuses): Collection
+    {
+        return Appointment::forDoctor($doctorId)
+            ->withStatus($statuses)
+            ->where('starts_at', '>=', now())
+            ->orderBy('starts_at')
+            ->get();
+    }
+
+    /**
+     * Count future cancellable appointments for the doctor. Read-only — no eager loads.
+     *
+     * ClinicScope auto-isolates the tenant — no explicit clinic_id filter needed.
+     *
+     * @param  list<AppointmentStatus>  $statuses
+     */
+    public function countCancellableFutureForDoctor(int $doctorId, array $statuses): int
+    {
+        return Appointment::forDoctor($doctorId)
+            ->withStatus($statuses)
+            ->where('starts_at', '>=', now())
+            ->count();
+    }
+
+    /**
      * All appointments that strictly overlap [startUtc, endUtc) for the given doctor(s),
      * filtered to the provided statuses. ClinicScope is applied automatically.
      *

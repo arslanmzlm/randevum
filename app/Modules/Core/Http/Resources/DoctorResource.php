@@ -36,6 +36,8 @@ class DoctorResource extends JsonResource
             'license_number' => $this->license_number,
             'certificate' => $this->certificate,
             'is_active' => $this->is_active,
+            'left_at' => $this->left_at?->toIso8601String(),
+            'is_offboarded' => $this->is_offboarded,
             'avatar_url' => $this->imageUrl('avatar'),
             'is_self' => $this->user_id === $request->user()?->id,
         ];

@@ -13,6 +13,7 @@ import { useI18n } from 'vue-i18n';
 import ButtonLink from '@/components/ButtonLink.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import { useCan } from '@/composables/useCan';
+import { useDateTime } from '@/composables/useDateTime';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { create, destroy, edit, storeOwn } from '@/routes/doctors';
 import type { Doctor, DoctorIndexProps } from '@/types/doctor';
@@ -24,19 +25,39 @@ const props = defineProps<DoctorIndexProps>();
 const { t } = useI18n();
 const confirm = useConfirm();
 const { can } = useCan();
+const { formatDate } = useDateTime();
 const canManage = computed(() => can('doctors.update'));
 
 const ownForm = useForm({});
 
 // Client-side filter (the list is a custom <ul>, not a DataTable): name/specialization search +
-// an active/passive status filter (null = all).
+// a status multiselect. Defaults to employed (active + passive); leavers are opt-in so an
+// offboarded doctor only shows when the user adds "Ayrılanlar". Empty selection = show all.
+type StatusFilter = 'active' | 'passive' | 'left';
+
 const search = ref('');
-const statusFilter = ref<boolean | null>(null);
+const statusFilters = ref<StatusFilter[]>(['active', 'passive']);
 
 const statusOptions = computed(() => [
-    { label: t('doctor.active'), value: true },
-    { label: t('doctor.passive'), value: false },
+    { label: t('doctor.active'), value: 'active' as const },
+    { label: t('doctor.passive'), value: 'passive' as const },
+    { label: t('doctor.filter_left'), value: 'left' as const },
 ]);
+
+function doctorStatus(doctor: Doctor): StatusFilter {
+    if (doctor.is_offboarded) {
+        return 'left';
+    }
+
+    return doctor.is_active ? 'active' : 'passive';
+}
+
+function matchesStatus(doctor: Doctor): boolean {
+    return (
+        statusFilters.value.length === 0 ||
+        statusFilters.value.includes(doctorStatus(doctor))
+    );
+}
 
 const filteredDoctors = computed(() => {
     const query = search.value.trim().toLowerCase();
@@ -47,11 +68,8 @@ const filteredDoctors = computed(() => {
             [doctor.display_name, doctor.specialization]
                 .filter(Boolean)
                 .some((value) => value!.toLowerCase().includes(query));
-        const matchesStatus =
-            statusFilter.value === null ||
-            doctor.is_active === statusFilter.value;
 
-        return matchesSearch && matchesStatus;
+        return matchesSearch && matchesStatus(doctor);
     });
 });
 
@@ -128,14 +146,14 @@ function removeDoctor(doctor: Doctor): void {
                             class="w-full sm:w-72"
                         />
                     </IconField>
-                    <Select
-                        v-model="statusFilter"
+                    <MultiSelect
+                        v-model="statusFilters"
                         :options="statusOptions"
                         option-label="label"
                         option-value="value"
                         :placeholder="t('doctor.filter_status')"
-                        show-clear
-                        class="w-full sm:w-44"
+                        :show-toggle-all="false"
+                        class="w-full sm:w-56"
                     />
                 </div>
 
@@ -172,16 +190,31 @@ function removeDoctor(doctor: Doctor): void {
                             </span>
                         </div>
 
-                        <Tag
-                            :severity="
-                                doctor.is_active ? 'success' : 'secondary'
-                            "
-                            :value="
-                                doctor.is_active
-                                    ? t('doctor.active')
-                                    : t('doctor.passive')
-                            "
-                        />
+                        <div class="flex flex-col items-end gap-1">
+                            <Tag
+                                v-if="doctor.is_offboarded"
+                                severity="danger"
+                                :value="t('doctor.status_left')"
+                            />
+                            <Tag
+                                v-else
+                                :severity="
+                                    doctor.is_active ? 'success' : 'secondary'
+                                "
+                                :value="
+                                    doctor.is_active
+                                        ? t('doctor.active')
+                                        : t('doctor.passive')
+                                "
+                            />
+                            <span
+                                v-if="doctor.is_offboarded && doctor.left_at"
+                                class="text-xs text-surface-400"
+                            >
+                                {{ t('doctor.left_at_label') }}:
+                                {{ formatDate(doctor.left_at) }}
+                            </span>
+                        </div>
 
                         <ButtonLink
                             v-if="canManage || doctor.is_self"

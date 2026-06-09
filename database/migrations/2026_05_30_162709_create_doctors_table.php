@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('license_number', 100)->nullable();
             $table->text('certificate')->nullable();
             $table->boolean('is_active')->default(true);
+            $table->timestampTz('left_at')->nullable();
             $table->timestampsTz();
             $table->softDeletesTz();
 

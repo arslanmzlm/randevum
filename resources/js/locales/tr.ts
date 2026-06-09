@@ -175,6 +175,26 @@ export const tr = {
         filter_status: 'Durum',
         active: 'Aktif',
         passive: 'Pasif',
+        filter_left: 'Ayrılanlar',
+        status_left: 'Ayrıldı',
+        left_at_label: 'Ayrılış tarihi',
+        offboard: 'İşten Çıkar',
+        offboard_dialog_title: 'Doktoru İşten Çıkar',
+        offboard_intro:
+            '{name} işten çıkarılacak ve klinik erişimini kaybedecek.',
+        offboard_warning:
+            'Bu doktorun {count} yaklaşan randevusu var. Devam etmek için bunları burada iptal edin ya da önce başka bir doktora taşıyın.',
+        offboard_warning_none:
+            'Yaklaşan randevusu yok. Doktor işten çıkarılacak ve klinik erişimini kaybedecek.',
+        offboard_cancel_appointments:
+            'Yaklaşan {count} randevusunu da iptal et',
+        offboard_cancel_hint:
+            'Yaklaşan randevular ortada kalmasın diye önce iptal edilmeli ya da başka doktora taşınmalı.',
+        offboard_reason_label: 'İptal nedeni (opsiyonel)',
+        offboard_confirm: 'İşten Çıkar',
+        offboard_preview_error:
+            'Randevu bilgisi alınamadı. Lütfen tekrar deneyin.',
+        offboarded_on: 'Bu doktor {date} tarihinde işten çıkarıldı.',
         edit: 'Düzenle',
         back: 'Geri',
         create_title: 'Doktor Ekle',
@@ -188,6 +208,7 @@ export const tr = {
             info: 'Profil Bilgileri',
             about: 'Hakkında ve Sertifikalar',
             avatar: 'Profil Fotoğrafı',
+            actions: 'İşlemler',
         },
         fields: {
             name: 'Ad Soyad',

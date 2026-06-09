@@ -5,6 +5,7 @@ namespace App\Modules\Core\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\Doctor;
 use App\Modules\Core\Contracts\MediaServiceContract;
+use App\Modules\Core\Http\Requests\OffboardDoctorRequest;
 use App\Modules\Core\Http\Requests\StoreDoctorRequest;
 use App\Modules\Core\Http\Requests\UpdateDoctorAvatarRequest;
 use App\Modules\Core\Http\Requests\UpdateDoctorProfileRequest;
@@ -12,6 +13,7 @@ use App\Modules\Core\Http\Resources\DoctorResource;
 use App\Modules\Core\Repositories\DoctorRepository;
 use App\Modules\Core\Services\DoctorProfileService;
 use App\Modules\Core\Support\Toast;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -138,6 +140,42 @@ class DoctorController extends Controller
         Toast::success(__('messages.doctor.avatar_removed'));
 
         return redirect()->back();
+    }
+
+    public function offboardPreview(Request $request, Doctor $doctor): JsonResponse
+    {
+        $this->authorize('offboard', $doctor);
+
+        $doctor->loadMissing('user');
+
+        return response()->json([
+            'upcoming_appointments_count' => $this->profileService->previewOffboard($doctor),
+            'is_offboarded' => $doctor->left_at !== null,
+            'display_name' => $doctor->display_name,
+        ]);
+    }
+
+    public function offboard(OffboardDoctorRequest $request, Doctor $doctor): RedirectResponse
+    {
+        $this->authorize('offboard', $doctor);
+
+        $data = $request->validated();
+
+        $doctor->loadMissing('user');
+
+        $count = $this->profileService->offboard(
+            $doctor,
+            (bool) ($data['cancel_appointments'] ?? false),
+            $data['reason'] ?? null,
+            $request->user(),
+        );
+
+        Toast::success(__('messages.doctor.offboarded', [
+            'name' => $doctor->display_name,
+            'count' => $count,
+        ]));
+
+        return redirect()->route('doctors.index');
     }
 
     /**

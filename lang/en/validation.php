@@ -274,6 +274,8 @@ return [
         'license_number' => 'license number',
         'certificate' => 'certificates',
         'is_active' => 'active/passive status',
+        // doctor offboarding
+        'cancel_appointments' => 'cancel appointments',
     ],
 
 ];

@@ -28,6 +28,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/doctors/me', [DoctorController::class, 'mine'])->name('doctors.mine');
     Route::post('/doctors', [DoctorController::class, 'store'])->name('doctors.store');
     Route::post('/doctors/self', [DoctorController::class, 'storeOwn'])->name('doctors.storeOwn');
+    Route::get('/doctors/{doctor}/offboard-preview', [DoctorController::class, 'offboardPreview'])->middleware('throttle:60,1')->name('doctors.offboard.preview');
+    Route::post('/doctors/{doctor}/offboard', [DoctorController::class, 'offboard'])->name('doctors.offboard');
     Route::get('/doctors/{doctor}/edit', [DoctorController::class, 'edit'])->name('doctors.edit');
     Route::put('/doctors/{doctor}', [DoctorController::class, 'update'])->name('doctors.update');
     Route::delete('/doctors/{doctor}', [DoctorController::class, 'destroy'])->name('doctors.destroy');

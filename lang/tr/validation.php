@@ -145,6 +145,8 @@ return [
         'license_number' => 'Lisans numarası',
         'certificate' => 'Sertifikalar',
         'is_active' => 'Aktif/Pasif durumu',
+        // doctor offboarding
+        'cancel_appointments' => 'Randevuları iptal et',
     ],
 
     'working_hours_closed_conflict' => ':attribute kapalı olarak işaretlenmiş günlerde açılış/kapanış saati belirtilemez.',

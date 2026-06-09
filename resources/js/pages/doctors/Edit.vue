@@ -2,17 +2,21 @@
 import { Head, useForm } from '@inertiajs/vue3';
 import {
     IconArrowLeft,
+    IconLogout,
     IconNotes,
     IconPhoto,
+    IconSettings,
     IconUser,
 } from '@tabler/icons-vue';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import ButtonLink from '@/components/ButtonLink.vue';
+import OffboardDialog from '@/components/doctors/OffboardDialog.vue';
 import FormField from '@/components/FormField.vue';
 import ImageUploadField from '@/components/ImageUploadField.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import { useCan } from '@/composables/useCan';
+import { useDateTime } from '@/composables/useDateTime';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { index, update } from '@/routes/doctors';
 import {
@@ -27,7 +31,15 @@ const props = defineProps<DoctorEditProps>();
 
 const { t } = useI18n();
 const { can } = useCan();
+const { formatDate } = useDateTime();
 const canManage = computed(() => can('doctors.update'));
+
+// Offboarding lives here (not on the list) — a deliberate, rare action behind opening the doctor.
+// Hidden for self and when the user lacks the ability; an already-departed doctor shows a read-only note.
+const canOffboard = computed(
+    () => can('doctors.offboard') && !props.doctor.is_self,
+);
+const offboardVisible = ref(false);
 
 const form = useForm({
     first_name: props.doctor.first_name,
@@ -213,26 +225,72 @@ function submit(): void {
                 </div>
             </form>
 
-            <section
-                class="rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
-            >
-                <header class="mb-6 flex items-center gap-2">
-                    <IconPhoto class="size-5 text-surface-500" />
-                    <h2 class="text-lg font-semibold text-surface-900">
-                        {{ t('doctor.sections.avatar') }}
-                    </h2>
-                </header>
+            <div class="flex flex-col gap-6">
+                <section
+                    class="rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
+                >
+                    <header class="mb-6 flex items-center gap-2">
+                        <IconPhoto class="size-5 text-surface-500" />
+                        <h2 class="text-lg font-semibold text-surface-900">
+                            {{ t('doctor.sections.avatar') }}
+                        </h2>
+                    </header>
 
-                <ImageUploadField
-                    :url="doctor.avatar_url"
-                    :label="t('doctor.fields.avatar')"
-                    :hint="t('doctor.avatar.hint')"
-                    :upload-url="updateAvatar(doctor.id).url"
-                    :remove-url="removeAvatar(doctor.id).url"
-                    :remove-confirm="t('doctor.avatar.remove_confirm')"
-                    aspect-class="aspect-square"
-                />
-            </section>
+                    <ImageUploadField
+                        :url="doctor.avatar_url"
+                        :label="t('doctor.fields.avatar')"
+                        :hint="t('doctor.avatar.hint')"
+                        :upload-url="updateAvatar(doctor.id).url"
+                        :remove-url="removeAvatar(doctor.id).url"
+                        :remove-confirm="t('doctor.avatar.remove_confirm')"
+                        aspect-class="aspect-square"
+                    />
+                </section>
+
+                <section
+                    v-if="canOffboard"
+                    class="rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
+                >
+                    <header class="mb-6 flex items-center gap-2">
+                        <IconSettings class="size-5 text-surface-500" />
+                        <h2 class="text-lg font-semibold text-surface-900">
+                            {{ t('doctor.sections.actions') }}
+                        </h2>
+                    </header>
+
+                    <div
+                        v-if="doctor.is_offboarded"
+                        class="flex items-center gap-2 text-sm text-surface-600"
+                    >
+                        <IconLogout class="size-4 text-surface-400" />
+                        <span>
+                            {{
+                                t('doctor.offboarded_on', {
+                                    date: doctor.left_at
+                                        ? formatDate(doctor.left_at)
+                                        : '',
+                                })
+                            }}
+                        </span>
+                    </div>
+
+                    <Button
+                        v-else
+                        type="button"
+                        severity="danger"
+                        outlined
+                        fluid
+                        :label="t('doctor.offboard')"
+                        @click="offboardVisible = true"
+                    >
+                        <template #icon>
+                            <IconLogout />
+                        </template>
+                    </Button>
+                </section>
+            </div>
         </div>
+
+        <OffboardDialog v-model:visible="offboardVisible" :doctor="doctor" />
     </div>
 </template>

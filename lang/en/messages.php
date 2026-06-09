@@ -64,6 +64,10 @@ return [
         'password_reminder_body' => 'Your account was created by an administrator. We recommend changing your temporary password for security.',
         'password_reminder_action' => 'Change password',
         'password_reminder_dismiss' => 'Later',
+        'offboarded' => ':name has been offboarded, :count appointment(s) cancelled.',
+        'already_offboarded' => 'This doctor has already been offboarded.',
+        'has_upcoming_appointments' => 'This doctor has upcoming appointments; cancel them or reassign to another doctor first.',
+        'cannot_offboard_self' => 'You cannot offboard yourself.',
     ],
 
 ];

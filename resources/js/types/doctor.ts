@@ -17,6 +17,10 @@ export type Doctor = {
     is_active: boolean;
     avatar_url: string | null;
     is_self: boolean;
+    /** ISO-8601 UTC instant the doctor was offboarded; null when still employed. */
+    left_at: string | null;
+    /** left_at !== null — drives the "Ayrılanlar" view and offboard gating. */
+    is_offboarded: boolean;
 };
 
 export type DoctorIndexProps = {

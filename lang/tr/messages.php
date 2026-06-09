@@ -64,6 +64,10 @@ return [
         'password_reminder_body' => 'Hesabınız yönetici tarafından oluşturuldu. Güvenliğiniz için geçici şifrenizi değiştirmenizi öneririz.',
         'password_reminder_action' => 'Şifremi değiştir',
         'password_reminder_dismiss' => 'Daha sonra',
+        'offboarded' => ':name işten çıkarıldı, :count randevu iptal edildi.',
+        'already_offboarded' => 'Bu doktor zaten işten çıkarılmış.',
+        'has_upcoming_appointments' => 'Bu doktorun yaklaşan randevuları var; önce iptal edin ya da başka doktora taşıyın.',
+        'cannot_offboard_self' => 'Kendinizi işten çıkaramazsınız.',
     ],
 
 ];

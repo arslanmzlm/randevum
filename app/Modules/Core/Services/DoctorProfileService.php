@@ -5,6 +5,7 @@ namespace App\Modules\Core\Services;
 use App\Models\Clinic;
 use App\Models\Doctor;
 use App\Models\User;
+use App\Modules\Core\Contracts\AppointmentCancellationContract;
 use App\Modules\Core\Repositories\DoctorRepository;
 use App\Support\ClinicContext;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +17,7 @@ class DoctorProfileService
     public function __construct(
         private DoctorRepository $repository,
         private ClinicContext $clinicContext,
+        private AppointmentCancellationContract $cancellation,
     ) {}
 
     /**
@@ -115,5 +117,61 @@ class DoctorProfileService
             $doctor->user->removeRole('doctor');
             $this->repository->delete($doctor);
         });
+    }
+
+    /**
+     * Offboard a doctor: optionally cancel future appointments, mark departed, revoke role.
+     * All three steps run in one DB transaction and return the cancellation count.
+     *
+     * Guards (throws ValidationException, nothing mutated):
+     *   - actor trying to offboard themselves
+     *   - doctor already offboarded
+     *   - unchecked cancel_appointments while future appointments still exist
+     *
+     * @throws ValidationException
+     * @throws \Throwable
+     */
+    public function offboard(Doctor $doctor, bool $cancelAppointments, ?string $reason, User $actor): int
+    {
+        if ($doctor->user_id === $actor->id) {
+            throw ValidationException::withMessages([
+                'cancel_appointments' => [__('messages.doctor.cannot_offboard_self')],
+            ]);
+        }
+
+        if ($doctor->left_at !== null) {
+            throw ValidationException::withMessages([
+                'cancel_appointments' => [__('messages.doctor.already_offboarded')],
+            ]);
+        }
+
+        if (! $cancelAppointments && $this->cancellation->countCancellableFutureForDoctor($doctor->id) > 0) {
+            throw ValidationException::withMessages([
+                'cancel_appointments' => [__('messages.doctor.has_upcoming_appointments')],
+            ]);
+        }
+
+        return DB::transaction(function () use ($doctor, $cancelAppointments, $reason, $actor): int {
+            $count = $cancelAppointments
+                ? $this->cancellation->cancelFutureForDoctor($doctor->id, $reason, $actor)
+                : 0;
+
+            $this->repository->update($doctor, ['is_active' => false, 'left_at' => now()]);
+
+            // SetClinicContext already set the Spatie team context to the active clinic,
+            // so removeRole revokes only the clinic-scoped assignment.
+            $doctor->user->removeRole('doctor');
+
+            return $count;
+        });
+    }
+
+    /**
+     * Return the upcoming-appointments count for the offboard preview dialog.
+     * Read-only — does not mutate state.
+     */
+    public function previewOffboard(Doctor $doctor): int
+    {
+        return $this->cancellation->countCancellableFutureForDoctor($doctor->id);
     }
 }
