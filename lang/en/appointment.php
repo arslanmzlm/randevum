@@ -30,7 +30,14 @@ return [
         'conflict' => 'The doctor already has an appointment at the selected time.',
         'doctor_not_allowed' => 'You can only create appointments for yourself.',
         'phone_trashed' => 'This phone number belongs to a deleted patient. Restore them from the patients screen.',
+        'not_reschedulable' => 'This appointment cannot be rescheduled.',
+        'not_cancellable' => 'This appointment cannot be cancelled.',
+        'delete_not_allowed' => 'This appointment cannot be deleted. Please cancel it instead.',
     ],
+
+    'rescheduled' => 'Appointment rescheduled successfully.',
+    'cancelled' => 'Appointment cancelled.',
+    'deleted' => 'Appointment deleted.',
 
     'submit' => 'Create Appointment',
 

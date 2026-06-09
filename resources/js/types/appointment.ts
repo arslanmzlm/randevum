@@ -35,6 +35,8 @@ export type AppointmentIndexProps = {
     appointments: Paginated<AppointmentListItem>;
     doctors: AppointmentDoctorOption[];
     query: AppointmentListQuery;
+    /** The user's own doctors.id; gates row actions to own appointments when they lack viewAll. */
+    ownDoctorId: number | null;
 };
 
 /** Active-clinic doctor option for the create-appointment doctor select. */
@@ -80,6 +82,34 @@ export type AppointmentCreateProps = {
     preselectedPatient: PatientSearchResult | null;
     /** The user's own doctors.id (auto-selected); null when they have no doctor profile. */
     ownDoctorId: number | null;
+};
+
+/** The fixed (read-only) patient + current slot of the appointment being rescheduled. */
+export type EditAppointment = {
+    id: number;
+    patient: { id: number; full_name: string; phone: string | null };
+    doctor_id: number;
+    service_id: number | null;
+    appointment_type_id: number | null;
+    /** (ends_at − starts_at) in minutes — prefills the duration field. */
+    duration_minutes: number;
+    /** ISO 8601 UTC timestamp; converted to clinic-local date + time for the form. */
+    starts_at: string;
+    status: AppointmentStatus;
+    is_walk_in: boolean;
+};
+
+/** Props for the `appointments/Edit` page (AppointmentController@edit). */
+export type AppointmentEditProps = {
+    doctors: AppointmentDoctorOption[];
+    services: AppointmentServiceOption[];
+    appointmentTypes: AppointmentTypeOption[];
+    defaultSlotDuration: number;
+    workingHours: WorkingHours;
+    timezone: string;
+    /** The user's own doctors.id (locks the doctor select when they can't assign others). */
+    ownDoctorId: number | null;
+    appointment: EditAppointment;
 };
 
 /** Minimal new-patient quick-create fields, posted when patient_mode is 'new'. */

@@ -575,3 +575,69 @@ it('clinic-B schedule exception at same time does not affect clinic-A availabili
         ->assertOk()
         ->assertJson(['available' => true, 'reason' => null]);
 });
+
+// ---------------------------------------------------------------------------
+// exclude_appointment_id (reschedule probe — ignore the row's own slot)
+// ---------------------------------------------------------------------------
+
+it('exclude_appointment_id removes the appointment\'s own slot from the conflict check', function (): void {
+    $clinic = Clinic::factory()->create(['timezone' => 'Europe/Istanbul']);
+    $owner = User::factory()->create();
+    chkRole($owner, 'owner', $clinic->id);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+
+    $mondayDate = Carbon::now('Europe/Istanbul')->next(Carbon::MONDAY)->format('Y-m-d');
+    $slotStartUtc = Carbon::parse("{$mondayDate} 10:00:00", 'Europe/Istanbul')->utc();
+
+    $appointment = Appointment::factory()->create([
+        'clinic_id' => $clinic->id,
+        'doctor_id' => $doctor->id,
+        'patient_id' => $patient->id,
+        'starts_at' => $slotStartUtc,
+        'ends_at' => $slotStartUtc->copy()->addMinutes(30),
+        'status' => AppointmentStatus::Confirmed,
+    ]);
+
+    // Without exclude → the row conflicts with itself.
+    $this->actingAs($owner)
+        ->getJson(route('appointments.availability', chkParams($doctor->id, ['starts_at' => "{$mondayDate} 10:00:00"])))
+        ->assertOk()
+        ->assertJson(['available' => false, 'reason' => 'conflict']);
+
+    // With exclude → its own slot is ignored, so the slot reads as available.
+    $this->actingAs($owner)
+        ->getJson(route('appointments.availability', chkParams($doctor->id, [
+            'starts_at' => "{$mondayDate} 10:00:00",
+            'exclude_appointment_id' => $appointment->id,
+        ])))
+        ->assertOk()
+        ->assertJson(['available' => true, 'reason' => null]);
+});
+
+it('returns 422 when exclude_appointment_id belongs to another clinic', function (): void {
+    $clinicA = Clinic::factory()->create(['timezone' => 'Europe/Istanbul']);
+    $owner = User::factory()->create();
+    chkRole($owner, 'owner', $clinicA->id);
+    $doctorUser = User::factory()->create();
+    $doctorA = Doctor::factory()->create(['clinic_id' => $clinicA->id, 'user_id' => $doctorUser->id]);
+
+    $clinicB = Clinic::factory()->create(['timezone' => 'Europe/Istanbul']);
+    $doctorUserB = User::factory()->create();
+    $doctorB = Doctor::factory()->create(['clinic_id' => $clinicB->id, 'user_id' => $doctorUserB->id]);
+    $patientB = Patient::factory()->create(['clinic_id' => $clinicB->id]);
+    $appointmentB = Appointment::factory()->create([
+        'clinic_id' => $clinicB->id,
+        'doctor_id' => $doctorB->id,
+        'patient_id' => $patientB->id,
+        'status' => AppointmentStatus::Confirmed,
+    ]);
+
+    $this->actingAs($owner)
+        ->getJson(route('appointments.availability', chkParams($doctorA->id, [
+            'exclude_appointment_id' => $appointmentB->id,
+        ])))
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('exclude_appointment_id');
+});

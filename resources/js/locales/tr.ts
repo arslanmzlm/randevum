@@ -567,10 +567,33 @@ export const tr = {
             doctor: 'Doktor',
             service: 'Hizmet / Tür',
             status: 'Durum',
+            actions: 'İşlemler',
         },
         walk_in_badge: 'Randevusuz',
         empty: 'Henüz randevu bulunmuyor.',
         empty_filtered: 'Seçilen filtrelere uygun randevu bulunamadı.',
+    },
+    appointment_actions: {
+        edit_title: 'Randevuyu Düzenle',
+        subtitle: 'Randevunun tarihini, saatini veya detaylarını güncelleyin.',
+        save: 'Değişiklikleri Kaydet',
+        patient_fixed_hint:
+            'Hasta ve doktor bu ekrandan değiştirilemez. Yalnızca tarih ve randevu detayları güncellenir.',
+        row_actions: 'Randevu işlemleri',
+        menu: {
+            edit: 'Düzenle',
+            cancel: 'İptal et',
+            delete: 'Sil',
+        },
+        cancel_confirm_title: 'Randevuyu iptal et',
+        cancel_confirm_message:
+            'Bu randevuyu iptal etmek istediğinize emin misiniz? Kayıt "İptal" olarak işaretlenecek ve raporlarda kalacak.',
+        confirm_cancel: 'Randevuyu iptal et',
+        reason_label: 'İptal nedeni (isteğe bağlı)',
+        reason_placeholder: 'İptal nedenini girin…',
+        delete_confirm_title: 'Randevuyu sil',
+        delete_confirm_message:
+            'Bu randevu kalıcı olarak silinecek ve geri alınamayacak. Yalnızca yanlışlıkla oluşturulan randevular için kullanın; aksi halde "İptal et" tercih edin.',
     },
     calendar: {
         title: 'Takvim',

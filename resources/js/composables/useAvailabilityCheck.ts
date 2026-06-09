@@ -18,6 +18,8 @@ export type AvailabilityCheckParams = {
     duration_minutes: number | null;
     service_id: number | null;
     is_walk_in: boolean;
+    /** When rescheduling, the row's own id so the probe ignores its current slot. */
+    exclude_appointment_id?: number;
 };
 
 const DEBOUNCE_MS = 350;

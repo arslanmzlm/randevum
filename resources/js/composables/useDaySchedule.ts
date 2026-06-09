@@ -75,7 +75,9 @@ export function useDaySchedule(params: () => DayScheduleParams | null) {
             state.value = 'loading';
             debounceTimer = setTimeout(() => void run(current), DEBOUNCE_MS);
         },
-        { deep: true },
+        // immediate: the edit form mounts with doctor + date already filled, so the panel must
+        // fetch on load — not only when the staff member changes a field.
+        { deep: true, immediate: true },
     );
 
     return { state, entries };

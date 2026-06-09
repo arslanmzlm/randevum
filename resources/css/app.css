@@ -63,6 +63,13 @@
         @apply flex flex-col gap-1.5;
     }
 
+    /* Cap every ConfirmDialog so a long message can't stretch it across wide screens — one rule
+       instead of a per-instance `w-full max-w-md` on each dialog (28rem = Tailwind max-w-md). */
+    .p-confirmdialog {
+        width: 100%;
+        max-width: 28rem;
+    }
+
     /* Tabler SVG icons inside PrimeVue buttons are sized here, per button size, instead of a
        per-call inline `size-*` utility — the button box is fixed, so the icon should track it.
        Label↔icon spacing comes from the button's own gap; never add mr/ml on the icon. */

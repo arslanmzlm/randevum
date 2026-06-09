@@ -50,6 +50,13 @@ class PermissionSeeder extends Seeder
         'appointments.create' => ['owner', 'manager', 'doctor', 'receptionist'],
         // Book on behalf of any doctor. Without it, a doctor is locked to their own profile.
         'appointments.assignDoctor' => ['owner', 'manager', 'receptionist'],
+        // Reschedule (edit slot / doctor / service / type / duration).
+        // Doctors lack viewAll so the policy ownership branch confines them to their own appointments.
+        'appointments.update' => ['owner', 'manager', 'receptionist', 'doctor'],
+        // Cancel a non-terminal appointment (Confirmed / Rescheduled / Arrived).
+        'appointments.cancel' => ['owner', 'manager', 'receptionist', 'doctor'],
+        // Hard-delete a mis-created future Confirmed appointment. Restricted to managerial roles.
+        'appointments.delete' => ['owner', 'manager'],
         // appointment types (settings / CRUD)
         'appointmentTypes.viewAny' => ['owner', 'manager', 'doctor'],
         'appointmentTypes.create' => ['owner', 'manager'],

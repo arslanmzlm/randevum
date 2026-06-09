@@ -255,6 +255,7 @@ return [
         'default_duration_minutes' => 'default duration',
         // appointments
         'appointment_type_id' => 'appointment type',
+        'reason' => 'cancellation reason',
         'patient_id' => 'patient',
         'doctor_id' => 'doctor',
         'service_id' => 'service',

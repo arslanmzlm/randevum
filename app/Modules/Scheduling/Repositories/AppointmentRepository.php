@@ -53,14 +53,26 @@ class AppointmentRepository
     }
 
     /**
+     * @param  array<string, mixed>  $data
+     */
+    public function update(Appointment $appointment, array $data): Appointment
+    {
+        $appointment->fill($data)->save();
+
+        return $appointment;
+    }
+
+    /**
      * True when the doctor already has a Confirmed or Arrived appointment that
      * strictly overlaps the given slot (back-to-back slots are NOT a conflict).
+     * Pass $excludeAppointmentId to ignore the appointment's own current slot (reschedule).
      */
-    public function hasConflictingAppointment(int $doctorId, mixed $start, mixed $end): bool
+    public function hasConflictingAppointment(int $doctorId, mixed $start, mixed $end, ?int $excludeAppointmentId = null): bool
     {
         return Appointment::forDoctor($doctorId)
             ->overlapping($start, $end)
             ->withStatus([AppointmentStatus::Confirmed, AppointmentStatus::Arrived])
+            ->when($excludeAppointmentId, fn ($q, $id) => $q->whereKeyNot($id))
             ->exists();
     }
 

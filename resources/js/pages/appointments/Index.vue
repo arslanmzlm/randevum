@@ -1,18 +1,29 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { IconCalendarWeek, IconSearch } from '@tabler/icons-vue';
-import { computed } from 'vue';
+import {
+    IconBan,
+    IconCalendarWeek,
+    IconDotsVertical,
+    IconPencil,
+    IconSearch,
+    IconTrash,
+} from '@tabler/icons-vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import AppointmentCancelDialog from '@/components/appointments/AppointmentCancelDialog.vue';
 import AppointmentStatusTag from '@/components/AppointmentStatusTag.vue';
 import DataTableWrapper from '@/components/DataTableWrapper.vue';
 import PageHeader from '@/components/PageHeader.vue';
-import { useCan } from '@/composables/useCan';
+import { useAppointmentActions } from '@/composables/useAppointmentActions';
 import { useDateTime } from '@/composables/useDateTime';
 import { useTableFilters } from '@/composables/useTableFilters';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { index } from '@/routes/appointments';
 import { show } from '@/routes/patients';
-import type { AppointmentIndexProps } from '@/types/appointment';
+import type {
+    AppointmentIndexProps,
+    AppointmentListItem,
+} from '@/types/appointment';
 import { MVP_APPOINTMENT_STATUSES } from '@/utils/appointmentStatus';
 import { parseDateString } from '@/utils/datetime';
 
@@ -21,10 +32,81 @@ defineOptions({ layout: AppLayout });
 const props = defineProps<AppointmentIndexProps>();
 
 const { t } = useI18n();
-const { can } = useCan();
 const { formatDate, formatTime } = useDateTime();
 
-const canViewAll = computed(() => can('appointments.viewAll'));
+const {
+    canViewAll,
+    cancelReason,
+    canReschedule,
+    canCancel,
+    canDelete,
+    hasActions,
+    goToEdit,
+    confirmCancel,
+    confirmDelete,
+} = useAppointmentActions(props.ownDoctorId);
+
+// One shared popup Menu retargeted per row on the kebab click (PrimeVue pattern).
+const actionsMenu = ref();
+const activeRow = ref<AppointmentListItem | null>(null);
+
+// `tablerIcon` (not `icon`) because PrimeVue's MenuItem.icon is a string (PrimeIcon class);
+// the Tabler component is rendered in the #item slot instead. `colorClass` mirrors the popover's
+// severity colours (edit = primary, cancel = warn, delete = danger).
+type RowMenuItem = {
+    key: string;
+    label: string;
+    tablerIcon: unknown;
+    colorClass: string;
+    command: () => void;
+};
+
+const menuItems = computed<RowMenuItem[]>(() => {
+    const row = activeRow.value;
+
+    if (!row) {
+        return [];
+    }
+
+    const items: RowMenuItem[] = [];
+
+    if (canReschedule(row)) {
+        items.push({
+            key: 'edit',
+            label: t('appointment_actions.menu.edit'),
+            tablerIcon: IconPencil,
+            colorClass: 'text-primary-600',
+            command: () => goToEdit(row),
+        });
+    }
+
+    if (canCancel(row)) {
+        items.push({
+            key: 'cancel',
+            label: t('appointment_actions.menu.cancel'),
+            tablerIcon: IconBan,
+            colorClass: 'text-orange-600',
+            command: () => confirmCancel(row),
+        });
+    }
+
+    if (canDelete(row)) {
+        items.push({
+            key: 'delete',
+            label: t('appointment_actions.menu.delete'),
+            tablerIcon: IconTrash,
+            colorClass: 'text-red-600',
+            command: () => confirmDelete(row),
+        });
+    }
+
+    return items;
+});
+
+function toggleMenu(event: Event, row: AppointmentListItem): void {
+    activeRow.value = row;
+    actionsMenu.value?.toggle(event);
+}
 
 const { state, loading, first, sortField, sortOrder, onPage, onSort } =
     useTableFilters<{
@@ -258,6 +340,31 @@ const dateRange = computed<(Date | null)[] | null>({
                     </template>
                 </Column>
 
+                <Column
+                    :header="t('appointment_list.columns.actions')"
+                    class="w-20"
+                >
+                    <template #body="{ data }">
+                        <div class="flex justify-end">
+                            <Button
+                                v-if="hasActions(data)"
+                                type="button"
+                                severity="secondary"
+                                text
+                                rounded
+                                size="small"
+                                :aria-label="
+                                    t('appointment_actions.row_actions')
+                                "
+                                aria-haspopup="true"
+                                @click="toggleMenu($event, data)"
+                            >
+                                <IconDotsVertical class="size-4" />
+                            </Button>
+                        </div>
+                    </template>
+                </Column>
+
                 <template #empty>
                     <div
                         class="px-6 py-10 text-center text-sm text-surface-500"
@@ -267,5 +374,20 @@ const dateRange = computed<(Date | null)[] | null>({
                 </template>
             </DataTableWrapper>
         </section>
+
+        <Menu ref="actionsMenu" :model="menuItems" :popup="true">
+            <template #item="{ item, props: itemProps }">
+                <a
+                    class="flex items-center gap-2"
+                    :class="item.colorClass"
+                    v-bind="itemProps.action"
+                >
+                    <component :is="item.tablerIcon" class="size-4 shrink-0" />
+                    <span>{{ item.label }}</span>
+                </a>
+            </template>
+        </Menu>
+
+        <AppointmentCancelDialog v-model="cancelReason" />
     </div>
 </template>

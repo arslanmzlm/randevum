@@ -34,6 +34,54 @@ const AppPreset = definePreset(Aura, {
             paddingX: '1rem',
         },
     },
+    components: {
+        // Aura's outlined-button hover tint ({…50}) reads almost invisible on white; bump every
+        // severity one shade darker (hover 50→100, active 100→200) so the hover state is legible.
+        button: {
+            colorScheme: {
+                light: {
+                    outlined: {
+                        primary: {
+                            hoverBackground: '{primary.100}',
+                            activeBackground: '{primary.200}',
+                        },
+                        secondary: {
+                            hoverBackground: '{surface.100}',
+                            activeBackground: '{surface.200}',
+                        },
+                        success: {
+                            hoverBackground: '{green.100}',
+                            activeBackground: '{green.200}',
+                        },
+                        info: {
+                            hoverBackground: '{sky.100}',
+                            activeBackground: '{sky.200}',
+                        },
+                        warn: {
+                            hoverBackground: '{orange.100}',
+                            activeBackground: '{orange.200}',
+                        },
+                        help: {
+                            hoverBackground: '{purple.100}',
+                            activeBackground: '{purple.200}',
+                        },
+                        danger: {
+                            hoverBackground: '{red.100}',
+                            activeBackground: '{red.200}',
+                        },
+                        contrast: {
+                            hoverBackground: '{surface.100}',
+                            activeBackground: '{surface.200}',
+                        },
+                        plain: {
+                            hoverBackground: '{surface.100}',
+                            activeBackground: '{surface.200}',
+                        },
+                    },
+                },
+            },
+        },
+    },
 });
 
 createInertiaApp({

@@ -1,22 +1,29 @@
 <script setup lang="ts">
 import {
+    IconBan,
     IconBriefcase,
     IconClockHour4,
+    IconPencil,
     IconStethoscope,
     IconTag,
+    IconTrash,
     IconUser,
     IconWalk,
 } from '@tabler/icons-vue';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import AppointmentStatusTag from '@/components/AppointmentStatusTag.vue';
+import type { AppointmentActions } from '@/composables/useAppointmentActions';
 import { useDateTime } from '@/composables/useDateTime';
 import type { CalendarEventDto } from '@/types/calendar';
 
-// Read-only summary of a clicked appointment, anchored to its chip. No edit/cancel actions yet —
-// the detail page (1.7) wires up later. Exposes show()/hide() so the page drives it imperatively.
+// Summary of a clicked appointment, anchored to its chip. The lifecycle actions (edit / cancel /
+// delete) reuse the page's shared useAppointmentActions instance so the calendar and the list
+// never drift. Exposes show()/hide() so the page drives it imperatively.
+const props = defineProps<{ actions: AppointmentActions }>();
+
 const { t } = useI18n();
-const { formatRange } = useDateTime();
+const { formatDateOnly } = useDateTime();
 
 const popover = ref();
 const appointment = ref<CalendarEventDto | null>(null);
@@ -32,11 +39,50 @@ function hide(): void {
 
 defineExpose({ show, hide });
 
-const timeLabel = computed(() =>
+const timeLabel = computed(() => {
+    const a = appointment.value;
+
+    if (!a) {
+        return '';
+    }
+
+    // Server start/end are clinic-local 'YYYY-MM-DD HH:mm' wall-clock strings — slice the date and
+    // time parts directly (no tz math, matching the chip). Using formatRange here would wrongly
+    // re-apply the clinic offset to an already-local time.
+    return `${formatDateOnly(a.start.slice(0, 10))} ${a.start.slice(11, 16)} – ${a.end.slice(11, 16)}`;
+});
+
+// Map the calendar event to the shape the shared action gates expect (event uses `start`).
+const actionable = computed(() =>
     appointment.value
-        ? formatRange(appointment.value.start, appointment.value.end)
-        : '',
+        ? {
+              id: appointment.value.id,
+              doctor_id: appointment.value.doctor_id,
+              status: appointment.value.status,
+              starts_at: appointment.value.start,
+          }
+        : null,
 );
+
+function onEdit(): void {
+    if (actionable.value) {
+        props.actions.goToEdit(actionable.value);
+    }
+}
+
+function onCancel(): void {
+    if (actionable.value) {
+        hide();
+        props.actions.confirmCancel(actionable.value);
+    }
+}
+
+function onDelete(): void {
+    if (actionable.value) {
+        hide();
+        props.actions.confirmDelete(actionable.value);
+    }
+}
 
 const rows = computed(() => {
     const a = appointment.value;
@@ -117,6 +163,45 @@ const rows = computed(() => {
                     </dd>
                 </div>
             </dl>
+
+            <footer
+                v-if="actionable && actions.hasActions(actionable)"
+                class="flex flex-wrap gap-2 border-t border-surface-200 pt-3"
+            >
+                <Button
+                    v-if="actions.canReschedule(actionable)"
+                    type="button"
+                    size="small"
+                    severity="primary"
+                    outlined
+                    :label="t('appointment_actions.menu.edit')"
+                    @click="onEdit"
+                >
+                    <template #icon><IconPencil class="size-4" /></template>
+                </Button>
+                <Button
+                    v-if="actions.canCancel(actionable)"
+                    type="button"
+                    size="small"
+                    severity="warn"
+                    outlined
+                    :label="t('appointment_actions.menu.cancel')"
+                    @click="onCancel"
+                >
+                    <template #icon><IconBan class="size-4" /></template>
+                </Button>
+                <Button
+                    v-if="actions.canDelete(actionable)"
+                    type="button"
+                    size="small"
+                    severity="danger"
+                    outlined
+                    :label="t('appointment_actions.menu.delete')"
+                    @click="onDelete"
+                >
+                    <template #icon><IconTrash class="size-4" /></template>
+                </Button>
+            </footer>
         </div>
     </Popover>
 </template>

@@ -81,14 +81,19 @@ Route::middleware('auth')->group(function () {
     Route::get('/calendar/events', [CalendarController::class, 'events'])->middleware('throttle:60,1')->name('calendar.events');
 });
 
-// Appointments — manual/walk-in creation + pre-check probes.
-// Literal segments (index, create, availability, day-schedule) are declared BEFORE any future {appointment} segment.
+// Appointments — manual/walk-in creation + pre-check probes + lifecycle actions.
+// Literal segments (index, create, availability, day-schedule) are declared BEFORE {appointment}
+// so they are not captured as route-model-bound ids.
 Route::middleware('auth')->group(function () {
     Route::get('/appointments', [AppointmentController::class, 'index'])->name('appointments.index');
     Route::get('/appointments/create', [AppointmentController::class, 'create'])->name('appointments.create');
     Route::get('/appointments/availability', [AppointmentController::class, 'availability'])->middleware('throttle:60,1')->name('appointments.availability');
     Route::get('/appointments/day-schedule', [AppointmentController::class, 'daySchedule'])->middleware('throttle:60,1')->name('appointments.day-schedule');
     Route::post('/appointments', [AppointmentController::class, 'store'])->name('appointments.store');
+    Route::get('/appointments/{appointment}/edit', [AppointmentController::class, 'edit'])->name('appointments.edit');
+    Route::put('/appointments/{appointment}', [AppointmentController::class, 'update'])->name('appointments.update');
+    Route::patch('/appointments/{appointment}/cancel', [AppointmentController::class, 'cancel'])->name('appointments.cancel');
+    Route::delete('/appointments/{appointment}', [AppointmentController::class, 'destroy'])->name('appointments.destroy');
 });
 
 // Doctor availability / schedule exceptions.

@@ -701,3 +701,95 @@ test('resolveDuration falls back to clinic default when appointment type has no 
     // AppointmentType with 0 duration is falsy — falls through to clinic default.
     expect($service->resolveDuration(null, $svc->id, $type->id, $clinic))->toBe(30);
 });
+
+// ---------------------------------------------------------------------------
+// excludeAppointmentId — reschedule self-exclusion (layer 3)
+// ---------------------------------------------------------------------------
+
+test('hasConflictingAppointment returns false when the only overlapping appointment is the excluded one', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+    $repo = app(AppointmentRepository::class);
+
+    $monday = Carbon::now('Europe/Istanbul')->next(Carbon::MONDAY);
+    $start = $monday->copy()->setTime(10, 0, 0)->utc();
+    $end = $start->copy()->addMinutes(30);
+
+    // The appointment at 10:00-10:30 is the one being rescheduled — it should not block itself.
+    $appointment = Appointment::factory()->create([
+        'clinic_id' => $clinic->id,
+        'doctor_id' => $doctor->id,
+        'starts_at' => $start,
+        'ends_at' => $end,
+        'status' => AppointmentStatus::Confirmed,
+    ]);
+
+    // Without exclusion → conflict with itself.
+    expect($repo->hasConflictingAppointment($doctor->id, $start, $end))->toBeTrue();
+
+    // With exclusion → no conflict (the appointment ignores its own slot).
+    expect($repo->hasConflictingAppointment($doctor->id, $start, $end, $appointment->id))->toBeFalse();
+});
+
+test('hasConflictingAppointment still returns true when another appointment conflicts even with the excluded id', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+    $repo = app(AppointmentRepository::class);
+
+    $monday = Carbon::now('Europe/Istanbul')->next(Carbon::MONDAY);
+    $start = $monday->copy()->setTime(10, 0, 0)->utc();
+    $end = $start->copy()->addMinutes(30);
+
+    // The appointment being rescheduled (excluded from conflict check).
+    $appointment = Appointment::factory()->create([
+        'clinic_id' => $clinic->id,
+        'doctor_id' => $doctor->id,
+        'starts_at' => $start,
+        'ends_at' => $end,
+        'status' => AppointmentStatus::Confirmed,
+    ]);
+
+    // A different appointment at 10:15 — NOT excluded — still blocks the slot.
+    Appointment::factory()->create([
+        'clinic_id' => $clinic->id,
+        'doctor_id' => $doctor->id,
+        'starts_at' => $start->copy()->addMinutes(15),
+        'ends_at' => $end->copy()->addMinutes(15),
+        'status' => AppointmentStatus::Confirmed,
+    ]);
+
+    expect($repo->hasConflictingAppointment($doctor->id, $start, $end, $appointment->id))->toBeTrue();
+});
+
+test('unavailableReason with excludeAppointmentId returns null when only the excluded appointment overlaps', function (): void {
+    $clinic = Clinic::factory()->create(['timezone' => 'Europe/Istanbul']);
+    app(ClinicContext::class)->set($clinic->id);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+    $service = app(AvailabilityService::class);
+
+    $monday = Carbon::now('Europe/Istanbul')->next(Carbon::MONDAY);
+    $start = $monday->copy()->setTime(10, 0, 0)->utc();
+    $end = $start->copy()->addMinutes(30);
+
+    // Appointment at 10:00 — being rescheduled, so excluded.
+    $appointment = Appointment::factory()->create([
+        'clinic_id' => $clinic->id,
+        'doctor_id' => $doctor->id,
+        'starts_at' => $start,
+        'ends_at' => $end,
+        'status' => AppointmentStatus::Confirmed,
+    ]);
+
+    // Without exclusion → Conflict reason returned.
+    expect($service->unavailableReason($doctor->id, $start, $end, false, $clinic))
+        ->toBe(AvailabilityReason::Conflict);
+
+    // With exclusion → slot is available (null reason).
+    expect($service->unavailableReason($doctor->id, $start, $end, false, $clinic, $appointment->id))
+        ->toBeNull();
+});

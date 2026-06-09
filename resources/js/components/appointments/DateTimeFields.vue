@@ -16,6 +16,19 @@ import {
 } from '@/utils/appointmentTime';
 import { useAppointmentForm } from './formContext';
 
+const props = withDefaults(
+    defineProps<{
+        /** Passed on the edit page so the availability probe ignores the row's own slot. */
+        excludeAppointmentId?: number;
+        /** Submit-button label; defaults to the create-appointment wording. */
+        submitLabel?: string;
+    }>(),
+    {
+        excludeAppointmentId: undefined,
+        submitLabel: undefined,
+    },
+);
+
 const { t } = useI18n();
 
 const form = useAppointmentForm();
@@ -51,6 +64,7 @@ const { state: availabilityState, reason: availabilityReason } =
             duration_minutes: form.duration_minutes,
             service_id: form.service_id,
             is_walk_in: form.is_walk_in,
+            exclude_appointment_id: props.excludeAppointmentId,
         };
     });
 
@@ -145,7 +159,7 @@ function onTimeBlur(): void {
 
         <Button
             type="submit"
-            :label="t('appointment.submit')"
+            :label="submitLabel ?? t('appointment.submit')"
             :loading="form.processing"
             class="mt-6 w-full"
         >

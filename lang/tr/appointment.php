@@ -30,7 +30,14 @@ return [
         'conflict' => 'Seçilen saatte doktorun başka bir randevusu bulunuyor.',
         'doctor_not_allowed' => 'Yalnızca kendi adınıza randevu oluşturabilirsiniz.',
         'phone_trashed' => 'Bu telefon numarası silinmiş bir hastaya ait. Hasta ekranından geri yükleyin.',
+        'not_reschedulable' => 'Bu randevu yeniden planlanamaz.',
+        'not_cancellable' => 'Bu randevu iptal edilemez.',
+        'delete_not_allowed' => 'Bu randevu silinemez. Lütfen iptal seçeneğini kullanın.',
     ],
+
+    'rescheduled' => 'Randevu yeniden planlandı.',
+    'cancelled' => 'Randevu iptal edildi.',
+    'deleted' => 'Randevu silindi.',
 
     'submit' => 'Randevu Oluştur',
 

@@ -74,8 +74,10 @@ class AvailabilityService
     /**
      * Run each availability layer in order and return the first failing reason,
      * or null when the slot is available. Walk-ins bypass layers 2 & 3.
+     * Pass $excludeAppointmentId when rescheduling so the row's own slot is not
+     * treated as a conflict in layer 3.
      */
-    public function unavailableReason(int $doctorId, mixed $start, mixed $end, bool $isWalkIn, Clinic $clinic): ?AvailabilityReason
+    public function unavailableReason(int $doctorId, mixed $start, mixed $end, bool $isWalkIn, Clinic $clinic, ?int $excludeAppointmentId = null): ?AvailabilityReason
     {
         if (! $this->insideWorkingHours($clinic, $start, $end)) {
             return AvailabilityReason::OutsideHours;
@@ -89,7 +91,7 @@ class AvailabilityService
             return AvailabilityReason::ScheduleException;
         }
 
-        if ($this->appointmentRepository->hasConflictingAppointment($doctorId, $start, $end)) {
+        if ($this->appointmentRepository->hasConflictingAppointment($doctorId, $start, $end, $excludeAppointmentId)) {
             return AvailabilityReason::Conflict;
         }
 
@@ -99,9 +101,9 @@ class AvailabilityService
     /**
      * Combined check: layer 1 always; layers 2 & 3 only when !$isWalkIn.
      */
-    public function isAvailable(int $doctorId, mixed $start, mixed $end, bool $isWalkIn, Clinic $clinic): bool
+    public function isAvailable(int $doctorId, mixed $start, mixed $end, bool $isWalkIn, Clinic $clinic, ?int $excludeAppointmentId = null): bool
     {
-        return $this->unavailableReason($doctorId, $start, $end, $isWalkIn, $clinic) === null;
+        return $this->unavailableReason($doctorId, $start, $end, $isWalkIn, $clinic, $excludeAppointmentId) === null;
     }
 
     /**

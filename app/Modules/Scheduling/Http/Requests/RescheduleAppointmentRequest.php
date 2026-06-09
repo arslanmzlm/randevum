@@ -3,10 +3,11 @@
 namespace App\Modules\Scheduling\Http\Requests;
 
 use App\Support\ClinicContext;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class CheckAvailabilityRequest extends FormRequest
+class RescheduleAppointmentRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -27,8 +28,6 @@ class CheckAvailabilityRequest extends FormRequest
                 'integer',
                 Rule::exists('doctors', 'id')->where('clinic_id', $clinicId),
             ],
-            'starts_at' => ['required', 'date'],
-            'duration_minutes' => ['nullable', 'integer', 'min:5', 'max:480'],
             'appointment_type_id' => [
                 'nullable',
                 'integer',
@@ -41,12 +40,26 @@ class CheckAvailabilityRequest extends FormRequest
                 'integer',
                 Rule::exists('services', 'id')->where('clinic_id', $clinicId),
             ],
-            'is_walk_in' => ['boolean'],
-            'exclude_appointment_id' => [
-                'nullable',
-                'integer',
-                Rule::exists('appointments', 'id')->where('clinic_id', $clinicId),
-            ],
+            'starts_at' => ['required', 'date'],
+            'duration_minutes' => ['nullable', 'integer', 'min:5', 'max:480'],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            // Without appointments.assignDoctor a doctor may only reschedule their own appointments.
+            $user = $this->user();
+
+            if (! $user->can('appointments.update') || $user->can('appointments.assignDoctor')) {
+                return;
+            }
+
+            $ownDoctorId = $user->doctor?->id;
+
+            if ($ownDoctorId === null || (int) $this->input('doctor_id') !== $ownDoctorId) {
+                $validator->errors()->add('doctor_id', __('appointment.errors.doctor_not_allowed'));
+            }
+        });
     }
 }

@@ -31,8 +31,10 @@ export function useCalendarEvents(params: () => CalendarEventsParams | null) {
     const exceptions = ref<CalendarExceptionDto[]>([]);
 
     let activeRequest: AbortController | undefined;
+    let lastParams: CalendarEventsParams | null = null;
 
     async function run(current: CalendarEventsParams): Promise<void> {
+        lastParams = current;
         activeRequest?.abort();
         activeRequest = new AbortController();
 
@@ -103,5 +105,13 @@ export function useCalendarEvents(params: () => CalendarEventsParams | null) {
         { debounce: DEBOUNCE_MS, deep: true, immediate: true },
     );
 
-    return { state, data, exceptions };
+    // Re-fetch the current range without waiting for a param change — used after a mutation (cancel/
+    // delete from the event popover) since calendar events come from JSON, not reloaded Inertia props.
+    function refresh(): void {
+        if (lastParams) {
+            void run(lastParams);
+        }
+    }
+
+    return { state, data, exceptions, refresh };
 }

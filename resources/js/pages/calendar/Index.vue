@@ -23,11 +23,13 @@ import {
 } from 'date-fns';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import AppointmentCancelDialog from '@/components/appointments/AppointmentCancelDialog.vue';
 import ButtonLink from '@/components/ButtonLink.vue';
 import AppointmentPopover from '@/components/calendar/AppointmentPopover.vue';
 import CalendarMonthGrid from '@/components/calendar/CalendarMonthGrid.vue';
 import CalendarTimeGrid from '@/components/calendar/CalendarTimeGrid.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import { useAppointmentActions } from '@/composables/useAppointmentActions';
 import { useCalendarEvents } from '@/composables/useCalendarEvents';
 import { useCan } from '@/composables/useCan';
 import { useDateTime } from '@/composables/useDateTime';
@@ -212,7 +214,9 @@ const fetchParams = computed(() => ({
     statuses: statuses.value,
 }));
 
-const { state, data, exceptions } = useCalendarEvents(() => fetchParams.value);
+const { state, data, exceptions, refresh } = useCalendarEvents(
+    () => fetchParams.value,
+);
 
 // Live clock in the clinic timezone, ticking each minute — drives the now-line + today highlight.
 const now = useNow({ interval: 60_000 });
@@ -452,6 +456,15 @@ function goToday(): void {
     viewDate.value = new Date();
 }
 
+// Shared lifecycle actions — same gating the list uses, so the popover never drifts. Pair with the
+// <AppointmentCancelDialog> mounted below (the optional-reason confirm group). Events come from JSON
+// (not Inertia props), so refetch them on a successful cancel/delete.
+const actions = useAppointmentActions(props.ownDoctorId, {
+    onSuccess: refresh,
+});
+// Top-level ref so the template auto-unwraps it for the cancel dialog's v-model.
+const { cancelReason } = actions;
+
 const popover = ref<InstanceType<typeof AppointmentPopover>>();
 
 function onSelectEvent(
@@ -592,6 +605,7 @@ function onSelectEvent(
             </div>
         </div>
 
-        <AppointmentPopover ref="popover" />
+        <AppointmentPopover ref="popover" :actions="actions" />
+        <AppointmentCancelDialog v-model="cancelReason" />
     </div>
 </template>

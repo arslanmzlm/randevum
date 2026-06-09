@@ -4,16 +4,21 @@ import { useI18n } from 'vue-i18n';
 import FormField from '@/components/FormField.vue';
 import { useAppointmentForm } from './formContext';
 
-const props = defineProps<{
-    doctorOptions: Array<{ label: string; value: number }>;
-    serviceOptions: Array<{ label: string; value: number }>;
-    appointmentTypeOptions: Array<{
-        label: string;
-        value: number;
-        color: string;
-    }>;
-    doctorLocked: boolean;
-}>();
+const props = withDefaults(
+    defineProps<{
+        doctorOptions: Array<{ label: string; value: number }>;
+        serviceOptions: Array<{ label: string; value: number }>;
+        appointmentTypeOptions: Array<{
+            label: string;
+            value: number;
+            color: string;
+        }>;
+        doctorLocked: boolean;
+        /** Walk-in is set at creation and not editable when rescheduling. */
+        showWalkIn?: boolean;
+    }>(),
+    { showWalkIn: true },
+);
 
 const { t } = useI18n();
 
@@ -133,18 +138,20 @@ function labelFor(value: number): string | undefined {
                 />
             </FormField>
 
-            <div
-                class="flex items-center justify-between gap-4 rounded-lg border border-surface-200 p-4"
-            >
-                <span class="text-sm font-medium text-surface-900">
-                    {{ t('appointment.fields.is_walk_in') }}
-                </span>
-                <ToggleSwitch v-model="form.is_walk_in" />
-            </div>
+            <template v-if="showWalkIn">
+                <div
+                    class="flex items-center justify-between gap-4 rounded-lg border border-surface-200 p-4"
+                >
+                    <span class="text-sm font-medium text-surface-900">
+                        {{ t('appointment.fields.is_walk_in') }}
+                    </span>
+                    <ToggleSwitch v-model="form.is_walk_in" />
+                </div>
 
-            <p class="text-xs text-surface-500">
-                {{ t('appointment.hints.is_walk_in') }}
-            </p>
+                <p class="text-xs text-surface-500">
+                    {{ t('appointment.hints.is_walk_in') }}
+                </p>
+            </template>
         </div>
     </div>
 </template>
