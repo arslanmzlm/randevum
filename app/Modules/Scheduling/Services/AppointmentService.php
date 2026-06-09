@@ -13,17 +13,30 @@ use App\Modules\Medical\Exceptions\TrashedPhoneConflictException;
 use App\Modules\Scheduling\Repositories\AppointmentRepository;
 use App\Support\ClinicContext;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class AppointmentService
 {
+    /**
+     * Statuses eligible for bulk cancellation.
+     * Arrived is intentionally excluded — a checked-in patient must be handled individually.
+     *
+     * @var list<AppointmentStatus>
+     */
+    private const BULK_CANCELLABLE_STATUSES = [
+        AppointmentStatus::Confirmed,
+        AppointmentStatus::Rescheduled,
+    ];
+
     public function __construct(
         private AppointmentRepository $repository,
         private AvailabilityService $availabilityService,
         private StatusLogService $statusLogService,
         private PatientRegistrarContract $patientRegistrar,
+        private ScheduleExceptionService $scheduleExceptionService,
         private ClinicContext $clinicContext,
     ) {}
 
@@ -220,18 +233,69 @@ class AppointmentService
         }
 
         DB::transaction(function () use ($appointment, $reason, $actor): void {
-            $previousStatus = $appointment->status;
-
-            $this->repository->update($appointment, ['status' => AppointmentStatus::Cancelled->value]);
-
-            $this->statusLogService->record(
-                $appointment,
-                $previousStatus->value,
-                AppointmentStatus::Cancelled->value,
-                $actor,
-                $reason,
-            );
+            $this->transitionToCancelled($appointment, $reason, $actor);
         });
+    }
+
+    /**
+     * Preview the appointments that would be cancelled by the given bulk-cancel criteria.
+     * Read-only — does not mutate any state.
+     *
+     * @param  array<string, mixed>  $data  Validated data with start_date, end_date, optional doctor_id
+     * @return Collection<int, Appointment>
+     */
+    public function previewBulkCancel(array $data, User $actor): Collection
+    {
+        $criteria = $this->bulkCancelCriteria($data, $actor);
+
+        return $this->repository->cancellableStartingBetween(
+            $criteria['doctorIds'],
+            $criteria['fromUtc'],
+            $criteria['toUtc'],
+            self::BULK_CANCELLABLE_STATUSES,
+        );
+    }
+
+    /**
+     * Cancel all Confirmed/Rescheduled appointments whose starts_at falls in the
+     * selected date range and doctor scope, all inside one DB transaction.
+     * Returns the number of appointments cancelled (0 when nothing matched).
+     *
+     * When block_new_bookings is truthy, also creates all-day schedule_exception(s)
+     * for the same range/scope so new bookings in the window are rejected.
+     *
+     * @param  array<string, mixed>  $data  Validated data
+     *
+     * @throws \Throwable
+     */
+    public function bulkCancel(array $data, User $actor): int
+    {
+        $criteria = $this->bulkCancelCriteria($data, $actor);
+
+        $appointments = $this->repository->cancellableStartingBetween(
+            $criteria['doctorIds'],
+            $criteria['fromUtc'],
+            $criteria['toUtc'],
+            self::BULK_CANCELLABLE_STATUSES,
+        );
+
+        if ($appointments->isEmpty()) {
+            return 0;
+        }
+
+        $reason = $data['reason'] ?? null;
+
+        DB::transaction(function () use ($appointments, $reason, $actor, $data, $criteria): void {
+            foreach ($appointments as $appointment) {
+                $this->transitionToCancelled($appointment, $reason, $actor);
+            }
+
+            if (! empty($data['block_new_bookings'])) {
+                $this->applyNewBookingBlock($data, $criteria, $actor);
+            }
+        });
+
+        return $appointments->count();
     }
 
     /**
@@ -252,6 +316,94 @@ class AppointmentService
         }
 
         $appointment->forceDelete();
+    }
+
+    /**
+     * Perform the status update + status_log write for a single appointment cancellation.
+     * Must be called from inside a DB::transaction — contains no inner transaction.
+     */
+    private function transitionToCancelled(Appointment $appointment, ?string $reason, User $actor): void
+    {
+        $previousStatus = $appointment->status;
+
+        $this->repository->update($appointment, ['status' => AppointmentStatus::Cancelled->value]);
+
+        $this->statusLogService->record(
+            $appointment,
+            $previousStatus->value,
+            AppointmentStatus::Cancelled->value,
+            $actor,
+            $reason,
+        );
+    }
+
+    /**
+     * Resolve the UTC appointment window and doctor-id list for bulk operations.
+     *
+     * doctorIds = null  → all clinic doctors (viewAll + no doctor_id filter)
+     * doctorIds = [id]  → single doctor (explicit filter, or user's own profile)
+     * doctorIds = []    → user has no doctor profile → empty result set
+     *
+     * @param  array<string, mixed>  $data
+     * @return array{doctorIds: list<int>|null, fromUtc: Carbon, toUtc: Carbon}
+     */
+    private function bulkCancelCriteria(array $data, User $user): array
+    {
+        $clinic = Clinic::findOrFail($this->clinicContext->id());
+        $tz = $clinic->timezone;
+
+        $fromUtc = Carbon::createFromFormat('Y-m-d', $data['start_date'], $tz)->startOfDay()->utc();
+        // Exclusive end: the day after end_date at 00:00 clinic-local time.
+        $toUtc = Carbon::createFromFormat('Y-m-d', $data['end_date'], $tz)->addDay()->startOfDay()->utc();
+
+        if ($user->can('appointments.viewAll')) {
+            $doctorIds = isset($data['doctor_id']) ? [(int) $data['doctor_id']] : null;
+        } else {
+            $ownId = $user->doctor?->id;
+            $doctorIds = $ownId !== null ? [$ownId] : [];
+        }
+
+        return ['doctorIds' => $doctorIds, 'fromUtc' => $fromUtc, 'toUtc' => $toUtc];
+    }
+
+    /**
+     * Create all-day schedule_exception(s) to block new bookings over the cancelled range.
+     * Reuses 1.15's ScheduleExceptionService::store() verbatim — no new exception logic.
+     *
+     * scope='clinic' when the bulk covered all doctors (doctorIds = null);
+     * scope='doctor' when narrowed to a single doctor.
+     *
+     * @param  array<string, mixed>  $data
+     * @param  array{doctorIds: list<int>|null, fromUtc: Carbon, toUtc: Carbon}  $criteria
+     */
+    private function applyNewBookingBlock(array $data, array $criteria, User $actor): void
+    {
+        $doctorIds = $criteria['doctorIds'];
+
+        if ($doctorIds === null) {
+            $scope = 'clinic';
+            $blockDoctorId = null;
+        } elseif (count($doctorIds) === 1) {
+            $scope = 'doctor';
+            $blockDoctorId = $doctorIds[0];
+        } else {
+            // Empty array (user with no profile): nothing to block.
+            return;
+        }
+
+        $exceptionData = [
+            'scope' => $scope,
+            'is_all_day' => true,
+            'starts_at' => $data['start_date'],
+            'ends_at' => $data['end_date'],
+            'reason' => $data['reason'] ?? null,
+        ];
+
+        if ($blockDoctorId !== null) {
+            $exceptionData['doctor_id'] = $blockDoctorId;
+        }
+
+        $this->scheduleExceptionService->store($exceptionData, $actor);
     }
 
     /**

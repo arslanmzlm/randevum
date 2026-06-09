@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import {
     IconBan,
+    IconCalendarOff,
     IconCalendarWeek,
     IconDotsVertical,
     IconPencil,
@@ -10,11 +11,13 @@ import {
 } from '@tabler/icons-vue';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { bulkCancelPage } from '@/actions/App/Modules/Scheduling/Http/Controllers/AppointmentController';
 import AppointmentCancelDialog from '@/components/appointments/AppointmentCancelDialog.vue';
 import AppointmentStatusTag from '@/components/AppointmentStatusTag.vue';
 import DataTableWrapper from '@/components/DataTableWrapper.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import { useAppointmentActions } from '@/composables/useAppointmentActions';
+import { useCan } from '@/composables/useCan';
 import { useDateTime } from '@/composables/useDateTime';
 import { useTableFilters } from '@/composables/useTableFilters';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -32,6 +35,7 @@ defineOptions({ layout: AppLayout });
 const props = defineProps<AppointmentIndexProps>();
 
 const { t } = useI18n();
+const { can } = useCan();
 const { formatDate, formatTime } = useDateTime();
 
 const {
@@ -190,7 +194,22 @@ const dateRange = computed<(Date | null)[] | null>({
             :title="t('appointment_list.title')"
             :description="t('appointment_list.subtitle')"
             :breadcrumbs="[{ label: t('nav.appointments') }]"
-        />
+        >
+            <template #actions>
+                <Button
+                    v-if="can('appointments.bulkCancel')"
+                    type="button"
+                    severity="warn"
+                    outlined
+                    :label="t('appointment_bulk_cancel.title')"
+                    @click="router.visit(bulkCancelPage().url)"
+                >
+                    <template #icon>
+                        <IconCalendarOff class="size-4" />
+                    </template>
+                </Button>
+            </template>
+        </PageHeader>
 
         <div
             v-if="showEmptyState"

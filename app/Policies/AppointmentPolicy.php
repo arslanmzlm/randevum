@@ -37,6 +37,15 @@ class AppointmentPolicy
     }
 
     /**
+     * Bulk cancel a date range of appointments (class-level gate — no instance).
+     * Doctor-visibility narrowing is handled in the service, not here.
+     */
+    public function bulkCancel(User $user): bool
+    {
+        return $user->can('appointments.bulkCancel');
+    }
+
+    /**
      * A user "acts on" an appointment when they can see all doctors' appointments,
      * or when the appointment belongs to their own doctor profile.
      * Ownership cannot be expressed as a permission — so it lives in the policy.

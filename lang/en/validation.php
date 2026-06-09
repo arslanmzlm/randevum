@@ -256,6 +256,8 @@ return [
         // appointments
         'appointment_type_id' => 'appointment type',
         'reason' => 'cancellation reason',
+        'start_date' => 'start date',
+        'end_date' => 'end date',
         'patient_id' => 'patient',
         'doctor_id' => 'doctor',
         'service_id' => 'service',

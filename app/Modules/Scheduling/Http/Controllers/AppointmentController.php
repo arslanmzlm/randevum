@@ -10,6 +10,8 @@ use App\Models\Patient;
 use App\Models\Service;
 use App\Modules\Core\Contracts\DoctorDirectoryContract;
 use App\Modules\Core\Support\Toast;
+use App\Modules\Scheduling\Http\Requests\BulkCancelAppointmentsRequest;
+use App\Modules\Scheduling\Http\Requests\BulkCancelPreviewRequest;
 use App\Modules\Scheduling\Http\Requests\CancelAppointmentRequest;
 use App\Modules\Scheduling\Http\Requests\CheckAvailabilityRequest;
 use App\Modules\Scheduling\Http\Requests\DayScheduleRequest;
@@ -298,6 +300,70 @@ class AppointmentController extends Controller
                     : null,
             ])->values(),
         ]);
+    }
+
+    /**
+     * Render the bulk-cancel form with the doctor list and clinic timezone.
+     */
+    public function bulkCancelPage(Request $request): Response
+    {
+        $this->authorize('bulkCancel', Appointment::class);
+
+        $clinic = Clinic::findOrFail($this->clinicContext->id());
+        $user = $request->user();
+
+        $doctors = $user->can('appointments.viewAll')
+            ? $this->doctorDirectory->activeForClinic()
+                ->map(fn ($d) => ['id' => $d->id, 'display_name' => $d->display_name])
+                ->values()
+            : [];
+
+        return Inertia::render('appointments/BulkCancel', [
+            'doctors' => $doctors,
+            'timezone' => $clinic->timezone,
+            'ownDoctorId' => $user->doctor?->id,
+        ]);
+    }
+
+    /**
+     * Return the live preview count + appointment rows for the given bulk-cancel criteria.
+     * Read-only; no state mutation. Throttled to prevent table-scan abuse.
+     */
+    public function bulkCancelPreview(BulkCancelPreviewRequest $request): JsonResponse
+    {
+        $this->authorize('bulkCancel', Appointment::class);
+
+        $appointments = $this->service->previewBulkCancel(
+            $request->validated(),
+            $request->user(),
+        );
+
+        return response()->json([
+            'count' => $appointments->count(),
+            'appointments' => $appointments->map(fn (Appointment $a) => [
+                'id' => $a->id,
+                'starts_at' => $a->starts_at->toIso8601String(),
+                'patient_name' => trim($a->patient->first_name.' '.$a->patient->last_name),
+                'doctor_name' => $a->doctor->display_name,
+                'service_name' => $a->service?->name,
+                'status' => $a->status->value,
+                'has_phone' => $a->patient->getRawOriginal('phone') !== null,
+            ])->values(),
+        ]);
+    }
+
+    /**
+     * Execute the bulk cancellation, then redirect back to the appointments list.
+     */
+    public function bulkCancel(BulkCancelAppointmentsRequest $request): RedirectResponse
+    {
+        $this->authorize('bulkCancel', Appointment::class);
+
+        $count = $this->service->bulkCancel($request->validated(), $request->user());
+
+        Toast::success(__('appointment_bulk_cancel.done', ['count' => $count]));
+
+        return to_route('appointments.index');
     }
 
     private function activeClinicTimezone(): string

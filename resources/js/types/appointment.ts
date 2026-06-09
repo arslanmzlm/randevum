@@ -146,6 +146,29 @@ export type AvailabilityCheckResponse = {
     reason: AvailabilityReason | null;
 };
 
+/** Props for the `appointments/BulkCancel` page (AppointmentController@bulkCancelPage). */
+export type BulkCancelProps = {
+    /** Active-clinic doctors; `[]` when the user lacks `appointments.viewAll`. */
+    doctors: AppointmentDoctorOption[];
+    /** Clinic timezone — the date pickers select clinic-local days. */
+    timezone: string;
+    /** The user's own doctors.id; UX hint when they cannot view all doctors. */
+    ownDoctorId: number | null;
+};
+
+/** One row of the bulk-cancel preview probe (`appointments.bulk-cancel.preview`). */
+export type BulkCancelPreviewRow = {
+    id: number;
+    /** ISO 8601 UTC timestamp; formatted client-side via useDateTime. */
+    starts_at: string;
+    patient_name: string;
+    doctor_name: string;
+    service_name: string | null;
+    status: AppointmentStatus;
+    /** Patient has a phone → will receive the cancellation SMS once 1.16/1.17 lands. */
+    has_phone: boolean;
+};
+
 /** One row of the selected-day panel (`appointments.day-schedule`). */
 export type DayScheduleEntry = {
     id: number;

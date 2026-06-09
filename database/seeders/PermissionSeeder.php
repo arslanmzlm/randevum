@@ -57,6 +57,8 @@ class PermissionSeeder extends Seeder
         'appointments.cancel' => ['owner', 'manager', 'receptionist', 'doctor'],
         // Hard-delete a mis-created future Confirmed appointment. Restricted to managerial roles.
         'appointments.delete' => ['owner', 'manager'],
+        // Bulk-cancel a date range of appointments. Higher blast radius than single cancel.
+        'appointments.bulkCancel' => ['owner', 'manager'],
         // appointment types (settings / CRUD)
         'appointmentTypes.viewAny' => ['owner', 'manager', 'doctor'],
         'appointmentTypes.create' => ['owner', 'manager'],

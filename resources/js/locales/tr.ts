@@ -595,6 +595,36 @@ export const tr = {
         delete_confirm_message:
             'Bu randevu kalıcı olarak silinecek ve geri alınamayacak. Yalnızca yanlışlıkla oluşturulan randevular için kullanın; aksi halde "İptal et" tercih edin.',
     },
+    appointment_bulk_cancel: {
+        title: 'Günü Kapat',
+        subtitle:
+            'Bir tarih aralığındaki randevuları tek seferde iptal edin. Örneğin doktor rahatsızlandığında veya klinik kapandığında.',
+        start_date: 'Başlangıç tarihi',
+        end_date: 'Bitiş tarihi',
+        doctor: 'Doktor',
+        all_doctors_hint:
+            'Boş bırakılırsa tüm doktorların randevuları kapsanır.',
+        reason: 'İptal nedeni (isteğe bağlı)',
+        block_new_bookings: 'Günü yeni rezervasyona da kapat',
+        block_new_bookings_hint:
+            'İşaretlenirse, seçilen aralık için tüm gün izin oluşturulur ve bu tarihlere yeni randevu alınamaz.',
+        preview_title: 'İptal edilecek randevular',
+        affected_count: '{count} randevu iptal edilecek',
+        pick_range: 'Önizleme için bir tarih aralığı seçin.',
+        loading: 'Randevular yükleniyor…',
+        empty: 'Seçilen aralıkta iptal edilebilecek randevu bulunmuyor.',
+        columns: {
+            datetime: 'Tarih / Saat',
+            patient: 'Hasta',
+            doctor: 'Doktor',
+            service: 'Hizmet',
+            status: 'Durum',
+        },
+        submit: 'Randevuları İptal Et',
+        confirm_title: 'Günü kapat',
+        confirm_message:
+            '{count} randevu "İptal" olarak işaretlenecek. Bu işlem geri alınamaz. Devam etmek istiyor musunuz?',
+    },
     calendar: {
         title: 'Takvim',
         subtitle: 'Randevuları ay, hafta ve gün görünümünde inceleyin.',

@@ -168,4 +168,17 @@ class Appointment extends Model
         $query->inRange($dayStartUtc, $dayEndUtc)
             ->where('status', '!=', AppointmentStatus::Cancelled->value);
     }
+
+    /**
+     * Appointments whose starts_at falls in [fromUtc, toUtc) — exclusive end.
+     *
+     * "Günü kapat" semantics: only appointments that START within the selected days
+     * are in scope; a late-night visit from the night before is not affected.
+     *
+     * @param  Builder<Appointment>  $query
+     */
+    public function scopeStartingBetween(Builder $query, mixed $fromUtc, mixed $toUtc): void
+    {
+        $query->where('starts_at', '>=', $fromUtc)->where('starts_at', '<', $toUtc);
+    }
 }

@@ -77,6 +77,31 @@ class AppointmentRepository
     }
 
     /**
+     * Appointments whose starts_at falls in [fromUtc, toUtc), filtered to the given
+     * cancellable statuses and optionally narrowed by doctor(s).
+     *
+     * ClinicScope auto-isolates the tenant — no explicit clinic_id filter needed.
+     * Passing $doctorIds = null returns all clinic doctors; [] returns an empty collection.
+     *
+     * @param  list<int>|null  $doctorIds  null = all doctors
+     * @param  list<AppointmentStatus>  $statuses
+     * @return Collection<int, Appointment>
+     */
+    public function cancellableStartingBetween(
+        ?array $doctorIds,
+        mixed $fromUtc,
+        mixed $toUtc,
+        array $statuses,
+    ): Collection {
+        return Appointment::startingBetween($fromUtc, $toUtc)
+            ->withStatus($statuses)
+            ->when($doctorIds !== null, fn ($q) => $q->whereIn('doctor_id', $doctorIds))
+            ->with(['patient', 'doctor.user', 'service'])
+            ->orderBy('starts_at')
+            ->get();
+    }
+
+    /**
      * All appointments that strictly overlap [startUtc, endUtc) for the given doctor(s),
      * filtered to the provided statuses. ClinicScope is applied automatically.
      *
