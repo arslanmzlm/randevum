@@ -13,8 +13,7 @@ return new class extends Migration
             $table->foreignId('clinic_id')->constrained()->cascadeOnDelete();
             $table->foreignId('patient_id')->constrained()->cascadeOnDelete();
             $table->foreignId('doctor_id')->constrained('doctors')->cascadeOnDelete();
-            // Forward-compat: cases table ships in 1.11; FK added by editing this migration inline then.
-            $table->unsignedBigInteger('case_id')->nullable();
+            $table->foreignId('case_id')->nullable()->constrained('cases')->nullOnDelete();
             $table->foreignId('appointment_type_id')->nullable()->constrained('appointment_types')->nullOnDelete();
             // What the patient is coming in for (visit intent) — customer requirement. Nullable +
             // soft reference: a soft-deleted service must not break the appointment. Distinct from

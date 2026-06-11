@@ -60,7 +60,7 @@ class HandleInertiaRequests extends Middleware
     /**
      * Active clinic identity for the app shell (sidebar logo + name); null for guests.
      *
-     * @return array{id: int, name: string, logo_url: string|null}|null
+     * @return array{id: int, name: string, logo_url: string|null, timezone: string, currency: string}|null
      */
     private function sharedClinic(): ?array
     {
@@ -82,6 +82,8 @@ class HandleInertiaRequests extends Middleware
             'logo_url' => $clinic->imageUrl('logo', 'thumb'),
             // Shared globally so useDateTime() and the calendar read tz from one source.
             'timezone' => $clinic->timezone,
+            // ISO 4217 code — single source for client-side money formatting (useMoney()).
+            'currency' => $clinic->currency,
         ];
     }
 }

@@ -70,6 +70,8 @@ class CalendarService
                 'service_name' => $a->service?->name,
                 'type_name' => $a->appointmentType?->name,
                 'type_color' => $a->appointmentType?->color,
+                // Lets the popover route to "start treatment" vs "resume draft".
+                'treatment_id' => $a->treatment?->id,
             ])->values()->all(),
             'exceptions' => $exceptions->map(fn (ScheduleException $e) => [
                 'id' => $e->id,

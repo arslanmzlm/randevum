@@ -8,6 +8,7 @@ use App\Models\Appointment;
 use App\Models\Clinic;
 use App\Models\User;
 use App\Modules\Core\Contracts\AppointmentCancellationContract;
+use App\Modules\Core\Contracts\AppointmentLifecycleContract;
 use App\Modules\Core\Services\StatusLogService;
 use App\Modules\Medical\Contracts\PatientRegistrarContract;
 use App\Modules\Medical\Exceptions\TrashedPhoneConflictException;
@@ -19,7 +20,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
-class AppointmentService implements AppointmentCancellationContract
+class AppointmentService implements AppointmentCancellationContract, AppointmentLifecycleContract
 {
     /**
      * Statuses eligible for bulk cancellation.
@@ -433,6 +434,145 @@ class AppointmentService implements AppointmentCancellationContract
         }
 
         $this->scheduleExceptionService->store($exceptionData, $actor);
+    }
+
+    /**
+     * Transition a Confirmed or Rescheduled appointment to Arrived and log it.
+     * No-op if already Arrived. Must be called inside a DB::transaction.
+     *
+     * Rescheduled → Arrived is deliberate: a patient who rescheduled and then shows up
+     * checks in directly without needing a separate Confirmed step.
+     */
+    public function markArrived(Appointment $appointment, User $actor): void
+    {
+        if ($appointment->status === AppointmentStatus::Arrived) {
+            return;
+        }
+
+        $allowedStatuses = [AppointmentStatus::Confirmed, AppointmentStatus::Rescheduled];
+
+        if (! in_array($appointment->status, $allowedStatuses, true)) {
+            throw ValidationException::withMessages([
+                'status' => [__('appointment.errors.not_arrivable')],
+            ]);
+        }
+
+        $previous = $appointment->status;
+
+        $this->repository->update($appointment, ['status' => AppointmentStatus::Arrived->value]);
+
+        $this->statusLogService->record(
+            $appointment,
+            $previous->value,
+            AppointmentStatus::Arrived->value,
+            $actor,
+        );
+    }
+
+    /**
+     * Transition an Arrived appointment to Completed, denormalize case_id, and log.
+     * Must be called inside a DB::transaction.
+     */
+    public function markCompleted(Appointment $appointment, User $actor, ?int $caseId = null): void
+    {
+        if ($appointment->status !== AppointmentStatus::Arrived) {
+            throw ValidationException::withMessages([
+                'status' => [__('appointment.errors.not_completable')],
+            ]);
+        }
+
+        $updateData = ['status' => AppointmentStatus::Completed->value];
+
+        if ($caseId !== null) {
+            $updateData['case_id'] = $caseId;
+        }
+
+        $this->repository->update($appointment, $updateData);
+
+        $this->statusLogService->record(
+            $appointment,
+            AppointmentStatus::Arrived->value,
+            AppointmentStatus::Completed->value,
+            $actor,
+        );
+    }
+
+    /**
+     * Book N follow-up appointments, skipping any occurrence that fails the 3-layer
+     * availability check (no walk-in bypass). Skipped occurrences are collected as
+     * formatted date strings for the toast. Cap enforced at 12 sessions.
+     *
+     * @param  array{
+     *     doctor_id: int,
+     *     patient_id: int,
+     *     case_id: int|null,
+     *     service_id: int|null,
+     *     first_starts_at: string,
+     *     count: int,
+     *     interval: 'weekly'|'biweekly'|'monthly',
+     * }  $criteria
+     * @return array{created: list<Appointment>, skipped: list<string>}
+     */
+    public function scheduleFollowUps(array $criteria, User $actor): array
+    {
+        $clinic = Clinic::findOrFail($this->clinicContext->id());
+
+        $count = min((int) $criteria['count'], 12);
+        $doctorId = (int) $criteria['doctor_id'];
+        $patientId = (int) $criteria['patient_id'];
+        $caseId = isset($criteria['case_id']) ? (int) $criteria['case_id'] : null;
+        $serviceId = isset($criteria['service_id']) ? (int) $criteria['service_id'] : null;
+
+        $duration = $this->availabilityService->resolveDuration(null, $serviceId, null, $clinic);
+
+        $currentLocal = Carbon::parse($criteria['first_starts_at'], $clinic->timezone);
+
+        $created = [];
+        $skipped = [];
+
+        for ($i = 0; $i < $count; $i++) {
+            if ($i > 0) {
+                $currentLocal = match ($criteria['interval']) {
+                    'weekly' => $currentLocal->addWeek(),
+                    'biweekly' => $currentLocal->addWeeks(2),
+                    'monthly' => $currentLocal->addMonthNoOverflow(),
+                };
+            }
+
+            $startsAt = $currentLocal->copy()->utc();
+            $endsAt = $startsAt->copy()->addMinutes($duration);
+
+            $reason = $this->availabilityService->unavailableReason($doctorId, $startsAt, $endsAt, false, $clinic);
+
+            if ($reason !== null) {
+                $skipped[] = $currentLocal->format('d.m.Y H:i');
+
+                continue;
+            }
+
+            $appointment = $this->repository->create([
+                'patient_id' => $patientId,
+                'doctor_id' => $doctorId,
+                'case_id' => $caseId,
+                'service_id' => $serviceId,
+                'starts_at' => $startsAt,
+                'ends_at' => $endsAt,
+                'status' => AppointmentStatus::Confirmed->value,
+                'is_walk_in' => false,
+                'created_by' => $actor->id,
+            ]);
+
+            $this->statusLogService->record(
+                $appointment,
+                null,
+                AppointmentStatus::Confirmed->value,
+                $actor,
+            );
+
+            $created[] = $appointment;
+        }
+
+        return ['created' => $created, 'skipped' => $skipped];
     }
 
     /**

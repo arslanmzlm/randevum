@@ -3,6 +3,7 @@
 namespace App\Modules\Scheduling;
 
 use App\Modules\Core\Contracts\AppointmentCancellationContract;
+use App\Modules\Core\Contracts\AppointmentLifecycleContract;
 use App\Modules\Identity\Events\ClinicRegistered;
 use App\Modules\Scheduling\Listeners\ProvisionDefaultAppointmentTypes;
 use App\Modules\Scheduling\Services\AppointmentService;
@@ -14,6 +15,7 @@ class SchedulingServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(AppointmentCancellationContract::class, AppointmentService::class);
+        $this->app->bind(AppointmentLifecycleContract::class, AppointmentService::class);
     }
 
     public function boot(): void

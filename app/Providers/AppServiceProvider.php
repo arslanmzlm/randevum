@@ -3,10 +3,15 @@
 namespace App\Providers;
 
 use App\Models\Appointment;
+use App\Models\CaseRecord;
 use App\Models\Clinic;
+use App\Models\PodiatryTreatmentDetail;
+use App\Models\Transaction;
+use App\Models\Treatment;
 use App\Models\User;
 use App\Policies\AppointmentPolicy;
 use App\Policies\ClinicPolicy;
+use App\Policies\TreatmentPolicy;
 use App\Support\ClinicContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -44,6 +49,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('viewPulse', fn (User $user): bool => $user->hasRole('superadmin'));
         Gate::policy(Clinic::class, ClinicPolicy::class);
         Gate::policy(Appointment::class, AppointmentPolicy::class);
+        Gate::policy(Treatment::class, TreatmentPolicy::class);
     }
 
     /**
@@ -55,6 +61,10 @@ class AppServiceProvider extends ServiceProvider
     {
         Relation::morphMap([
             'appointment' => Appointment::class,
+            'treatment' => Treatment::class,
+            'case' => CaseRecord::class,
+            'transaction' => Transaction::class,
+            'podiatry' => PodiatryTreatmentDetail::class,
         ]);
     }
 

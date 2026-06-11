@@ -34,6 +34,9 @@ class AppointmentResource extends JsonResource
             'is_walk_in' => $this->is_walk_in,
             'starts_at' => $this->starts_at->toIso8601String(),
             'ends_at' => $this->ends_at->toIso8601String(),
+            // Populated when appointment has a treatment — allows the UI to distinguish
+            // "start treatment" vs "resume draft" actions.
+            'treatment_id' => $this->whenLoaded('treatment', fn () => $this->treatment?->id),
         ];
     }
 }

@@ -32,6 +32,8 @@ return [
         'phone_trashed' => 'Bu telefon numarası silinmiş bir hastaya ait. Hasta ekranından geri yükleyin.',
         'not_reschedulable' => 'Bu randevu yeniden planlanamaz.',
         'not_cancellable' => 'Bu randevu iptal edilemez.',
+        'not_arrivable' => 'Bu randevu geldi olarak işaretlenemiyor. Randevunun durumu Onaylandı veya Yeniden Planlandı olmalıdır.',
+        'not_completable' => 'Bu randevu tamamlandı olarak işaretlenemiyor. Randevunun durumu Geldi olmalıdır.',
         'delete_not_allowed' => 'Bu randevu silinemez. Lütfen iptal seçeneğini kullanın.',
     ],
 

@@ -134,6 +134,7 @@ it('appointments prop contains the clinic appointments with the correct resource
                 ->has('is_walk_in')
                 ->has('starts_at')
                 ->has('ends_at')
+                ->has('treatment_id')
                 ->where('is_walk_in', true)
             )
         );

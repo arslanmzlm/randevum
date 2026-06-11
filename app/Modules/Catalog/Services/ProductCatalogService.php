@@ -4,12 +4,13 @@ namespace App\Modules\Catalog\Services;
 
 use App\Models\Clinic;
 use App\Models\Product;
+use App\Modules\Catalog\Contracts\StockAdjusterContract;
 use App\Modules\Catalog\Repositories\ProductRepository;
 use App\Support\ClinicContext;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
-class ProductCatalogService
+class ProductCatalogService implements StockAdjusterContract
 {
     public function __construct(
         private ProductRepository $repository,
@@ -78,5 +79,13 @@ class ProductCatalogService
     public function delete(Product $product): void
     {
         $this->repository->delete($product);
+    }
+
+    /**
+     * Atomically adjust current_stock by $delta. Negative delta deducts (may go below 0).
+     */
+    public function adjust(int $productId, int $delta): void
+    {
+        $this->repository->adjustStock($productId, $delta);
     }
 }

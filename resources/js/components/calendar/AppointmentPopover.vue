@@ -3,6 +3,7 @@ import {
     IconBan,
     IconBriefcase,
     IconClockHour4,
+    IconClipboardPlus,
     IconPencil,
     IconStethoscope,
     IconTag,
@@ -15,12 +16,16 @@ import { useI18n } from 'vue-i18n';
 import AppointmentStatusTag from '@/components/AppointmentStatusTag.vue';
 import type { AppointmentActions } from '@/composables/useAppointmentActions';
 import { useDateTime } from '@/composables/useDateTime';
+import type { TreatmentActions } from '@/composables/useTreatmentActions';
 import type { CalendarEventDto } from '@/types/calendar';
 
 // Summary of a clicked appointment, anchored to its chip. The lifecycle actions (edit / cancel /
 // delete) reuse the page's shared useAppointmentActions instance so the calendar and the list
 // never drift. Exposes show()/hide() so the page drives it imperatively.
-const props = defineProps<{ actions: AppointmentActions }>();
+const props = defineProps<{
+    actions: AppointmentActions;
+    treatmentActions: TreatmentActions;
+}>();
 
 const { t } = useI18n();
 const { formatDateOnly } = useDateTime();
@@ -63,6 +68,25 @@ const actionable = computed(() =>
           }
         : null,
 );
+
+// Treatment gate needs treatment_id (start vs resume); status/doctor mirror the list row.
+const treatable = computed(() =>
+    appointment.value
+        ? {
+              id: appointment.value.id,
+              doctor_id: appointment.value.doctor_id,
+              status: appointment.value.status,
+              treatment_id: appointment.value.treatment_id,
+          }
+        : null,
+);
+
+function onTreatment(): void {
+    if (treatable.value) {
+        hide();
+        props.treatmentActions.startTreatment(treatable.value);
+    }
+}
 
 function onEdit(): void {
     if (actionable.value) {
@@ -165,11 +189,33 @@ const rows = computed(() => {
             </dl>
 
             <footer
-                v-if="actionable && actions.hasActions(actionable)"
+                v-if="
+                    (actionable && actions.hasActions(actionable)) ||
+                    (treatable && treatmentActions.canStartTreatment(treatable))
+                "
                 class="flex flex-wrap gap-2 border-t border-surface-200 pt-3"
             >
                 <Button
-                    v-if="actions.canReschedule(actionable)"
+                    v-if="
+                        treatable &&
+                        treatmentActions.canStartTreatment(treatable)
+                    "
+                    type="button"
+                    size="small"
+                    severity="primary"
+                    :label="
+                        treatmentActions.isResume(treatable)
+                            ? t('treatment.actions.resume')
+                            : t('treatment.actions.start')
+                    "
+                    @click="onTreatment"
+                >
+                    <template #icon
+                        ><IconClipboardPlus class="size-4"
+                    /></template>
+                </Button>
+                <Button
+                    v-if="actionable && actions.canReschedule(actionable)"
                     type="button"
                     size="small"
                     severity="primary"
@@ -180,7 +226,7 @@ const rows = computed(() => {
                     <template #icon><IconPencil class="size-4" /></template>
                 </Button>
                 <Button
-                    v-if="actions.canCancel(actionable)"
+                    v-if="actionable && actions.canCancel(actionable)"
                     type="button"
                     size="small"
                     severity="warn"
@@ -191,7 +237,7 @@ const rows = computed(() => {
                     <template #icon><IconBan class="size-4" /></template>
                 </Button>
                 <Button
-                    v-if="actions.canDelete(actionable)"
+                    v-if="actionable && actions.canDelete(actionable)"
                     type="button"
                     size="small"
                     severity="danger"

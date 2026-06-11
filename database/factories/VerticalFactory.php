@@ -21,4 +21,12 @@ class VerticalFactory extends Factory
             'is_active' => true,
         ];
     }
+
+    /**
+     * A vertical with the podiatry morph slug — used by treatment tests.
+     */
+    public function podiatry(): static
+    {
+        return $this->state(['slug' => 'podiatry']);
+    }
 }

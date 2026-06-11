@@ -32,6 +32,8 @@ return [
         'phone_trashed' => 'This phone number belongs to a deleted patient. Restore them from the patients screen.',
         'not_reschedulable' => 'This appointment cannot be rescheduled.',
         'not_cancellable' => 'This appointment cannot be cancelled.',
+        'not_arrivable' => 'This appointment cannot be marked as arrived. Status must be Confirmed or Rescheduled.',
+        'not_completable' => 'This appointment cannot be marked as completed. Status must be Arrived.',
         'delete_not_allowed' => 'This appointment cannot be deleted. Please cancel it instead.',
     ],
 

@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { Head, router, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import {
     IconArrowLeft,
     IconCalendarEvent,
+    IconChevronRight,
     IconMail,
     IconNotes,
     IconPencil,
@@ -15,11 +16,14 @@ import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import ButtonLink from '@/components/ButtonLink.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import TreatmentStatusTag from '@/components/TreatmentStatusTag.vue';
 import { useCan } from '@/composables/useCan';
 import { useDateTime } from '@/composables/useDateTime';
+import { useMoney } from '@/composables/useMoney';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { destroy, edit, index } from '@/routes/patients';
 import { update as updateNotes } from '@/routes/patients/notes';
+import { show as treatmentShow } from '@/routes/treatments';
 import type { PatientNotesFormData, PatientShowProps } from '@/types/patient';
 
 defineOptions({ layout: AppLayout });
@@ -29,7 +33,8 @@ const props = defineProps<PatientShowProps>();
 const { t } = useI18n();
 const confirm = useConfirm();
 const { can } = useCan();
-const { formatDateOnly } = useDateTime();
+const { formatDate, formatDateOnly } = useDateTime();
+const { formatMoney } = useMoney();
 const canManage = computed(() => can('patients.update'));
 const canEditNotes = computed(() => can('patients.note.update'));
 
@@ -308,7 +313,51 @@ function removePatient(): void {
                     </h2>
                 </header>
 
+                <ul v-if="treatments.length" class="flex flex-col gap-2">
+                    <li v-for="item in treatments" :key="item.id">
+                        <Link
+                            :href="treatmentShow(item.id).url"
+                            class="flex items-center gap-3 rounded-xl border border-surface-200 p-3 transition-colors hover:border-primary-300 hover:bg-surface-50"
+                        >
+                            <div class="flex min-w-0 flex-1 flex-col gap-1">
+                                <div class="flex items-center gap-2">
+                                    <span
+                                        class="truncate text-sm font-medium text-surface-900"
+                                    >
+                                        {{
+                                            item.title ||
+                                            t('treatment.untitled')
+                                        }}
+                                    </span>
+                                    <TreatmentStatusTag :status="item.status" />
+                                </div>
+                                <span class="text-xs text-surface-500">
+                                    {{
+                                        item.completed_at
+                                            ? formatDate(item.completed_at)
+                                            : t('treatment.in_progress')
+                                    }}
+                                    · {{ item.doctor_name }}
+                                </span>
+                                <span
+                                    v-if="item.case_title"
+                                    class="truncate text-xs text-surface-400"
+                                >
+                                    {{ item.case_title }}
+                                </span>
+                            </div>
+                            <span class="text-sm font-medium text-surface-700">
+                                {{ formatMoney(item.total_amount) }}
+                            </span>
+                            <IconChevronRight
+                                class="size-4 shrink-0 text-surface-400"
+                            />
+                        </Link>
+                    </li>
+                </ul>
+
                 <div
+                    v-else
                     class="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-surface-200 px-4 py-10 text-center"
                 >
                     <IconNotes class="size-8 text-surface-300" />

@@ -36,6 +36,8 @@ export type CalendarEventDto = {
     service_name: string | null;
     type_name: string | null;
     type_color: string | null;
+    /** The 1:1 treatment id when one exists — drives "start treatment" vs "resume draft". */
+    treatment_id: number | null;
 };
 
 /** A schedule-exception/closed block from `GET /calendar/events`, rendered as a background event. */

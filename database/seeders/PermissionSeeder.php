@@ -65,6 +65,15 @@ class PermissionSeeder extends Seeder
         'appointmentTypes.create' => ['owner', 'manager'],
         'appointmentTypes.update' => ['owner', 'manager'],
         'appointmentTypes.delete' => ['owner', 'manager'],
+        // treatments (Process screen)
+        'treatments.viewAny' => ['owner', 'manager', 'doctor', 'receptionist', 'assistant'],
+        // Absent → scoped to own doctor; doctors confined to own via policy ownership branch.
+        'treatments.viewAll' => ['owner', 'manager', 'receptionist', 'assistant'],
+        'treatments.create' => ['owner', 'manager', 'doctor', 'assistant'],
+        // Payment recording — exercised inside Process submit; fully exposed by 1.22.
+        'transactions.create' => ['owner', 'manager', 'doctor', 'receptionist'],
+        // Cases — creation only; full management UI is 1.11.
+        'cases.create' => ['owner', 'doctor'],
     ];
 
     public function run(): void

@@ -7,6 +7,7 @@ import {
     IconDotsVertical,
     IconPencil,
     IconSearch,
+    IconStethoscope,
     IconTrash,
 } from '@tabler/icons-vue';
 import { computed, ref } from 'vue';
@@ -20,6 +21,7 @@ import { useAppointmentActions } from '@/composables/useAppointmentActions';
 import { useCan } from '@/composables/useCan';
 import { useDateTime } from '@/composables/useDateTime';
 import { useTableFilters } from '@/composables/useTableFilters';
+import { useTreatmentActions } from '@/composables/useTreatmentActions';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { index } from '@/routes/appointments';
 import { show } from '@/routes/patients';
@@ -50,6 +52,10 @@ const {
     confirmDelete,
 } = useAppointmentActions(props.ownDoctorId);
 
+const { canStartTreatment, isResume, startTreatment } = useTreatmentActions(
+    props.ownDoctorId,
+);
+
 // One shared popup Menu retargeted per row on the kebab click (PrimeVue pattern).
 const actionsMenu = ref();
 const activeRow = ref<AppointmentListItem | null>(null);
@@ -73,6 +79,18 @@ const menuItems = computed<RowMenuItem[]>(() => {
     }
 
     const items: RowMenuItem[] = [];
+
+    if (canStartTreatment(row)) {
+        items.push({
+            key: 'treatment',
+            label: isResume(row)
+                ? t('treatment.actions.resume')
+                : t('treatment.actions.start'),
+            tablerIcon: IconStethoscope,
+            colorClass: 'text-primary-600',
+            command: () => startTreatment(row),
+        });
+    }
 
     if (canReschedule(row)) {
         items.push({
@@ -366,7 +384,9 @@ const dateRange = computed<(Date | null)[] | null>({
                     <template #body="{ data }">
                         <div class="flex justify-end">
                             <Button
-                                v-if="hasActions(data)"
+                                v-if="
+                                    hasActions(data) || canStartTreatment(data)
+                                "
                                 type="button"
                                 severity="secondary"
                                 text

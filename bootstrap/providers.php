@@ -1,5 +1,7 @@
 <?php
 
+use App\Modules\Billing\BillingServiceProvider;
+use App\Modules\Catalog\CatalogServiceProvider;
 use App\Modules\Core\CoreServiceProvider;
 use App\Modules\Identity\IdentityServiceProvider;
 use App\Modules\Media\MediaServiceProvider;
@@ -22,4 +24,6 @@ return [
     MessagingServiceProvider::class,
     SchedulingServiceProvider::class,
     PodiatryServiceProvider::class,
+    BillingServiceProvider::class,
+    CatalogServiceProvider::class,
 ];

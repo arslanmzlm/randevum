@@ -82,4 +82,12 @@ class ProductRepository
     {
         $product->delete();
     }
+
+    /**
+     * Atomic increment/decrement — avoids a read-then-write race condition.
+     */
+    public function adjustStock(int $productId, int $delta): void
+    {
+        Product::withoutGlobalScopes()->where('id', $productId)->increment('current_stock', $delta);
+    }
 }

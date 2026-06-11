@@ -48,4 +48,6 @@ export type SharedClinic = {
     logo_url: string | null;
     /** Clinic IANA timezone — single source for useDateTime()/calendar local rendering. */
     timezone: string;
+    /** ISO 4217 currency code — single source for useMoney() money formatting. */
+    currency: string;
 };

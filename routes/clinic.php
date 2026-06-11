@@ -5,6 +5,7 @@ use App\Modules\Catalog\Http\Controllers\ServiceController;
 use App\Modules\Core\Http\Controllers\ClinicController;
 use App\Modules\Core\Http\Controllers\DoctorController;
 use App\Modules\Medical\Http\Controllers\PatientController;
+use App\Modules\Medical\Http\Controllers\TreatmentController;
 use App\Modules\Scheduling\Http\Controllers\AppointmentController;
 use App\Modules\Scheduling\Http\Controllers\AppointmentTypeController;
 use App\Modules\Scheduling\Http\Controllers\CalendarController;
@@ -106,6 +107,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/schedule-exceptions', [ScheduleExceptionController::class, 'index'])->name('schedule-exceptions.index');
     Route::post('/schedule-exceptions', [ScheduleExceptionController::class, 'store'])->name('schedule-exceptions.store');
     Route::delete('/schedule-exceptions/{scheduleException}', [ScheduleExceptionController::class, 'destroy'])->name('schedule-exceptions.destroy');
+});
+
+// Treatment lifecycle — literal segments (process) before {treatment}.
+Route::middleware('auth')->group(function () {
+    Route::post('/appointments/{appointment}/treatment', [TreatmentController::class, 'start'])->name('treatments.start');
+    Route::get('/treatments/{treatment}/process', [TreatmentController::class, 'process'])->name('treatments.process');
+    Route::put('/treatments/{treatment}/complete', [TreatmentController::class, 'complete'])->name('treatments.complete');
+    Route::get('/treatments/{treatment}', [TreatmentController::class, 'show'])->name('treatments.show');
 });
 
 // Product catalog.

@@ -30,7 +30,7 @@ class AppointmentRepository
     public function paginateForActiveClinic(?array $doctorIds, string $timezone): LengthAwarePaginator
     {
         $query = Appointment::query()
-            ->with(['patient', 'doctor.user', 'service', 'appointmentType']);
+            ->with(['patient', 'doctor.user', 'service', 'appointmentType', 'treatment']);
 
         if ($doctorIds !== null) {
             $query->whereIn('doctor_id', $doctorIds);
@@ -145,7 +145,7 @@ class AppointmentRepository
     {
         $query = Appointment::inRange($startUtc, $endUtc)
             ->withStatus($statuses)
-            ->with(['patient', 'service', 'appointmentType', 'doctor.user'])
+            ->with(['patient', 'service', 'appointmentType', 'doctor.user', 'treatment'])
             ->orderBy('starts_at');
 
         if (is_array($doctorIds)) {

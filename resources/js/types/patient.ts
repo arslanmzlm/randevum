@@ -1,4 +1,5 @@
 import type { Paginated, TableState } from '@/types/table';
+import type { PatientTreatmentHistoryItem } from '@/types/treatment';
 
 export type PatientGender = 'male' | 'female' | 'other';
 
@@ -69,7 +70,7 @@ export type RestorablePatient = {
 
 export type PatientShowProps = {
     patient: Patient;
-    treatments: unknown[];
+    treatments: PatientTreatmentHistoryItem[];
 };
 
 /** Payload for the inline patient-level note quick-edit endpoint. */

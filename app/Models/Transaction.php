@@ -1,0 +1,90 @@
+<?php
+
+namespace App\Models;
+
+use App\Enums\PaymentMethod;
+use App\Enums\TransactionStatus;
+use App\Models\Concerns\BelongsToClinic;
+use Database\Factories\TransactionFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+
+class Transaction extends Model
+{
+    /** @use HasFactory<TransactionFactory> */
+    use BelongsToClinic, HasFactory;
+
+    /**
+     * @var list<string>
+     */
+    protected $fillable = [
+        'clinic_id',
+        'patient_id',
+        'treatment_id',
+        'amount',
+        'payment_method',
+        'status',
+        'paid_at',
+        'note',
+        'created_by',
+    ];
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'clinic_id' => 'integer',
+            'patient_id' => 'integer',
+            'treatment_id' => 'integer',
+            'amount' => 'decimal:2',
+            'payment_method' => PaymentMethod::class,
+            'status' => TransactionStatus::class,
+            'paid_at' => 'datetime',
+            'created_by' => 'integer',
+        ];
+    }
+
+    /**
+     * @return BelongsTo<Clinic, $this>
+     */
+    public function clinic(): BelongsTo
+    {
+        return $this->belongsTo(Clinic::class);
+    }
+
+    /**
+     * @return BelongsTo<Patient, $this>
+     */
+    public function patient(): BelongsTo
+    {
+        return $this->belongsTo(Patient::class);
+    }
+
+    /**
+     * @return BelongsTo<Treatment, $this>
+     */
+    public function treatment(): BelongsTo
+    {
+        return $this->belongsTo(Treatment::class);
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * @return MorphMany<StatusLog, $this>
+     */
+    public function statusLogs(): MorphMany
+    {
+        return $this->morphMany(StatusLog::class, 'loggable');
+    }
+}

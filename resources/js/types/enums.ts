@@ -17,3 +17,9 @@ export type AppointmentStatus =
 
 /** Mirrors `App\Enums\AvailabilityReason`; values also match the `appointment.errors.*` lang keys. */
 export type AvailabilityReason = 'outside_hours' | 'exception' | 'conflict';
+
+/** Mirrors `App\Enums\TreatmentStatus` (Voided unused until 1.28; the FE still labels it). */
+export type TreatmentStatus = 'draft' | 'completed' | 'voided';
+
+/** Mirrors `App\Enums\PaymentMethod`; values key the `payment.method.*` lang labels. */
+export type PaymentMethod = 'cash' | 'card' | 'transfer' | 'cheque';

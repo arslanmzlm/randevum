@@ -21,6 +21,8 @@ export type AppointmentListItem = {
     starts_at: string;
     /** ISO 8601 UTC timestamp. */
     ends_at: string;
+    /** The 1:1 treatment id when one exists — drives "start treatment" vs "resume draft". */
+    treatment_id: number | null;
 };
 
 /** Server-side list JSON:API state echoed back by the appointment index controller. */

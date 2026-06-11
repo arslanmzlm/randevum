@@ -33,6 +33,7 @@ import { useAppointmentActions } from '@/composables/useAppointmentActions';
 import { useCalendarEvents } from '@/composables/useCalendarEvents';
 import { useCan } from '@/composables/useCan';
 import { useDateTime } from '@/composables/useDateTime';
+import { useTreatmentActions } from '@/composables/useTreatmentActions';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { create as appointmentCreate } from '@/routes/appointments';
 import type {
@@ -465,6 +466,9 @@ const actions = useAppointmentActions(props.ownDoctorId, {
 // Top-level ref so the template auto-unwraps it for the cancel dialog's v-model.
 const { cancelReason } = actions;
 
+// Start / resume treatment shares the same gating as the appointment list.
+const treatmentActions = useTreatmentActions(props.ownDoctorId);
+
 const popover = ref<InstanceType<typeof AppointmentPopover>>();
 
 function onSelectEvent(
@@ -605,7 +609,11 @@ function onSelectEvent(
             </div>
         </div>
 
-        <AppointmentPopover ref="popover" :actions="actions" />
+        <AppointmentPopover
+            ref="popover"
+            :actions="actions"
+            :treatment-actions="treatmentActions"
+        />
         <AppointmentCancelDialog v-model="cancelReason" />
     </div>
 </template>

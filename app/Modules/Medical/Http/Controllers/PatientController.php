@@ -12,6 +12,7 @@ use App\Modules\Medical\Http\Requests\UpdatePatientRequest;
 use App\Modules\Medical\Http\Resources\PatientResource;
 use App\Modules\Medical\Http\Resources\PatientSearchResource;
 use App\Modules\Medical\Services\PatientService;
+use App\Modules\Medical\Services\TreatmentService;
 use App\Support\ClinicContext;
 use App\Support\FilterHelper;
 use Illuminate\Http\JsonResponse;
@@ -24,6 +25,7 @@ class PatientController extends Controller
 {
     public function __construct(
         private PatientService $patientService,
+        private TreatmentService $treatmentService,
         private ClinicContext $clinicContext,
     ) {}
 
@@ -82,9 +84,20 @@ class PatientController extends Controller
     {
         $this->authorize('view', $patient);
 
+        $treatments = $this->treatmentService->listForPatient($patient, $request->user())
+            ->map(fn ($t) => [
+                'id' => $t->id,
+                'completed_at' => $t->completed_at?->toIso8601String(),
+                'status' => $t->status->value,
+                'title' => $t->serviceLines->first()?->service?->name,
+                'total_amount' => $t->total_amount,
+                'doctor_name' => $t->doctor->display_name,
+                'case_title' => $t->case?->title,
+            ]);
+
         return Inertia::render('patients/Show', [
             'patient' => (new PatientResource($patient))->resolve(),
-            'treatments' => [],
+            'treatments' => $treatments,
         ]);
     }
 
