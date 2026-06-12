@@ -619,7 +619,7 @@ it('rejects follow_up.mode=single from an assistant who lacks appointments.creat
         ->put(route('treatments.complete', $treatment), ctPayload([
             'follow_up' => [
                 'mode' => 'single',
-                'starts_at' => Carbon::now()->addWeek()->format('Y-m-d H:i:s'),
+                'occurrences' => [['starts_at' => Carbon::now()->addWeek()->format('Y-m-d H:i:s')]],
             ],
         ]))
         ->assertSessionHasErrors('follow_up.mode');

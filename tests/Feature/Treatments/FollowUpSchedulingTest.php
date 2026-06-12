@@ -3,6 +3,7 @@
 use App\Enums\AppointmentStatus;
 use App\Enums\TreatmentStatus;
 use App\Models\Appointment;
+use App\Models\AppointmentType;
 use App\Models\CaseRecord;
 use App\Models\Clinic;
 use App\Models\Doctor;
@@ -108,6 +109,17 @@ function fuPayload(array $followUp = []): array
     ]);
 }
 
+/**
+ * Wrap clinic-local datetime strings as occurrence objects (untyped rows).
+ *
+ * @param  list<string>  $slots
+ * @return list<array{starts_at: string}>
+ */
+function fuOccurrences(array $slots): array
+{
+    return array_map(fn (string $slot): array => ['starts_at' => $slot], $slots);
+}
+
 // ---------------------------------------------------------------------------
 // Single follow-up
 // ---------------------------------------------------------------------------
@@ -120,7 +132,7 @@ it('books a single follow-up appointment in confirmed status with a status_log',
     $this->actingAs($owner)
         ->put(route('treatments.complete', $treatment), fuPayload([
             'mode' => 'single',
-            'starts_at' => $slot,
+            'occurrences' => fuOccurrences([$slot]),
         ]));
 
     $followUps = Appointment::withoutGlobalScopes()
@@ -152,15 +164,17 @@ it('books a single follow-up appointment in confirmed status with a status_log',
 it('books a package of weekly follow-ups at 7-day intervals', function (): void {
     ['owner' => $owner, 'treatment' => $treatment, 'doctor' => $doctor, 'patient' => $patient] = fuSetup();
 
-    $firstSlot = fuNextMondaySlot();
-    $firstDate = Carbon::createFromFormat('Y-m-d H:i:s', $firstSlot, 'Europe/Istanbul');
+    $firstDate = Carbon::now('Europe/Istanbul')->next(Carbon::MONDAY)->setTime(10, 0, 0);
+    $occurrences = [
+        $firstDate->format('Y-m-d H:i:s'),
+        $firstDate->copy()->addWeek()->format('Y-m-d H:i:s'),
+        $firstDate->copy()->addWeeks(2)->format('Y-m-d H:i:s'),
+    ];
 
     $this->actingAs($owner)
         ->put(route('treatments.complete', $treatment), fuPayload([
             'mode' => 'package',
-            'starts_at' => $firstSlot,
-            'count' => 3,
-            'interval' => 'weekly',
+            'occurrences' => fuOccurrences($occurrences),
         ]));
 
     $followUps = Appointment::withoutGlobalScopes()
@@ -170,10 +184,8 @@ it('books a package of weekly follow-ups at 7-day intervals', function (): void 
         ->orderBy('starts_at')
         ->get();
 
-    // Should have 3 follow-ups
     expect($followUps)->toHaveCount(3);
 
-    // Verify intervals are approximately 7 days
     for ($i = 1; $i < $followUps->count(); $i++) {
         $diff = (int) $followUps[$i - 1]->starts_at->diffInDays($followUps[$i]->starts_at);
         expect($diff)->toBe(7);
@@ -187,14 +199,16 @@ it('books a package of weekly follow-ups at 7-day intervals', function (): void 
 it('books a package of biweekly follow-ups at 14-day intervals', function (): void {
     ['owner' => $owner, 'treatment' => $treatment, 'doctor' => $doctor, 'patient' => $patient] = fuSetup();
 
-    $firstSlot = fuNextMondaySlot();
+    $firstDate = Carbon::now('Europe/Istanbul')->next(Carbon::MONDAY)->setTime(10, 0, 0);
+    $occurrences = [
+        $firstDate->format('Y-m-d H:i:s'),
+        $firstDate->copy()->addWeeks(2)->format('Y-m-d H:i:s'),
+    ];
 
     $this->actingAs($owner)
         ->put(route('treatments.complete', $treatment), fuPayload([
             'mode' => 'package',
-            'starts_at' => $firstSlot,
-            'count' => 2,
-            'interval' => 'biweekly',
+            'occurrences' => fuOccurrences($occurrences),
         ]));
 
     $followUps = Appointment::withoutGlobalScopes()
@@ -209,23 +223,24 @@ it('books a package of biweekly follow-ups at 14-day intervals', function (): vo
 });
 
 // ---------------------------------------------------------------------------
-// Package: monthly intervals (addMonthNoOverflow)
+// Package: monthly intervals
 // ---------------------------------------------------------------------------
 
-it('books monthly follow-ups using addMonthNoOverflow semantics', function (): void {
+it('books monthly follow-ups at the submitted clinic-local times', function (): void {
     ['owner' => $owner, 'treatment' => $treatment, 'doctor' => $doctor, 'patient' => $patient] = fuSetup();
 
-    // Use the next Monday as first slot regardless of month-end edge cases
-    $firstSlot = fuNextMondaySlot();
-    $firstDate = Carbon::createFromFormat('Y-m-d H:i:s', $firstSlot, 'Europe/Istanbul');
-    $expectedSecond = $firstDate->copy()->addMonthNoOverflow();
+    $firstDate = Carbon::now('Europe/Istanbul')->next(Carbon::MONDAY)->setTime(10, 0, 0);
+    $secondDate = $firstDate->copy()->addMonthNoOverflow();
+
+    $occurrences = [
+        $firstDate->format('Y-m-d H:i:s'),
+        $secondDate->format('Y-m-d H:i:s'),
+    ];
 
     $this->actingAs($owner)
         ->put(route('treatments.complete', $treatment), fuPayload([
             'mode' => 'package',
-            'starts_at' => $firstSlot,
-            'count' => 2,
-            'interval' => 'monthly',
+            'occurrences' => fuOccurrences($occurrences),
         ]));
 
     $followUps = Appointment::withoutGlobalScopes()
@@ -237,11 +252,56 @@ it('books monthly follow-ups using addMonthNoOverflow semantics', function (): v
 
     expect($followUps)->toHaveCount(2);
 
-    // Second follow-up should be exactly one month after the first (addMonthNoOverflow)
     $firstStartsAt = $followUps[0]->starts_at->setTimezone('Europe/Istanbul');
     $secondStartsAt = $followUps[1]->starts_at->setTimezone('Europe/Istanbul');
     expect($secondStartsAt->format('H:i'))->toBe($firstDate->format('H:i'));
     expect((int) $firstStartsAt->diffInMonths($secondStartsAt))->toBe(1);
+});
+
+// ---------------------------------------------------------------------------
+// Package: hand-edited (irregular) occurrence times
+// ---------------------------------------------------------------------------
+
+it('honors per-row hand-edited times — server uses exactly the submitted datetimes', function (): void {
+    ['owner' => $owner, 'treatment' => $treatment, 'doctor' => $doctor, 'patient' => $patient] = fuSetup();
+
+    $base = Carbon::now('Europe/Istanbul')->next(Carbon::MONDAY);
+
+    // Irregular times — not interval-math derived; on different days
+    $slot1Local = $base->copy()->setTime(9, 0, 0);
+    $slot2Local = $base->copy()->addDays(3)->setTime(14, 30, 0);
+    $slot3Local = $base->copy()->addDays(10)->setTime(11, 15, 0);
+
+    $this->actingAs($owner)
+        ->put(route('treatments.complete', $treatment), fuPayload([
+            'mode' => 'package',
+            'occurrences' => fuOccurrences([
+                $slot1Local->format('Y-m-d H:i:s'),
+                $slot2Local->format('Y-m-d H:i:s'),
+                $slot3Local->format('Y-m-d H:i:s'),
+            ]),
+        ]));
+
+    $followUps = Appointment::withoutGlobalScopes()
+        ->where('doctor_id', $doctor->id)
+        ->where('patient_id', $patient->id)
+        ->where('status', AppointmentStatus::Confirmed)
+        ->orderBy('starts_at')
+        ->get();
+
+    expect($followUps)->toHaveCount(3);
+
+    // Server sorts by full timestamp ascending: slot1 < slot2 < slot3 (different days)
+    $expectedTimes = [
+        $slot1Local->format('H:i'),
+        $slot2Local->format('H:i'),
+        $slot3Local->format('H:i'),
+    ];
+
+    foreach ($followUps as $i => $appt) {
+        expect($appt->starts_at->setTimezone('Europe/Istanbul')->format('H:i'))
+            ->toBe($expectedTimes[$i]);
+    }
 });
 
 // ---------------------------------------------------------------------------
@@ -252,8 +312,7 @@ it('skips a conflicting slot and creates the remaining occurrences', function ()
     ['owner' => $owner, 'treatment' => $treatment, 'doctor' => $doctor,
         'patient' => $patient, 'clinic' => $clinic] = fuSetup();
 
-    $firstSlot = fuNextMondaySlot();
-    $firstDate = Carbon::createFromFormat('Y-m-d H:i:s', $firstSlot, 'Europe/Istanbul');
+    $firstDate = Carbon::now('Europe/Istanbul')->next(Carbon::MONDAY)->setTime(10, 0, 0);
 
     // Block the SECOND slot (first + 1 week) with a Confirmed appointment
     $secondDate = $firstDate->copy()->addWeek();
@@ -275,9 +334,11 @@ it('skips a conflicting slot and creates the remaining occurrences', function ()
     $this->actingAs($owner)
         ->put(route('treatments.complete', $treatment), fuPayload([
             'mode' => 'package',
-            'starts_at' => $firstSlot,
-            'count' => 3,
-            'interval' => 'weekly',
+            'occurrences' => fuOccurrences([
+                $firstDate->format('Y-m-d H:i:s'),
+                $secondDate->format('Y-m-d H:i:s'),
+                $firstDate->copy()->addWeeks(2)->format('Y-m-d H:i:s'),
+            ]),
         ]));
 
     $countAfter = Appointment::withoutGlobalScopes()
@@ -285,8 +346,66 @@ it('skips a conflicting slot and creates the remaining occurrences', function ()
         ->where('status', AppointmentStatus::Confirmed)
         ->count();
 
-    // Occurrences: slot1=created, slot2=skipped (conflict), slot3=created → 2 new follow-ups
+    // slot1=created, slot2=skipped (conflict), slot3=created → 2 new follow-ups
     expect($countAfter - $countBefore)->toBe(2);
+});
+
+// ---------------------------------------------------------------------------
+// Duplicate occurrences — first books, second skipped
+// ---------------------------------------------------------------------------
+
+it('skips duplicate occurrences: the first books, the second hits the overlap check', function (): void {
+    ['owner' => $owner, 'treatment' => $treatment, 'doctor' => $doctor,
+        'patient' => $patient] = fuSetup();
+
+    $slot = fuNextMondaySlot();
+
+    $this->actingAs($owner)
+        ->put(route('treatments.complete', $treatment), fuPayload([
+            'mode' => 'package',
+            'occurrences' => fuOccurrences([$slot, $slot]),
+        ]));
+
+    $confirmed = Appointment::withoutGlobalScopes()
+        ->where('doctor_id', $doctor->id)
+        ->where('patient_id', $patient->id)
+        ->where('status', AppointmentStatus::Confirmed)
+        ->count();
+
+    // Only one should book; the duplicate is blocked by the overlap check
+    expect($confirmed)->toBe(1);
+});
+
+// ---------------------------------------------------------------------------
+// Unsorted input — ascending sort applied before processing
+// ---------------------------------------------------------------------------
+
+it('creates appointments at the correct times regardless of submission order', function (): void {
+    ['owner' => $owner, 'treatment' => $treatment, 'doctor' => $doctor,
+        'patient' => $patient] = fuSetup();
+
+    $base = Carbon::now('Europe/Istanbul')->next(Carbon::MONDAY);
+
+    $earlySlot = $base->copy()->setTime(9, 0, 0)->format('Y-m-d H:i:s');
+    $lateSlot = $base->copy()->addWeek()->setTime(10, 0, 0)->format('Y-m-d H:i:s');
+
+    // Submit in reverse order (late first)
+    $this->actingAs($owner)
+        ->put(route('treatments.complete', $treatment), fuPayload([
+            'mode' => 'package',
+            'occurrences' => fuOccurrences([$lateSlot, $earlySlot]),
+        ]));
+
+    $followUps = Appointment::withoutGlobalScopes()
+        ->where('doctor_id', $doctor->id)
+        ->where('patient_id', $patient->id)
+        ->where('status', AppointmentStatus::Confirmed)
+        ->orderBy('starts_at')
+        ->get();
+
+    expect($followUps)->toHaveCount(2);
+    // First by starts_at should be the early slot (09:00)
+    expect($followUps[0]->starts_at->setTimezone('Europe/Istanbul')->format('H:i'))->toBe('09:00');
 });
 
 // ---------------------------------------------------------------------------
@@ -312,7 +431,7 @@ it('attaches case_id to follow-up appointments when a case is resolved', functio
             'case_id' => $case->id,
             'follow_up' => [
                 'mode' => 'single',
-                'starts_at' => $slot,
+                'occurrences' => fuOccurrences([$slot]),
             ],
         ]);
 
@@ -336,7 +455,7 @@ it('attaches service_id to follow-up appointments when provided', function (): v
     $this->actingAs($owner)
         ->put(route('treatments.complete', $treatment), fuPayload([
             'mode' => 'single',
-            'starts_at' => $slot,
+            'occurrences' => fuOccurrences([$slot]),
             'service_id' => $service->id,
         ]));
 
@@ -350,6 +469,75 @@ it('attaches service_id to follow-up appointments when provided', function (): v
     expect($followUp?->service_id)->toBe($service->id);
 });
 
+it('attaches per-occurrence appointment types and uses each type default duration', function (): void {
+    ['owner' => $owner, 'treatment' => $treatment, 'doctor' => $doctor,
+        'patient' => $patient, 'clinic' => $clinic] = fuSetup();
+
+    $kontrol = AppointmentType::factory()->create([
+        'clinic_id' => $clinic->id,
+        'default_duration_minutes' => 20,
+    ]);
+    $muayene = AppointmentType::factory()->create([
+        'clinic_id' => $clinic->id,
+        'default_duration_minutes' => 40,
+    ]);
+
+    $firstDate = Carbon::now('Europe/Istanbul')->next(Carbon::MONDAY)->setTime(10, 0, 0);
+
+    $this->actingAs($owner)
+        ->put(route('treatments.complete', $treatment), fuPayload([
+            'mode' => 'package',
+            'occurrences' => [
+                ['starts_at' => $firstDate->format('Y-m-d H:i:s'), 'appointment_type_id' => $muayene->id],
+                ['starts_at' => $firstDate->copy()->addWeek()->format('Y-m-d H:i:s'), 'appointment_type_id' => $kontrol->id],
+            ],
+        ]));
+
+    $followUps = Appointment::withoutGlobalScopes()
+        ->where('doctor_id', $doctor->id)
+        ->where('patient_id', $patient->id)
+        ->where('status', AppointmentStatus::Confirmed)
+        ->orderBy('starts_at')
+        ->get();
+
+    expect($followUps)->toHaveCount(2)
+        ->and($followUps[0]->appointment_type_id)->toBe($muayene->id)
+        ->and($followUps[0]->starts_at->diffInMinutes($followUps[0]->ends_at))->toBe(40.0)
+        ->and($followUps[1]->appointment_type_id)->toBe($kontrol->id)
+        ->and($followUps[1]->starts_at->diffInMinutes($followUps[1]->ends_at))->toBe(20.0);
+});
+
+it('honors an explicit per-occurrence duration over the type default', function (): void {
+    ['owner' => $owner, 'treatment' => $treatment, 'doctor' => $doctor,
+        'patient' => $patient, 'clinic' => $clinic] = fuSetup();
+
+    $type = AppointmentType::factory()->create([
+        'clinic_id' => $clinic->id,
+        'default_duration_minutes' => 40,
+    ]);
+
+    $this->actingAs($owner)
+        ->put(route('treatments.complete', $treatment), fuPayload([
+            'mode' => 'single',
+            'occurrences' => [
+                [
+                    'starts_at' => fuNextMondaySlot(),
+                    'duration_minutes' => 25,
+                    'appointment_type_id' => $type->id,
+                ],
+            ],
+        ]));
+
+    $followUp = Appointment::withoutGlobalScopes()
+        ->where('doctor_id', $doctor->id)
+        ->where('patient_id', $patient->id)
+        ->where('status', AppointmentStatus::Confirmed)
+        ->orderByDesc('created_at')
+        ->first();
+
+    expect($followUp?->starts_at?->diffInMinutes($followUp->ends_at))->toBe(25.0);
+});
+
 // ---------------------------------------------------------------------------
 // Cap enforcement
 // ---------------------------------------------------------------------------
@@ -357,14 +545,16 @@ it('attaches service_id to follow-up appointments when provided', function (): v
 it('caps the follow-up package at 12 sessions regardless of the submitted count', function (): void {
     ['owner' => $owner, 'treatment' => $treatment, 'doctor' => $doctor, 'patient' => $patient] = fuSetup();
 
-    $slot = fuNextMondaySlot();
+    $base = Carbon::now('Europe/Istanbul')->next(Carbon::MONDAY)->setTime(10, 0, 0);
+    $occurrences = [];
+    for ($i = 0; $i < 12; $i++) {
+        $occurrences[] = $base->copy()->addWeeks($i)->format('Y-m-d H:i:s');
+    }
 
     $this->actingAs($owner)
         ->put(route('treatments.complete', $treatment), fuPayload([
             'mode' => 'package',
-            'starts_at' => $slot,
-            'count' => 12, // max allowed by FormRequest
-            'interval' => 'weekly',
+            'occurrences' => fuOccurrences($occurrences),
         ]));
 
     $followUps = Appointment::withoutGlobalScopes()
@@ -376,38 +566,149 @@ it('caps the follow-up package at 12 sessions regardless of the submitted count'
     expect($followUps)->toBeLessThanOrEqual(12);
 });
 
-it('FormRequest rejects follow_up.count above 12', function (): void {
+// ---------------------------------------------------------------------------
+// FormRequest validation
+// ---------------------------------------------------------------------------
+
+it('FormRequest rejects package occurrences above 12', function (): void {
     ['owner' => $owner, 'treatment' => $treatment] = fuSetup();
 
-    $slot = fuNextMondaySlot();
+    $base = Carbon::now('Europe/Istanbul')->next(Carbon::MONDAY)->setTime(10, 0, 0);
+    $occurrences = [];
+    for ($i = 0; $i < 13; $i++) {
+        $occurrences[] = $base->copy()->addWeeks($i)->format('Y-m-d H:i:s');
+    }
 
     $this->actingAs($owner)
         ->put(route('treatments.complete', $treatment), [
             'case_mode' => 'none',
             'follow_up' => [
                 'mode' => 'package',
-                'starts_at' => $slot,
-                'count' => 15,
-                'interval' => 'weekly',
+                'occurrences' => fuOccurrences($occurrences),
             ],
         ])
-        ->assertSessionHasErrors('follow_up.count');
+        ->assertSessionHasErrors('follow_up.occurrences');
 });
 
-it('FormRequest rejects follow_up.count below 2 for package mode', function (): void {
+it('FormRequest rejects package with fewer than 2 occurrences', function (): void {
     ['owner' => $owner, 'treatment' => $treatment] = fuSetup();
-
-    $slot = fuNextMondaySlot();
 
     $this->actingAs($owner)
         ->put(route('treatments.complete', $treatment), [
             'case_mode' => 'none',
             'follow_up' => [
                 'mode' => 'package',
-                'starts_at' => $slot,
-                'count' => 1,
-                'interval' => 'weekly',
+                'occurrences' => fuOccurrences([fuNextMondaySlot()]),
             ],
         ])
-        ->assertSessionHasErrors('follow_up.count');
+        ->assertSessionHasErrors('follow_up.occurrences');
+});
+
+it('FormRequest rejects single mode with more than 1 occurrence', function (): void {
+    ['owner' => $owner, 'treatment' => $treatment] = fuSetup();
+
+    $base = Carbon::now('Europe/Istanbul')->next(Carbon::MONDAY)->setTime(10, 0, 0);
+
+    $this->actingAs($owner)
+        ->put(route('treatments.complete', $treatment), [
+            'case_mode' => 'none',
+            'follow_up' => [
+                'mode' => 'single',
+                'occurrences' => fuOccurrences([
+                    $base->format('Y-m-d H:i:s'),
+                    $base->copy()->addWeek()->format('Y-m-d H:i:s'),
+                ]),
+            ],
+        ])
+        ->assertSessionHasErrors('follow_up.occurrences');
+});
+
+it('FormRequest rejects a malformed date string in an occurrence', function (): void {
+    ['owner' => $owner, 'treatment' => $treatment] = fuSetup();
+
+    $this->actingAs($owner)
+        ->put(route('treatments.complete', $treatment), [
+            'case_mode' => 'none',
+            'follow_up' => [
+                'mode' => 'single',
+                'occurrences' => [['starts_at' => 'not-a-date']],
+            ],
+        ])
+        ->assertSessionHasErrors('follow_up.occurrences.0.starts_at');
+});
+
+it('FormRequest rejects a cross-clinic service_id in follow_up.service_id', function (): void {
+    ['owner' => $owner, 'treatment' => $treatment] = fuSetup();
+
+    $otherClinic = Clinic::factory()->create();
+    $otherService = Service::factory()->create(['clinic_id' => $otherClinic->id]);
+
+    $this->actingAs($owner)
+        ->put(route('treatments.complete', $treatment), fuPayload([
+            'mode' => 'single',
+            'occurrences' => fuOccurrences([fuNextMondaySlot()]),
+            'service_id' => $otherService->id,
+        ]))
+        ->assertSessionHasErrors('follow_up.service_id');
+});
+
+it('FormRequest rejects a cross-clinic appointment_type_id on an occurrence', function (): void {
+    ['owner' => $owner, 'treatment' => $treatment] = fuSetup();
+
+    $otherClinic = Clinic::factory()->create();
+    $otherType = AppointmentType::factory()->create(['clinic_id' => $otherClinic->id]);
+
+    $this->actingAs($owner)
+        ->put(route('treatments.complete', $treatment), fuPayload([
+            'mode' => 'single',
+            'occurrences' => [
+                ['starts_at' => fuNextMondaySlot(), 'appointment_type_id' => $otherType->id],
+            ],
+        ]))
+        ->assertSessionHasErrors('follow_up.occurrences.0.appointment_type_id');
+});
+
+// ---------------------------------------------------------------------------
+// Permission guard
+// ---------------------------------------------------------------------------
+
+it('rejects follow_up booking from a user without appointments.create', function (): void {
+    ['clinic' => $clinic, 'treatment' => $treatment] = fuSetup();
+
+    $assistant = User::factory()->create();
+    fuRole($assistant, 'assistant', $clinic->id);
+
+    $this->actingAs($assistant)
+        ->put(route('treatments.complete', $treatment), fuPayload([
+            'mode' => 'single',
+            'occurrences' => fuOccurrences([fuNextMondaySlot()]),
+        ]))
+        ->assertSessionHasErrors('follow_up.mode');
+});
+
+// ---------------------------------------------------------------------------
+// Multi-tenant isolation
+// ---------------------------------------------------------------------------
+
+it('creates follow-up appointments under the actor\'s clinic_id, not another clinic', function (): void {
+    ['owner' => $owner, 'treatment' => $treatment, 'doctor' => $doctor,
+        'patient' => $patient, 'clinic' => $clinic] = fuSetup();
+
+    $slot = fuNextMondaySlot();
+
+    $this->actingAs($owner)
+        ->put(route('treatments.complete', $treatment), fuPayload([
+            'mode' => 'single',
+            'occurrences' => fuOccurrences([$slot]),
+        ]));
+
+    $followUp = Appointment::withoutGlobalScopes()
+        ->where('doctor_id', $doctor->id)
+        ->where('patient_id', $patient->id)
+        ->where('status', AppointmentStatus::Confirmed)
+        ->orderByDesc('created_at')
+        ->first();
+
+    expect($followUp)->not->toBeNull()
+        ->and($followUp->clinic_id)->toBe($clinic->id);
 });

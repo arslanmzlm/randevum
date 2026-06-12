@@ -64,7 +64,10 @@ const form = useForm<TreatmentFormData>({
         time: '',
         count: 3,
         interval: 'weekly',
+        occurrences: [],
         service_id: null,
+        appointment_type_id: null,
+        duration_minutes: null,
     },
 });
 
@@ -121,6 +124,42 @@ if (bookedService) {
     });
 }
 
+type OccurrencePayload = {
+    starts_at: string;
+    duration_minutes: number | null;
+    appointment_type_id: number | null;
+};
+
+// Build the clinic-local occurrence objects for the submit payload, dropping any incomplete row.
+// Each occurrence carries its own type/duration (single mode uses the section-level fields).
+function occurrencesFor(
+    followUp: TreatmentFormData['follow_up'],
+): OccurrencePayload[] {
+    if (followUp.mode === 'none') {
+        return [];
+    }
+
+    const rows =
+        followUp.mode === 'single'
+            ? [
+                  {
+                      date: followUp.date,
+                      time: followUp.time,
+                      duration_minutes: followUp.duration_minutes,
+                      appointment_type_id: followUp.appointment_type_id,
+                  },
+              ]
+            : followUp.occurrences;
+
+    return rows
+        .map((row) => ({
+            starts_at: combineDateTime(row.date, row.time),
+            duration_minutes: row.duration_minutes,
+            appointment_type_id: row.appointment_type_id,
+        }))
+        .filter((row): row is OccurrencePayload => row.starts_at !== null);
+}
+
 form.transform((data) => ({
     details: data.details,
     notes: data.notes,
@@ -149,13 +188,9 @@ form.transform((data) => ({
                   .map((row) => ({ amount: row.amount, method: row.method })),
     follow_up: {
         mode: data.follow_up.mode,
-        starts_at:
-            data.follow_up.mode === 'none'
-                ? null
-                : combineDateTime(data.follow_up.date, data.follow_up.time),
-        count: data.follow_up.count,
-        interval: data.follow_up.interval,
         service_id: data.follow_up.service_id,
+        // none → []; single → the one date+time; package → the editable rows.
+        occurrences: occurrencesFor(data.follow_up),
     },
 }));
 
@@ -289,20 +324,25 @@ function submit(): void {
                 <ClinicalFieldsSection />
                 <LineItemsEditor kind="service" :options="services" />
                 <LineItemsEditor kind="product" :options="products" />
+                <FollowUpSection
+                    v-if="canScheduleFollowUp"
+                    :doctor-id="treatment.doctor.id"
+                    :services="services"
+                    :appointment-types="appointmentTypes"
+                />
             </div>
 
-            <div class="flex flex-col gap-6 lg:col-span-2">
+            <!-- Sticky so totals/payment stay visible while editing the long left column; the
+                 max-height + inner scroll keeps the bottom reachable on short viewports. -->
+            <div
+                class="flex flex-col gap-6 lg:sticky lg:top-2 lg:col-span-2 lg:max-h-[calc(100vh-1rem)] lg:overflow-y-auto"
+            >
                 <CaseLinkSection :open-cases="openCases" />
                 <TreatmentTotalsPanel
                     :services="services"
                     :products="products"
                 />
                 <PaymentSection v-if="canPay" />
-                <FollowUpSection
-                    v-if="canScheduleFollowUp"
-                    :doctor-id="treatment.doctor.id"
-                    :services="services"
-                />
             </div>
 
             <div class="lg:col-span-5">

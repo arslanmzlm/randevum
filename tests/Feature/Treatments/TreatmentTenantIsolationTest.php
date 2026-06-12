@@ -244,7 +244,7 @@ it('rejects follow_up.service_id from clinic B and creates no follow-up appointm
             'case_mode' => 'none',
             'follow_up' => [
                 'mode' => 'single',
-                'starts_at' => Carbon::now()->addWeek()->format('Y-m-d H:i:s'),
+                'occurrences' => [['starts_at' => Carbon::now('Europe/Istanbul')->next(Carbon::MONDAY)->setTime(10, 0, 0)->format('Y-m-d H:i:s')]],
                 'service_id' => $serviceB->id,
             ],
         ])

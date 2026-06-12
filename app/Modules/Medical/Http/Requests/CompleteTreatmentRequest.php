@@ -94,27 +94,30 @@ class CompleteTreatmentRequest extends FormRequest
             // Optional follow-up booking
             'follow_up' => ['nullable', 'array'],
             'follow_up.mode' => ['required', Rule::in(['none', 'single', 'package'])],
-            'follow_up.starts_at' => [
+            'follow_up.occurrences' => [
                 Rule::requiredIf(fn () => ($this->input('follow_up.mode') ?? 'none') !== 'none'),
                 'nullable',
-                'date',
+                'array',
+                'max:12',
+                Rule::when(fn () => $this->input('follow_up.mode') === 'package', ['min:2']),
+                Rule::when(fn () => $this->input('follow_up.mode') === 'single', ['size:1']),
+            ],
+            // Each occurrence carries its own type and duration so a package can mix
+            // e.g. a 40-minute muayene with 20-minute kontrol sessions.
+            'follow_up.occurrences.*' => ['required', 'array'],
+            'follow_up.occurrences.*.starts_at' => ['required', 'date'],
+            'follow_up.occurrences.*.duration_minutes' => ['nullable', 'integer', 'min:5', 'max:480'],
+            'follow_up.occurrences.*.appointment_type_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('appointment_types', 'id')
+                    ->where('clinic_id', $clinicId)
+                    ->where('is_active', true),
             ],
             'follow_up.service_id' => [
                 'nullable',
                 'integer',
                 Rule::exists('services', 'id')->where('clinic_id', $clinicId),
-            ],
-            'follow_up.count' => [
-                Rule::requiredIf(fn () => $this->input('follow_up.mode') === 'package'),
-                'nullable',
-                'integer',
-                'min:2',
-                'max:12',
-            ],
-            'follow_up.interval' => [
-                Rule::requiredIf(fn () => $this->input('follow_up.mode') === 'package'),
-                'nullable',
-                Rule::in(['weekly', 'biweekly', 'monthly']),
             ],
         ];
     }

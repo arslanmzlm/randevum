@@ -17,6 +17,8 @@ export type AvailabilityCheckParams = {
     starts_at: string;
     duration_minutes: number | null;
     service_id: number | null;
+    /** Type default duration applies when no service/duration is given (service → type → clinic). */
+    appointment_type_id?: number | null;
     is_walk_in: boolean;
     /** When rescheduling, the row's own id so the probe ignores its current slot. */
     exclude_appointment_id?: number;

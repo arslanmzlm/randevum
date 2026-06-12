@@ -753,8 +753,13 @@ export const tr = {
             interval_weekly: 'Haftalık',
             interval_biweekly: 'İki haftada bir',
             interval_monthly: 'Aylık',
-            package_hint:
-                'Dolu olan slotlar atlanır; oluşturulan ve atlanan randevular tamamlandığında bildirilir.',
+            occurrences_title: 'Seans tarihleri',
+            occurrence_label: '{n}. seans',
+            occurrence_remove: 'Seansı kaldır',
+            seed_hint:
+                'Tüm seanslara uygulanır; satırlarda ayrıca değiştirebilirsiniz.',
+            regenerated_hint:
+                'Üreteç ayarı değişince liste yeniden oluşturulur ve elle düzenlemeler sıfırlanır. Dolu olan slotlar atlanır; oluşturulan ve atlanan randevular tamamlandığında bildirilir.',
         },
         totals: {
             line_discounts: 'Kalem indirimleri (dahil)',

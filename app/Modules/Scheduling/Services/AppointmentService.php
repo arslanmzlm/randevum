@@ -498,18 +498,16 @@ class AppointmentService implements AppointmentCancellationContract, Appointment
     }
 
     /**
-     * Book N follow-up appointments, skipping any occurrence that fails the 3-layer
-     * availability check (no walk-in bypass). Skipped occurrences are collected as
-     * formatted date strings for the toast. Cap enforced at 12 sessions.
+     * Book follow-up appointments from an explicit occurrence list, skipping any that fail
+     * the 3-layer availability check (no walk-in bypass). Skipped occurrences are collected
+     * as formatted date strings for the toast. Cap of 12 enforced as defence-in-depth.
      *
      * @param  array{
      *     doctor_id: int,
      *     patient_id: int,
      *     case_id: int|null,
      *     service_id: int|null,
-     *     first_starts_at: string,
-     *     count: int,
-     *     interval: 'weekly'|'biweekly'|'monthly',
+     *     occurrences: list<array{starts_at: string, duration_minutes?: int|null, appointment_type_id?: int|null}>,
      * }  $criteria
      * @return array{created: list<Appointment>, skipped: list<string>}
      */
@@ -517,35 +515,46 @@ class AppointmentService implements AppointmentCancellationContract, Appointment
     {
         $clinic = Clinic::findOrFail($this->clinicContext->id());
 
-        $count = min((int) $criteria['count'], 12);
         $doctorId = (int) $criteria['doctor_id'];
         $patientId = (int) $criteria['patient_id'];
         $caseId = isset($criteria['case_id']) ? (int) $criteria['case_id'] : null;
         $serviceId = isset($criteria['service_id']) ? (int) $criteria['service_id'] : null;
 
-        $duration = $this->availabilityService->resolveDuration(null, $serviceId, null, $clinic);
+        // Cap at 12 as defence-in-depth; FormRequest already enforces this.
+        $occurrences = array_slice($criteria['occurrences'], 0, 12);
 
-        $currentLocal = Carbon::parse($criteria['first_starts_at'], $clinic->timezone);
+        $parsed = array_map(
+            fn (array $occurrence): array => [
+                'starts_at' => Carbon::parse($occurrence['starts_at'], $clinic->timezone),
+                'duration_minutes' => isset($occurrence['duration_minutes'])
+                    ? (int) $occurrence['duration_minutes']
+                    : null,
+                'appointment_type_id' => isset($occurrence['appointment_type_id'])
+                    ? (int) $occurrence['appointment_type_id']
+                    : null,
+            ],
+            $occurrences,
+        );
+
+        // Sort ascending so earlier rows win conflict precedence deterministically.
+        usort($parsed, fn (array $a, array $b): int => $a['starts_at']->timestamp <=> $b['starts_at']->timestamp);
 
         $created = [];
         $skipped = [];
 
-        for ($i = 0; $i < $count; $i++) {
-            if ($i > 0) {
-                $currentLocal = match ($criteria['interval']) {
-                    'weekly' => $currentLocal->addWeek(),
-                    'biweekly' => $currentLocal->addWeeks(2),
-                    'monthly' => $currentLocal->addMonthNoOverflow(),
-                };
-            }
+        foreach ($parsed as $occurrence) {
+            $localDt = $occurrence['starts_at'];
+            // Per-occurrence: a package may mix types/durations — explicit duration wins,
+            // then service, then the row's type default, then the clinic default.
+            $duration = $this->availabilityService->resolveDuration($occurrence['duration_minutes'], $serviceId, $occurrence['appointment_type_id'], $clinic);
 
-            $startsAt = $currentLocal->copy()->utc();
+            $startsAt = $localDt->copy()->utc();
             $endsAt = $startsAt->copy()->addMinutes($duration);
 
             $reason = $this->availabilityService->unavailableReason($doctorId, $startsAt, $endsAt, false, $clinic);
 
             if ($reason !== null) {
-                $skipped[] = $currentLocal->format('d.m.Y H:i');
+                $skipped[] = $localDt->format('d.m.Y H:i');
 
                 continue;
             }
@@ -555,6 +564,7 @@ class AppointmentService implements AppointmentCancellationContract, Appointment
                 'doctor_id' => $doctorId,
                 'case_id' => $caseId,
                 'service_id' => $serviceId,
+                'appointment_type_id' => $occurrence['appointment_type_id'],
                 'starts_at' => $startsAt,
                 'ends_at' => $endsAt,
                 'status' => AppointmentStatus::Confirmed->value,

@@ -188,17 +188,12 @@ class TreatmentService
             $followUp = $data['follow_up'] ?? null;
 
             if (! empty($followUp) && ($followUp['mode'] ?? 'none') !== 'none') {
-                $count = ($followUp['mode'] === 'package') ? (int) $followUp['count'] : 1;
-                $interval = ($followUp['mode'] === 'package') ? $followUp['interval'] : 'weekly';
-
                 $followUpResult = $this->appointmentLifecycle->scheduleFollowUps([
                     'doctor_id' => $treatment->doctor_id,
                     'patient_id' => $treatment->patient_id,
                     'case_id' => $caseId,
                     'service_id' => $followUp['service_id'] ?? null,
-                    'first_starts_at' => $followUp['starts_at'],
-                    'count' => $count,
-                    'interval' => $interval,
+                    'occurrences' => $followUp['occurrences'] ?? [],
                 ], $actor);
             }
 

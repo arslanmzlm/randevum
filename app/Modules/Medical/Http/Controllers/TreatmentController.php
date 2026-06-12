@@ -4,6 +4,7 @@ namespace App\Modules\Medical\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
+use App\Models\AppointmentType;
 use App\Models\Clinic;
 use App\Models\Product;
 use App\Models\Service;
@@ -96,11 +97,21 @@ class TreatmentController extends Controller
                 'treatments_count' => $case->treatments_count,
             ]);
 
+        $appointmentTypes = AppointmentType::active()
+            ->orderBy('name')
+            ->get()
+            ->map(fn (AppointmentType $type) => [
+                'id' => $type->id,
+                'name' => $type->name,
+                'color' => $type->color,
+            ]);
+
         return Inertia::render('treatments/Process', [
             'treatment' => (new TreatmentProcessResource($treatment))->resolve(),
             'services' => $services,
             'products' => $products,
             'openCases' => $openCases,
+            'appointmentTypes' => $appointmentTypes,
             'defaultSlotDuration' => $clinic->default_slot_duration_minutes,
             'workingHours' => $clinic->working_hours,
         ]);

@@ -1,13 +1,8 @@
 <script setup lang="ts">
-import {
-    IconAlertTriangle,
-    IconCalendarEvent,
-    IconCheck,
-    IconClockHour4,
-    IconLoader2,
-} from '@tabler/icons-vue';
+import { IconCalendarEvent, IconClockHour4 } from '@tabler/icons-vue';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import AvailabilityBadge from '@/components/AvailabilityBadge.vue';
 import { useAvailabilityCheck } from '@/composables/useAvailabilityCheck';
 import {
     clampTime,
@@ -68,21 +63,6 @@ const { state: availabilityState, reason: availabilityReason } =
         };
     });
 
-const availabilityMessage = computed<string | null>(() => {
-    switch (availabilityState.value) {
-        case 'checking':
-            return t('appointment.availability.checking');
-        case 'available':
-            return t('appointment.availability.available');
-        case 'unavailable':
-            return availabilityReason.value
-                ? t(`appointment.errors.${availabilityReason.value}`)
-                : t('appointment.availability.unavailable');
-        default:
-            return null;
-    }
-});
-
 // Keep the masked input from holding an impossible time (e.g. 99:99).
 function onTimeBlur(): void {
     form.time = clampTime(form.time);
@@ -134,26 +114,11 @@ function onTimeBlur(): void {
                 </small>
 
                 <!-- Live availability hint — advisory only; the POST is the real gate. -->
-                <p
-                    v-if="!startsAtError && availabilityMessage"
-                    class="flex items-center gap-1.5 text-xs"
-                    :class="{
-                        'text-surface-500': availabilityState === 'checking',
-                        'text-green-600': availabilityState === 'available',
-                        'text-amber-600': availabilityState === 'unavailable',
-                    }"
-                >
-                    <IconLoader2
-                        v-if="availabilityState === 'checking'"
-                        class="size-3.5 animate-spin"
-                    />
-                    <IconCheck
-                        v-else-if="availabilityState === 'available'"
-                        class="size-3.5"
-                    />
-                    <IconAlertTriangle v-else class="size-3.5" />
-                    {{ availabilityMessage }}
-                </p>
+                <AvailabilityBadge
+                    v-else
+                    :state="availabilityState"
+                    :reason="availabilityReason"
+                />
             </div>
         </div>
 

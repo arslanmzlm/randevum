@@ -1,6 +1,12 @@
 import type { InertiaForm } from '@inertiajs/vue3';
-import type { WorkingHours } from '@/types/appointment';
+import type { AppointmentTypeOption, WorkingHours } from '@/types/appointment';
 import type { PaymentMethod, TreatmentStatus } from '@/types/enums';
+
+/** Active appointment type for the follow-up booking (duration resolves server-side). */
+export type FollowUpAppointmentTypeOption = Pick<
+    AppointmentTypeOption,
+    'id' | 'name' | 'color'
+>;
 
 /** A selectable service in the line editors (catalog price prefills the line on selection). */
 export type TreatmentServiceOption = {
@@ -63,6 +69,7 @@ export type TreatmentProcessProps = {
     services: TreatmentServiceOption[];
     products: TreatmentProductOption[];
     openCases: OpenCaseOption[];
+    appointmentTypes: FollowUpAppointmentTypeOption[];
     defaultSlotDuration: number;
     workingHours: WorkingHours;
 };
@@ -95,6 +102,15 @@ export type PaymentRowForm = {
 export type FollowUpMode = 'none' | 'single' | 'package';
 export type FollowUpInterval = 'weekly' | 'biweekly' | 'monthly';
 
+/** One generated/editable occurrence row in package mode (clinic-local date + "HH:mm" time).
+ *  Each row carries its own type and duration so a package can mix e.g. kontrol + muayene. */
+export type FollowUpOccurrenceForm = {
+    date: Date | null;
+    time: string;
+    duration_minutes: number | null;
+    appointment_type_id: number | null;
+};
+
 /** The complete Process form payload (the page owns useForm; partials inject it). */
 export type TreatmentFormData = {
     details: {
@@ -117,9 +133,15 @@ export type TreatmentFormData = {
         mode: FollowUpMode;
         date: Date | null;
         time: string;
+        /** Generator params (client-only) — drive the package occurrence list, not sent as-is. */
         count: number;
         interval: FollowUpInterval;
+        /** Editable, generated occurrence rows (package mode); empty for single/none. */
+        occurrences: FollowUpOccurrenceForm[];
         service_id: number | null;
+        /** Single mode's values; in package mode they only seed the generated rows (client-only). */
+        appointment_type_id: number | null;
+        duration_minutes: number | null;
     };
 };
 

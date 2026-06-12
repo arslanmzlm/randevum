@@ -29,16 +29,20 @@ interface AppointmentLifecycleContract
     public function markCompleted(Appointment $appointment, User $actor, ?int $caseId = null): void;
 
     /**
-     * Book N follow-up appointments for the same doctor + patient, skipping conflicting slots.
+     * Book follow-up appointments from an explicit occurrence list, skipping conflicting slots.
+     *
+     * Each occurrence is a clinic-local datetime string (YYYY-MM-DDTHH:mm:ss or equivalent)
+     * plus its own optional appointment type and duration (a package may mix per session).
+     * Occurrences are sorted ascending before processing; duplicates resolve naturally —
+     * the first books, the second hits the overlap check and is skipped.
+     * Cap of 12 is enforced as defence-in-depth (FormRequest already validates this).
      *
      * @param  array{
      *     doctor_id: int,
      *     patient_id: int,
      *     case_id: int|null,
      *     service_id: int|null,
-     *     first_starts_at: string,
-     *     count: int,
-     *     interval: 'weekly'|'biweekly'|'monthly',
+     *     occurrences: list<array{starts_at: string, duration_minutes?: int|null, appointment_type_id?: int|null}>,
      * }  $criteria
      * @return array{created: list<Appointment>, skipped: list<string>}
      */
