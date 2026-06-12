@@ -3,7 +3,9 @@
 namespace App\Modules\Medical\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\Appointment;
 use App\Models\Patient;
+use App\Modules\Core\Contracts\PatientAppointmentsContract;
 use App\Modules\Core\Support\Toast;
 use App\Modules\Medical\Exceptions\TrashedPhoneConflictException;
 use App\Modules\Medical\Http\Requests\StorePatientRequest;
@@ -28,6 +30,7 @@ class PatientController extends Controller
         private PatientService $patientService,
         private TreatmentService $treatmentService,
         private CaseRepository $caseRepository,
+        private PatientAppointmentsContract $patientAppointments,
         private ClinicContext $clinicContext,
     ) {}
 
@@ -113,10 +116,28 @@ class PatientController extends Controller
                 'follow_up_date' => $c->follow_up_date?->format('Y-m-d'),
             ]);
 
+        $appointments = $user->can('appointments.viewAny')
+            ? $this->patientAppointments->listForPatient($patient, $user)
+                ->map(fn (Appointment $a) => [
+                    'id' => $a->id,
+                    'starts_at' => $a->starts_at->toIso8601String(),
+                    'ends_at' => $a->ends_at->toIso8601String(),
+                    'status' => $a->status->value,
+                    'is_walk_in' => $a->is_walk_in,
+                    'doctor_name' => $a->doctor->display_name,
+                    'service_name' => $a->service?->name,
+                    'appointment_type' => $a->appointmentType
+                        ? ['name' => $a->appointmentType->name, 'color' => $a->appointmentType->color]
+                        : null,
+                ])
+                ->values()
+            : collect();
+
         return Inertia::render('patients/Show', [
             'patient' => (new PatientResource($patient))->resolve(),
             'treatments' => $treatments,
             'cases' => $cases,
+            'appointments' => $appointments,
             'ownDoctorId' => $user->doctor?->id,
         ]);
     }

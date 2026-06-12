@@ -156,4 +156,24 @@ class AppointmentRepository
 
         return $query->get();
     }
+
+    /**
+     * A patient's appointments for the patient-detail history, newest first.
+     * ClinicScope is applied automatically.
+     *
+     * @param  int|null  $doctorId  null = all doctors; non-null = constrain (own/all)
+     * @return Collection<int, Appointment>
+     */
+    public function forPatient(int $patientId, ?int $doctorId): Collection
+    {
+        $query = Appointment::where('patient_id', $patientId)
+            ->with(['doctor.user', 'service', 'appointmentType'])
+            ->orderByDesc('starts_at');
+
+        if ($doctorId !== null) {
+            $query->forDoctor($doctorId);
+        }
+
+        return $query->get();
+    }
 }

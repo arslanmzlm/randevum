@@ -465,6 +465,13 @@ export const tr = {
             treatments: 'Tedavi Geçmişi',
             cases: 'Vakalar',
             ungrouped: 'Gruplanmamış Tedaviler',
+            appointments: 'Randevular',
+        },
+        appointments: {
+            upcoming: 'Yaklaşan randevular',
+            past: 'Geçmiş randevular',
+            no_upcoming: 'Yaklaşan randevu yok.',
+            no_past: 'Geçmiş randevu yok.',
         },
         cases: {
             open: 'Açık vakalar',
@@ -583,6 +590,7 @@ export const tr = {
             cancelled: 'İptal',
             no_show: 'Gelmedi',
         },
+        walk_in: 'Randevusuz',
         availability: {
             checking: 'Müsaitlik kontrol ediliyor…',
             available: 'Bu saat müsait.',

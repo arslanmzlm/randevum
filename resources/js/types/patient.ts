@@ -1,4 +1,5 @@
 import type { PatientCaseItem } from '@/types/case';
+import type { AppointmentStatus } from '@/types/enums';
 import type { Paginated, TableState } from '@/types/table';
 import type { PatientTreatmentHistoryItem } from '@/types/treatment';
 
@@ -69,11 +70,26 @@ export type RestorablePatient = {
     full_name: string;
 };
 
+/** One row of the patient's appointment history (own/all scoped, newest first). */
+export type PatientAppointmentItem = {
+    id: number;
+    /** ISO 8601 timestamps. */
+    starts_at: string;
+    ends_at: string;
+    status: AppointmentStatus;
+    is_walk_in: boolean;
+    doctor_name: string;
+    service_name: string | null;
+    appointment_type: { name: string; color: string } | null;
+};
+
 export type PatientShowProps = {
     patient: Patient;
     treatments: PatientTreatmentHistoryItem[];
     /** The patient's cases (own/all scoped); open vs closed split client-side. */
     cases: PatientCaseItem[];
+    /** The patient's appointments; upcoming vs past split client-side. */
+    appointments: PatientAppointmentItem[];
     /** The user's own doctors.id; gates the retrospective-linking controls to own treatments. */
     ownDoctorId: number | null;
 };

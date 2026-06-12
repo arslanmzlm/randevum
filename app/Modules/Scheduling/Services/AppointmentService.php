@@ -6,9 +6,11 @@ use App\Enums\AppointmentStatus;
 use App\Enums\AvailabilityReason;
 use App\Models\Appointment;
 use App\Models\Clinic;
+use App\Models\Patient;
 use App\Models\User;
 use App\Modules\Core\Contracts\AppointmentCancellationContract;
 use App\Modules\Core\Contracts\AppointmentLifecycleContract;
+use App\Modules\Core\Contracts\PatientAppointmentsContract;
 use App\Modules\Core\Services\StatusLogService;
 use App\Modules\Medical\Contracts\PatientRegistrarContract;
 use App\Modules\Medical\Exceptions\TrashedPhoneConflictException;
@@ -20,7 +22,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
-class AppointmentService implements AppointmentCancellationContract, AppointmentLifecycleContract
+class AppointmentService implements AppointmentCancellationContract, AppointmentLifecycleContract, PatientAppointmentsContract
 {
     /**
      * Statuses eligible for bulk cancellation.
@@ -68,6 +70,24 @@ class AppointmentService implements AppointmentCancellationContract, Appointment
         }
 
         return $this->repository->paginateForActiveClinic($doctorIds, $clinic->timezone);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function listForPatient(Patient $patient, User $user): Collection
+    {
+        if ($user->can('appointments.viewAll')) {
+            $doctorId = null;
+        } else {
+            $doctorId = $user->doctor?->id;
+
+            if ($doctorId === null) {
+                return new Collection;
+            }
+        }
+
+        return $this->repository->forPatient($patient->id, $doctorId);
     }
 
     /**

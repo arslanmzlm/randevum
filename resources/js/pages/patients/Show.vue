@@ -17,6 +17,7 @@ import {
 import { useConfirm } from 'primevue/useconfirm';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import AppointmentStatusTag from '@/components/AppointmentStatusTag.vue';
 import ButtonLink from '@/components/ButtonLink.vue';
 import CaseStatusTag from '@/components/CaseStatusTag.vue';
 import PageHeader from '@/components/PageHeader.vue';
@@ -31,7 +32,11 @@ import { destroy, edit, index } from '@/routes/patients';
 import { update as updateNotes } from '@/routes/patients/notes';
 import { show as treatmentShow } from '@/routes/treatments';
 import type { PatientCaseItem } from '@/types/case';
-import type { PatientNotesFormData, PatientShowProps } from '@/types/patient';
+import type {
+    PatientAppointmentItem,
+    PatientNotesFormData,
+    PatientShowProps,
+} from '@/types/patient';
 import type { PatientTreatmentHistoryItem } from '@/types/treatment';
 
 defineOptions({ layout: AppLayout });
@@ -41,7 +46,7 @@ const props = defineProps<PatientShowProps>();
 const { t } = useI18n();
 const confirm = useConfirm();
 const { can } = useCan();
-const { formatDate, formatDateOnly } = useDateTime();
+const { formatDate, formatDateOnly, formatRange, isPast } = useDateTime();
 const { formatMoney } = useMoney();
 const canManage = computed(() => can('patients.update'));
 const canEditNotes = computed(() => can('patients.note.update'));
@@ -132,6 +137,16 @@ function removePatient(): void {
         accept: () => router.delete(destroy(props.patient.id).url),
     });
 }
+
+// Appointments — upcoming vs past split client-side; an in-progress one counts as
+// upcoming until it ends. Server sends newest-first, so upcoming reverses to soonest-first.
+const canViewAppointments = computed(() => can('appointments.viewAny'));
+const upcomingAppointments = computed<PatientAppointmentItem[]>(() =>
+    props.appointments.filter((a) => !isPast(a.ends_at)).reverse(),
+);
+const pastAppointments = computed<PatientAppointmentItem[]>(() =>
+    props.appointments.filter((a) => isPast(a.ends_at)),
+);
 
 // Cases — open (active) vs closed split client-side from the `cases` prop.
 const openCases = computed<PatientCaseItem[]>(() =>
@@ -480,6 +495,142 @@ function submitLinkCase(): void {
                 </div>
             </section>
         </div>
+
+        <section
+            v-if="canViewAppointments"
+            class="flex flex-col gap-4 rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
+        >
+            <header class="flex items-center gap-2">
+                <IconCalendarEvent class="size-5 text-surface-500" />
+                <h2 class="text-lg font-semibold text-surface-900">
+                    {{ t('patient.sections.appointments') }}
+                </h2>
+            </header>
+
+            <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <div class="flex flex-col gap-2">
+                    <h3 class="text-sm font-semibold text-surface-700">
+                        {{ t('patient.appointments.upcoming') }}
+                    </h3>
+                    <ul
+                        v-if="upcomingAppointments.length"
+                        class="flex flex-col gap-2"
+                    >
+                        <li
+                            v-for="item in upcomingAppointments"
+                            :key="item.id"
+                            class="flex items-center gap-3 rounded-xl border border-surface-200 p-3"
+                        >
+                            <div class="flex min-w-0 flex-1 flex-col gap-1">
+                                <div class="flex items-center gap-2">
+                                    <span
+                                        class="text-sm font-medium text-surface-900"
+                                    >
+                                        {{
+                                            formatRange(
+                                                item.starts_at,
+                                                item.ends_at,
+                                            )
+                                        }}
+                                    </span>
+                                    <AppointmentStatusTag
+                                        :status="item.status"
+                                    />
+                                    <Tag
+                                        v-if="item.is_walk_in"
+                                        severity="secondary"
+                                        :value="t('appointment.walk_in')"
+                                    />
+                                </div>
+                                <span
+                                    class="flex items-center gap-1.5 text-xs text-surface-500"
+                                >
+                                    {{ item.doctor_name }}
+                                    <template v-if="item.service_name">
+                                        · {{ item.service_name }}
+                                    </template>
+                                    <template v-if="item.appointment_type">
+                                        ·
+                                        <span
+                                            class="inline-block size-2 shrink-0 rounded-full"
+                                            :style="{
+                                                backgroundColor:
+                                                    item.appointment_type.color,
+                                            }"
+                                        />
+                                        {{ item.appointment_type.name }}
+                                    </template>
+                                </span>
+                            </div>
+                        </li>
+                    </ul>
+                    <p v-else class="text-sm text-surface-400">
+                        {{ t('patient.appointments.no_upcoming') }}
+                    </p>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <h3 class="text-sm font-semibold text-surface-700">
+                        {{ t('patient.appointments.past') }}
+                    </h3>
+                    <ul
+                        v-if="pastAppointments.length"
+                        class="flex flex-col gap-2"
+                    >
+                        <li
+                            v-for="item in pastAppointments"
+                            :key="item.id"
+                            class="flex items-center gap-3 rounded-xl border border-surface-200 p-3"
+                        >
+                            <div class="flex min-w-0 flex-1 flex-col gap-1">
+                                <div class="flex items-center gap-2">
+                                    <span
+                                        class="text-sm font-medium text-surface-900"
+                                    >
+                                        {{
+                                            formatRange(
+                                                item.starts_at,
+                                                item.ends_at,
+                                            )
+                                        }}
+                                    </span>
+                                    <AppointmentStatusTag
+                                        :status="item.status"
+                                    />
+                                    <Tag
+                                        v-if="item.is_walk_in"
+                                        severity="secondary"
+                                        :value="t('appointment.walk_in')"
+                                    />
+                                </div>
+                                <span
+                                    class="flex items-center gap-1.5 text-xs text-surface-500"
+                                >
+                                    {{ item.doctor_name }}
+                                    <template v-if="item.service_name">
+                                        · {{ item.service_name }}
+                                    </template>
+                                    <template v-if="item.appointment_type">
+                                        ·
+                                        <span
+                                            class="inline-block size-2 shrink-0 rounded-full"
+                                            :style="{
+                                                backgroundColor:
+                                                    item.appointment_type.color,
+                                            }"
+                                        />
+                                        {{ item.appointment_type.name }}
+                                    </template>
+                                </span>
+                            </div>
+                        </li>
+                    </ul>
+                    <p v-else class="text-sm text-surface-400">
+                        {{ t('patient.appointments.no_past') }}
+                    </p>
+                </div>
+            </div>
+        </section>
 
         <section
             v-if="cases.length"
