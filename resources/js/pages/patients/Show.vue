@@ -4,10 +4,13 @@ import {
     IconArrowLeft,
     IconCalendarEvent,
     IconChevronRight,
+    IconFolders,
+    IconLink,
     IconMail,
     IconNotes,
     IconPencil,
     IconPhone,
+    IconPlus,
     IconTrash,
     IconUser,
 } from '@tabler/icons-vue';
@@ -15,16 +18,21 @@ import { useConfirm } from 'primevue/useconfirm';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import ButtonLink from '@/components/ButtonLink.vue';
+import CaseStatusTag from '@/components/CaseStatusTag.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import TreatmentStatusTag from '@/components/TreatmentStatusTag.vue';
 import { useCan } from '@/composables/useCan';
 import { useDateTime } from '@/composables/useDateTime';
 import { useMoney } from '@/composables/useMoney';
 import AppLayout from '@/layouts/AppLayout.vue';
+import { store as caseStore, show as caseShow } from '@/routes/cases';
+import { link as caseLinkTreatments } from '@/routes/cases/treatments';
 import { destroy, edit, index } from '@/routes/patients';
 import { update as updateNotes } from '@/routes/patients/notes';
 import { show as treatmentShow } from '@/routes/treatments';
+import type { PatientCaseItem } from '@/types/case';
 import type { PatientNotesFormData, PatientShowProps } from '@/types/patient';
+import type { PatientTreatmentHistoryItem } from '@/types/treatment';
 
 defineOptions({ layout: AppLayout });
 
@@ -123,6 +131,108 @@ function removePatient(): void {
         acceptProps: { label: t('common.delete'), severity: 'danger' },
         accept: () => router.delete(destroy(props.patient.id).url),
     });
+}
+
+// Cases — open (active) vs closed split client-side from the `cases` prop.
+const openCases = computed<PatientCaseItem[]>(() =>
+    props.cases.filter((c) => c.status !== 'closed'),
+);
+const closedCases = computed<PatientCaseItem[]>(() =>
+    props.cases.filter((c) => c.status === 'closed'),
+);
+// Only Open cases accept retrospective treatment links (server-enforced).
+const linkableOpenCases = computed<PatientCaseItem[]>(() =>
+    props.cases.filter((c) => c.status === 'open'),
+);
+
+// Ungrouped = completed treatment with no case yet (the only kind eligible for linking).
+const ungroupedTreatments = computed<PatientTreatmentHistoryItem[]>(() =>
+    props.treatments.filter(
+        (item) => item.case_id === null && item.status === 'completed',
+    ),
+);
+
+const canCreateCases = computed(() => can('cases.create'));
+const canLinkCases = computed(() => can('cases.update'));
+const canGroupTreatments = computed(
+    () => canCreateCases.value || canLinkCases.value,
+);
+
+// A case is created/linked for the treatments' shared doctor; a non-viewAll user is
+// limited to their own doctor profile (mirrors the server policy + service guard).
+function canActOnDoctor(doctorId: number): boolean {
+    return can('cases.viewAll') || doctorId === props.ownDoctorId;
+}
+
+function isActionable(item: PatientTreatmentHistoryItem): boolean {
+    return canGroupTreatments.value && canActOnDoctor(item.doctor_id);
+}
+
+const selectedTreatmentIds = ref<number[]>([]);
+
+// The selection must share one doctor (server requirement) — derive it from the first pick.
+const selectedDoctorId = computed<number | null>(() => {
+    const first = props.treatments.find(
+        (item) => item.id === selectedTreatmentIds.value[0],
+    );
+
+    return first ? first.doctor_id : null;
+});
+
+function isSelectable(item: PatientTreatmentHistoryItem): boolean {
+    return (
+        selectedDoctorId.value === null ||
+        item.doctor_id === selectedDoctorId.value
+    );
+}
+
+const canActOnSelection = computed(
+    () =>
+        selectedDoctorId.value !== null &&
+        canActOnDoctor(selectedDoctorId.value),
+);
+
+// New-case dialog.
+const showCreateCaseDialog = ref(false);
+const createCaseForm = useForm<{ title: string }>({ title: '' });
+
+function openCreateCaseDialog(): void {
+    createCaseForm.clearErrors();
+    createCaseForm.title = '';
+    showCreateCaseDialog.value = true;
+}
+
+function submitCreateCase(): void {
+    createCaseForm
+        .transform((data) => ({
+            title: data.title,
+            patient_id: props.patient.id,
+            doctor_id: selectedDoctorId.value,
+            treatment_ids: selectedTreatmentIds.value,
+        }))
+        .post(caseStore().url);
+}
+
+// Link-to-open-case dialog.
+const showLinkCaseDialog = ref(false);
+const selectedOpenCaseId = ref<number | null>(null);
+const linkCaseForm = useForm<{ treatment_ids: number[] }>({
+    treatment_ids: [],
+});
+
+function openLinkCaseDialog(): void {
+    linkCaseForm.clearErrors();
+    selectedOpenCaseId.value = null;
+    showLinkCaseDialog.value = true;
+}
+
+function submitLinkCase(): void {
+    if (selectedOpenCaseId.value === null) {
+        return;
+    }
+
+    linkCaseForm.treatment_ids = selectedTreatmentIds.value;
+    linkCaseForm.post(caseLinkTreatments(selectedOpenCaseId.value).url);
 }
 </script>
 
@@ -370,5 +480,279 @@ function removePatient(): void {
                 </div>
             </section>
         </div>
+
+        <section
+            v-if="cases.length"
+            class="flex flex-col gap-4 rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
+        >
+            <header class="flex items-center gap-2">
+                <IconFolders class="size-5 text-surface-500" />
+                <h2 class="text-lg font-semibold text-surface-900">
+                    {{ t('patient.sections.cases') }}
+                </h2>
+            </header>
+
+            <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <div class="flex flex-col gap-2">
+                    <h3 class="text-sm font-semibold text-surface-700">
+                        {{ t('patient.cases.open') }}
+                    </h3>
+                    <ul v-if="openCases.length" class="flex flex-col gap-2">
+                        <li v-for="item in openCases" :key="item.id">
+                            <Link
+                                :href="caseShow(item.id).url"
+                                class="flex items-center gap-3 rounded-xl border border-surface-200 p-3 transition-colors hover:border-primary-300 hover:bg-surface-50"
+                            >
+                                <div class="flex min-w-0 flex-1 flex-col gap-1">
+                                    <div class="flex items-center gap-2">
+                                        <span
+                                            class="truncate text-sm font-medium text-surface-900"
+                                        >
+                                            {{ item.title }}
+                                        </span>
+                                        <CaseStatusTag :status="item.status" />
+                                    </div>
+                                    <span class="text-xs text-surface-500">
+                                        {{
+                                            t(
+                                                'patient.cases.treatments_count',
+                                                {
+                                                    count: item.treatments_count,
+                                                },
+                                            )
+                                        }}
+                                        <template v-if="item.follow_up_date">
+                                            ·
+                                            {{
+                                                formatDateOnly(
+                                                    item.follow_up_date,
+                                                )
+                                            }}
+                                        </template>
+                                    </span>
+                                </div>
+                                <IconChevronRight
+                                    class="size-4 shrink-0 text-surface-400"
+                                />
+                            </Link>
+                        </li>
+                    </ul>
+                    <p v-else class="text-sm text-surface-400">
+                        {{ t('patient.cases.no_open') }}
+                    </p>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <h3 class="text-sm font-semibold text-surface-700">
+                        {{ t('patient.cases.closed') }}
+                    </h3>
+                    <ul v-if="closedCases.length" class="flex flex-col gap-2">
+                        <li v-for="item in closedCases" :key="item.id">
+                            <Link
+                                :href="caseShow(item.id).url"
+                                class="flex items-center gap-3 rounded-xl border border-surface-200 p-3 transition-colors hover:border-primary-300 hover:bg-surface-50"
+                            >
+                                <div class="flex min-w-0 flex-1 flex-col gap-1">
+                                    <div class="flex items-center gap-2">
+                                        <span
+                                            class="truncate text-sm font-medium text-surface-900"
+                                        >
+                                            {{ item.title }}
+                                        </span>
+                                        <CaseStatusTag :status="item.status" />
+                                    </div>
+                                    <span class="text-xs text-surface-500">
+                                        {{
+                                            t(
+                                                'patient.cases.treatments_count',
+                                                {
+                                                    count: item.treatments_count,
+                                                },
+                                            )
+                                        }}
+                                    </span>
+                                </div>
+                                <IconChevronRight
+                                    class="size-4 shrink-0 text-surface-400"
+                                />
+                            </Link>
+                        </li>
+                    </ul>
+                    <p v-else class="text-sm text-surface-400">
+                        {{ t('patient.cases.no_closed') }}
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <section
+            v-if="ungroupedTreatments.length"
+            class="flex flex-col gap-4 rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
+        >
+            <header class="flex flex-col gap-1">
+                <h2 class="text-lg font-semibold text-surface-900">
+                    {{ t('patient.sections.ungrouped') }}
+                </h2>
+                <p class="text-sm text-surface-500">
+                    {{ t('patient.ungrouped.hint') }}
+                </p>
+            </header>
+
+            <ul class="flex flex-col gap-2">
+                <li
+                    v-for="item in ungroupedTreatments"
+                    :key="item.id"
+                    class="flex items-center gap-3 rounded-xl border border-surface-200 p-3"
+                >
+                    <Checkbox
+                        v-if="isActionable(item)"
+                        v-model="selectedTreatmentIds"
+                        :value="item.id"
+                        :disabled="!isSelectable(item)"
+                        :input-id="`ungrouped-${item.id}`"
+                    />
+                    <label
+                        :for="`ungrouped-${item.id}`"
+                        class="flex min-w-0 flex-1 flex-col gap-0.5"
+                        :class="isActionable(item) ? 'cursor-pointer' : ''"
+                    >
+                        <span
+                            class="truncate text-sm font-medium text-surface-900"
+                        >
+                            {{ item.title || t('treatment.untitled') }}
+                        </span>
+                        <span class="text-xs text-surface-500">
+                            {{
+                                item.completed_at
+                                    ? formatDate(item.completed_at)
+                                    : t('treatment.in_progress')
+                            }}
+                            · {{ item.doctor_name }}
+                        </span>
+                    </label>
+                    <span class="text-sm font-medium text-surface-700">
+                        {{ formatMoney(item.total_amount) }}
+                    </span>
+                </li>
+            </ul>
+
+            <div
+                v-if="selectedTreatmentIds.length && canActOnSelection"
+                class="flex flex-wrap items-center justify-end gap-2 border-t border-surface-200 pt-4"
+            >
+                <span class="mr-auto text-sm text-surface-500">
+                    {{
+                        t('patient.ungrouped.selected', {
+                            count: selectedTreatmentIds.length,
+                        })
+                    }}
+                </span>
+                <Button
+                    v-if="canLinkCases && linkableOpenCases.length"
+                    type="button"
+                    severity="secondary"
+                    outlined
+                    :label="t('patient.ungrouped.link_existing')"
+                    @click="openLinkCaseDialog"
+                >
+                    <template #icon>
+                        <IconLink class="size-4" />
+                    </template>
+                </Button>
+                <Button
+                    v-if="canCreateCases"
+                    type="button"
+                    :label="t('patient.ungrouped.create_case')"
+                    @click="openCreateCaseDialog"
+                >
+                    <template #icon>
+                        <IconPlus class="size-4" />
+                    </template>
+                </Button>
+            </div>
+        </section>
+
+        <Dialog
+            v-model:visible="showCreateCaseDialog"
+            modal
+            :header="t('patient.ungrouped.create_case')"
+            :style="{ width: '28rem' }"
+        >
+            <div class="flex flex-col gap-2">
+                <label for="new-case-title" class="text-xs text-surface-500">
+                    {{ t('case.fields.title') }}
+                </label>
+                <InputText
+                    id="new-case-title"
+                    v-model="createCaseForm.title"
+                    fluid
+                    :invalid="Boolean(createCaseForm.errors.title)"
+                    :placeholder="t('patient.ungrouped.title_placeholder')"
+                />
+                <small v-if="createCaseForm.errors.title" class="text-red-500">
+                    {{ createCaseForm.errors.title }}
+                </small>
+            </div>
+            <template #footer>
+                <Button
+                    type="button"
+                    severity="secondary"
+                    outlined
+                    :label="t('common.cancel')"
+                    :disabled="createCaseForm.processing"
+                    @click="showCreateCaseDialog = false"
+                />
+                <Button
+                    type="button"
+                    :label="t('patient.ungrouped.create_submit')"
+                    :loading="createCaseForm.processing"
+                    @click="submitCreateCase"
+                />
+            </template>
+        </Dialog>
+
+        <Dialog
+            v-model:visible="showLinkCaseDialog"
+            modal
+            :header="t('patient.ungrouped.link_existing')"
+            :style="{ width: '28rem' }"
+        >
+            <div class="flex flex-col gap-2">
+                <label class="text-xs text-surface-500">
+                    {{ t('patient.ungrouped.select_case') }}
+                </label>
+                <Select
+                    v-model="selectedOpenCaseId"
+                    :options="linkableOpenCases"
+                    option-label="title"
+                    option-value="id"
+                    :placeholder="t('patient.ungrouped.select_case')"
+                    fluid
+                />
+                <small
+                    v-if="linkCaseForm.errors.treatment_ids"
+                    class="text-red-500"
+                >
+                    {{ linkCaseForm.errors.treatment_ids }}
+                </small>
+            </div>
+            <template #footer>
+                <Button
+                    type="button"
+                    severity="secondary"
+                    outlined
+                    :label="t('common.cancel')"
+                    :disabled="linkCaseForm.processing"
+                    @click="showLinkCaseDialog = false"
+                />
+                <Button
+                    type="button"
+                    :label="t('patient.ungrouped.link_submit')"
+                    :disabled="selectedOpenCaseId === null"
+                    :loading="linkCaseForm.processing"
+                    @click="submitLinkCase"
+                />
+            </template>
+        </Dialog>
     </div>
 </template>

@@ -11,6 +11,7 @@ use App\Modules\Medical\Http\Requests\UpdatePatientNotesRequest;
 use App\Modules\Medical\Http\Requests\UpdatePatientRequest;
 use App\Modules\Medical\Http\Resources\PatientResource;
 use App\Modules\Medical\Http\Resources\PatientSearchResource;
+use App\Modules\Medical\Repositories\CaseRepository;
 use App\Modules\Medical\Services\PatientService;
 use App\Modules\Medical\Services\TreatmentService;
 use App\Support\ClinicContext;
@@ -26,6 +27,7 @@ class PatientController extends Controller
     public function __construct(
         private PatientService $patientService,
         private TreatmentService $treatmentService,
+        private CaseRepository $caseRepository,
         private ClinicContext $clinicContext,
     ) {}
 
@@ -84,7 +86,9 @@ class PatientController extends Controller
     {
         $this->authorize('view', $patient);
 
-        $treatments = $this->treatmentService->listForPatient($patient, $request->user())
+        $user = $request->user();
+
+        $treatments = $this->treatmentService->listForPatient($patient, $user)
             ->map(fn ($t) => [
                 'id' => $t->id,
                 'completed_at' => $t->completed_at?->toIso8601String(),
@@ -92,12 +96,28 @@ class PatientController extends Controller
                 'title' => $t->serviceLines->first()?->service?->name,
                 'total_amount' => $t->total_amount,
                 'doctor_name' => $t->doctor->display_name,
+                'doctor_id' => (int) $t->doctor_id,
+                'case_id' => $t->case_id !== null ? (int) $t->case_id : null,
                 'case_title' => $t->case?->title,
+            ]);
+
+        $doctorId = $user->can('cases.viewAll') ? null : $user->doctor?->id;
+
+        $cases = $this->caseRepository->forPatient($patient->id, $doctorId)
+            ->map(fn ($c) => [
+                'id' => $c->id,
+                'title' => $c->title,
+                'status' => $c->status->value,
+                'treatments_count' => (int) $c->treatments_count,
+                'opened_at' => $c->opened_at->toIso8601String(),
+                'follow_up_date' => $c->follow_up_date?->format('Y-m-d'),
             ]);
 
         return Inertia::render('patients/Show', [
             'patient' => (new PatientResource($patient))->resolve(),
             'treatments' => $treatments,
+            'cases' => $cases,
+            'ownDoctorId' => $user->doctor?->id,
         ]);
     }
 

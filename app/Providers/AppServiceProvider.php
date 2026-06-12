@@ -10,6 +10,7 @@ use App\Models\Transaction;
 use App\Models\Treatment;
 use App\Models\User;
 use App\Policies\AppointmentPolicy;
+use App\Policies\CasePolicy;
 use App\Policies\ClinicPolicy;
 use App\Policies\TreatmentPolicy;
 use App\Support\ClinicContext;
@@ -50,6 +51,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Clinic::class, ClinicPolicy::class);
         Gate::policy(Appointment::class, AppointmentPolicy::class);
         Gate::policy(Treatment::class, TreatmentPolicy::class);
+        Gate::policy(CaseRecord::class, CasePolicy::class);
     }
 
     /**

@@ -1,0 +1,30 @@
+<?php
+
+namespace App\Modules\Medical\Http\Requests;
+
+use App\Support\ClinicContext;
+use Illuminate\Foundation\Http\FormRequest;
+
+class StoreCaseRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true; // Authorization is handled in the controller via authorize().
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function rules(): array
+    {
+        $clinicId = app(ClinicContext::class)->id();
+
+        return [
+            'title' => ['required', 'string', 'max:255'],
+            'patient_id' => ['required', 'integer', "exists:patients,id,clinic_id,{$clinicId}"],
+            'doctor_id' => ['nullable', 'integer'],
+            'treatment_ids' => ['nullable', 'array'],
+            'treatment_ids.*' => ['integer'],
+        ];
+    }
+}

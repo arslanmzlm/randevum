@@ -105,4 +105,12 @@ class CaseRecord extends Model
     {
         $query->where('status', CaseStatus::Open->value);
     }
+
+    /**
+     * @param  Builder<CaseRecord>  $query
+     */
+    public function scopeForDoctor(Builder $query, int $doctorId): void
+    {
+        $query->where('doctor_id', $doctorId);
+    }
 }

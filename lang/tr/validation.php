@@ -174,6 +174,11 @@ return [
         'follow_up.occurrences.*.duration_minutes' => 'Süre',
         'follow_up.occurrences.*.appointment_type_id' => 'Randevu türü',
         'follow_up.service_id' => 'Takip hizmeti',
+        // cases
+        'follow_up_date' => 'Takip tarihi',
+        'follow_up_note' => 'Takip notu',
+        'treatment_ids' => 'Tedaviler',
+        'treatment_ids.*' => 'Tedavi',
     ],
 
     'working_hours_closed_conflict' => ':attribute kapalı olarak işaretlenmiş günlerde açılış/kapanış saati belirtilemez.',

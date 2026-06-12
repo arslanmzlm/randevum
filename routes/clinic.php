@@ -4,6 +4,7 @@ use App\Modules\Catalog\Http\Controllers\ProductController;
 use App\Modules\Catalog\Http\Controllers\ServiceController;
 use App\Modules\Core\Http\Controllers\ClinicController;
 use App\Modules\Core\Http\Controllers\DoctorController;
+use App\Modules\Medical\Http\Controllers\CaseController;
 use App\Modules\Medical\Http\Controllers\PatientController;
 use App\Modules\Medical\Http\Controllers\TreatmentController;
 use App\Modules\Scheduling\Http\Controllers\AppointmentController;
@@ -107,6 +108,20 @@ Route::middleware('auth')->group(function () {
     Route::get('/schedule-exceptions', [ScheduleExceptionController::class, 'index'])->name('schedule-exceptions.index');
     Route::post('/schedule-exceptions', [ScheduleExceptionController::class, 'store'])->name('schedule-exceptions.store');
     Route::delete('/schedule-exceptions/{scheduleException}', [ScheduleExceptionController::class, 'destroy'])->name('schedule-exceptions.destroy');
+});
+
+// Case management.
+// Collection routes (index, store) are declared BEFORE {case} so they are
+// not captured as a route-model-bound id.
+Route::middleware('auth')->group(function () {
+    Route::get('/cases', [CaseController::class, 'index'])->name('cases.index');
+    Route::post('/cases', [CaseController::class, 'store'])->name('cases.store');
+    Route::get('/cases/{case}', [CaseController::class, 'show'])->name('cases.show');
+    Route::patch('/cases/{case}/status', [CaseController::class, 'changeStatus'])->name('cases.status.update');
+    Route::patch('/cases/{case}/notes', [CaseController::class, 'updateNotes'])->name('cases.notes.update');
+    Route::patch('/cases/{case}/follow-up', [CaseController::class, 'updateFollowUp'])->name('cases.follow-up.update');
+    Route::patch('/cases/{case}/title', [CaseController::class, 'updateTitle'])->name('cases.title.update');
+    Route::post('/cases/{case}/treatments', [CaseController::class, 'linkTreatments'])->name('cases.treatments.link');
 });
 
 // Treatment lifecycle — literal segments (process) before {treatment}.

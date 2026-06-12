@@ -8,6 +8,7 @@ import {
     IconCalendarPlus,
     IconCalendarWeek,
     IconClipboardList,
+    IconFolders,
     IconHome,
     IconListDetails,
     IconLogout,
@@ -31,6 +32,7 @@ import {
     index as appointmentsIndex,
 } from '@/routes/appointments';
 import { index as calendarIndex } from '@/routes/calendar';
+import { index as casesIndex } from '@/routes/cases';
 import { edit as clinicEdit } from '@/routes/clinic';
 import { index as doctorsIndex, mine as doctorsMine } from '@/routes/doctors';
 import { index as patientsIndex, show as patientShow } from '@/routes/patients';
@@ -116,6 +118,15 @@ const navItems = computed(() => [
                   label: t('nav.patients'),
                   href: patientsIndex().url,
                   icon: IconUsers,
+              },
+          ]
+        : []),
+    ...(can('cases.viewAny')
+        ? [
+              {
+                  label: t('nav.cases'),
+                  href: casesIndex().url,
+                  icon: IconFolders,
               },
           ]
         : []),

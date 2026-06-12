@@ -111,6 +111,14 @@ class Appointment extends Model
     }
 
     /**
+     * @return BelongsTo<CaseRecord, $this>
+     */
+    public function case(): BelongsTo
+    {
+        return $this->belongsTo(CaseRecord::class, 'case_id');
+    }
+
+    /**
      * @return HasOne<Treatment, $this>
      */
     public function treatment(): HasOne

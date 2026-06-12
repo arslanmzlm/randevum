@@ -1,0 +1,283 @@
+<?php
+
+namespace Database\Seeders;
+
+use App\Enums\AppointmentStatus;
+use App\Enums\CaseStatus;
+use App\Enums\TreatmentStatus;
+use App\Models\Appointment;
+use App\Models\CaseRecord;
+use App\Models\Clinic;
+use App\Models\Doctor;
+use App\Models\Patient;
+use App\Models\PodiatryTreatmentDetail;
+use App\Models\Service;
+use App\Models\StatusLog;
+use App\Models\Treatment;
+use App\Models\TreatmentServiceLine;
+use App\Models\User;
+use Carbon\Carbon;
+use Illuminate\Database\Seeder;
+
+/**
+ * Demo cases + completed treatments for the demo clinic, covering every case-management
+ * scenario reviewable in the UI: all four statuses, legal-transition buttons per state,
+ * a reopened case, the 48h title edit window (editable + locked), follow-up with/without
+ * a closed case, status_log history chains, per-doctor own/all scoping, a patient with
+ * open+closed cases, and ungrouped completed treatments for the linking flows (same
+ * doctor as an open case, a second doctor on the same patient, and case-less patients).
+ *
+ * Runs AFTER DemoSeeder + vertical service seeders (needs doctors, patients, services).
+ */
+class DemoCasesSeeder extends Seeder
+{
+    private Clinic $clinic;
+
+    private User $owner;
+
+    /** @var list<int> */
+    private array $serviceIds;
+
+    public function run(): void
+    {
+        $clinic = Clinic::where('slug', 'podosen-izmir')->first();
+        $owner = User::where('email', 'owner@podosen.test')->first();
+
+        if (! $clinic || ! $owner) {
+            return;
+        }
+
+        // Idempotent: skip once the demo set exists so re-seeds don't pile up.
+        if (CaseRecord::withoutGlobalScopes()->where('clinic_id', $clinic->id)->count() >= 10) {
+            return;
+        }
+
+        $this->clinic = $clinic;
+        $this->owner = $owner;
+        $this->serviceIds = Service::withoutGlobalScopes()
+            ->where('clinic_id', $clinic->id)
+            ->where('is_active', true)
+            ->pluck('id')
+            ->all();
+
+        $doctors = Doctor::withoutGlobalScopes()
+            ->where('clinic_id', $clinic->id)
+            ->where('is_active', true)
+            ->with('user')
+            ->orderBy('id')
+            ->take(3)
+            ->get();
+
+        $patients = Patient::withoutGlobalScopes()
+            ->where('clinic_id', $clinic->id)
+            ->orderBy('id')
+            ->take(30)
+            ->get();
+
+        if ($doctors->isEmpty() || $patients->count() < 12 || $this->serviceIds === []) {
+            return;
+        }
+
+        $titles = [
+            'Tırnak Batması Tedavisi',
+            'Diyabetik Ayak Takibi',
+            'Nasır ve Kallus Bakımı',
+            'Mantar Enfeksiyonu Takibi',
+            'Topuk Çatlağı Tedavisi',
+            'Ortonix Tel Uygulaması',
+        ];
+
+        $p = 0; // next unused patient index
+
+        foreach ($doctors as $d => $doctor) {
+            // 1) Open, <48h old → title still editable; 1 treatment + notes.
+            // Its patient also gets the old closed case below → open/closed split on patient page.
+            $freshPatient = $patients[$p++];
+            $fresh = $this->makeCase($doctor, $freshPatient, $titles[0], CaseStatus::Open, daysAgo: 1, notes: 'İlk seansta sağ ayak başparmak tırnağı kaldırıldı, pansuman yapıldı.');
+            $this->makeTreatment($doctor, $freshPatient, daysAgo: 1, case: $fresh);
+            // ungrouped completed treatments, same doctor → linkable from the case Show dialog
+            $this->makeTreatment($doctor, $freshPatient, daysAgo: 10);
+            $this->makeTreatment($doctor, $freshPatient, daysAgo: 25);
+
+            // 2) Open, 3 weeks old → title locked; multiple treatments.
+            $patient = $patients[$p++];
+            $case = $this->makeCase($doctor, $patient, $titles[1], CaseStatus::Open, daysAgo: 21, notes: 'HbA1c yüksek; haftalık debridman ve yara takibi sürüyor.');
+            foreach ([20, 13, 6] as $ago) {
+                $this->makeTreatment($doctor, $patient, daysAgo: $ago, case: $case);
+            }
+
+            // 3) Reopened: closed → open again; history shows the full chain.
+            $patient = $patients[$p++];
+            $case = $this->makeCase($doctor, $patient, $titles[2], CaseStatus::Open, daysAgo: 60);
+            $this->log($case, CaseStatus::Open, CaseStatus::Closed, daysAgo: 30, by: $doctor->user);
+            $this->log($case, CaseStatus::Closed, CaseStatus::Open, daysAgo: 4, by: $this->owner);
+            $this->makeTreatment($doctor, $patient, daysAgo: 45, case: $case);
+            $this->makeTreatment($doctor, $patient, daysAgo: 3, case: $case);
+
+            // 4) Suspended (hasta ara verdi) → only Open/Closed transitions offered.
+            $patient = $patients[$p++];
+            $case = $this->makeCase($doctor, $patient, $titles[3], CaseStatus::Suspended, daysAgo: 35, notes: 'Hasta şehir dışında, dönüşte devam edilecek.');
+            $case->update(['suspended_at' => $this->dayUtc(7)]);
+            $this->log($case, CaseStatus::Open, CaseStatus::Suspended, daysAgo: 7, by: $doctor->user);
+            $this->makeTreatment($doctor, $patient, daysAgo: 30, case: $case);
+
+            // 5) FollowUp with a future follow-up date + note.
+            $patient = $patients[$p++];
+            $case = $this->makeCase($doctor, $patient, $titles[4], CaseStatus::FollowUp, daysAgo: 50);
+            $case->update([
+                'follow_up_date' => Carbon::today($this->clinic->timezone)->addDays(5 + $d * 3),
+                'follow_up_note' => 'Kontrol randevusu için aranacak; topuk bölgesi fotoğrafla karşılaştırılacak.',
+            ]);
+            $this->log($case, CaseStatus::Open, CaseStatus::FollowUp, daysAgo: 8, by: $doctor->user);
+            $this->makeTreatment($doctor, $patient, daysAgo: 40, case: $case);
+            $this->makeTreatment($doctor, $patient, daysAgo: 15, case: $case);
+
+            // 6) Closed, on the fresh case's patient → patient page shows open + closed together.
+            $case = $this->makeCase($doctor, $freshPatient, $titles[5], CaseStatus::Closed, daysAgo: 90, notes: 'Tedavi tamamlandı, tırnak sağlıklı uzuyor.');
+            $case->update(['closed_at' => $this->dayUtc(14)]);
+            $this->log($case, CaseStatus::Open, CaseStatus::Closed, daysAgo: 14, by: $doctor->user);
+            $this->makeTreatment($doctor, $freshPatient, daysAgo: 80, case: $case);
+            $this->makeTreatment($doctor, $freshPatient, daysAgo: 50, case: $case);
+        }
+
+        $firstDoctor = $doctors[0];
+        $secondDoctor = $doctors->count() > 1 ? $doctors[1] : $doctors[0];
+
+        // Closed case that still carries a follow-up reminder (allowed by the domain rules).
+        $patient = $patients[$p++];
+        $case = $this->makeCase($firstDoctor, $patient, 'Tırnak Protezi Uygulaması', CaseStatus::Closed, daysAgo: 70);
+        $case->update([
+            'closed_at' => $this->dayUtc(10),
+            'follow_up_date' => Carbon::today($this->clinic->timezone)->addDays(30),
+            'follow_up_note' => 'Protez kontrolü için 1 ay sonra hatırlat.',
+        ]);
+        $this->log($case, CaseStatus::Open, CaseStatus::Closed, daysAgo: 10, by: $firstDoctor->user);
+        $this->makeTreatment($firstDoctor, $patient, daysAgo: 65, case: $case);
+
+        // Open case with NO treatments yet — empty treatments list + linkable ungrouped ones.
+        $patient = $patients[$p++];
+        $this->makeCase($firstDoctor, $patient, 'Ayak Tabanı Ağrısı Değerlendirmesi', CaseStatus::Open, daysAgo: 2);
+        $this->makeTreatment($firstDoctor, $patient, daysAgo: 12);
+
+        // Case-less patient with ungrouped treatments from TWO doctors → the patient-page
+        // "create case" flow must split the selection by doctor.
+        $patient = $patients[$p++];
+        $this->makeTreatment($firstDoctor, $patient, daysAgo: 9);
+        $this->makeTreatment($firstDoctor, $patient, daysAgo: 18);
+        $this->makeTreatment($secondDoctor, $patient, daysAgo: 5);
+
+        // Case-less patient with a single doctor's ungrouped treatments.
+        $patient = $patients[$p++];
+        $this->makeTreatment($secondDoctor, $patient, daysAgo: 6);
+        $this->makeTreatment($secondDoctor, $patient, daysAgo: 20);
+    }
+
+    private function makeCase(Doctor $doctor, Patient $patient, string $title, CaseStatus $status, int $daysAgo, ?string $notes = null): CaseRecord
+    {
+        $case = CaseRecord::create([
+            'clinic_id' => $this->clinic->id,
+            'patient_id' => $patient->id,
+            'doctor_id' => $doctor->id,
+            'vertical_id' => $this->clinic->vertical_id,
+            'title' => $title,
+            'status' => $status,
+            'notes' => $notes,
+            'opened_at' => $this->dayUtc($daysAgo),
+        ]);
+
+        $this->log($case, null, CaseStatus::Open, $daysAgo, by: $doctor->user);
+
+        return $case;
+    }
+
+    /**
+     * A completed past appointment + treatment with 1–2 snapshot-priced service lines.
+     * Linked to a case when given (also syncing appointments.case_id, like the app does).
+     */
+    private function makeTreatment(Doctor $doctor, Patient $patient, int $daysAgo, ?CaseRecord $case = null): Treatment
+    {
+        $startsAt = $this->dayUtc($daysAgo, hour: fake()->numberBetween(9, 16), minute: fake()->randomElement([0, 30]));
+        $endsAt = $startsAt->copy()->addMinutes(30);
+
+        $appointment = Appointment::create([
+            'clinic_id' => $this->clinic->id,
+            'patient_id' => $patient->id,
+            'doctor_id' => $doctor->id,
+            'case_id' => $case?->id,
+            'service_id' => fake()->randomElement($this->serviceIds),
+            'starts_at' => $startsAt,
+            'ends_at' => $endsAt,
+            'status' => AppointmentStatus::Completed,
+            'created_by' => $this->owner->id,
+        ]);
+
+        $detail = PodiatryTreatmentDetail::create([]);
+
+        $treatment = Treatment::create([
+            'clinic_id' => $this->clinic->id,
+            'appointment_id' => $appointment->id,
+            'patient_id' => $patient->id,
+            'doctor_id' => $doctor->id,
+            'case_id' => $case?->id,
+            'details_type' => 'podiatry',
+            'details_id' => $detail->id,
+            'status' => TreatmentStatus::Completed,
+            'completed_at' => $endsAt,
+            'created_by' => $doctor->user_id,
+        ]);
+
+        $subtotal = 0.0;
+
+        foreach (fake()->randomElements($this->serviceIds, fake()->numberBetween(1, 2)) as $order => $serviceId) {
+            $service = Service::withoutGlobalScopes()->find($serviceId);
+            $quantity = fake()->numberBetween(1, 2);
+            $discount = fake()->boolean(20) ? 50.0 : 0.0;
+            $lineSubtotal = max(0, $quantity * (float) $service->price - $discount);
+
+            TreatmentServiceLine::create([
+                'treatment_id' => $treatment->id,
+                'service_id' => $serviceId,
+                'quantity' => $quantity,
+                'unit_price' => $service->price,
+                'discount_amount' => $discount,
+                'subtotal' => $lineSubtotal,
+                'sort_order' => $order,
+            ]);
+
+            $subtotal += $lineSubtotal;
+        }
+
+        $treatment->update([
+            'subtotal_amount' => $subtotal,
+            'discount_amount' => 0,
+            'total_amount' => $subtotal,
+        ]);
+
+        return $treatment;
+    }
+
+    private function log(CaseRecord $case, ?CaseStatus $from, CaseStatus $to, int $daysAgo, User $by): void
+    {
+        StatusLog::create([
+            'clinic_id' => $this->clinic->id,
+            'loggable_type' => $case->getMorphClass(),
+            'loggable_id' => $case->id,
+            'from_status' => $from?->value,
+            'to_status' => $to->value,
+            'transitioned_at' => $this->dayUtc($daysAgo),
+            'by_user_id' => $by->id,
+        ]);
+    }
+
+    /** Clinic-local moment N days back, shifted off weekends, stored as UTC. */
+    private function dayUtc(int $daysAgo, int $hour = 10, int $minute = 0): Carbon
+    {
+        $day = Carbon::today($this->clinic->timezone)->subDays($daysAgo);
+
+        while ($day->isWeekend()) {
+            $day->subDay();
+        }
+
+        return $day->setTime($hour, $minute)->utc();
+    }
+}

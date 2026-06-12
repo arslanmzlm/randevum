@@ -303,6 +303,11 @@ return [
         'follow_up.occurrences.*.duration_minutes' => 'duration',
         'follow_up.occurrences.*.appointment_type_id' => 'appointment type',
         'follow_up.service_id' => 'follow-up service',
+        // cases
+        'follow_up_date' => 'follow-up date',
+        'follow_up_note' => 'follow-up note',
+        'treatment_ids' => 'treatments',
+        'treatment_ids.*' => 'treatment',
     ],
 
 ];

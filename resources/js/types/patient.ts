@@ -1,3 +1,4 @@
+import type { PatientCaseItem } from '@/types/case';
 import type { Paginated, TableState } from '@/types/table';
 import type { PatientTreatmentHistoryItem } from '@/types/treatment';
 
@@ -71,6 +72,10 @@ export type RestorablePatient = {
 export type PatientShowProps = {
     patient: Patient;
     treatments: PatientTreatmentHistoryItem[];
+    /** The patient's cases (own/all scoped); open vs closed split client-side. */
+    cases: PatientCaseItem[];
+    /** The user's own doctors.id; gates the retrospective-linking controls to own treatments. */
+    ownDoctorId: number | null;
 };
 
 /** Payload for the inline patient-level note quick-edit endpoint. */

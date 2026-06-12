@@ -60,7 +60,10 @@ it('grants the owner role the full clinic + doctor + service + product + patient
             'treatments.viewAll',
             'treatments.create',
             'transactions.create',
+            'cases.viewAny',
+            'cases.viewAll',
             'cases.create',
+            'cases.update',
         ]);
 });
 
@@ -107,6 +110,10 @@ it('grants the manager role full management except clinic and self-create', func
             'treatments.viewAll',
             'treatments.create',
             'transactions.create',
+            'cases.viewAny',
+            'cases.viewAll',
+            'cases.create',
+            'cases.update',
         ]);
 });
 
@@ -131,7 +138,9 @@ it('grants the doctor role read access to catalog and full patient management', 
             'treatments.viewAny',
             'treatments.create',
             'transactions.create',
+            'cases.viewAny',
             'cases.create',
+            'cases.update',
         ]);
 });
 
@@ -159,7 +168,7 @@ it('grants receptionist full patient management and doctor list access', functio
         ]);
 });
 
-it('grants assistant read-only access to doctors, patients, and availability', function (): void {
+it('grants assistant read-only access to doctors, patients, availability, and cases', function (): void {
     expect(Role::findByName('assistant', 'web')->permissions->pluck('name')->all())
         ->toEqualCanonicalizing([
             'doctors.viewAny',
@@ -171,6 +180,8 @@ it('grants assistant read-only access to doctors, patients, and availability', f
             'treatments.viewAny',
             'treatments.viewAll',
             'treatments.create',
+            'cases.viewAny',
+            'cases.viewAll',
         ]);
 });
 

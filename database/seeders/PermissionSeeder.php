@@ -72,8 +72,16 @@ class PermissionSeeder extends Seeder
         'treatments.create' => ['owner', 'manager', 'doctor', 'assistant'],
         // Payment recording — exercised inside Process submit; fully exposed by 1.22.
         'transactions.create' => ['owner', 'manager', 'doctor', 'receptionist'],
-        // Cases — creation only; full management UI is 1.11.
-        'cases.create' => ['owner', 'doctor'],
+        // Cases
+        // Open the case list.
+        'cases.viewAny' => ['owner', 'manager', 'doctor', 'assistant'],
+        // See every doctor's cases (absent → scoped to own doctor; assistant has no doctors row
+        // so needs viewAll or the list would always be empty).
+        'cases.viewAll' => ['owner', 'manager', 'assistant'],
+        // Create a new case (also used to link treatments to a new case).
+        'cases.create' => ['owner', 'manager', 'doctor'],
+        // Mutate any case the user can view (status, notes, follow-up, title, link treatments).
+        'cases.update' => ['owner', 'manager', 'doctor'],
     ];
 
     public function run(): void

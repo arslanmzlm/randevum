@@ -191,5 +191,9 @@ export type PatientTreatmentHistoryItem = {
     title: string | null;
     total_amount: string;
     doctor_name: string;
+    /** Owning doctor — lets the FE identify which ungrouped treatments a user can group. */
+    doctor_id: number;
+    /** null ⇒ ungrouped (eligible for retrospective case linking). */
+    case_id: number | null;
     case_title: string | null;
 };

@@ -24,8 +24,9 @@ class DatabaseSeeder extends Seeder
             PodiatryServicesSeeder::class,
             PodiatryProductsSeeder::class,
             PodiatryAppointmentTypesSeeder::class,
-            // Last: needs the demo clinic/doctors/patients AND the vertical's services to exist.
+            // Last: need the demo clinic/doctors/patients AND the vertical's services to exist.
             DemoAppointmentsSeeder::class,
+            DemoCasesSeeder::class,
         ]);
     }
 }

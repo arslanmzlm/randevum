@@ -595,13 +595,13 @@ it('rejects payment rows from an assistant who lacks transactions.create', funct
         ->assertSessionHasErrors('payments');
 });
 
-it('rejects case_mode=new from a manager who lacks cases.create', function (): void {
+it('rejects case_mode=new from a receptionist who lacks cases.create', function (): void {
     ['clinic' => $clinic, 'treatment' => $treatment] = ctSetup();
 
-    $manager = User::factory()->create();
-    ctRole($manager, 'manager', $clinic->id);
+    $receptionist = User::factory()->create();
+    ctRole($receptionist, 'receptionist', $clinic->id);
 
-    $this->actingAs($manager)
+    $this->actingAs($receptionist)
         ->put(route('treatments.complete', $treatment), ctPayload([
             'case_mode' => 'new',
             'new_case_title' => 'Test Vaka',
