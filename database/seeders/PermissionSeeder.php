@@ -74,6 +74,8 @@ class PermissionSeeder extends Seeder
         'transactions.create' => ['owner', 'manager', 'doctor', 'receptionist'],
         // Balance / transaction list display — hidden from assistant (money figures).
         'transactions.viewAny' => ['owner', 'manager', 'doctor', 'receptionist'],
+        // Refund a payment — owner only per data-model decision (sadece owner iade başlatabilir).
+        'transactions.refund' => ['owner'],
         // Cases
         // Open the case list.
         'cases.viewAny' => ['owner', 'manager', 'doctor', 'assistant'],

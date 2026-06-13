@@ -9,6 +9,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
 /**
  * Full treatment shape for the Show page.
  *
+ * The gated transaction list is injected by the controller from BalanceReaderContract
+ * (Billing owns transactions); this resource only derives the lightweight paid_total sum.
+ *
  * @mixin Treatment
  */
 class TreatmentShowResource extends JsonResource
@@ -69,21 +72,6 @@ class TreatmentShowResource extends JsonResource
             'total_amount' => $this->total_amount,
             'paid_total' => (string) $paidTotal,
         ];
-
-        if ($request->user()?->can('transactions.viewAny')) {
-            $data['transactions'] = $this->transactions
-                ->sortByDesc(fn ($tx) => [$tx->paid_at->timestamp, $tx->id])
-                ->values()
-                ->map(fn ($tx) => [
-                    'id' => $tx->id,
-                    'paid_at' => $tx->paid_at->toIso8601String(),
-                    'payment_method' => $tx->payment_method->value,
-                    'amount' => (string) $tx->amount,
-                    'note' => $tx->note,
-                    'status' => $tx->status->value,
-                    'treatment_id' => $tx->treatment_id,
-                ])->all();
-        }
 
         return $data;
     }

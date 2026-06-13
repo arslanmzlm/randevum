@@ -20,10 +20,13 @@ return new class extends Migration
             $table->timestampTz('paid_at');
             $table->text('note')->nullable();
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+            // Links a refund counter-entry back to the payment it reverses; null on normal payments.
+            $table->foreignId('original_transaction_id')->nullable()->constrained('transactions')->nullOnDelete();
             $table->timestampsTz();
 
             $table->index(['clinic_id', 'treatment_id']);
             $table->index(['clinic_id', 'patient_id', 'paid_at']);
+            $table->index(['clinic_id', 'original_transaction_id']);
         });
     }
 

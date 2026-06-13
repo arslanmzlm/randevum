@@ -61,6 +61,7 @@ it('grants the owner role the full clinic + doctor + service + product + patient
             'treatments.create',
             'transactions.create',
             'transactions.viewAny',
+            'transactions.refund',
             'cases.viewAny',
             'cases.viewAll',
             'cases.create',

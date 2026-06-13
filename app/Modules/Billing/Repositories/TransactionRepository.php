@@ -34,6 +34,19 @@ class TransactionRepository
     }
 
     /**
+     * Total amount already refunded against a given original transaction.
+     * Counter-entries carry negative amounts; this returns the positive cumulative total refunded.
+     * Returns a 2-dp decimal string suitable for bcmath comparisons.
+     */
+    public function refundedTotalFor(int $originalId): string
+    {
+        $total = (string) Transaction::where('original_transaction_id', $originalId)->sum('amount');
+
+        // SUM of negative amounts is ≤ 0; negate to get the positive refunded figure.
+        return bcsub('0', $total ?: '0', 2);
+    }
+
+    /**
      * All transactions for a patient in the active clinic, newest first.
      * BelongsToClinic global scope provides tenant isolation automatically.
      *
@@ -42,6 +55,20 @@ class TransactionRepository
     public function forPatient(int $patientId): Collection
     {
         return Transaction::where('patient_id', $patientId)
+            ->orderByDesc('paid_at')
+            ->orderByDesc('id')
+            ->get();
+    }
+
+    /**
+     * All transactions for a treatment in the active clinic, newest first.
+     * BelongsToClinic global scope provides tenant isolation automatically.
+     *
+     * @return Collection<int, Transaction>
+     */
+    public function forTreatment(int $treatmentId): Collection
+    {
+        return Transaction::where('treatment_id', $treatmentId)
             ->orderByDesc('paid_at')
             ->orderByDesc('id')
             ->get();

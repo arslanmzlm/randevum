@@ -16,6 +16,10 @@ export type TransactionItem = {
     status: TransactionStatus;
     /** null ⇒ standalone payment (not tied to a treatment). */
     treatment_id: number | null;
+    /** Set only on refund counter-entries → the original payment they reverse; null otherwise. */
+    original_transaction_id: number | null;
+    /** Decimal string — remaining refundable for an original payment; `"0"` for counter-entries and fully-refunded rows. */
+    refundable_amount: string;
 };
 
 /**

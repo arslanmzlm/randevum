@@ -28,4 +28,8 @@ export type CaseStatus = 'open' | 'suspended' | 'follow_up' | 'closed';
 export type PaymentMethod = 'cash' | 'card' | 'transfer' | 'cheque';
 
 /** Mirrors `App\Enums\TransactionStatus`; the FE branches on it for refund styling (1.28). */
-export type TransactionStatus = 'pending' | 'completed' | 'refunded';
+export type TransactionStatus =
+    | 'pending'
+    | 'completed'
+    | 'partially_refunded'
+    | 'refunded';

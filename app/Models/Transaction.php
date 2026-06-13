@@ -9,6 +9,7 @@ use Database\Factories\TransactionFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Transaction extends Model
@@ -23,6 +24,7 @@ class Transaction extends Model
         'clinic_id',
         'patient_id',
         'treatment_id',
+        'original_transaction_id',
         'amount',
         'payment_method',
         'status',
@@ -40,6 +42,7 @@ class Transaction extends Model
             'clinic_id' => 'integer',
             'patient_id' => 'integer',
             'treatment_id' => 'integer',
+            'original_transaction_id' => 'integer',
             'amount' => 'decimal:2',
             'payment_method' => PaymentMethod::class,
             'status' => TransactionStatus::class,
@@ -78,6 +81,26 @@ class Transaction extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * The payment this counter-entry reverses (null for normal payments).
+     *
+     * @return BelongsTo<Transaction, $this>
+     */
+    public function originalTransaction(): BelongsTo
+    {
+        return $this->belongsTo(Transaction::class, 'original_transaction_id');
+    }
+
+    /**
+     * Refund counter-entries that reverse this payment.
+     *
+     * @return HasMany<Transaction, $this>
+     */
+    public function refunds(): HasMany
+    {
+        return $this->hasMany(Transaction::class, 'original_transaction_id');
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Models\Transaction;
 use App\Models\User;
 
 class TransactionPolicy
@@ -13,5 +14,10 @@ class TransactionPolicy
     public function create(User $user): bool
     {
         return $user->can('transactions.create');
+    }
+
+    public function refund(User $user, Transaction $transaction): bool
+    {
+        return $user->can('transactions.refund');
     }
 }

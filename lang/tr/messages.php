@@ -55,6 +55,10 @@ return [
         'recorded' => 'Ödeme kaydedildi.',
     ],
 
+    'refund' => [
+        'recorded' => 'İade kaydedildi.',
+    ],
+
     'doctor' => [
         'profile_created' => 'Doktor profili oluşturuldu.',
         'profile_updated' => 'Doktor profili güncellendi.',

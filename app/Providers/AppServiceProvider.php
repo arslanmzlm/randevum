@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Policies\AppointmentPolicy;
 use App\Policies\CasePolicy;
 use App\Policies\ClinicPolicy;
+use App\Policies\TransactionPolicy;
 use App\Policies\TreatmentPolicy;
 use App\Support\ClinicContext;
 use Carbon\CarbonImmutable;
@@ -52,6 +53,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Appointment::class, AppointmentPolicy::class);
         Gate::policy(Treatment::class, TreatmentPolicy::class);
         Gate::policy(CaseRecord::class, CasePolicy::class);
+        Gate::policy(Transaction::class, TransactionPolicy::class);
     }
 
     /**

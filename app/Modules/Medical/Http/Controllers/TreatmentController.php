@@ -9,6 +9,7 @@ use App\Models\Clinic;
 use App\Models\Product;
 use App\Models\Service;
 use App\Models\Treatment;
+use App\Modules\Billing\Contracts\BalanceReaderContract;
 use App\Modules\Core\Support\Toast;
 use App\Modules\Medical\Http\Requests\CompleteTreatmentRequest;
 use App\Modules\Medical\Http\Resources\TreatmentProcessResource;
@@ -27,6 +28,7 @@ class TreatmentController extends Controller
         private TreatmentService $treatmentService,
         private CaseRepository $caseRepository,
         private ClinicContext $clinicContext,
+        private BalanceReaderContract $balanceReader,
     ) {}
 
     /**
@@ -146,7 +148,7 @@ class TreatmentController extends Controller
      * GET /treatments/{treatment}
      * Show page for a completed (or any status) treatment.
      */
-    public function show(Treatment $treatment): Response
+    public function show(Request $request, Treatment $treatment): Response
     {
         $this->authorize('view', $treatment);
 
@@ -161,8 +163,15 @@ class TreatmentController extends Controller
             'transactions',
         ]);
 
+        $data = (new TreatmentShowResource($treatment))->resolve();
+
+        // Transaction list is Billing-owned; pull it through the contract, gated like the patient page.
+        if ($request->user()?->can('transactions.viewAny')) {
+            $data['transactions'] = $this->balanceReader->transactionsForTreatment($treatment->id);
+        }
+
         return Inertia::render('treatments/Show', [
-            'treatment' => (new TreatmentShowResource($treatment))->resolve(),
+            'treatment' => $data,
         ]);
     }
 }

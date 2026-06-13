@@ -55,6 +55,10 @@ return [
         'recorded' => 'Payment recorded.',
     ],
 
+    'refund' => [
+        'recorded' => 'Refund recorded.',
+    ],
+
     'doctor' => [
         'profile_created' => 'Doctor profile created.',
         'profile_updated' => 'Doctor profile updated.',

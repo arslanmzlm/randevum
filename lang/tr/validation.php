@@ -126,7 +126,7 @@ return [
         'default_duration_minutes' => 'Varsayılan süre',
         // appointments
         'appointment_type_id' => 'Randevu türü',
-        'reason' => 'İptal nedeni',
+        'reason' => 'Neden',
         'start_date' => 'Başlangıç tarihi',
         'end_date' => 'Bitiş tarihi',
         'patient_id' => 'Hasta',

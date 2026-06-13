@@ -925,8 +925,26 @@ export const tr = {
             method: 'Yöntem',
             treatment: 'Tedavi',
             amount: 'Tutar',
+            status: 'Durum',
             note: 'Not',
+            actions: 'İşlemler',
         },
+    },
+    transaction: {
+        status: {
+            pending: 'Beklemede',
+            completed: 'Tamamlandı',
+            partially_refunded: 'Kısmen iade edildi',
+            refunded: 'İade edildi',
+        },
+    },
+    refund: {
+        title: 'İade Yap',
+        button: 'İade et',
+        amount_label: 'İade tutarı',
+        reason_label: 'İade nedeni',
+        submit: 'İadeyi kaydet',
+        max_hint: 'En çok {amount}',
     },
     password_reminder: {
         title: 'Şifrenizi güncelleyin',

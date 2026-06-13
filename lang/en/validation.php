@@ -255,7 +255,7 @@ return [
         'default_duration_minutes' => 'default duration',
         // appointments
         'appointment_type_id' => 'appointment type',
-        'reason' => 'cancellation reason',
+        'reason' => 'reason',
         'start_date' => 'start date',
         'end_date' => 'end date',
         'patient_id' => 'patient',

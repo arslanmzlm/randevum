@@ -28,7 +28,28 @@ interface BalanceReaderContract
      *   note: string|null,
      *   status: string,
      *   treatment_id: int|null,
+     *   original_transaction_id: int|null,
+     *   refundable_amount: string,
      * }>
      */
     public function transactionsForPatient(int $patientId): array;
+
+    /**
+     * All transactions for a treatment in the active clinic, newest first (paid_at DESC, id DESC).
+     * Same plain-array shape as {@see transactionsForPatient()} so no Billing models leak across
+     * the boundary; Medical's treatment Show reads this instead of touching Transaction directly.
+     *
+     * @return array<int, array{
+     *   id: int,
+     *   paid_at: string,
+     *   payment_method: string,
+     *   amount: string,
+     *   note: string|null,
+     *   status: string,
+     *   treatment_id: int|null,
+     *   original_transaction_id: int|null,
+     *   refundable_amount: string,
+     * }>
+     */
+    public function transactionsForTreatment(int $treatmentId): array;
 }
