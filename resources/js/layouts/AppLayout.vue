@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Link, router, usePage } from '@inertiajs/vue3';
+import { router, usePage } from '@inertiajs/vue3';
 import {
     IconArrowsMaximize,
     IconArrowsMinimize,
@@ -19,12 +19,21 @@ import {
     IconUserCircle,
     IconUsers,
 } from '@tabler/icons-vue';
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import {
+    computed,
+    nextTick,
+    onBeforeUnmount,
+    onMounted,
+    ref,
+    watchEffect,
+} from 'vue';
 import { useI18n } from 'vue-i18n';
+import AppSidebar from '@/components/app/AppSidebar.vue';
+import SidebarToggle from '@/components/app/SidebarToggle.vue';
 import AppToaster from '@/components/AppToaster.vue';
-import PatientSearchSelect from '@/components/PatientSearchSelect.vue';
 import { useCan } from '@/composables/useCan';
 import { useContentWidth } from '@/composables/useContentWidth';
+import { useSidebar } from '@/composables/useSidebar';
 import { account, dashboard, logout } from '@/routes';
 import { index as appointmentTypesIndex } from '@/routes/appointment-types';
 import {
@@ -39,7 +48,14 @@ import { index as patientsIndex, show as patientShow } from '@/routes/patients';
 import { index as productsIndex } from '@/routes/products';
 import { index as availabilityIndex } from '@/routes/schedule-exceptions';
 import { index as servicesIndex } from '@/routes/services';
+import type { NavItem } from '@/types/nav';
 import type { PatientSearchResult } from '@/types/patient';
+
+// Per-page desktop sidebar intent, set by pages via `setLayoutProps({ sidebar })`.
+const props = withDefaults(
+    defineProps<{ sidebar?: 'default' | 'collapsed' | 'hidden' }>(),
+    { sidebar: 'default' },
+);
 
 const { t } = useI18n();
 const page = usePage();
@@ -51,6 +67,20 @@ const { can } = useCan();
 const canViewPatients = computed(() => can('patients.viewAny'));
 const clinic = computed(() => page.props.activeClinic ?? null);
 const { width: contentWidth, toggle: toggleWidth } = useContentWidth();
+const { collapsed, mobileOpen, closeMobile, expand, setDesktopHidden } =
+    useSidebar();
+
+// 'hidden' page → no desktop sidebar; 'collapsed' → forced rail; otherwise the
+// user's stored preference. The drawer covers the off-canvas case in every mode.
+const desktopSidebarHidden = computed(() => props.sidebar === 'hidden');
+const railCollapsed = computed(() =>
+    props.sidebar === 'collapsed' ? true : collapsed.value,
+);
+
+// Keep the composable in step so the toggle drives the drawer (not the rail) on
+// a `hidden` page even at desktop widths.
+watchEffect(() => setDesktopHidden(desktopSidebarHidden.value));
+
 const userName = computed(() => {
     const u = user.value;
 
@@ -65,7 +95,7 @@ const userName = computed(() => {
 
 // Only routes that already exist, gated by capability (a doctor sees neither the
 // clinic profile nor the doctors management entry). Features add their own as they land.
-const navItems = computed(() => [
+const navItems = computed<NavItem[]>(() => [
     { label: t('nav.dashboard'), href: dashboard().url, icon: IconHome },
     ...(can('appointments.viewAny')
         ? [
@@ -169,7 +199,7 @@ const navItems = computed(() => [
 ]);
 
 // Account/secondary items pinned to the bottom, above logout.
-const bottomNavItems = computed(() => [
+const bottomNavItems = computed<NavItem[]>(() => [
     { label: t('nav.account'), href: account().url, icon: IconUserCircle },
 ]);
 
@@ -203,41 +233,30 @@ function toggleUserMenu(event: Event): void {
     userMenu.value?.toggle(event);
 }
 
-function isActive(href: string): boolean {
-    return page.url === href || page.url.startsWith(`${href}/`);
-}
-
-function linkClass(href: string): string[] {
-    return [
-        'flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-colors',
-        isActive(href)
-            ? 'bg-primary-50 text-primary-700'
-            : 'text-surface-500 hover:bg-primary-50 hover:text-primary-700',
-    ];
-}
-
 function doLogout(): void {
     router.post(logout().url);
 }
 
-const patientSearch = ref<{ focus: () => void } | null>(null);
-
 function goToPatient(patient: PatientSearchResult): void {
+    closeMobile();
     router.visit(patientShow(patient.id).url);
 }
 
-// Ctrl/Cmd+K focuses the sidebar patient search from anywhere in the shell.
+const desktopSidebar = ref<{ focusSearch: () => void } | null>(null);
+
+// Ctrl/Cmd+K reveals the rail (if collapsed) then focuses the sidebar search.
 function onSearchShortcut(event: KeyboardEvent): void {
     if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'k') {
         return;
     }
 
-    if (!canViewPatients.value) {
+    if (!canViewPatients.value || desktopSidebarHidden.value) {
         return;
     }
 
     event.preventDefault();
-    patientSearch.value?.focus();
+    expand();
+    nextTick(() => desktopSidebar.value?.focusSearch());
 }
 
 // One-time, dismissible nudge to change the admin-set password on first-ever
@@ -298,72 +317,48 @@ function goToPasswordChange(): void {
             </template>
         </Dialog>
 
-        <aside
-            class="hidden w-64 shrink-0 flex-col border-r border-surface-200 bg-surface-0 lg:flex"
+        <Drawer
+            v-model:visible="mobileOpen"
+            position="left"
+            class="w-72"
+            :pt="{ content: { class: 'p-0' }, header: { class: 'hidden' } }"
         >
-            <div class="flex h-16 shrink-0 items-center gap-3 px-6">
-                <img
-                    v-if="clinic?.logo_url"
-                    :src="clinic.logo_url"
-                    :alt="clinic.name"
-                    class="size-9 shrink-0 rounded-lg object-cover"
-                />
-                <span
-                    class="truncate text-lg font-semibold"
-                    :class="clinic ? 'text-surface-900' : 'text-brand'"
-                >
-                    {{ clinic?.name ?? t('auth.layout.brand') }}
-                </span>
-            </div>
+            <AppSidebar
+                :collapsed="false"
+                :clinic="clinic"
+                :nav-items="navItems"
+                :bottom-nav-items="bottomNavItems"
+                :can-view-patients="canViewPatients"
+                @navigate="closeMobile"
+                @select-patient="goToPatient"
+                @logout="doLogout"
+            />
+        </Drawer>
 
-            <div v-if="canViewPatients" class="px-3 pb-2">
-                <PatientSearchSelect
-                    ref="patientSearch"
-                    class="w-full"
-                    @select="goToPatient"
-                />
-            </div>
-
-            <nav class="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-4">
-                <Link
-                    v-for="item in navItems"
-                    :key="item.href"
-                    :href="item.href"
-                    :class="linkClass(item.href)"
-                >
-                    <component :is="item.icon" class="size-5 shrink-0" />
-                    {{ item.label }}
-                </Link>
-            </nav>
-
-            <div
-                class="flex shrink-0 flex-col gap-1 border-t border-surface-200 p-3"
-            >
-                <Link
-                    v-for="item in bottomNavItems"
-                    :key="item.href"
-                    :href="item.href"
-                    :class="linkClass(item.href)"
-                >
-                    <component :is="item.icon" class="size-5 shrink-0" />
-                    {{ item.label }}
-                </Link>
-
-                <button
-                    type="button"
-                    class="flex w-full cursor-pointer items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-surface-500 transition-colors hover:bg-surface-100 hover:text-surface-700"
-                    @click="doLogout"
-                >
-                    <IconLogout class="size-5 shrink-0" />
-                    {{ t('auth.logout') }}
-                </button>
-            </div>
+        <aside
+            v-if="!desktopSidebarHidden"
+            class="hidden shrink-0 border-r border-surface-200 transition-[width] lg:flex"
+            :class="railCollapsed ? 'lg:w-18' : 'lg:w-64'"
+        >
+            <AppSidebar
+                ref="desktopSidebar"
+                class="w-full"
+                :collapsed="railCollapsed"
+                :clinic="clinic"
+                :nav-items="navItems"
+                :bottom-nav-items="bottomNavItems"
+                :can-view-patients="canViewPatients"
+                @select-patient="goToPatient"
+                @logout="doLogout"
+            />
         </aside>
 
         <div class="flex min-w-0 flex-1 flex-col overflow-hidden">
             <header
-                class="flex h-16 shrink-0 items-center justify-end gap-2 border-b border-surface-200 bg-surface-0 px-6"
+                class="flex h-16 shrink-0 items-center justify-between gap-2 border-b border-surface-200 bg-surface-0 px-6"
             >
+                <SidebarToggle />
+
                 <div class="flex shrink-0 items-center gap-1">
                     <Button
                         type="button"

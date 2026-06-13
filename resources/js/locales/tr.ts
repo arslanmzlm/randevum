@@ -9,6 +9,12 @@ export const tr = {
             expand: 'Tam genişlik',
             collapse: 'Ortalı görünüm',
         },
+        sidebar: {
+            collapse: 'Menüyü daralt',
+            expand: 'Menüyü genişlet',
+            open: 'Menüyü aç',
+            close: 'Menüyü kapat',
+        },
     },
     nav: {
         dashboard: 'Ana sayfa',

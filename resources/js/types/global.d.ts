@@ -1,3 +1,4 @@
+import type { SidebarMode } from '@/composables/useSidebar';
 import type { Auth } from '@/types/auth';
 import type { SharedClinic } from '@/types/clinic';
 
@@ -20,8 +21,10 @@ declare module '@inertiajs/core' {
             name: string;
             auth: Auth;
             activeClinic: SharedClinic | null;
-            sidebarOpen: boolean;
             [key: string]: unknown;
+        };
+        layoutProps: {
+            sidebar: SidebarMode;
         };
     }
 }
