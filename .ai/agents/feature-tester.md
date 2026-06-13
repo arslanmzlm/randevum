@@ -26,6 +26,15 @@ works. Read the whole run-file first — the *Approved spec* test list and the `
   - **Authorization** — for any feature with policies, seed `PermissionSeeder` alongside
     `RoleSeeder` in `beforeEach`, and cover each relevant role's ALLOW *and* DENY (e.g. owner vs
     manager vs doctor: who's permitted, who gets 403), plus the "own-record" path where it exists.
+  - **UI gating proven HERE at the HTTP layer, never in a browser test** — every
+    permission-gated control and every status-driven action the frontend shows/hides must be
+    proven in THIS phase. Assert BOTH sides: the server enforcement (allow / 403 / 422) AND the
+    Inertia **prop contract** the frontend gates on — the precise visibility/ownership/scoping
+    props (`canEditTitle`, `ownDoctorId`, own-scoped vs viewAll list contents), via
+    `assertInertia(...)`. The prop contract is what survives a UI rewrite (markup changes, the
+    contract does not), so this coverage does not get rewritten every time the page is restyled.
+    Do NOT defer visibility/role gating to a browser test — that is the brittle, repeatedly-rewritten
+    cost we are avoiding.
 - Cover state transitions, validation (FormRequest rules), and the service-layer business logic
   (edit/delete windows, balance derivation, stock side-effects) where the feature touches them.
 - Do **not** write browser tests here (the verify phase owns those).

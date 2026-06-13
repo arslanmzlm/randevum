@@ -10,6 +10,15 @@ browser and leave a screenshot for the human to glance at — you do **not** ask
 
 Read the run-file first; the *Approved spec* "Tests" note names the page to smoke.
 
+**Scope — keep the browser out of gating.** A browser test here is a SMOKE (renders, no JS errors,
+non-empty body, screenshot). Do NOT test role/permission visibility or which buttons a status shows
+in the browser — that gating is proven at the HTTP layer in the tests phase (prop contracts + 403),
+which survives UI rewrites. Go beyond a plain smoke ONLY when the page has genuine **client-side JS
+logic** worth exercising in a real browser — calendar geometry/overlap, multi-step client-side form
+validation that branches before any server round-trip, conditional fields that show/hide from other
+field values. A form that just posts and renders server-returned validation errors is NOT
+client-side logic — its rules already live in HTTP feature tests; don't re-prove them in a browser.
+
 ## First, load skills
 - Invoke **`pest-testing`** (browser-testing section).
 
