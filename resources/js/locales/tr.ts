@@ -800,6 +800,7 @@ export const tr = {
             completed_at: 'Tamamlanma',
             case: 'Vaka',
             paid: 'Ödenen',
+            remaining: 'Kalan',
         },
         confirm: {
             title: 'Tedaviyi tamamla',
@@ -908,6 +909,24 @@ export const tr = {
         no_treatment: 'Tedavi seçilmedi',
         remaining_hint: 'Kalan tutar: {amount}',
         success: 'Tahsilat kaydedildi.',
+    },
+    balance: {
+        section_title: 'Bakiye',
+        transactions_title: 'Ödemeler',
+        total: 'Toplam tutar',
+        paid: 'Ödenen',
+        remaining: 'Kalan bakiye',
+        credit: 'Alacak',
+        no_transactions: 'Henüz ödeme kaydı yok',
+        standalone: 'Bağımsız tahsilat',
+        view_treatment: 'Tedaviyi görüntüle',
+        columns: {
+            date: 'Tarih',
+            method: 'Yöntem',
+            treatment: 'Tedavi',
+            amount: 'Tutar',
+            note: 'Not',
+        },
     },
     password_reminder: {
         title: 'Şifrenizi güncelleyin',

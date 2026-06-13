@@ -1,3 +1,4 @@
+import type { PatientBalance, TransactionItem } from '@/types/balance';
 import type { PatientCaseItem } from '@/types/case';
 import type { AppointmentStatus } from '@/types/enums';
 import type { Paginated, TableState } from '@/types/table';
@@ -92,6 +93,10 @@ export type PatientShowProps = {
     appointments: PatientAppointmentItem[];
     /** The user's own doctors.id; gates the retrospective-linking controls to own treatments. */
     ownDoctorId: number | null;
+    /** Aggregate balance. Absent when the user lacks `transactions.viewAny` (server omits it). */
+    balance?: PatientBalance;
+    /** All the patient's transactions, newest first. Absent when denied (see `balance`). */
+    transactions?: TransactionItem[];
 };
 
 /** Payload for the inline patient-level note quick-edit endpoint. */

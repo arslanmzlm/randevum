@@ -21,7 +21,7 @@ class TreatmentShowResource extends JsonResource
         // Derive paid total from transactions — balance is never stored.
         $paidTotal = $this->transactions->sum('amount');
 
-        return [
+        $data = [
             'id' => $this->id,
             'status' => $this->status->value,
             'completed_at' => $this->completed_at?->toIso8601String(),
@@ -69,5 +69,22 @@ class TreatmentShowResource extends JsonResource
             'total_amount' => $this->total_amount,
             'paid_total' => (string) $paidTotal,
         ];
+
+        if ($request->user()?->can('transactions.viewAny')) {
+            $data['transactions'] = $this->transactions
+                ->sortByDesc(fn ($tx) => [$tx->paid_at->timestamp, $tx->id])
+                ->values()
+                ->map(fn ($tx) => [
+                    'id' => $tx->id,
+                    'paid_at' => $tx->paid_at->toIso8601String(),
+                    'payment_method' => $tx->payment_method->value,
+                    'amount' => (string) $tx->amount,
+                    'note' => $tx->note,
+                    'status' => $tx->status->value,
+                    'treatment_id' => $tx->treatment_id,
+                ])->all();
+        }
+
+        return $data;
     }
 }

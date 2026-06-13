@@ -1,5 +1,6 @@
 import type { InertiaForm } from '@inertiajs/vue3';
 import type { AppointmentTypeOption, WorkingHours } from '@/types/appointment';
+import type { TransactionItem } from '@/types/balance';
 import type { PaymentMethod, TreatmentStatus } from '@/types/enums';
 
 /** Active appointment type for the follow-up booking (duration resolves server-side). */
@@ -180,6 +181,9 @@ export type TreatmentShowProps = {
         discount_amount: string;
         total_amount: string;
         paid_total: string;
+        /** This treatment's transactions, newest first. Absent when the user lacks
+         *  `transactions.viewAny` (server omits it). */
+        transactions?: TransactionItem[];
     };
 };
 

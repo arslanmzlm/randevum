@@ -2,9 +2,11 @@
 
 namespace App\Modules\Medical\Http\Controllers;
 
+use App\Enums\TreatmentStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\Patient;
+use App\Modules\Billing\Contracts\BalanceReaderContract;
 use App\Modules\Core\Contracts\PatientAppointmentsContract;
 use App\Modules\Core\Support\Toast;
 use App\Modules\Medical\Exceptions\TrashedPhoneConflictException;
@@ -31,6 +33,7 @@ class PatientController extends Controller
         private TreatmentService $treatmentService,
         private CaseRepository $caseRepository,
         private PatientAppointmentsContract $patientAppointments,
+        private BalanceReaderContract $balanceReader,
         private ClinicContext $clinicContext,
     ) {}
 
@@ -91,18 +94,19 @@ class PatientController extends Controller
 
         $user = $request->user();
 
-        $treatments = $this->treatmentService->listForPatient($patient, $user)
-            ->map(fn ($t) => [
-                'id' => $t->id,
-                'completed_at' => $t->completed_at?->toIso8601String(),
-                'status' => $t->status->value,
-                'title' => $t->serviceLines->first()?->service?->name,
-                'total_amount' => $t->total_amount,
-                'doctor_name' => $t->doctor->display_name,
-                'doctor_id' => (int) $t->doctor_id,
-                'case_id' => $t->case_id !== null ? (int) $t->case_id : null,
-                'case_title' => $t->case?->title,
-            ]);
+        $treatmentCollection = $this->treatmentService->listForPatient($patient, $user);
+
+        $treatments = $treatmentCollection->map(fn ($t) => [
+            'id' => $t->id,
+            'completed_at' => $t->completed_at?->toIso8601String(),
+            'status' => $t->status->value,
+            'title' => $t->serviceLines->first()?->service?->name,
+            'total_amount' => $t->total_amount,
+            'doctor_name' => $t->doctor->display_name,
+            'doctor_id' => (int) $t->doctor_id,
+            'case_id' => $t->case_id !== null ? (int) $t->case_id : null,
+            'case_title' => $t->case?->title,
+        ]);
 
         $doctorId = $user->can('cases.viewAll') ? null : $user->doctor?->id;
 
@@ -133,13 +137,33 @@ class PatientController extends Controller
                 ->values()
             : collect();
 
-        return Inertia::render('patients/Show', [
+        $props = [
             'patient' => (new PatientResource($patient))->resolve(),
             'treatments' => $treatments,
             'cases' => $cases,
             'appointments' => $appointments,
             'ownDoctorId' => $user->doctor?->id,
-        ]);
+        ];
+
+        if ($user->can('transactions.viewAny')) {
+            // Total billed = sum of total_amount over the patient's Completed treatments.
+            // Scoped to what listForPatient returned (respects treatments.viewAll gate).
+            $total = $treatmentCollection
+                ->filter(fn ($t) => $t->status === TreatmentStatus::Completed)
+                ->reduce(fn ($carry, $t) => bcadd($carry, (string) $t->total_amount, 2), '0.00');
+
+            $paid = $this->balanceReader->paidTotalForPatient($patient->id);
+
+            $props['balance'] = [
+                'total' => $total,
+                'paid' => $paid,
+                'remaining' => bcsub($total, $paid, 2),
+            ];
+
+            $props['transactions'] = $this->balanceReader->transactionsForPatient($patient->id);
+        }
+
+        return Inertia::render('patients/Show', $props);
     }
 
     public function edit(Patient $patient): Response

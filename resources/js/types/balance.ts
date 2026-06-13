@@ -1,0 +1,29 @@
+import type { PaymentMethod, TransactionStatus } from '@/types/enums';
+
+/**
+ * One transaction (collection/refund) row — the backend↔frontend seam shared by both
+ * `treatments/Show` (treatment-bound) and `patients/Show` (all patient transactions).
+ * `amount` is a decimal string (negative ⇒ refund); `treatment_id` null ⇒ standalone payment.
+ */
+export type TransactionItem = {
+    id: number;
+    /** ISO 8601. */
+    paid_at: string;
+    payment_method: PaymentMethod;
+    /** Decimal string; may be negative for a refund. */
+    amount: string;
+    note: string | null;
+    status: TransactionStatus;
+    /** null ⇒ standalone payment (not tied to a treatment). */
+    treatment_id: number | null;
+};
+
+/**
+ * Aggregate patient balance — always derived server-side, never stored. `remaining` may be
+ * negative ⇒ the patient is in credit (overpaid). All values are decimal strings.
+ */
+export type PatientBalance = {
+    total: string;
+    paid: string;
+    remaining: string;
+};

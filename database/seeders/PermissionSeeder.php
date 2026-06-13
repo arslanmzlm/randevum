@@ -72,6 +72,8 @@ class PermissionSeeder extends Seeder
         'treatments.create' => ['owner', 'manager', 'doctor', 'assistant'],
         // Payment recording — exercised inside Process submit; fully exposed by 1.22.
         'transactions.create' => ['owner', 'manager', 'doctor', 'receptionist'],
+        // Balance / transaction list display — hidden from assistant (money figures).
+        'transactions.viewAny' => ['owner', 'manager', 'doctor', 'receptionist'],
         // Cases
         // Open the case list.
         'cases.viewAny' => ['owner', 'manager', 'doctor', 'assistant'],

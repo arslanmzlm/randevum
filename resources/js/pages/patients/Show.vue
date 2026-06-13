@@ -5,6 +5,7 @@ import {
     IconCalendarEvent,
     IconCash,
     IconChevronRight,
+    IconFolderOff,
     IconFolders,
     IconLink,
     IconMail,
@@ -23,6 +24,7 @@ import ButtonLink from '@/components/ButtonLink.vue';
 import CaseStatusTag from '@/components/CaseStatusTag.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import RecordPaymentDialog from '@/components/payments/RecordPaymentDialog.vue';
+import TransactionList from '@/components/payments/TransactionList.vue';
 import TreatmentStatusTag from '@/components/TreatmentStatusTag.vue';
 import { useCan } from '@/composables/useCan';
 import { useDateTime } from '@/composables/useDateTime';
@@ -53,6 +55,12 @@ const { formatMoney } = useMoney();
 const canManage = computed(() => can('patients.update'));
 const canEditNotes = computed(() => can('patients.note.update'));
 const canRecordPayment = computed(() => can('transactions.create'));
+const canViewBalance = computed(() => can('transactions.viewAny'));
+
+// A negative remaining means the patient overpaid — the clinic owes them (a credit).
+const remainingIsCredit = computed(
+    () => props.balance != null && Number(props.balance.remaining) < 0,
+);
 
 const showPaymentDialog = ref(false);
 
@@ -758,9 +766,12 @@ function submitLinkCase(): void {
             class="flex flex-col gap-4 rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
         >
             <header class="flex flex-col gap-1">
-                <h2 class="text-lg font-semibold text-surface-900">
-                    {{ t('patient.sections.ungrouped') }}
-                </h2>
+                <div class="flex items-center gap-2">
+                    <IconFolderOff class="size-5 text-surface-500" />
+                    <h2 class="text-lg font-semibold text-surface-900">
+                        {{ t('patient.sections.ungrouped') }}
+                    </h2>
+                </div>
                 <p class="text-sm text-surface-500">
                     {{ t('patient.ungrouped.hint') }}
                 </p>
@@ -837,6 +848,78 @@ function submitLinkCase(): void {
                         <IconPlus class="size-4" />
                     </template>
                 </Button>
+            </div>
+        </section>
+
+        <section
+            v-if="canViewBalance && balance"
+            class="flex flex-col gap-5 rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
+        >
+            <header class="flex items-center gap-2">
+                <IconCash class="size-5 text-surface-500" />
+                <h2 class="text-lg font-semibold text-surface-900">
+                    {{ t('balance.section_title') }}
+                </h2>
+            </header>
+
+            <dl class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div
+                    class="flex flex-col gap-1 rounded-lg border border-surface-200 p-4"
+                >
+                    <dt class="text-xs text-surface-500">
+                        {{ t('balance.total') }}
+                    </dt>
+                    <dd class="text-lg font-semibold text-surface-900">
+                        {{ formatMoney(balance.total) }}
+                    </dd>
+                </div>
+                <div
+                    class="flex flex-col gap-1 rounded-lg border border-surface-200 p-4"
+                >
+                    <dt class="text-xs text-surface-500">
+                        {{ t('balance.paid') }}
+                    </dt>
+                    <dd class="text-lg font-semibold text-green-600">
+                        {{ formatMoney(balance.paid) }}
+                    </dd>
+                </div>
+                <div
+                    class="flex flex-col gap-1 rounded-lg border border-surface-200 p-4"
+                >
+                    <dt class="text-xs text-surface-500">
+                        {{
+                            remainingIsCredit
+                                ? t('balance.credit')
+                                : t('balance.remaining')
+                        }}
+                    </dt>
+                    <dd
+                        class="text-lg font-semibold"
+                        :class="
+                            remainingIsCredit
+                                ? 'text-green-600'
+                                : 'text-surface-900'
+                        "
+                    >
+                        {{
+                            formatMoney(
+                                remainingIsCredit
+                                    ? Math.abs(Number(balance.remaining))
+                                    : balance.remaining,
+                            )
+                        }}
+                    </dd>
+                </div>
+            </dl>
+
+            <div class="flex flex-col gap-3">
+                <h3 class="text-sm font-semibold text-surface-700">
+                    {{ t('balance.transactions_title') }}
+                </h3>
+                <TransactionList
+                    :transactions="transactions ?? []"
+                    show-treatment
+                />
             </div>
         </section>
 

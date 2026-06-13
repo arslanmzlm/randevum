@@ -5,6 +5,7 @@ import {
     IconCalendarEvent,
     IconCash,
     IconFolder,
+    IconListDetails,
     IconStethoscope,
     IconUser,
 } from '@tabler/icons-vue';
@@ -13,6 +14,7 @@ import { useI18n } from 'vue-i18n';
 import ButtonLink from '@/components/ButtonLink.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import RecordPaymentDialog from '@/components/payments/RecordPaymentDialog.vue';
+import TransactionList from '@/components/payments/TransactionList.vue';
 import TreatmentStatusTag from '@/components/TreatmentStatusTag.vue';
 import { useCan } from '@/composables/useCan';
 import { useDateTime } from '@/composables/useDateTime';
@@ -31,6 +33,7 @@ const { formatDateTime } = useDateTime();
 const { formatMoney } = useMoney();
 
 const canRecordPayment = computed(() => can('transactions.create'));
+const canViewTransactions = computed(() => can('transactions.viewAny'));
 
 // Balance is always derived, never stored (paid = SUM(transactions); remaining = total − paid).
 const remaining = computed(() =>
@@ -143,6 +146,7 @@ const hasProductLines = computed(() => props.treatment.productLines.length > 0);
                     class="flex flex-col gap-5 rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
                 >
                     <header class="flex items-center gap-2">
+                        <IconListDetails class="size-5 text-surface-500" />
                         <h2 class="text-lg font-semibold text-surface-900">
                             {{ t('treatment.sections.line_items') }}
                         </h2>
@@ -217,6 +221,23 @@ const hasProductLines = computed(() => props.treatment.productLines.length > 0);
                             </template>
                         </Column>
                     </DataTable>
+                </section>
+
+                <!-- Payments / collections recorded against this treatment. -->
+                <section
+                    v-if="canViewTransactions"
+                    class="flex flex-col gap-5 rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
+                >
+                    <header class="flex items-center gap-2">
+                        <IconCash class="size-5 text-surface-500" />
+                        <h2 class="text-lg font-semibold text-surface-900">
+                            {{ t('balance.transactions_title') }}
+                        </h2>
+                    </header>
+
+                    <TransactionList
+                        :transactions="treatment.transactions ?? []"
+                    />
                 </section>
             </div>
 
@@ -302,6 +323,14 @@ const hasProductLines = computed(() => props.treatment.productLines.length > 0);
                         </dt>
                         <dd class="text-green-600">
                             {{ formatMoney(treatment.paid_total) }}
+                        </dd>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <dt class="text-surface-500">
+                            {{ t('treatment.summary.remaining') }}
+                        </dt>
+                        <dd class="font-medium text-surface-900">
+                            {{ formatMoney(remaining) }}
                         </dd>
                     </div>
                 </dl>
