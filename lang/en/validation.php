@@ -308,6 +308,12 @@ return [
         'follow_up_note' => 'follow-up note',
         'treatment_ids' => 'treatments',
         'treatment_ids.*' => 'treatment',
+        // payment recording
+        'treatment_id' => 'treatment',
+        'amount' => 'amount',
+        'payment_method' => 'payment method',
+        'note' => 'note',
+        'paid_at' => 'payment date',
     ],
 
 ];

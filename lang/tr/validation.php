@@ -179,6 +179,12 @@ return [
         'follow_up_note' => 'Takip notu',
         'treatment_ids' => 'Tedaviler',
         'treatment_ids.*' => 'Tedavi',
+        // payment recording
+        'treatment_id' => 'Tedavi',
+        'amount' => 'Tutar',
+        'payment_method' => 'Ödeme yöntemi',
+        'note' => 'Not',
+        'paid_at' => 'Ödeme tarihi',
     ],
 
     'working_hours_closed_conflict' => ':attribute kapalı olarak işaretlenmiş günlerde açılış/kapanış saati belirtilemez.',

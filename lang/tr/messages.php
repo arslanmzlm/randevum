@@ -51,6 +51,10 @@ return [
         'deleted' => 'Randevu türü kaldırıldı.',
     ],
 
+    'payment' => [
+        'recorded' => 'Ödeme kaydedildi.',
+    ],
+
     'doctor' => [
         'profile_created' => 'Doktor profili oluşturuldu.',
         'profile_updated' => 'Doktor profili güncellendi.',

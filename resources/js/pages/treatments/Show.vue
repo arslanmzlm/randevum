@@ -3,15 +3,18 @@ import { Head } from '@inertiajs/vue3';
 import {
     IconArrowLeft,
     IconCalendarEvent,
+    IconCash,
     IconFolder,
     IconStethoscope,
     IconUser,
 } from '@tabler/icons-vue';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import ButtonLink from '@/components/ButtonLink.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import RecordPaymentDialog from '@/components/payments/RecordPaymentDialog.vue';
 import TreatmentStatusTag from '@/components/TreatmentStatusTag.vue';
+import { useCan } from '@/composables/useCan';
 import { useDateTime } from '@/composables/useDateTime';
 import { useMoney } from '@/composables/useMoney';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -23,8 +26,22 @@ defineOptions({ layout: AppLayout });
 const props = defineProps<TreatmentShowProps>();
 
 const { t } = useI18n();
+const { can } = useCan();
 const { formatDateTime } = useDateTime();
 const { formatMoney } = useMoney();
+
+const canRecordPayment = computed(() => can('transactions.create'));
+
+// Balance is always derived, never stored (paid = SUM(transactions); remaining = total − paid).
+const remaining = computed(() =>
+    Math.max(
+        0,
+        Number(props.treatment.total_amount) -
+            Number(props.treatment.paid_total),
+    ),
+);
+
+const showPaymentDialog = ref(false);
 
 // The pill-labeled Şikayet / Tanı / Tedavi Süreci blocks from the detay reference.
 const clinicalBlocks = computed(() => [
@@ -288,7 +305,26 @@ const hasProductLines = computed(() => props.treatment.productLines.length > 0);
                         </dd>
                     </div>
                 </dl>
+
+                <Button
+                    v-if="canRecordPayment && remaining > 0"
+                    type="button"
+                    :label="t('payment.record_button')"
+                    @click="showPaymentDialog = true"
+                >
+                    <template #icon>
+                        <IconCash class="size-4" />
+                    </template>
+                </Button>
             </section>
         </div>
+
+        <RecordPaymentDialog
+            v-if="canRecordPayment"
+            v-model:visible="showPaymentDialog"
+            :patient-id="treatment.patient.id"
+            :treatment-id="treatment.id"
+            :remaining="remaining"
+        />
     </div>
 </template>

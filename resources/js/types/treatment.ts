@@ -183,6 +183,25 @@ export type TreatmentShowProps = {
     };
 };
 
+/** A treatment a standalone payment may optionally attach to (both Draft & Completed). */
+export type PaymentTreatmentOption = {
+    id: number;
+    title: string | null;
+    status: TreatmentStatus;
+    total_amount: string;
+};
+
+/** Payload posted to `payments.store` by RecordPaymentDialog. `paid_at` is a Date for the
+ *  DatePicker, serialized to a Y-m-d string via `form.transform` (empty ⇒ server uses now()). */
+export type RecordPaymentFormData = {
+    patient_id: number;
+    treatment_id: number | null;
+    amount: number | null;
+    payment_method: PaymentMethod | null;
+    note: string;
+    paid_at: Date | null;
+};
+
 /** One row of the patient "Tedavi Geçmişi" list (PatientController@show). */
 export type PatientTreatmentHistoryItem = {
     id: number;

@@ -3,6 +3,7 @@ import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import {
     IconArrowLeft,
     IconCalendarEvent,
+    IconCash,
     IconChevronRight,
     IconFolders,
     IconLink,
@@ -21,6 +22,7 @@ import AppointmentStatusTag from '@/components/AppointmentStatusTag.vue';
 import ButtonLink from '@/components/ButtonLink.vue';
 import CaseStatusTag from '@/components/CaseStatusTag.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import RecordPaymentDialog from '@/components/payments/RecordPaymentDialog.vue';
 import TreatmentStatusTag from '@/components/TreatmentStatusTag.vue';
 import { useCan } from '@/composables/useCan';
 import { useDateTime } from '@/composables/useDateTime';
@@ -50,6 +52,9 @@ const { formatDate, formatDateOnly, formatRange, isPast } = useDateTime();
 const { formatMoney } = useMoney();
 const canManage = computed(() => can('patients.update'));
 const canEditNotes = computed(() => can('patients.note.update'));
+const canRecordPayment = computed(() => can('transactions.create'));
+
+const showPaymentDialog = ref(false);
 
 const birthDateLabel = computed(() => {
     if (!props.patient.birth_date) {
@@ -274,6 +279,18 @@ function submitLinkCase(): void {
                         <IconArrowLeft />
                     </template>
                 </ButtonLink>
+                <Button
+                    v-if="canRecordPayment"
+                    type="button"
+                    severity="secondary"
+                    outlined
+                    :label="t('payment.record_button')"
+                    @click="showPaymentDialog = true"
+                >
+                    <template #icon>
+                        <IconCash />
+                    </template>
+                </Button>
                 <ButtonLink
                     v-if="canManage"
                     :href="edit(patient.id).url"
@@ -905,5 +922,12 @@ function submitLinkCase(): void {
                 />
             </template>
         </Dialog>
+
+        <RecordPaymentDialog
+            v-if="canRecordPayment"
+            v-model:visible="showPaymentDialog"
+            :patient-id="patient.id"
+            :treatments="treatments"
+        />
     </div>
 </template>

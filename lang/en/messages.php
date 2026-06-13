@@ -51,6 +51,10 @@ return [
         'deleted' => 'Appointment type removed.',
     ],
 
+    'payment' => [
+        'recorded' => 'Payment recorded.',
+    ],
+
     'doctor' => [
         'profile_created' => 'Doctor profile created.',
         'profile_updated' => 'Doctor profile updated.',
