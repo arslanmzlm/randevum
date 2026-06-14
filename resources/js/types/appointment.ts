@@ -25,6 +25,26 @@ export type AppointmentListItem = {
     treatment_id: number | null;
 };
 
+/**
+ * One upcoming-appointment row for the header quick-access widget. Shared both as the
+ * `upcomingAppointments` Inertia prop and the `GET /appointments/upcoming` JSON payload
+ * (one source of truth). Mirrors AppointmentListItem minus the list-only fields.
+ */
+export type UpcomingAppointmentDto = {
+    id: number;
+    patient_id: number;
+    patient_name: string;
+    doctor_id: number;
+    doctor_name: string;
+    service_name: string | null;
+    appointment_type: { name: string; color: string } | null;
+    /** Only `confirmed` | `rescheduled` are emitted, but kept broad for reuse. */
+    status: AppointmentStatus;
+    is_walk_in: boolean;
+    /** ISO 8601 UTC timestamp; formatted client-side via useDateTime(). */
+    starts_at: string;
+};
+
 /** Server-side list JSON:API state echoed back by the appointment index controller. */
 export type AppointmentListQuery = TableState<{
     status: string;

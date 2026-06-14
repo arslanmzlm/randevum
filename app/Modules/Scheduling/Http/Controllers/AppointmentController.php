@@ -17,6 +17,7 @@ use App\Modules\Scheduling\Http\Requests\CheckAvailabilityRequest;
 use App\Modules\Scheduling\Http\Requests\DayScheduleRequest;
 use App\Modules\Scheduling\Http\Requests\RescheduleAppointmentRequest;
 use App\Modules\Scheduling\Http\Requests\StoreAppointmentRequest;
+use App\Modules\Scheduling\Http\Requests\UpcomingAppointmentsRequest;
 use App\Modules\Scheduling\Http\Resources\AppointmentResource;
 use App\Modules\Scheduling\Services\AppointmentService;
 use App\Modules\Scheduling\Services\AppointmentTypeService;
@@ -228,6 +229,22 @@ class AppointmentController extends Controller
         Toast::success(__('appointment.deleted'));
 
         return to_route('appointments.index');
+    }
+
+    /**
+     * Next N upcoming appointments for the authenticated user's scope.
+     * Used by the header widget popover (initial data comes via the shared prop;
+     * this endpoint backs the manual refresh button).
+     */
+    public function upcoming(UpcomingAppointmentsRequest $request): JsonResponse
+    {
+        $this->authorize('viewAny', Appointment::class);
+
+        $limit = (int) $request->validated()['limit'];
+
+        return response()->json([
+            'data' => $this->service->upcomingFor($request->user(), $limit),
+        ]);
     }
 
     /**

@@ -609,6 +609,20 @@ export const tr = {
             walk_in: 'Walk-in',
         },
     },
+    quick_access: {
+        title: 'Hızlı erişim',
+        collapse: 'Hızlı erişimi gizle',
+        expand: 'Hızlı erişimi göster',
+        open: 'Hızlı erişimi aç',
+        close: 'Hızlı erişimi kapat',
+    },
+    upcoming_appointments: {
+        title: 'Yaklaşan randevular',
+        empty: 'Yaklaşan randevu bulunmuyor.',
+        loading: 'Yükleniyor…',
+        view_all: 'Tüm randevular',
+        refresh: 'Yenile',
+    },
     appointment_list: {
         title: 'Randevular',
         subtitle: 'Kliniğinizin tüm randevularını görüntüleyin ve filtreleyin.',

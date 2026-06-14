@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Clinic;
+use App\Modules\Core\Contracts\UpcomingAppointmentsContract;
 use App\Support\ClinicContext;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -49,12 +50,31 @@ class HandleInertiaRequests extends Middleware
                 'permissions' => fn () => $request->user()?->getAllPermissions()->pluck('name')->all() ?? [],
             ],
             'activeClinic' => fn () => $this->sharedClinic(),
+            'upcomingAppointments' => fn () => $this->sharedUpcomingAppointments($request),
             'flash' => [
                 'toasts' => fn () => $request->session()->get('toasts', []),
                 'password_reminder' => fn () => (bool) $request->session()->get('password_reminder', false),
                 'restorable_patient' => fn () => $request->session()->get('restorable_patient'),
             ],
         ];
+    }
+
+    /**
+     * Upcoming appointments for the header widget; [] for guests or no permission.
+     * Clinic context is already set by SetClinicContext, so can() is clinic-scoped.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function sharedUpcomingAppointments(Request $request): array
+    {
+        $user = $request->user();
+
+        if ($user === null || ! $user->can('appointments.viewAny')) {
+            return [];
+        }
+
+        return app(UpcomingAppointmentsContract::class)
+            ->upcomingFor($user, config('platform.appointment.upcoming_widget_limit'));
     }
 
     /**

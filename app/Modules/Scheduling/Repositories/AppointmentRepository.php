@@ -158,6 +158,26 @@ class AppointmentRepository
     }
 
     /**
+     * Next N upcoming appointments starting at or after now(), ascending.
+     * ClinicScope auto-isolates the tenant — no explicit clinic_id filter needed.
+     *
+     * @param  list<int>|null  $doctorIds  null = all clinic doctors; [] = empty result (whereIn short-circuits)
+     * @param  list<AppointmentStatus>  $statuses
+     * @return Collection<int, Appointment>
+     */
+    public function upcomingForDoctors(?array $doctorIds, array $statuses, int $limit): Collection
+    {
+        return Appointment::query()
+            ->withStatus($statuses)
+            ->where('starts_at', '>=', now())
+            ->when($doctorIds !== null, fn ($q) => $q->whereIn('doctor_id', $doctorIds))
+            ->with(['patient', 'doctor.user', 'service', 'appointmentType'])
+            ->orderBy('starts_at')
+            ->limit($limit)
+            ->get();
+    }
+
+    /**
      * A patient's appointments for the patient-detail history, newest first.
      * ClinicScope is applied automatically.
      *

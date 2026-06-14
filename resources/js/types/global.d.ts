@@ -1,4 +1,5 @@
 import type { SidebarMode } from '@/composables/useSidebar';
+import type { UpcomingAppointmentDto } from '@/types/appointment';
 import type { Auth } from '@/types/auth';
 import type { SharedClinic } from '@/types/clinic';
 
@@ -21,6 +22,8 @@ declare module '@inertiajs/core' {
             name: string;
             auth: Auth;
             activeClinic: SharedClinic | null;
+            /** Next N upcoming appointments for the viewer's scope; [] for guests / no permission. */
+            upcomingAppointments: UpcomingAppointmentDto[];
             [key: string]: unknown;
         };
         layoutProps: {

@@ -86,6 +86,13 @@
         height: 1.25rem;
     }
 
+    /* PrimeVue Tag has no `size` prop (unlike Badge), so this is the reusable small variant —
+       add `class="p-tag-sm"` to any <Tag>. In the components layer, so it beats the primevue layer. */
+    .p-tag-sm {
+        font-size: 0.7rem;
+        padding: 0.1rem 0.4rem;
+    }
+
     /* An inline DatePicker has no input to carry the invalid border, so put it on the panel
        itself — reuse the same red as invalid text inputs (InputText/InputMask). */
     .datepicker-invalid .p-datepicker-panel {

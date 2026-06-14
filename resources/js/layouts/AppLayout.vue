@@ -29,10 +29,13 @@ import {
 } from 'vue';
 import { useI18n } from 'vue-i18n';
 import AppSidebar from '@/components/app/AppSidebar.vue';
+import QuickAccessSidebar from '@/components/app/QuickAccessSidebar.vue';
+import QuickAccessToggle from '@/components/app/QuickAccessToggle.vue';
 import SidebarToggle from '@/components/app/SidebarToggle.vue';
 import AppToaster from '@/components/AppToaster.vue';
 import { useCan } from '@/composables/useCan';
 import { useContentWidth } from '@/composables/useContentWidth';
+import { useQuickAccess } from '@/composables/useQuickAccess';
 import { useSidebar } from '@/composables/useSidebar';
 import { account, dashboard, logout } from '@/routes';
 import { index as appointmentTypesIndex } from '@/routes/appointment-types';
@@ -65,10 +68,16 @@ const isDoctor = computed(() => page.props.auth?.isDoctor === true);
 const { can } = useCan();
 // Reused in the template (sidebar search) + the Ctrl/Cmd+K handler, so kept as a computed.
 const canViewPatients = computed(() => can('patients.viewAny'));
+const canViewUpcoming = computed(() => can('appointments.viewAny'));
 const clinic = computed(() => page.props.activeClinic ?? null);
 const { width: contentWidth, toggle: toggleWidth } = useContentWidth();
 const { collapsed, mobileOpen, closeMobile, expand, setDesktopHidden } =
     useSidebar();
+const {
+    desktopOpen: quickOpen,
+    mobileOpen: quickMobileOpen,
+    closeMobile: closeQuickMobile,
+} = useQuickAccess();
 
 // 'hidden' page → no desktop sidebar; 'collapsed' → forced rail; otherwise the
 // user's stored preference. The drawer covers the off-canvas case in every mode.
@@ -263,6 +272,10 @@ function onSearchShortcut(event: KeyboardEvent): void {
 // login (driven off the shared `password_reminder` flash).
 const showPasswordReminder = ref(false);
 
+// Close the off-canvas quick-access drawer once a navigation lands (its inner links
+// would otherwise leave it open on top of the new page).
+let stopNavListener: (() => void) | undefined;
+
 onMounted(() => {
     const flash = page.props.flash as
         | { password_reminder?: boolean }
@@ -273,10 +286,12 @@ onMounted(() => {
     }
 
     window.addEventListener('keydown', onSearchShortcut);
+    stopNavListener = router.on('navigate', () => closeQuickMobile());
 });
 
 onBeforeUnmount(() => {
     window.removeEventListener('keydown', onSearchShortcut);
+    stopNavListener?.();
 });
 
 function goToPasswordChange(): void {
@@ -335,6 +350,16 @@ function goToPasswordChange(): void {
             />
         </Drawer>
 
+        <Drawer
+            v-if="canViewUpcoming"
+            v-model:visible="quickMobileOpen"
+            position="right"
+            class="w-80"
+            :pt="{ content: { class: 'p-0' }, header: { class: 'hidden' } }"
+        >
+            <QuickAccessSidebar />
+        </Drawer>
+
         <aside
             v-if="!desktopSidebarHidden"
             class="hidden shrink-0 border-r border-surface-200 transition-[width] lg:flex"
@@ -360,6 +385,8 @@ function goToPasswordChange(): void {
                 <SidebarToggle />
 
                 <div class="flex shrink-0 items-center gap-1">
+                    <QuickAccessToggle v-if="canViewUpcoming" />
+
                     <Button
                         type="button"
                         severity="secondary"
@@ -417,17 +444,26 @@ function goToPasswordChange(): void {
                 </div>
             </header>
 
-            <main class="flex-1 overflow-y-auto py-6 lg:py-8">
-                <div
-                    :class="
-                        contentWidth === 'fluid'
-                            ? 'container-fluid'
-                            : 'container'
-                    "
+            <div class="flex min-h-0 flex-1 overflow-hidden">
+                <main class="flex-1 overflow-y-auto py-6 lg:py-8">
+                    <div
+                        :class="
+                            contentWidth === 'fluid'
+                                ? 'container-fluid'
+                                : 'container'
+                        "
+                    >
+                        <slot />
+                    </div>
+                </main>
+
+                <aside
+                    v-if="canViewUpcoming && quickOpen"
+                    class="hidden shrink-0 border-l border-surface-200 bg-surface-0 xl:flex xl:w-[22rem]"
                 >
-                    <slot />
-                </div>
-            </main>
+                    <QuickAccessSidebar class="w-full" />
+                </aside>
+            </div>
         </div>
     </div>
 </template>

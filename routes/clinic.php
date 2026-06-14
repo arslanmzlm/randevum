@@ -93,6 +93,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/appointments/create', [AppointmentController::class, 'create'])->name('appointments.create');
     Route::get('/appointments/availability', [AppointmentController::class, 'availability'])->middleware('throttle:60,1')->name('appointments.availability');
     Route::get('/appointments/day-schedule', [AppointmentController::class, 'daySchedule'])->middleware('throttle:60,1')->name('appointments.day-schedule');
+    Route::get('/appointments/upcoming', [AppointmentController::class, 'upcoming'])->middleware('throttle:60,1')->name('appointments.upcoming');
     Route::get('/appointments/bulk-cancel', [AppointmentController::class, 'bulkCancelPage'])->name('appointments.bulk-cancel');
     Route::get('/appointments/bulk-cancel/preview', [AppointmentController::class, 'bulkCancelPreview'])->middleware('throttle:60,1')->name('appointments.bulk-cancel.preview');
     Route::post('/appointments/bulk-cancel', [AppointmentController::class, 'bulkCancel'])->name('appointments.bulk-cancel.store');

@@ -34,6 +34,7 @@ return [
 
     'appointment' => [
         'hard_delete_allowed_statuses' => [AppointmentStatus::Confirmed->value],
+        'upcoming_widget_limit' => (int) env('PLATFORM_UPCOMING_WIDGET_LIMIT', 5),
     ],
 
     /*

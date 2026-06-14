@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Modules\Core\Contracts\AppointmentCancellationContract;
 use App\Modules\Core\Contracts\AppointmentLifecycleContract;
 use App\Modules\Core\Contracts\PatientAppointmentsContract;
+use App\Modules\Core\Contracts\UpcomingAppointmentsContract;
 use App\Modules\Core\Services\StatusLogService;
 use App\Modules\Medical\Contracts\PatientRegistrarContract;
 use App\Modules\Medical\Exceptions\TrashedPhoneConflictException;
@@ -22,7 +23,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
-class AppointmentService implements AppointmentCancellationContract, AppointmentLifecycleContract, PatientAppointmentsContract
+class AppointmentService implements AppointmentCancellationContract, AppointmentLifecycleContract, PatientAppointmentsContract, UpcomingAppointmentsContract
 {
     /**
      * Statuses eligible for bulk cancellation.
@@ -88,6 +89,40 @@ class AppointmentService implements AppointmentCancellationContract, Appointment
         }
 
         return $this->repository->forPatient($patient->id, $doctorId);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function upcomingFor(User $user, int $limit): array
+    {
+        if ($user->can('appointments.viewAll')) {
+            $doctorIds = null;
+        } else {
+            $ownId = $user->doctor?->id;
+            $doctorIds = $ownId !== null ? [$ownId] : [];
+        }
+
+        $appointments = $this->repository->upcomingForDoctors(
+            $doctorIds,
+            self::BULK_CANCELLABLE_STATUSES,
+            $limit,
+        );
+
+        return $appointments->map(fn (Appointment $a) => [
+            'id' => $a->id,
+            'patient_id' => $a->patient_id,
+            'patient_name' => trim($a->patient->first_name.' '.$a->patient->last_name),
+            'doctor_id' => $a->doctor_id,
+            'doctor_name' => $a->doctor->display_name,
+            'service_name' => $a->service?->name,
+            'appointment_type' => $a->appointmentType
+                ? ['name' => $a->appointmentType->name, 'color' => $a->appointmentType->color]
+                : null,
+            'status' => $a->status->value,
+            'is_walk_in' => $a->is_walk_in,
+            'starts_at' => $a->starts_at->toIso8601String(),
+        ])->values()->all();
     }
 
     /**
