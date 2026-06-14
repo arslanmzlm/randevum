@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\Appointment;
 use App\Models\CaseRecord;
 use App\Models\Clinic;
+use App\Models\ClinicSmsSetting;
 use App\Models\PodiatryTreatmentDetail;
 use App\Models\Transaction;
 use App\Models\Treatment;
@@ -12,6 +13,7 @@ use App\Models\User;
 use App\Policies\AppointmentPolicy;
 use App\Policies\CasePolicy;
 use App\Policies\ClinicPolicy;
+use App\Policies\ClinicSmsSettingPolicy;
 use App\Policies\TransactionPolicy;
 use App\Policies\TreatmentPolicy;
 use App\Support\ClinicContext;
@@ -50,6 +52,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::define('viewPulse', fn (User $user): bool => $user->hasRole('superadmin'));
         Gate::policy(Clinic::class, ClinicPolicy::class);
+        Gate::policy(ClinicSmsSetting::class, ClinicSmsSettingPolicy::class);
         Gate::policy(Appointment::class, AppointmentPolicy::class);
         Gate::policy(Treatment::class, TreatmentPolicy::class);
         Gate::policy(CaseRecord::class, CasePolicy::class);

@@ -29,6 +29,7 @@ export const tr = {
         products: 'Ürünler',
         appointment_types: 'Randevu Türleri',
         availability: 'İzin ve Kapalı Günler',
+        sms_settings: 'SMS Bildirimleri',
         account: 'Hesabım',
         profile_mine: 'Profilim',
     },
@@ -988,6 +989,39 @@ export const tr = {
             'Hesabınız geçici bir şifre ile oluşturuldu. Güvenliğiniz için şifrenizi değiştirmenizi öneririz.',
         change: 'Şifremi değiştir',
         later: 'Daha sonra',
+    },
+    sms_settings: {
+        title: 'SMS Bildirimleri',
+        description:
+            'Kliniğinizin müşterilerine hangi SMS bildirimlerini göndereceğini yönetin.',
+        section: 'Bildirim türleri',
+        save: 'Kaydet',
+        type: {
+            appointment_created: {
+                label: 'Randevu oluşturuldu',
+                hint: 'Yeni randevu oluşturulduğunda hastaya SMS gönderilir.',
+            },
+            appointment_cancelled: {
+                label: 'Randevu iptal edildi',
+                hint: 'Randevu iptal edildiğinde hastaya SMS gönderilir.',
+            },
+            appointment_rescheduled: {
+                label: 'Randevu yeniden planlandı',
+                hint: 'Randevu başka bir tarihe taşındığında hastaya SMS gönderilir.',
+            },
+            reminder_24h: {
+                label: '24 saat hatırlatma',
+                hint: 'Randevudan 24 saat önce hatırlatma SMS’i gönderilir.',
+            },
+            reminder_1h: {
+                label: '1 saat hatırlatma',
+                hint: 'Randevudan 1 saat önce hatırlatma SMS’i gönderilir.',
+            },
+            balance_reminder: {
+                label: 'Bakiye hatırlatma',
+                hint: 'Hastanın bekleyen bakiyesi olduğunda SMS gönderilir.',
+            },
+        },
     },
     error: {
         back_home: "Dashboard'a dön",

@@ -59,6 +59,10 @@ return [
         'recorded' => 'İade kaydedildi.',
     ],
 
+    'sms_settings' => [
+        'updated' => 'SMS tercihleri güncellendi.',
+    ],
+
     'doctor' => [
         'profile_created' => 'Doktor profili oluşturuldu.',
         'profile_updated' => 'Doktor profili güncellendi.',

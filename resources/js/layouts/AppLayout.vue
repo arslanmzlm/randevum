@@ -12,6 +12,7 @@ import {
     IconHome,
     IconListDetails,
     IconLogout,
+    IconMessage,
     IconPackage,
     IconSettings,
     IconStethoscope,
@@ -46,6 +47,7 @@ import {
 import { index as calendarIndex } from '@/routes/calendar';
 import { index as casesIndex } from '@/routes/cases';
 import { edit as clinicEdit } from '@/routes/clinic';
+import { edit as smsSettingsEdit } from '@/routes/clinic/sms-settings';
 import { index as doctorsIndex, mine as doctorsMine } from '@/routes/doctors';
 import { index as patientsIndex, show as patientShow } from '@/routes/patients';
 import { index as productsIndex } from '@/routes/products';
@@ -202,6 +204,15 @@ const navItems = computed<NavItem[]>(() => [
                   label: t('nav.availability'),
                   href: availabilityIndex().url,
                   icon: IconCalendarOff,
+              },
+          ]
+        : []),
+    ...(can('smsSettings.view')
+        ? [
+              {
+                  label: t('nav.sms_settings'),
+                  href: smsSettingsEdit().url,
+                  icon: IconMessage,
               },
           ]
         : []),

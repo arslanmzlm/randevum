@@ -59,6 +59,10 @@ return [
         'recorded' => 'Refund recorded.',
     ],
 
+    'sms_settings' => [
+        'updated' => 'SMS preferences updated.',
+    ],
+
     'doctor' => [
         'profile_created' => 'Doctor profile created.',
         'profile_updated' => 'Doctor profile updated.',

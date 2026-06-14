@@ -91,6 +91,9 @@ class PermissionSeeder extends Seeder
         'followUps.view' => ['owner', 'manager', 'receptionist'],
         // "Arandı" dismiss — clear a case's follow-up from the widget.
         'followUps.dismiss' => ['owner', 'manager', 'receptionist'],
+        // SMS settings — per-type send toggles.
+        'smsSettings.view' => ['owner', 'manager', 'receptionist'],
+        'smsSettings.update' => ['owner', 'manager'],
     ];
 
     public function run(): void

@@ -1,8 +1,8 @@
 /**
  * String-backed backend enums mirrored as TS unions — ONLY the ones the frontend
- * actually branches on (status colors/labels, availability messages). Values must
- * match the corresponding `app/Enums/*.php` exactly. Don't mirror enums the FE
- * never reasons about (SmsStatus, SmsType, LegalDocumentType, …) — no payoff.
+ * actually branches on (status colors/labels, availability messages, settings keys).
+ * Values must match the corresponding `app/Enums/*.php` exactly. Don't mirror enums
+ * the FE never reasons about (SmsStatus, LegalDocumentType, …) — no payoff.
  */
 
 /** Mirrors `App\Enums\AppointmentStatus`. */
@@ -33,3 +33,16 @@ export type TransactionStatus =
     | 'completed'
     | 'partially_refunded'
     | 'refunded';
+
+/**
+ * Mirrors `App\Enums\SmsType`. The SMS-settings page keys its toggle map off the
+ * clinic-scoped types (every case except `otp`, which always bypasses the gate).
+ */
+export type SmsType =
+    | 'appointment_created'
+    | 'appointment_cancelled'
+    | 'appointment_rescheduled'
+    | 'reminder_24h'
+    | 'reminder_1h'
+    | 'balance_reminder'
+    | 'otp';

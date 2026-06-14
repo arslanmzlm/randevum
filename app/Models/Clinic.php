@@ -128,6 +128,14 @@ class Clinic extends Model implements HasMedia
         return $this->hasMany(Patient::class);
     }
 
+    /**
+     * @return HasMany<ClinicSmsSetting, $this>
+     */
+    public function smsSettings(): HasMany
+    {
+        return $this->hasMany(ClinicSmsSetting::class);
+    }
+
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('logo')->singleFile();

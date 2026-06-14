@@ -68,6 +68,8 @@ it('grants the owner role the full clinic + doctor + service + product + patient
             'cases.update',
             'followUps.view',
             'followUps.dismiss',
+            'smsSettings.view',
+            'smsSettings.update',
         ]);
 });
 
@@ -121,6 +123,8 @@ it('grants the manager role full management except clinic and self-create', func
             'cases.update',
             'followUps.view',
             'followUps.dismiss',
+            'smsSettings.view',
+            'smsSettings.update',
         ]);
 });
 
@@ -176,6 +180,7 @@ it('grants receptionist full patient management and doctor list access', functio
             'transactions.viewAny',
             'followUps.view',
             'followUps.dismiss',
+            'smsSettings.view',
         ]);
 });
 
