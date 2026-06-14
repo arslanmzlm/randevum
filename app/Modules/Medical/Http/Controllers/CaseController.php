@@ -176,4 +176,15 @@ class CaseController extends Controller
 
         return redirect()->route('cases.show', $case);
     }
+
+    public function dismissFollowUp(CaseRecord $case): RedirectResponse
+    {
+        $this->authorize('dismissFollowUp', $case);
+
+        $this->caseService->updateFollowUp($case, null, null);
+
+        Toast::success(__('case.follow_up_cleared'));
+
+        return back();
+    }
 }

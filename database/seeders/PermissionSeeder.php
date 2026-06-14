@@ -86,6 +86,11 @@ class PermissionSeeder extends Seeder
         'cases.create' => ['owner', 'manager', 'doctor'],
         // Mutate any case the user can view (status, notes, follow-up, title, link treatments).
         'cases.update' => ['owner', 'manager', 'doctor'],
+        // Follow-up call widget — front-desk ("Bugün aranacaklar").
+        // Doctors are intentionally excluded: the widget is clinic-wide, desk-only.
+        'followUps.view' => ['owner', 'manager', 'receptionist'],
+        // "Arandı" dismiss — clear a case's follow-up from the widget.
+        'followUps.dismiss' => ['owner', 'manager', 'receptionist'],
     ];
 
     public function run(): void

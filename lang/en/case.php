@@ -6,6 +6,7 @@ return [
     'status_updated' => 'Case status updated.',
     'notes_updated' => 'Case notes updated.',
     'follow_up_updated' => 'Follow-up details updated.',
+    'follow_up_cleared' => 'Follow-up removed.',
     'title_updated' => 'Case title updated.',
     'treatments_linked' => 'Treatments linked to the case.',
 

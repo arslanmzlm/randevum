@@ -121,6 +121,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/cases/{case}/status', [CaseController::class, 'changeStatus'])->name('cases.status.update');
     Route::patch('/cases/{case}/notes', [CaseController::class, 'updateNotes'])->name('cases.notes.update');
     Route::patch('/cases/{case}/follow-up', [CaseController::class, 'updateFollowUp'])->name('cases.follow-up.update');
+    Route::delete('/cases/{case}/follow-up', [CaseController::class, 'dismissFollowUp'])->name('cases.follow-up.dismiss');
     Route::patch('/cases/{case}/title', [CaseController::class, 'updateTitle'])->name('cases.title.update');
     Route::post('/cases/{case}/treatments', [CaseController::class, 'linkTreatments'])->name('cases.treatments.link');
 });

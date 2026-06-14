@@ -37,6 +37,15 @@ class CasePolicy
     }
 
     /**
+     * Front-desk "Arandı" dismiss — clinic-wide, no ownership required.
+     * Tenant isolation is guaranteed by ClinicScope on route-model binding.
+     */
+    public function dismissFollowUp(User $user, CaseRecord $case): bool
+    {
+        return $user->can('followUps.dismiss');
+    }
+
+    /**
      * A user "owns" a case when it belongs to their doctor profile.
      */
     private function ownsCase(User $user, CaseRecord $case): bool

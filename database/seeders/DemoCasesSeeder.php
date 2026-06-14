@@ -121,11 +121,12 @@ class DemoCasesSeeder extends Seeder
             $this->log($case, CaseStatus::Open, CaseStatus::Suspended, daysAgo: 7, by: $doctor->user);
             $this->makeTreatment($doctor, $patient, daysAgo: 30, case: $case);
 
-            // 5) FollowUp with a future follow-up date + note.
+            // 5) FollowUp due in the past → shows in the dashboard "Bugün aranacaklar" call list
+            //    flagged overdue. Staggered per doctor so the oldest-due-first ordering is visible.
             $patient = $patients[$p++];
             $case = $this->makeCase($doctor, $patient, $titles[4], CaseStatus::FollowUp, daysAgo: 50);
             $case->update([
-                'follow_up_date' => Carbon::today($this->clinic->timezone)->addDays(5 + $d * 3),
+                'follow_up_date' => Carbon::today($this->clinic->timezone)->subDays(2 + $d * 3),
                 'follow_up_note' => 'Kontrol randevusu için aranacak; topuk bölgesi fotoğrafla karşılaştırılacak.',
             ]);
             $this->log($case, CaseStatus::Open, CaseStatus::FollowUp, daysAgo: 8, by: $doctor->user);
@@ -153,6 +154,17 @@ class DemoCasesSeeder extends Seeder
         ]);
         $this->log($case, CaseStatus::Open, CaseStatus::Closed, daysAgo: 10, by: $firstDoctor->user);
         $this->makeTreatment($firstDoctor, $patient, daysAgo: 65, case: $case);
+
+        // FollowUp due TODAY → appears in the dashboard call list without the overdue flag,
+        // so the widget shows both an overdue and a same-day row.
+        $patient = $patients[$p++];
+        $case = $this->makeCase($secondDoctor, $patient, 'Nasır Kontrolü', CaseStatus::FollowUp, daysAgo: 18);
+        $case->update([
+            'follow_up_date' => Carbon::today($this->clinic->timezone),
+            'follow_up_note' => 'Bugün aranacak; nasır tekrarladı mı sorulacak.',
+        ]);
+        $this->log($case, CaseStatus::Open, CaseStatus::FollowUp, daysAgo: 5, by: $secondDoctor->user);
+        $this->makeTreatment($secondDoctor, $patient, daysAgo: 12, case: $case);
 
         // Open case with NO treatments yet — empty treatments list + linkable ungrouped ones.
         $patient = $patients[$p++];

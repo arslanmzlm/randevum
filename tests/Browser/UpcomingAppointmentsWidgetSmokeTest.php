@@ -68,7 +68,9 @@ it('docks the quick-access sidebar with the upcoming widget and seeded row on a 
         ->assertNoJavascriptErrors()
         // In-body content from the Dashboard page component — fails when the page mounts blank.
         ->assertSee('Dashboard')
-        ->assertSee('Panel içeriği yakında eklenecek.')
+        // Follow-up widget title (1.24): rendered for owner who holds followUps.view.
+        // The old placeholder ('Panel içeriği yakında eklenecek.') is replaced by the widget.
+        ->assertSee('Bugün aranacaklar')
         // Guard against the silent-blank-body false green.
         ->assertScript(
             '() => (document.querySelector("main")?.innerText.trim().length ?? 0) > 0',

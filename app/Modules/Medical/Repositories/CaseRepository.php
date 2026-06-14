@@ -89,6 +89,21 @@ class CaseRepository
     }
 
     /**
+     * All cases in the active clinic with a follow-up date on or before $todayDate.
+     * Ordered oldest-due first. ClinicScope (via BelongsToClinic) isolates the tenant.
+     *
+     * @return Collection<int, CaseRecord>
+     */
+    public function dueFollowUps(string $todayDate): Collection
+    {
+        return CaseRecord::whereNotNull('follow_up_date')
+            ->whereDate('follow_up_date', '<=', $todayDate)
+            ->with(['patient:id,first_name,last_name,phone', 'doctor.user'])
+            ->orderBy('follow_up_date')
+            ->get();
+    }
+
+    /**
      * Cases for a patient's detail page, own/all scoped, with treatment counts.
      *
      * @return Collection<int, CaseRecord>

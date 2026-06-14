@@ -41,7 +41,7 @@ it('renders the dashboard with sidebar and toggle collapses to rail', function (
         // live inside the page component, not the shared shell, so they fail when
         // the page component mounts as an empty comment.
         ->assertSee('Dashboard')
-        ->assertSee('Panel içeriği yakında eklenecek.')
+        ->assertSee('Bugün aranacaklar')
         // Guard against the silent-blank-body false green.
         ->assertScript(
             '() => (document.querySelector("main")?.innerText.trim().length ?? 0) > 0',

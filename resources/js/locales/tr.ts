@@ -84,6 +84,22 @@ export const tr = {
         title: 'Dashboard',
         welcome: 'Hoş geldiniz,',
         placeholder: 'Panel içeriği yakında eklenecek.',
+        follow_ups: {
+            title: 'Bugün aranacaklar',
+            empty: 'Aranacak takip kaydı yok.',
+            dismiss: 'Arandı',
+            dismiss_confirm:
+                '{name} için takip kaydını listeden kaldırmak istediğinize emin misiniz?',
+            overdue: 'Gecikmiş',
+            no_phone: 'Telefon yok',
+            columns: {
+                patient: 'Hasta',
+                phone: 'Telefon',
+                doctor: 'Doktor',
+                date: 'Takip tarihi',
+                note: 'Not',
+            },
+        },
     },
     account: {
         title: 'Hesabım',

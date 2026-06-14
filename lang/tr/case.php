@@ -6,6 +6,7 @@ return [
     'status_updated' => 'Vaka durumu güncellendi.',
     'notes_updated' => 'Vaka notları güncellendi.',
     'follow_up_updated' => 'Takip bilgileri güncellendi.',
+    'follow_up_cleared' => 'Takip kaydı silindi.',
     'title_updated' => 'Vaka başlığı güncellendi.',
     'treatments_linked' => 'Tedaviler vakaya eklendi.',
 
