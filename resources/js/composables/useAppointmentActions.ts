@@ -4,7 +4,7 @@ import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useCan } from '@/composables/useCan';
 import { useDateTime } from '@/composables/useDateTime';
-import { cancel, destroy, edit } from '@/routes/appointments';
+import { cancel, destroy, edit, sendReminder } from '@/routes/appointments';
 import type { AppointmentStatus } from '@/types/enums';
 
 /** Minimal shape the lifecycle gates need — satisfied by both a list row and a calendar event. */
@@ -73,8 +73,24 @@ export function useAppointmentActions(
         );
     }
 
+    function canSendReminder(row: ActionableAppointment): boolean {
+        // Future-only is a UX hint (server enforces nothing on past, but a reminder for a past
+        // appointment makes no sense); the gate's clinic toggle is the real send control.
+        return (
+            can('appointments.sendReminder') &&
+            canAct(row) &&
+            (row.status === 'confirmed' || row.status === 'rescheduled') &&
+            !isPast(row.starts_at)
+        );
+    }
+
     function hasActions(row: ActionableAppointment): boolean {
-        return canReschedule(row) || canCancel(row) || canDelete(row);
+        return (
+            canReschedule(row) ||
+            canCancel(row) ||
+            canDelete(row) ||
+            canSendReminder(row)
+        );
     }
 
     function goToEdit(row: ActionableAppointment): void {
@@ -105,6 +121,28 @@ export function useAppointmentActions(
         });
     }
 
+    function confirmSendReminder(row: ActionableAppointment): void {
+        confirm.require({
+            header: t('appointment_actions.send_reminder_confirm_title'),
+            message: t('appointment_actions.send_reminder_confirm_message'),
+            rejectProps: {
+                label: t('common.cancel'),
+                severity: 'secondary',
+                outlined: true,
+            },
+            acceptProps: {
+                label: t('appointment_actions.send_reminder'),
+                severity: 'primary',
+            },
+            accept: () =>
+                router.post(
+                    sendReminder(row.id).url,
+                    {},
+                    { preserveScroll: true, onSuccess: options.onSuccess },
+                ),
+        });
+    }
+
     function confirmDelete(row: ActionableAppointment): void {
         confirm.require({
             header: t('appointment_actions.delete_confirm_title'),
@@ -130,10 +168,12 @@ export function useAppointmentActions(
         canReschedule,
         canCancel,
         canDelete,
+        canSendReminder,
         hasActions,
         goToEdit,
         confirmCancel,
         confirmDelete,
+        confirmSendReminder,
     };
 }
 

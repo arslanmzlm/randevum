@@ -11,7 +11,7 @@ use App\Enums\SmsType;
 final readonly class SmsMessage
 {
     public function __construct(
-        public string $phone,
+        public ?string $phone,
         public string $body,
         public SmsType $type,
         public ?int $clinicId = null,

@@ -19,6 +19,7 @@ use App\Modules\Scheduling\Http\Requests\RescheduleAppointmentRequest;
 use App\Modules\Scheduling\Http\Requests\StoreAppointmentRequest;
 use App\Modules\Scheduling\Http\Requests\UpcomingAppointmentsRequest;
 use App\Modules\Scheduling\Http\Resources\AppointmentResource;
+use App\Modules\Scheduling\Services\AppointmentReminderService;
 use App\Modules\Scheduling\Services\AppointmentService;
 use App\Modules\Scheduling\Services\AppointmentTypeService;
 use App\Modules\Scheduling\Services\AvailabilityService;
@@ -35,6 +36,7 @@ class AppointmentController extends Controller
 {
     public function __construct(
         private AppointmentService $service,
+        private AppointmentReminderService $reminderService,
         private AppointmentTypeService $appointmentTypeService,
         private AvailabilityService $availabilityService,
         private DoctorDirectoryContract $doctorDirectory,
@@ -381,6 +383,17 @@ class AppointmentController extends Controller
         Toast::success(__('appointment_bulk_cancel.done', ['count' => $count]));
 
         return to_route('appointments.index');
+    }
+
+    public function sendReminder(Appointment $appointment): RedirectResponse
+    {
+        $this->authorize('sendReminder', $appointment);
+
+        $this->reminderService->sendManual($appointment);
+
+        Toast::success(__('appointment.reminder_sent'));
+
+        return back();
     }
 
     private function activeClinicTimezone(): string

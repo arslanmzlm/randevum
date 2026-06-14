@@ -2,6 +2,7 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import {
     IconBan,
+    IconBell,
     IconCalendarOff,
     IconCalendarWeek,
     IconDotsVertical,
@@ -46,10 +47,12 @@ const {
     canReschedule,
     canCancel,
     canDelete,
+    canSendReminder,
     hasActions,
     goToEdit,
     confirmCancel,
     confirmDelete,
+    confirmSendReminder,
 } = useAppointmentActions(props.ownDoctorId);
 
 const { canStartTreatment, isResume, startTreatment } = useTreatmentActions(
@@ -99,6 +102,16 @@ const menuItems = computed<RowMenuItem[]>(() => {
             tablerIcon: IconPencil,
             colorClass: 'text-primary-600',
             command: () => goToEdit(row),
+        });
+    }
+
+    if (canSendReminder(row)) {
+        items.push({
+            key: 'send-reminder',
+            label: t('appointment_actions.send_reminder'),
+            tablerIcon: IconBell,
+            colorClass: 'text-primary-600',
+            command: () => confirmSendReminder(row),
         });
     }
 

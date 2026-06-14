@@ -16,7 +16,7 @@ return new class extends Migration
             // Nullable: OTP login SMS is platform-level (no clinic). Clinic-scoped sends set it.
             $table->foreignId('clinic_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('patient_id')->nullable()->constrained()->nullOnDelete();
-            $table->string('phone');                          // snapshot of the dialled number
+            $table->string('phone')->nullable();               // snapshot of the dialled number; null when skipped for missing phone
             $table->string('type');                           // SmsType: reminder_24h|otp|appointment_created|...
             $table->string('loggable_type')->nullable();      // morph-map slug: appointment|transaction|case|null (OTP)
             $table->unsignedBigInteger('loggable_id')->nullable();

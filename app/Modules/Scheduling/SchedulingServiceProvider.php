@@ -7,6 +7,7 @@ use App\Modules\Core\Contracts\AppointmentLifecycleContract;
 use App\Modules\Core\Contracts\PatientAppointmentsContract;
 use App\Modules\Core\Contracts\UpcomingAppointmentsContract;
 use App\Modules\Identity\Events\ClinicRegistered;
+use App\Modules\Scheduling\Console\Commands\SendRemindersCommand;
 use App\Modules\Scheduling\Listeners\ProvisionDefaultAppointmentTypes;
 use App\Modules\Scheduling\Services\AppointmentService;
 use Illuminate\Support\Facades\Event;
@@ -25,5 +26,7 @@ class SchedulingServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Event::listen(ClinicRegistered::class, ProvisionDefaultAppointmentTypes::class);
+
+        $this->commands([SendRemindersCommand::class]);
     }
 }

@@ -40,6 +40,7 @@ return [
     'rescheduled' => 'Randevu yeniden planlandı.',
     'cancelled' => 'Randevu iptal edildi.',
     'deleted' => 'Randevu silindi.',
+    'reminder_sent' => 'Hatırlatma SMS\'i gönderildi.',
 
     'submit' => 'Randevu Oluştur',
 

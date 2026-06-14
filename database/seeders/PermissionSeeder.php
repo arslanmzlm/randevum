@@ -60,6 +60,8 @@ class PermissionSeeder extends Seeder
         'appointments.delete' => ['owner', 'manager'],
         // Bulk-cancel a date range of appointments. Higher blast radius than single cancel.
         'appointments.bulkCancel' => ['owner', 'manager'],
+        // Manually send a reminder SMS for a specific appointment.
+        'appointments.sendReminder' => ['owner', 'manager', 'receptionist'],
         // appointment types (settings / CRUD)
         'appointmentTypes.viewAny' => ['owner', 'manager', 'doctor'],
         'appointmentTypes.create' => ['owner', 'manager'],

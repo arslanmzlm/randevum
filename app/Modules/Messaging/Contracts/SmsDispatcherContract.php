@@ -2,6 +2,7 @@
 
 namespace App\Modules\Messaging\Contracts;
 
+use App\Enums\SmsType;
 use App\Modules\Messaging\Data\SmsMessage;
 
 /**
@@ -15,4 +16,11 @@ use App\Modules\Messaging\Data\SmsMessage;
 interface SmsDispatcherContract
 {
     public function dispatch(SmsMessage $message): void;
+
+    /**
+     * Second idempotency guard: true when an sms_logs row for this loggable+type
+     * already exists with status=Sent. Callers use this before dispatching to avoid
+     * a double-send when the reminder flag failed to persist.
+     */
+    public function wasSent(string $loggableType, int $loggableId, SmsType $type): bool;
 }

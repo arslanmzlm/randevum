@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
     IconBan,
+    IconBell,
     IconBriefcase,
     IconClockHour4,
     IconClipboardPlus,
@@ -91,6 +92,13 @@ function onTreatment(): void {
 function onEdit(): void {
     if (actionable.value) {
         props.actions.goToEdit(actionable.value);
+    }
+}
+
+function onSendReminder(): void {
+    if (actionable.value) {
+        hide();
+        props.actions.confirmSendReminder(actionable.value);
     }
 }
 
@@ -224,6 +232,17 @@ const rows = computed(() => {
                     @click="onEdit"
                 >
                     <template #icon><IconPencil class="size-4" /></template>
+                </Button>
+                <Button
+                    v-if="actionable && actions.canSendReminder(actionable)"
+                    type="button"
+                    size="small"
+                    severity="primary"
+                    outlined
+                    :label="t('appointment_actions.send_reminder')"
+                    @click="onSendReminder"
+                >
+                    <template #icon><IconBell class="size-4" /></template>
                 </Button>
                 <Button
                     v-if="actionable && actions.canCancel(actionable)"

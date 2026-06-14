@@ -40,6 +40,7 @@ return [
     'rescheduled' => 'Appointment rescheduled successfully.',
     'cancelled' => 'Appointment cancelled.',
     'deleted' => 'Appointment deleted.',
+    'reminder_sent' => 'Reminder SMS sent.',
 
     'submit' => 'Create Appointment',
 

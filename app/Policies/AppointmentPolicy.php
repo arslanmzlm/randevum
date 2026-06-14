@@ -45,6 +45,11 @@ class AppointmentPolicy
         return $user->can('appointments.bulkCancel');
     }
 
+    public function sendReminder(User $user, Appointment $appointment): bool
+    {
+        return $user->can('appointments.sendReminder') && $this->actsOnAccessible($user, $appointment);
+    }
+
     /**
      * A user "acts on" an appointment when they can see all doctors' appointments,
      * or when the appointment belongs to their own doctor profile.

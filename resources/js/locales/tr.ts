@@ -680,6 +680,10 @@ export const tr = {
         delete_confirm_title: 'Randevuyu sil',
         delete_confirm_message:
             'Bu randevu kalıcı olarak silinecek ve geri alınamayacak. Yalnızca yanlışlıkla oluşturulan randevular için kullanın; aksi halde "İptal et" tercih edin.',
+        send_reminder: 'Hatırlatma gönder',
+        send_reminder_confirm_title: "Hatırlatma SMS'i gönder",
+        send_reminder_confirm_message:
+            "Hastaya randevu hatırlatma SMS'i gönderilsin mi? SMS gönderimi ücretlendirilir.",
     },
     appointment_bulk_cancel: {
         title: 'Günü Kapat',
