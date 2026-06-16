@@ -1,8 +1,15 @@
 <script setup lang="ts">
 import { Link, router } from '@inertiajs/vue3';
-import { IconPhone, IconPhoneOff, IconPhoneCheck } from '@tabler/icons-vue';
+import {
+    IconNote,
+    IconPhone,
+    IconPhoneOff,
+    IconPhoneCheck,
+} from '@tabler/icons-vue';
 import { useConfirm } from 'primevue/useconfirm';
+import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import DashboardPanel from '@/components/dashboard/DashboardPanel.vue';
 import { useCan } from '@/composables/useCan';
 import { useDateTime } from '@/composables/useDateTime';
 import { dismiss } from '@/routes/cases/follow-up';
@@ -17,6 +24,16 @@ const { formatDateOnly } = useDateTime();
 const confirm = useConfirm();
 
 const canDismiss = () => can('followUps.dismiss');
+
+// Notes can run long; keep the cell to a one-line preview and reveal the full text in a single
+// reused Popover anchored to the clicked trigger (works on touch, scrolls for very long notes).
+const notePopover = ref();
+const activeNote = ref('');
+
+function showNote(event: Event, note: string): void {
+    activeNote.value = note;
+    notePopover.value?.show(event);
+}
 
 function markCalled(row: FollowUpReminder): void {
     confirm.require({
@@ -37,32 +54,31 @@ function markCalled(row: FollowUpReminder): void {
 </script>
 
 <template>
-    <Card>
+    <DashboardPanel>
         <template #title>
-            <div class="flex items-center gap-2">
-                <IconPhone class="size-5 text-primary-500" />
-                <span>{{ t('dashboard.follow_ups.title') }}</span>
-                <Badge
-                    v-if="props.followUps.length"
-                    :value="props.followUps.length"
-                    severity="secondary"
-                />
-            </div>
+            <IconPhone class="size-5 text-primary-500" />
+            <h2 class="text-base font-semibold text-surface-900">
+                {{ t('dashboard.follow_ups.title') }}
+            </h2>
+            <Badge
+                v-if="props.followUps.length"
+                :value="props.followUps.length"
+                severity="secondary"
+            />
         </template>
 
-        <template #content>
-            <div
-                v-if="!props.followUps.length"
-                class="flex flex-col items-center justify-center gap-2 py-8 text-center"
-            >
-                <IconPhoneOff class="size-8 text-surface-300" />
-                <p class="text-sm text-surface-500">
-                    {{ t('dashboard.follow_ups.empty') }}
-                </p>
-            </div>
+        <div
+            v-if="!props.followUps.length"
+            class="flex flex-col items-center justify-center gap-2 px-5 py-10 text-center"
+        >
+            <IconPhoneOff class="size-8 text-surface-300" />
+            <p class="text-sm text-surface-500">
+                {{ t('dashboard.follow_ups.empty') }}
+            </p>
+        </div>
 
+        <div v-else>
             <DataTable
-                v-else
                 :value="props.followUps"
                 data-key="case_id"
                 size="small"
@@ -129,12 +145,19 @@ function markCalled(row: FollowUpReminder): void {
 
                 <Column :header="t('dashboard.follow_ups.columns.note')">
                     <template #body="{ data }">
-                        <span
+                        <button
                             v-if="data.follow_up_note"
-                            class="text-surface-600"
+                            type="button"
+                            class="flex max-w-[14rem] cursor-pointer items-center gap-1 text-left text-surface-600 transition-colors hover:text-primary-600"
+                            @click="showNote($event, data.follow_up_note)"
                         >
-                            {{ data.follow_up_note }}
-                        </span>
+                            <IconNote
+                                class="size-4 shrink-0 text-surface-400"
+                            />
+                            <span class="truncate">{{
+                                data.follow_up_note
+                            }}</span>
+                        </button>
                         <span v-else class="text-surface-400">—</span>
                     </template>
                 </Column>
@@ -155,6 +178,12 @@ function markCalled(row: FollowUpReminder): void {
                     </template>
                 </Column>
             </DataTable>
-        </template>
-    </Card>
+        </div>
+
+        <Popover ref="notePopover">
+            <p class="max-w-xs text-sm whitespace-pre-line text-surface-700">
+                {{ activeNote }}
+            </p>
+        </Popover>
+    </DashboardPanel>
 </template>

@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
+import UpcomingAppointmentsWidget from '@/components/appointments/UpcomingAppointmentsWidget.vue';
 import FollowUpWidget from '@/components/dashboard/FollowUpWidget.vue';
+import StatCardsRow from '@/components/dashboard/StatCardsRow.vue';
+import TodayScheduleSummary from '@/components/dashboard/TodayScheduleSummary.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import { useCan } from '@/composables/useCan';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -21,18 +24,27 @@ const { can } = useCan();
 
         <PageHeader :title="t('dashboard.title')" />
 
-        <FollowUpWidget
-            v-if="can('followUps.view')"
-            :follow-ups="props.followUps"
-        />
+        <StatCardsRow :stats="props.stats" />
 
-        <div
-            v-else
-            class="rounded-xl border border-surface-200 bg-surface-0 p-8"
-        >
-            <p class="text-sm text-surface-500">
-                {{ t('dashboard.placeholder') }}
-            </p>
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <div class="flex flex-col gap-6 lg:col-span-2">
+                <TodayScheduleSummary
+                    v-if="
+                        can('appointments.viewAny') &&
+                        props.stats.today_schedule
+                    "
+                    :appointments="props.stats.today_schedule"
+                />
+
+                <FollowUpWidget
+                    v-if="can('followUps.view')"
+                    :follow-ups="props.followUps"
+                />
+            </div>
+
+            <aside class="flex flex-col gap-6">
+                <UpcomingAppointmentsWidget />
+            </aside>
         </div>
     </div>
 </template>

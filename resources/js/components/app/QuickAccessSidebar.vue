@@ -18,7 +18,7 @@ const { t } = useI18n();
         </header>
 
         <div class="flex-1 space-y-4 overflow-y-auto px-4 pb-4">
-            <UpcomingAppointmentsWidget />
+            <UpcomingAppointmentsWidget variant="compact" />
         </div>
     </div>
 </template>

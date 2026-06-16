@@ -5,6 +5,7 @@ namespace App\Modules\Scheduling\Repositories;
 use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
 use App\Support\FilterHelper;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -175,6 +176,120 @@ class AppointmentRepository
             ->with(['patient', 'doctor.user', 'service', 'appointmentType'])
             ->orderBy('starts_at')
             ->limit($limit)
+            ->get();
+    }
+
+    /**
+     * Count of non-cancelled/no-show appointments whose starts_at falls within today
+     * in the given clinic timezone.
+     *
+     * $doctorIds = null  → all clinic doctors (BelongsToClinic scope still applies)
+     * $doctorIds = []    → no doctors in scope → returns 0
+     *
+     * @param  list<int>|null  $doctorIds
+     */
+    public function countTodayForDoctors(?array $doctorIds, string $timezone): int
+    {
+        if ($doctorIds !== null && count($doctorIds) === 0) {
+            return 0;
+        }
+
+        $dayStart = now($timezone)->startOfDay()->utc();
+        $dayEnd = now($timezone)->endOfDay()->utc();
+
+        return Appointment::query()
+            ->whereBetween('starts_at', [$dayStart, $dayEnd])
+            ->whereNotIn('status', [
+                AppointmentStatus::Cancelled->value,
+                AppointmentStatus::NoShow->value,
+            ])
+            ->when($doctorIds !== null, fn ($q) => $q->whereIn('doctor_id', $doctorIds))
+            ->count();
+    }
+
+    /**
+     * Count of future appointments in Pending status (confirmation queue).
+     *
+     * $doctorIds = null  → all clinic doctors
+     * $doctorIds = []    → no doctors in scope → returns 0
+     *
+     * @param  list<int>|null  $doctorIds
+     */
+    public function countPendingForDoctors(?array $doctorIds): int
+    {
+        if ($doctorIds !== null && count($doctorIds) === 0) {
+            return 0;
+        }
+
+        return Appointment::query()
+            ->where('status', AppointmentStatus::Pending->value)
+            ->where('starts_at', '>=', now())
+            ->when($doctorIds !== null, fn ($q) => $q->whereIn('doctor_id', $doctorIds))
+            ->count();
+    }
+
+    /**
+     * Count of non-cancelled/no-show appointments whose starts_at falls within the
+     * current ISO week (Mon–Sun) in the given clinic timezone.
+     *
+     * $doctorIds = null  → all clinic doctors
+     * $doctorIds = []    → no doctors in scope → returns 0
+     *
+     * @param  list<int>|null  $doctorIds
+     */
+    public function countThisWeekForDoctors(?array $doctorIds, string $timezone): int
+    {
+        if ($doctorIds !== null && count($doctorIds) === 0) {
+            return 0;
+        }
+
+        // Pin Mon–Sun explicitly so the documented ISO week can't silently shift if
+        // Carbon's global week-start default is ever changed elsewhere.
+        $weekStart = now($timezone)->startOfWeek(CarbonInterface::MONDAY)->utc();
+        $weekEnd = now($timezone)->endOfWeek(CarbonInterface::SUNDAY)->utc();
+
+        return Appointment::query()
+            ->whereBetween('starts_at', [$weekStart, $weekEnd])
+            ->whereNotIn('status', [
+                AppointmentStatus::Cancelled->value,
+                AppointmentStatus::NoShow->value,
+            ])
+            ->when($doctorIds !== null, fn ($q) => $q->whereIn('doctor_id', $doctorIds))
+            ->count();
+    }
+
+    /**
+     * Full clinic-local day schedule for the takvim-özet panel: every non-cancelled/no-show
+     * appointment whose starts_at falls within today (clinic tz), ascending by time.
+     *
+     * Unlike upcomingForDoctors this has NO now()-forward filter and NO small-N cap — the
+     * panel is a "today at a glance" view, so already-started/passed rows (Arrived/Completed)
+     * and the full day must show, not just the next few upcoming ones.
+     *
+     * $doctorIds = null  → all clinic doctors (BelongsToClinic scope still applies)
+     * $doctorIds = []    → no doctors in scope → empty collection
+     *
+     * @param  list<int>|null  $doctorIds
+     * @return Collection<int, Appointment>
+     */
+    public function scheduleForToday(?array $doctorIds, string $timezone): Collection
+    {
+        if ($doctorIds !== null && count($doctorIds) === 0) {
+            return new Collection;
+        }
+
+        $dayStart = now($timezone)->startOfDay()->utc();
+        $dayEnd = now($timezone)->endOfDay()->utc();
+
+        return Appointment::query()
+            ->whereBetween('starts_at', [$dayStart, $dayEnd])
+            ->whereNotIn('status', [
+                AppointmentStatus::Cancelled->value,
+                AppointmentStatus::NoShow->value,
+            ])
+            ->when($doctorIds !== null, fn ($q) => $q->whereIn('doctor_id', $doctorIds))
+            ->with(['patient', 'doctor.user', 'service', 'appointmentType'])
+            ->orderBy('starts_at')
             ->get();
     }
 

@@ -85,7 +85,18 @@ export const tr = {
     dashboard: {
         title: 'Dashboard',
         welcome: 'Hoş geldiniz,',
-        placeholder: 'Panel içeriği yakında eklenecek.',
+        stats: {
+            today: 'Bugün',
+            today_appointments: 'Bugünkü randevular',
+            pending_confirmation: 'Onay bekleyen',
+            this_week: 'Bu hafta',
+            today_revenue: 'Bugünkü tahsilat',
+        },
+        today_schedule: {
+            title: 'Bugünün programı',
+            empty: 'Bugün için randevu yok.',
+            view_calendar: 'Takvime git',
+        },
         follow_ups: {
             title: 'Bugün aranacaklar',
             empty: 'Aranacak takip kaydı yok.',

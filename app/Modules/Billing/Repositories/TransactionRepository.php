@@ -2,6 +2,7 @@
 
 namespace App\Modules\Billing\Repositories;
 
+use App\Enums\TransactionStatus;
 use App\Models\Transaction;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -72,5 +73,26 @@ class TransactionRepository
             ->orderByDesc('paid_at')
             ->orderByDesc('id')
             ->get();
+    }
+
+    /**
+     * Net collected amount for the active clinic within the current calendar day in
+     * the given timezone. SUM includes negative refund counter-entries so the result
+     * is net-of-refunds. Pending transactions are excluded — paid_at is NOT NULL on
+     * every row, so a date filter alone is insufficient; only settled rows count.
+     *
+     * BelongsToClinic global scope provides tenant isolation automatically.
+     * Returns a 2-dp decimal string (e.g. "1250.00").
+     */
+    public function collectedTodayTotal(string $timezone): string
+    {
+        $dayStart = now($timezone)->startOfDay()->utc();
+        $dayEnd = now($timezone)->endOfDay()->utc();
+
+        $total = Transaction::whereBetween('paid_at', [$dayStart, $dayEnd])
+            ->whereNot('status', TransactionStatus::Pending)
+            ->sum('amount');
+
+        return number_format((float) $total, 2, '.', '');
     }
 }
