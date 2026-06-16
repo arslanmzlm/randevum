@@ -96,7 +96,7 @@ class AppointmentRepository
         return Appointment::startingBetween($fromUtc, $toUtc)
             ->withStatus($statuses)
             ->when($doctorIds !== null, fn ($q) => $q->whereIn('doctor_id', $doctorIds))
-            ->with(['patient', 'doctor.user', 'service'])
+            ->with(['patient', 'clinic', 'doctor.user', 'service'])
             ->orderBy('starts_at')
             ->get();
     }
@@ -114,6 +114,7 @@ class AppointmentRepository
         return Appointment::forDoctor($doctorId)
             ->withStatus($statuses)
             ->where('starts_at', '>=', now())
+            ->with(['patient', 'clinic'])
             ->orderBy('starts_at')
             ->get();
     }

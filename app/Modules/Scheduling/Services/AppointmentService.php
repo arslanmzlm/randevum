@@ -43,6 +43,7 @@ class AppointmentService implements AppointmentCancellationContract, Appointment
         private PatientRegistrarContract $patientRegistrar,
         private ScheduleExceptionService $scheduleExceptionService,
         private ClinicContext $clinicContext,
+        private AppointmentStatusSmsService $statusSms,
     ) {}
 
     /**
@@ -153,7 +154,7 @@ class AppointmentService implements AppointmentCancellationContract, Appointment
 
         $this->assertAvailable($clinic, $doctorId, $startsAt, $endsAt, $isWalkIn);
 
-        return DB::transaction(function () use ($data, $actor, $startsAt, $endsAt, $isWalkIn, $doctorId): Appointment {
+        $appointment = DB::transaction(function () use ($data, $actor, $startsAt, $endsAt, $isWalkIn, $doctorId): Appointment {
             // New-patient booking registers the patient in the same transaction, so a failed
             // appointment never leaves an orphan patient behind.
             $patientId = $this->resolvePatientId($data);
@@ -179,6 +180,11 @@ class AppointmentService implements AppointmentCancellationContract, Appointment
 
             return $appointment;
         });
+
+        // Post-commit: SMS dispatch is a non-fatal side-effect of the booking transition.
+        $this->statusSms->sendCreated($appointment);
+
+        return $appointment;
     }
 
     /**
@@ -238,7 +244,9 @@ class AppointmentService implements AppointmentCancellationContract, Appointment
 
         $this->assertAvailable($clinic, (int) $data['doctor_id'], $startsAt, $endsAt, $appointment->is_walk_in, $appointment->id);
 
-        return DB::transaction(function () use ($appointment, $data, $actor, $startsAt, $endsAt): Appointment {
+        $transitioned = false;
+
+        $appointment = DB::transaction(function () use ($appointment, $data, $actor, $startsAt, $endsAt, &$transitioned): Appointment {
             $previousStartsAt = $appointment->starts_at->copy();
             $previousStatus = $appointment->status;
 
@@ -266,10 +274,19 @@ class AppointmentService implements AppointmentCancellationContract, Appointment
                     AppointmentStatus::Rescheduled->value,
                     $actor,
                 );
+
+                $transitioned = true;
             }
 
             return $appointment;
         });
+
+        // Post-commit: only dispatch when a real start-time move caused the Rescheduled transition.
+        if ($transitioned) {
+            $this->statusSms->sendRescheduled($appointment);
+        }
+
+        return $appointment;
     }
 
     /**
@@ -292,6 +309,10 @@ class AppointmentService implements AppointmentCancellationContract, Appointment
         DB::transaction(function () use ($appointment, $reason, $actor): void {
             $this->transitionToCancelled($appointment, $reason, $actor);
         });
+
+        // Post-commit: single-appointment cancel path only.
+        // Batch paths (bulkCancel, cancelFutureForDoctor) dispatch their own SMS after commit.
+        $this->statusSms->sendCancelled($appointment);
     }
 
     /**
@@ -352,6 +373,9 @@ class AppointmentService implements AppointmentCancellationContract, Appointment
             }
         });
 
+        // Post-commit: dispatch one AppointmentCancelled SMS per cancelled appointment.
+        $this->statusSms->sendCancelledMany($appointments);
+
         return $appointments->count();
     }
 
@@ -371,6 +395,12 @@ class AppointmentService implements AppointmentCancellationContract, Appointment
         foreach ($appointments as $appointment) {
             $this->transitionToCancelled($appointment, $reason, $actor);
         }
+
+        // Dispatch after the outer transaction commits so the job never references an uncommitted row.
+        $cancelled = $appointments->all();
+        DB::afterCommit(function () use ($cancelled): void {
+            $this->statusSms->sendCancelledMany($cancelled);
+        });
 
         return $appointments->count();
     }
@@ -635,6 +665,13 @@ class AppointmentService implements AppointmentCancellationContract, Appointment
             );
 
             $created[] = $appointment;
+        }
+
+        // Dispatch after the enclosing transaction commits (called from TreatmentService::complete).
+        if (! empty($created)) {
+            DB::afterCommit(function () use ($created): void {
+                $this->statusSms->sendCreatedMany($created);
+            });
         }
 
         return ['created' => $created, 'skipped' => $skipped];
