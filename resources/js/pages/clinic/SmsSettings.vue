@@ -4,6 +4,7 @@ import { IconMessage } from '@tabler/icons-vue';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import PageHeader from '@/components/PageHeader.vue';
+import SmsQuotaPanel from '@/components/sms-settings/SmsQuotaPanel.vue';
 import SmsTypeToggleRow from '@/components/sms-settings/SmsTypeToggleRow.vue';
 import { useCan } from '@/composables/useCan';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -15,6 +16,12 @@ defineOptions({ layout: AppLayout });
 const props = defineProps<{
     settings: Record<SmsType, boolean>;
     types: Array<{ value: SmsType }>;
+    quota: {
+        used: number;
+        allowance: number;
+        remaining: number;
+        resets_at: string;
+    };
 }>();
 
 const { t } = useI18n();
@@ -40,6 +47,8 @@ function submit(): void {
             :description="t('sms_settings.description')"
             :breadcrumbs="[{ label: t('nav.sms_settings') }]"
         />
+
+        <SmsQuotaPanel :quota="props.quota" />
 
         <form novalidate class="flex flex-col gap-6" @submit.prevent="submit">
             <section

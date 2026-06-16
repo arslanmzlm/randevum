@@ -14,12 +14,14 @@ class SmsDispatcher implements SmsDispatcherContract
 {
     public function __construct(
         private ClinicSmsSettingRepository $settings,
+        private SmsQuotaService $quota,
     ) {}
 
     /**
      * Gate + dispatch. Platform sends (clinicId === null) always bypass the gate —
      * OTP must never be blocked by a clinic preference. Clinic-scoped sends are
      * checked against the per-type preference; disabled types are logged as Skipped.
+     * A clinic over its monthly SMS quota is logged as Skipped with error='quota exceeded'.
      * A null phone (patient has no registered number) is logged as Skipped with
      * error='no phone' so it appears in the future SMS-log UI without a retry.
      */
@@ -33,6 +35,12 @@ class SmsDispatcher implements SmsDispatcherContract
 
         if (! $this->settings->isEnabled($message->clinicId, $message->type)) {
             $this->writeSkipped($message, 'disabled by clinic');
+
+            return;
+        }
+
+        if (! $this->quota->hasRoom($message->clinicId)) {
+            $this->writeSkipped($message, 'quota exceeded');
 
             return;
         }

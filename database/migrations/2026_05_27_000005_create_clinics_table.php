@@ -42,6 +42,9 @@ return new class extends Migration
             $table->string('locale', 10)->default('tr_TR');
             $table->char('currency', 3)->default('TRY');
 
+            // SMS quota: null = use config('platform.sms.monthly_quota') default
+            $table->unsignedInteger('sms_monthly_quota')->nullable();
+
             // status
             $table->boolean('is_active')->default(true);
             $table->timestampTz('onboarded_at')->nullable();

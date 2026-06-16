@@ -46,6 +46,7 @@ class Clinic extends Model implements HasMedia
         'currency',
         'is_active',
         'onboarded_at',
+        'sms_monthly_quota',
     ];
 
     /**
@@ -65,6 +66,7 @@ class Clinic extends Model implements HasMedia
             'longitude' => 'decimal:7',
             'is_active' => 'boolean',
             'onboarded_at' => 'datetime',
+            'sms_monthly_quota' => 'integer',
         ];
     }
 

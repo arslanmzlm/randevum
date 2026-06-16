@@ -1001,6 +1001,14 @@ export const tr = {
             'Kliniğinizin müşterilerine hangi SMS bildirimlerini göndereceğini yönetin.',
         section: 'Bildirim türleri',
         save: 'Kaydet',
+        quota: {
+            title: 'Aylık SMS Kotası',
+            used: '{used} / {allowance} SMS kullanıldı',
+            remaining: '{remaining} SMS kaldı',
+            resets_at: 'Kota {date} tarihinde sıfırlanır',
+            blocked:
+                "Aylık kota doldu. Yeni klinik SMS'leri bir sonraki ay sıfırlanana kadar gönderilmez.",
+        },
         type: {
             appointment_created: {
                 label: 'Randevu oluşturuldu',

@@ -10,6 +10,7 @@ use App\Models\Patient;
 use App\Models\Service;
 use App\Modules\Core\Contracts\DoctorDirectoryContract;
 use App\Modules\Core\Support\Toast;
+use App\Modules\Messaging\Contracts\SmsQuotaContract;
 use App\Modules\Scheduling\Http\Requests\BulkCancelAppointmentsRequest;
 use App\Modules\Scheduling\Http\Requests\BulkCancelPreviewRequest;
 use App\Modules\Scheduling\Http\Requests\CancelAppointmentRequest;
@@ -41,6 +42,7 @@ class AppointmentController extends Controller
         private AvailabilityService $availabilityService,
         private DoctorDirectoryContract $doctorDirectory,
         private ClinicContext $clinicContext,
+        private SmsQuotaContract $smsQuota,
     ) {}
 
     public function index(Request $request): Response
@@ -389,9 +391,16 @@ class AppointmentController extends Controller
     {
         $this->authorize('sendReminder', $appointment);
 
+        $clinicId = $appointment->clinic_id;
+        $overQuota = $clinicId !== null && ! $this->smsQuota->hasRoom($clinicId);
+
         $this->reminderService->sendManual($appointment);
 
-        Toast::success(__('appointment.reminder_sent'));
+        if ($overQuota) {
+            Toast::warning(__('appointment.quota_full'));
+        } else {
+            Toast::success(__('appointment.reminder_sent'));
+        }
 
         return back();
     }

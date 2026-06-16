@@ -41,6 +41,7 @@ return [
     'cancelled' => 'Appointment cancelled.',
     'deleted' => 'Appointment deleted.',
     'reminder_sent' => 'Reminder SMS sent.',
+    'quota_full' => 'Monthly SMS quota is full. Reminder could not be sent.',
 
     'submit' => 'Create Appointment',
 

@@ -41,6 +41,7 @@ return [
     'cancelled' => 'Randevu iptal edildi.',
     'deleted' => 'Randevu silindi.',
     'reminder_sent' => 'Hatırlatma SMS\'i gönderildi.',
+    'quota_full' => 'Aylık SMS kotası dolu. Hatırlatma gönderilemedi.',
 
     'submit' => 'Randevu Oluştur',
 

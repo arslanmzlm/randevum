@@ -62,6 +62,20 @@ return [
     |
     */
 
+    /*
+    |--------------------------------------------------------------------------
+    | SMS quota
+    |--------------------------------------------------------------------------
+    |
+    | Monthly clinic-scoped SMS allowance when a clinic sets no per-clinic
+    | override (clinics.sms_monthly_quota is null). OTP sends are never counted.
+    |
+    */
+
+    'sms' => [
+        'monthly_quota' => (int) env('PLATFORM_SMS_MONTHLY_QUOTA', 1000),
+    ],
+
     'otp' => [
         'length' => (int) env('PLATFORM_OTP_LENGTH', 6),
         'ttl' => (int) env('PLATFORM_OTP_TTL', 300),

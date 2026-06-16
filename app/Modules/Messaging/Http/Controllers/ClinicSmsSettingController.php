@@ -8,6 +8,7 @@ use App\Models\ClinicSmsSetting;
 use App\Modules\Core\Support\Toast;
 use App\Modules\Messaging\Http\Requests\UpdateClinicSmsSettingsRequest;
 use App\Modules\Messaging\Services\ClinicSmsSettingService;
+use App\Modules\Messaging\Services\SmsQuotaService;
 use App\Support\ClinicContext;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -18,6 +19,7 @@ class ClinicSmsSettingController extends Controller
     public function __construct(
         private ClinicContext $clinicContext,
         private ClinicSmsSettingService $service,
+        private SmsQuotaService $quotaService,
     ) {}
 
     public function edit(): Response
@@ -33,6 +35,7 @@ class ClinicSmsSettingController extends Controller
                 fn (SmsType $t) => ['value' => $t->value],
                 SmsType::clinicScopedCases(),
             ),
+            'quota' => $this->quotaService->usage($clinicId),
         ]);
     }
 
