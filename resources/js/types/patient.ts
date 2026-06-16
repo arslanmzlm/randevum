@@ -1,6 +1,7 @@
 import type { PatientBalance, TransactionItem } from '@/types/balance';
 import type { PatientCaseItem } from '@/types/case';
 import type { AppointmentStatus } from '@/types/enums';
+import type { SmsLogItem } from '@/types/smsLog';
 import type { Paginated, TableState } from '@/types/table';
 import type { PatientTreatmentHistoryItem } from '@/types/treatment';
 
@@ -91,6 +92,8 @@ export type PatientShowProps = {
     cases: PatientCaseItem[];
     /** The patient's appointments; upcoming vs past split client-side. */
     appointments: PatientAppointmentItem[];
+    /** The patient's recent SMS sends (newest first); shown with the page (not perm-gated). */
+    smsLogs: SmsLogItem[];
     /** The user's own doctors.id; gates the retrospective-linking controls to own treatments. */
     ownDoctorId: number | null;
     /** Aggregate balance. Absent when the user lacks `transactions.viewAny` (server omits it). */

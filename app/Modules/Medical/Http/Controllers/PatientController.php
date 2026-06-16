@@ -6,6 +6,7 @@ use App\Enums\TreatmentStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\Patient;
+use App\Models\SmsLog;
 use App\Modules\Billing\Contracts\BalanceReaderContract;
 use App\Modules\Core\Contracts\PatientAppointmentsContract;
 use App\Modules\Core\Support\Toast;
@@ -18,6 +19,7 @@ use App\Modules\Medical\Http\Resources\PatientSearchResource;
 use App\Modules\Medical\Repositories\CaseRepository;
 use App\Modules\Medical\Services\PatientService;
 use App\Modules\Medical\Services\TreatmentService;
+use App\Modules\Messaging\Contracts\SmsHistoryContract;
 use App\Support\ClinicContext;
 use App\Support\FilterHelper;
 use Illuminate\Http\JsonResponse;
@@ -34,6 +36,7 @@ class PatientController extends Controller
         private CaseRepository $caseRepository,
         private PatientAppointmentsContract $patientAppointments,
         private BalanceReaderContract $balanceReader,
+        private SmsHistoryContract $smsHistory,
         private ClinicContext $clinicContext,
     ) {}
 
@@ -137,11 +140,27 @@ class PatientController extends Controller
                 ->values()
             : collect();
 
+        $smsLogs = $this->smsHistory->recentForPatient($patient)
+            ->map(fn (SmsLog $log) => [
+                'id' => $log->id,
+                'type' => $log->type->value,
+                'status' => $log->status->value,
+                'phone' => $log->phone,
+                'patient_name' => null,
+                'patient_id' => $log->patient_id,
+                'body' => $log->body,
+                'error' => $log->error,
+                'created_at' => $log->created_at->toIso8601String(),
+                'sent_at' => $log->sent_at?->toIso8601String(),
+            ])
+            ->values();
+
         $props = [
             'patient' => (new PatientResource($patient))->resolve(),
             'treatments' => $treatments,
             'cases' => $cases,
             'appointments' => $appointments,
+            'smsLogs' => $smsLogs,
             'ownDoctorId' => $user->doctor?->id,
         ];
 

@@ -36,7 +36,8 @@ export type TransactionStatus =
 
 /**
  * Mirrors `App\Enums\SmsType`. The SMS-settings page keys its toggle map off the
- * clinic-scoped types (every case except `otp`, which always bypasses the gate).
+ * clinic-scoped types (every case except `otp`, which always bypasses the gate);
+ * the SMS-log surfaces map every case to a `sms.type.*` label.
  */
 export type SmsType =
     | 'appointment_created'
@@ -46,3 +47,6 @@ export type SmsType =
     | 'reminder_1h'
     | 'balance_reminder'
     | 'otp';
+
+/** Mirrors `App\Enums\SmsStatus`; the SMS-log surfaces branch on it (status→severity/label). */
+export type SmsStatus = 'queued' | 'sent' | 'failed' | 'skipped';

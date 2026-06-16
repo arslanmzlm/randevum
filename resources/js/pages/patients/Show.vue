@@ -9,6 +9,7 @@ import {
     IconFolders,
     IconLink,
     IconMail,
+    IconMessage,
     IconNotes,
     IconPencil,
     IconPhone,
@@ -25,6 +26,7 @@ import CaseStatusTag from '@/components/CaseStatusTag.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import RecordPaymentDialog from '@/components/payments/RecordPaymentDialog.vue';
 import TransactionList from '@/components/payments/TransactionList.vue';
+import SmsStatusTag from '@/components/SmsStatusTag.vue';
 import TreatmentStatusTag from '@/components/TreatmentStatusTag.vue';
 import { useCan } from '@/composables/useCan';
 import { useDateTime } from '@/composables/useDateTime';
@@ -50,7 +52,8 @@ const props = defineProps<PatientShowProps>();
 const { t } = useI18n();
 const confirm = useConfirm();
 const { can } = useCan();
-const { formatDate, formatDateOnly, formatRange, isPast } = useDateTime();
+const { formatDate, formatDateOnly, formatDateTime, formatRange, isPast } =
+    useDateTime();
 const { formatMoney } = useMoney();
 const canManage = computed(() => can('patients.update'));
 const canEditNotes = computed(() => can('patients.note.update'));
@@ -655,6 +658,44 @@ function submitLinkCase(): void {
                     </p>
                 </div>
             </div>
+        </section>
+
+        <section
+            class="flex flex-col gap-4 rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
+        >
+            <header class="flex items-center gap-2">
+                <IconMessage class="size-5 text-surface-500" />
+                <h2 class="text-lg font-semibold text-surface-900">
+                    {{ t('sms.log.patient.title') }}
+                </h2>
+            </header>
+
+            <ul v-if="smsLogs.length" class="flex flex-col gap-2">
+                <li
+                    v-for="log in smsLogs"
+                    :key="log.id"
+                    class="flex flex-col gap-1 rounded-xl border border-surface-200 p-3"
+                >
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-sm font-medium text-surface-900">
+                            {{ t(`sms.type.${log.type}`) }}
+                        </span>
+                        <SmsStatusTag :status="log.status" small />
+                        <span class="ml-auto text-xs text-surface-500">
+                            {{ formatDateTime(log.created_at) }}
+                        </span>
+                    </div>
+                    <p class="text-sm whitespace-pre-line text-surface-600">
+                        {{ log.body }}
+                    </p>
+                    <p v-if="log.error" class="text-xs text-red-500">
+                        {{ t('sms.log.error_label') }}: {{ log.error }}
+                    </p>
+                </li>
+            </ul>
+            <p v-else class="text-sm text-surface-400">
+                {{ t('sms.log.patient.empty') }}
+            </p>
         </section>
 
         <section

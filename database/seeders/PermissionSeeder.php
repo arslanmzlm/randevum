@@ -96,6 +96,8 @@ class PermissionSeeder extends Seeder
         // SMS settings — per-type send toggles.
         'smsSettings.view' => ['owner', 'manager', 'receptionist'],
         'smsSettings.update' => ['owner', 'manager'],
+        // SMS log — read-only list of sent/failed/queued messages.
+        'smsLogs.viewAny' => ['owner', 'manager', 'receptionist'],
     ];
 
     public function run(): void

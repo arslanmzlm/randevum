@@ -13,6 +13,7 @@ import {
     IconListDetails,
     IconLogout,
     IconMessage,
+    IconMessage2,
     IconPackage,
     IconSettings,
     IconStethoscope,
@@ -53,6 +54,7 @@ import { index as patientsIndex, show as patientShow } from '@/routes/patients';
 import { index as productsIndex } from '@/routes/products';
 import { index as availabilityIndex } from '@/routes/schedule-exceptions';
 import { index as servicesIndex } from '@/routes/services';
+import { index as smsLogsIndex } from '@/routes/sms-logs';
 import type { NavItem } from '@/types/nav';
 import type { PatientSearchResult } from '@/types/patient';
 
@@ -213,6 +215,15 @@ const navItems = computed<NavItem[]>(() => [
                   label: t('nav.sms_settings'),
                   href: smsSettingsEdit().url,
                   icon: IconMessage,
+              },
+          ]
+        : []),
+    ...(can('smsLogs.viewAny')
+        ? [
+              {
+                  label: t('nav.sms_logs'),
+                  href: smsLogsIndex().url,
+                  icon: IconMessage2,
               },
           ]
         : []),

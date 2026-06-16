@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
             // Last: need the demo clinic/doctors/patients AND the vertical's services to exist.
             DemoAppointmentsSeeder::class,
             DemoCasesSeeder::class,
+            DemoSmsLogsSeeder::class,
         ]);
     }
 }

@@ -30,6 +30,7 @@ export const tr = {
         appointment_types: 'Randevu Türleri',
         availability: 'İzin ve Kapalı Günler',
         sms_settings: 'SMS Bildirimleri',
+        sms_logs: 'SMS Günlüğü',
         account: 'Hesabım',
         profile_mine: 'Profilim',
     },
@@ -1024,6 +1025,50 @@ export const tr = {
             balance_reminder: {
                 label: 'Bakiye hatırlatma',
                 hint: 'Hastanın bekleyen bakiyesi olduğunda SMS gönderilir.',
+            },
+        },
+    },
+    sms: {
+        // Generic status/type labels — reused by the SMS log list and the patient
+        // communication-history section. Keep these screen-agnostic.
+        status: {
+            queued: 'Kuyrukta',
+            sent: 'Gönderildi',
+            failed: 'Başarısız',
+            skipped: 'Atlandı',
+        },
+        type: {
+            appointment_created: 'Randevu oluşturuldu',
+            appointment_cancelled: 'Randevu iptal edildi',
+            appointment_rescheduled: 'Randevu güncellendi',
+            reminder_24h: '24 saat hatırlatma',
+            reminder_1h: '1 saat hatırlatma',
+            balance_reminder: 'Bakiye hatırlatma',
+            otp: 'Doğrulama kodu',
+        },
+        log: {
+            title: 'SMS Günlüğü',
+            subtitle:
+                'Kliniğinizden gönderilen tüm SMS mesajlarını görüntüleyin ve filtreleyin.',
+            search_placeholder: 'Telefon ile ara…',
+            filter_status: 'Durum',
+            filter_type: 'Tür',
+            filter_date_range: 'Tarih aralığı',
+            columns: {
+                datetime: 'Tarih / Saat',
+                type: 'Tür',
+                recipient: 'Alıcı',
+                phone: 'Telefon',
+                status: 'Durum',
+                body: 'Mesaj',
+            },
+            no_recipient: 'Bilinmiyor',
+            error_label: 'Hata nedeni',
+            empty: 'Henüz SMS gönderimi yok.',
+            empty_filtered: 'Seçilen filtrelere uygun SMS kaydı bulunamadı.',
+            patient: {
+                title: 'İletişim geçmişi',
+                empty: 'Bu hastaya henüz SMS gönderilmedi.',
             },
         },
     },
