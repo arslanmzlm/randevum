@@ -7,6 +7,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -67,6 +68,16 @@ class User extends Authenticatable
     public function doctor(): HasOne
     {
         return $this->hasOne(Doctor::class);
+    }
+
+    /**
+     * Legal consents the owner accepted at signup (Terms, Privacy, DPA).
+     *
+     * @return MorphMany<Consent, $this>
+     */
+    public function consents(): MorphMany
+    {
+        return $this->morphMany(Consent::class, 'consentable');
     }
 
     /**

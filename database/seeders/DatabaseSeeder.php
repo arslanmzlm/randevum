@@ -21,6 +21,8 @@ class DatabaseSeeder extends Seeder
             CitySeeder::class,
             VerticalSeeder::class,
             DemoSeeder::class,
+            // Requires superadmin user from DemoSeeder.
+            LegalDocumentSeeder::class,
             PodiatryServicesSeeder::class,
             PodiatryProductsSeeder::class,
             PodiatryAppointmentTypesSeeder::class,

@@ -214,7 +214,8 @@ return [
         'last_name' => 'last name',
         'clinic_name' => 'clinic name',
         'vertical_id' => 'clinic type',
-        'terms' => 'terms of use',
+        'terms' => 'terms of service and privacy policy',
+        'dpa' => 'data processing agreement',
         // clinic profile
         'name' => 'clinic name',
         'slug' => 'URL address',

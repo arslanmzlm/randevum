@@ -2,9 +2,11 @@
 
 use App\Models\Clinic;
 use App\Models\Country;
+use App\Models\LegalDocument;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Vertical;
+use App\Modules\Compliance\Contracts\ConsentRecorderContract;
 use Database\Seeders\CountrySeeder;
 use Database\Seeders\RoleSeeder;
 use Database\Seeders\VerticalSeeder;
@@ -17,7 +19,22 @@ beforeEach(function (): void {
     $this->seed([RoleSeeder::class, CountrySeeder::class, VerticalSeeder::class]);
     app(PermissionRegistrar::class)->setPermissionsTeamId(null);
     $this->vertical = Vertical::where('is_active', true)->first();
+
+    // Signup records the owner's consent to these platform docs inside the txn.
+    // A single shared author keeps the user count deterministic for the assertions below.
+    $this->docAuthor = User::factory()->create();
+    foreach (ConsentRecorderContract::REGISTRATION_DOCUMENT_TYPES as $type) {
+        LegalDocument::factory()->ofType($type)->create(['created_by' => $this->docAuthor->id]);
+    }
 });
+
+/**
+ * Count users created by registration only (excludes the seeded legal-doc author).
+ */
+function registeredUserCount(int $authorId): int
+{
+    return User::where('id', '!=', $authorId)->count();
+}
 
 /**
  * Base valid registration payload for RegisterTest.
@@ -33,6 +50,7 @@ function registerTestValidPayload(int $verticalId): array
         'vertical_id' => $verticalId,
         'clinic_name' => 'Test Klinik',
         'terms' => true,
+        'dpa' => true,
     ];
 }
 
@@ -87,7 +105,7 @@ it('creates exactly one tenant, one clinic, and one user on successful registrat
 
     expect(Tenant::count())->toBe(1)
         ->and(Clinic::count())->toBe(1)
-        ->and(User::count())->toBe(1);
+        ->and(registeredUserCount($this->docAuthor->id))->toBe(1);
 });
 
 it('creates the clinic with the correct name and vertical', function (): void {
@@ -157,7 +175,7 @@ it('redirects to the dashboard after successful registration', function (): void
 it('stamps last_login_at after successful registration', function (): void {
     $this->post(route('register.store'), registerTestValidPayload($this->vertical->id));
 
-    $user = User::first();
+    $user = User::where('email', 'ali@example.com')->first();
 
     expect($user->last_login_at)->not->toBeNull();
 });
@@ -169,7 +187,7 @@ it('stamps last_login_at after successful registration', function (): void {
 it('assigns the owner role scoped to the newly created clinic', function (): void {
     $this->post(route('register.store'), registerTestValidPayload($this->vertical->id));
 
-    $user = User::first();
+    $user = User::where('email', 'ali@example.com')->first();
     $clinic = Clinic::first();
 
     app(PermissionRegistrar::class)->setPermissionsTeamId($clinic->id);
@@ -181,7 +199,7 @@ it('assigns the owner role scoped to the newly created clinic', function (): voi
 it('owner role is not visible under the null team context', function (): void {
     $this->post(route('register.store'), registerTestValidPayload($this->vertical->id));
 
-    $user = User::first();
+    $user = User::where('email', 'ali@example.com')->first();
 
     app(PermissionRegistrar::class)->setPermissionsTeamId(null);
     $user->unsetRelation('roles');
@@ -234,7 +252,7 @@ it('rejects registration with invalid payload and creates nothing', function (ar
 
     expect(Tenant::count())->toBe(0)
         ->and(Clinic::count())->toBe(0)
-        ->and(User::count())->toBe(0);
+        ->and(registeredUserCount($this->docAuthor->id))->toBe(0);
 })->with([
     'blank first_name' => [['first_name' => ''], 'first_name'],
     'oversized first_name' => [['first_name' => str_repeat('a', 101)], 'first_name'],
@@ -248,6 +266,7 @@ it('rejects registration with invalid payload and creates nothing', function (ar
     'blank clinic_name' => [['clinic_name' => ''], 'clinic_name'],
     'oversized clinic_name' => [['clinic_name' => str_repeat('c', 256)], 'clinic_name'],
     'unaccepted terms' => [['terms' => false], 'terms'],
+    'unaccepted dpa' => [['dpa' => false], 'dpa'],
 ]);
 
 it('rejects a duplicate email and creates nothing new', function (): void {
@@ -262,7 +281,7 @@ it('rejects a duplicate email and creates nothing new', function (): void {
     // Pre-existing user remains; registration created nothing
     expect(Tenant::count())->toBe(0)
         ->and(Clinic::count())->toBe(0)
-        ->and(User::count())->toBe(1);
+        ->and(registeredUserCount($this->docAuthor->id))->toBe(1);
 });
 
 it('rejects an inactive vertical_id and creates nothing', function (): void {
@@ -276,7 +295,7 @@ it('rejects an inactive vertical_id and creates nothing', function (): void {
 
     expect(Tenant::count())->toBe(0)
         ->and(Clinic::count())->toBe(0)
-        ->and(User::count())->toBe(0);
+        ->and(registeredUserCount($this->docAuthor->id))->toBe(0);
 });
 
 // ---------------------------------------------------------------------------

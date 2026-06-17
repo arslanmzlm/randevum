@@ -6,6 +6,7 @@ use App\Models\Clinic;
 use App\Models\Country;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Modules\Compliance\Contracts\ConsentRecorderContract;
 use App\Modules\Identity\Events\ClinicRegistered;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -14,17 +15,19 @@ use Spatie\Permission\PermissionRegistrar;
 
 /**
  * Creates the complete starting account for a self-service clinic owner:
- * tenant → clinic → user → owner role, all in a single transaction.
+ * tenant → clinic → user → owner role → signup consents, all in a single transaction.
  */
 class ClinicRegistrationService
 {
+    public function __construct(private ConsentRecorderContract $consentRecorder) {}
+
     /**
      * @param  array<string, mixed>  $data
      */
-    public function register(array $data): User
+    public function register(array $data, ?string $ipAddress = null, ?string $userAgent = null): User
     {
         /** @var array{user: User, clinic: Clinic} $result */
-        $result = DB::transaction(function () use ($data): array {
+        $result = DB::transaction(function () use ($data, $ipAddress, $userAgent): array {
             $tenant = Tenant::create(['name' => $data['clinic_name']]);
 
             $countryId = Country::where('code', 'TR')->value('id');
@@ -48,6 +51,10 @@ class ClinicRegistrationService
 
             app(PermissionRegistrar::class)->setPermissionsTeamId($clinic->id);
             $user->assignRole('owner');
+
+            // Record the owner's acceptance of the platform legal documents (Terms, Privacy,
+            // DPA) atomically — the signup rolls back if a required document is missing.
+            $this->consentRecorder->recordRegistrationConsents($user, $ipAddress, $userAgent);
 
             return ['user' => $user, 'clinic' => $clinic];
         });

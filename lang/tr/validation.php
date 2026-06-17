@@ -85,7 +85,8 @@ return [
         'last_name' => 'Soyad',
         'clinic_name' => 'Klinik adı',
         'vertical_id' => 'Klinik türü',
-        'terms' => 'Kullanım koşulları',
+        'terms' => 'Kullanım Koşulları ve Gizlilik Politikası',
+        'dpa' => 'Veri İşleme Sözleşmesi',
         // clinic profile
         'name' => 'Klinik adı',
         'slug' => 'URL adresi',

@@ -6,6 +6,7 @@ use App\Models\Appointment;
 use App\Models\CaseRecord;
 use App\Models\Clinic;
 use App\Models\ClinicSmsSetting;
+use App\Models\Patient;
 use App\Models\PodiatryTreatmentDetail;
 use App\Models\Transaction;
 use App\Models\Treatment;
@@ -71,6 +72,8 @@ class AppServiceProvider extends ServiceProvider
             'treatment' => Treatment::class,
             'case' => CaseRecord::class,
             'transaction' => Transaction::class,
+            'patient' => Patient::class,
+            'user' => User::class,
             'podiatry' => PodiatryTreatmentDetail::class,
         ]);
     }

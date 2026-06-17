@@ -4,12 +4,15 @@ namespace App\Models;
 
 use App\Enums\LegalDocumentType;
 use App\Models\Concerns\BelongsToClinic;
+use Database\Factories\LegalDocumentFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class LegalDocument extends Model
 {
-    use BelongsToClinic;
+    /** @use HasFactory<LegalDocumentFactory> */
+    use BelongsToClinic, HasFactory;
 
     /**
      * @var list<string>

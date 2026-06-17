@@ -36,8 +36,9 @@ class RegisterClinicOwner implements CreatesNewUsers
             'vertical_id' => ['required', 'integer', Rule::exists('verticals', 'id')->where('is_active', true)],
             'clinic_name' => ['required', 'string', 'max:255'],
             'terms' => ['accepted'],
+            'dpa' => ['accepted'],
         ])->validate();
 
-        return $this->registrationService->register($input);
+        return $this->registrationService->register($input, request()->ip(), request()->userAgent());
     }
 }

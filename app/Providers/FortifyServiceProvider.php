@@ -5,7 +5,9 @@ namespace App\Providers;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Actions\Fortify\UpdateUserPassword;
 use App\Actions\Fortify\UpdateUserProfileInformation;
+use App\Models\LegalDocument;
 use App\Models\Vertical;
+use App\Modules\Compliance\Contracts\ConsentRecorderContract;
 use App\Modules\Identity\Actions\RegisterClinicOwner;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -55,8 +57,18 @@ class FortifyServiceProvider extends ServiceProvider
                 ->values()
                 ->all();
 
+            $legalDocuments = collect(app(ConsentRecorderContract::class)->activeRegistrationDocuments())
+                ->map(fn (LegalDocument $document): array => [
+                    'type' => $document->type->value,
+                    'title' => $document->title,
+                    'version' => $document->version,
+                    'content' => $document->content,
+                ])
+                ->all();
+
             return Inertia::render('auth/Register', [
                 'verticals' => $verticals,
+                'legalDocuments' => $legalDocuments,
                 'status' => session('status'),
             ]);
         });

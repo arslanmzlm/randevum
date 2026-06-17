@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { IconEye, IconEyeOff } from '@tabler/icons-vue';
+import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import FormField from '@/components/FormField.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
@@ -11,8 +12,16 @@ defineOptions({ layout: AuthLayout });
 
 const { t } = useI18n();
 
+interface LegalDoc {
+    type: string;
+    title: string;
+    version: string;
+    content: string;
+}
+
 const props = defineProps<{
     verticals: Array<{ id: number; slug: string; name: string }>;
+    legalDocuments: Record<string, LegalDoc>;
     status: string | null;
 }>();
 
@@ -25,7 +34,14 @@ const form = useForm({
     password: '',
     password_confirmation: '',
     terms: false,
+    dpa: false,
 });
+
+const openDoc = ref<LegalDoc | null>(null);
+
+function showDoc(type: string): void {
+    openDoc.value = props.legalDocuments[type] ?? null;
+}
 
 function submit(): void {
     form.post(registerStore().url, {
@@ -186,9 +202,22 @@ function submit(): void {
                                 tag="span"
                             >
                                 <template #terms>
-                                    <span class="font-medium text-brand">{{
-                                        t('auth.register.terms_label')
-                                    }}</span>
+                                    <button
+                                        type="button"
+                                        class="font-medium text-brand hover:text-brand-dark"
+                                        @click="showDoc('terms_of_service')"
+                                    >
+                                        {{ t('auth.register.terms_label') }}
+                                    </button>
+                                </template>
+                                <template #privacy>
+                                    <button
+                                        type="button"
+                                        class="font-medium text-brand hover:text-brand-dark"
+                                        @click="showDoc('privacy_policy')"
+                                    >
+                                        {{ t('auth.register.privacy_label') }}
+                                    </button>
                                 </template>
                             </i18n-t>
                         </label>
@@ -198,6 +227,41 @@ function submit(): void {
                         class="text-xs text-red-500"
                     >
                         {{ form.errors.terms }}
+                    </small>
+                </div>
+
+                <div class="flex flex-col gap-1.5">
+                    <div class="flex items-start gap-2">
+                        <Checkbox
+                            v-model="form.dpa"
+                            input-id="dpa"
+                            :binary="true"
+                            :invalid="!!form.errors.dpa"
+                        />
+                        <label
+                            for="dpa"
+                            class="cursor-pointer text-sm text-surface-600 select-none"
+                        >
+                            <i18n-t
+                                keypath="auth.register.dpa_agree"
+                                tag="span"
+                            >
+                                <template #dpa>
+                                    <button
+                                        type="button"
+                                        class="font-medium text-brand hover:text-brand-dark"
+                                        @click="
+                                            showDoc('data_processing_agreement')
+                                        "
+                                    >
+                                        {{ t('auth.register.dpa_label') }}
+                                    </button>
+                                </template>
+                            </i18n-t>
+                        </label>
+                    </div>
+                    <small v-if="form.errors.dpa" class="text-xs text-red-500">
+                        {{ form.errors.dpa }}
                     </small>
                 </div>
 
@@ -222,5 +286,32 @@ function submit(): void {
                 </Link>
             </p>
         </div>
+
+        <Dialog
+            :visible="openDoc !== null"
+            modal
+            dismissable-mask
+            :header="openDoc?.title"
+            :style="{ width: '40rem', maxWidth: '90vw' }"
+            @update:visible="openDoc = null"
+        >
+            <p v-if="openDoc" class="mb-3 text-xs text-surface-500">
+                {{
+                    t('auth.register.doc_version', { version: openDoc.version })
+                }}
+            </p>
+            <p
+                class="text-sm leading-relaxed whitespace-pre-line text-surface-700"
+            >
+                {{ openDoc?.content }}
+            </p>
+            <template #footer>
+                <Button
+                    :label="t('auth.register.doc_close')"
+                    text
+                    @click="openDoc = null"
+                />
+            </template>
+        </Dialog>
     </div>
 </template>

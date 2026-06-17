@@ -2,6 +2,7 @@
 
 use App\Modules\Billing\BillingServiceProvider;
 use App\Modules\Catalog\CatalogServiceProvider;
+use App\Modules\Compliance\ComplianceServiceProvider;
 use App\Modules\Core\CoreServiceProvider;
 use App\Modules\Identity\IdentityServiceProvider;
 use App\Modules\Media\MediaServiceProvider;
@@ -19,6 +20,7 @@ return [
     HorizonServiceProvider::class,
     CoreServiceProvider::class,
     IdentityServiceProvider::class,
+    ComplianceServiceProvider::class,
     MedicalServiceProvider::class,
     MediaServiceProvider::class,
     MessagingServiceProvider::class,

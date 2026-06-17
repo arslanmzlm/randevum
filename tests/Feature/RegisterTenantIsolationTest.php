@@ -1,9 +1,11 @@
 <?php
 
 use App\Models\Clinic;
+use App\Models\LegalDocument;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Vertical;
+use App\Modules\Compliance\Contracts\ConsentRecorderContract;
 use App\Support\ClinicContext;
 use Database\Seeders\CountrySeeder;
 use Database\Seeders\RoleSeeder;
@@ -18,6 +20,11 @@ beforeEach(function (): void {
     app(PermissionRegistrar::class)->setPermissionsTeamId(null);
     app(ClinicContext::class)->forget();
     $this->vertical = Vertical::where('is_active', true)->first();
+
+    $docAuthor = User::factory()->create();
+    foreach (ConsentRecorderContract::REGISTRATION_DOCUMENT_TYPES as $type) {
+        LegalDocument::factory()->ofType($type)->create(['created_by' => $docAuthor->id]);
+    }
 });
 
 /**
@@ -34,6 +41,7 @@ function regIsoPayload(int $verticalId, string $email, string $clinicName): arra
         'vertical_id' => $verticalId,
         'clinic_name' => $clinicName,
         'terms' => true,
+        'dpa' => true,
     ];
 }
 
