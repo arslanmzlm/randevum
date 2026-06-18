@@ -16,6 +16,7 @@ import {
     IconMessage2,
     IconPackage,
     IconReportMoney,
+    IconSearch,
     IconSettings,
     IconStethoscope,
     IconTags,
@@ -36,6 +37,7 @@ import QuickAccessSidebar from '@/components/app/QuickAccessSidebar.vue';
 import QuickAccessToggle from '@/components/app/QuickAccessToggle.vue';
 import SidebarToggle from '@/components/app/SidebarToggle.vue';
 import AppToaster from '@/components/AppToaster.vue';
+import PatientSearchSelect from '@/components/PatientSearchSelect.vue';
 import { useCan } from '@/composables/useCan';
 import { useContentWidth } from '@/composables/useContentWidth';
 import { useQuickAccess } from '@/composables/useQuickAccess';
@@ -77,12 +79,12 @@ const canViewPatients = computed(() => can('patients.viewAny'));
 const canViewUpcoming = computed(() => can('appointments.viewAny'));
 const clinic = computed(() => page.props.activeClinic ?? null);
 const { width: contentWidth, toggle: toggleWidth } = useContentWidth();
-const { collapsed, mobileOpen, closeMobile, expand, setDesktopHidden } =
-    useSidebar();
+const { collapsed, mobileOpen, closeMobile, setDesktopHidden } = useSidebar();
 const {
     desktopOpen: quickOpen,
     mobileOpen: quickMobileOpen,
     closeMobile: closeQuickMobile,
+    isWide: quickIsWide,
 } = useQuickAccess();
 
 // 'hidden' page → no desktop sidebar; 'collapsed' → forced rail; otherwise the
@@ -279,26 +281,51 @@ function doLogout(): void {
     router.post(logout().url);
 }
 
+const quickPanel = ref<{ focusSearch: () => void } | null>(null);
+const searchPopover = ref();
+const searchButton = ref();
+const popoverSearch = ref<{ focus: () => void } | null>(null);
+
+// Header search button (and Ctrl·Cmd+K): focus the docked search when the
+// quick-access panel is actually visible, otherwise drop a popover under the
+// button so search works without forcing the panel open.
+function openPatientSearch(event: Event): void {
+    if (!canViewPatients.value) {
+        return;
+    }
+
+    if (quickIsWide.value && quickOpen.value) {
+        nextTick(() => quickPanel.value?.focusSearch());
+
+        return;
+    }
+
+    searchPopover.value?.toggle(event, searchButton.value?.$el);
+}
+
+// Autofocus the popover input once its overlay is in the DOM.
+function onSearchPopoverShow(): void {
+    nextTick(() => popoverSearch.value?.focus());
+}
+
 function goToPatient(patient: PatientSearchResult): void {
     closeMobile();
+    closeQuickMobile();
+    searchPopover.value?.hide();
     router.visit(patientShow(patient.id).url);
 }
 
-const desktopSidebar = ref<{ focusSearch: () => void } | null>(null);
-
-// Ctrl/Cmd+K reveals the rail (if collapsed) then focuses the sidebar search.
 function onSearchShortcut(event: KeyboardEvent): void {
     if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'k') {
         return;
     }
 
-    if (!canViewPatients.value || desktopSidebarHidden.value) {
+    if (!canViewPatients.value) {
         return;
     }
 
     event.preventDefault();
-    expand();
-    nextTick(() => desktopSidebar.value?.focusSearch());
+    openPatientSearch(event);
 }
 
 // One-time, dismissible nudge to change the admin-set password on first-ever
@@ -376,21 +403,23 @@ function goToPasswordChange(): void {
                 :clinic="clinic"
                 :nav-items="navItems"
                 :bottom-nav-items="bottomNavItems"
-                :can-view-patients="canViewPatients"
                 @navigate="closeMobile"
-                @select-patient="goToPatient"
                 @logout="doLogout"
             />
         </Drawer>
 
         <Drawer
-            v-if="canViewUpcoming"
+            v-if="canViewUpcoming || canViewPatients"
             v-model:visible="quickMobileOpen"
             position="right"
             class="w-80"
             :pt="{ content: { class: 'p-0' }, header: { class: 'hidden' } }"
         >
-            <QuickAccessSidebar />
+            <QuickAccessSidebar
+                :can-view-patients="canViewPatients"
+                :can-view-upcoming="canViewUpcoming"
+                @select-patient="goToPatient"
+            />
         </Drawer>
 
         <aside
@@ -399,14 +428,11 @@ function goToPasswordChange(): void {
             :class="railCollapsed ? 'lg:w-18' : 'lg:w-64'"
         >
             <AppSidebar
-                ref="desktopSidebar"
                 class="w-full"
                 :collapsed="railCollapsed"
                 :clinic="clinic"
                 :nav-items="navItems"
                 :bottom-nav-items="bottomNavItems"
-                :can-view-patients="canViewPatients"
-                @select-patient="goToPatient"
                 @logout="doLogout"
             />
         </aside>
@@ -418,7 +444,32 @@ function goToPasswordChange(): void {
                 <SidebarToggle />
 
                 <div class="flex shrink-0 items-center gap-1">
-                    <QuickAccessToggle v-if="canViewUpcoming" />
+                    <Button
+                        v-if="canViewPatients"
+                        ref="searchButton"
+                        type="button"
+                        severity="secondary"
+                        text
+                        rounded
+                        :aria-label="t('quick_access.search')"
+                        @click="openPatientSearch"
+                    >
+                        <IconSearch class="size-5" />
+                    </Button>
+
+                    <Popover ref="searchPopover" @show="onSearchPopoverShow">
+                        <div class="w-72 max-w-[80vw]">
+                            <PatientSearchSelect
+                                ref="popoverSearch"
+                                class="w-full"
+                                @select="goToPatient"
+                            />
+                        </div>
+                    </Popover>
+
+                    <QuickAccessToggle
+                        v-if="canViewUpcoming || canViewPatients"
+                    />
 
                     <Button
                         type="button"
@@ -491,10 +542,20 @@ function goToPasswordChange(): void {
                 </main>
 
                 <aside
-                    v-if="canViewUpcoming && quickOpen"
+                    v-if="
+                        (canViewUpcoming || canViewPatients) &&
+                        quickOpen &&
+                        quickIsWide
+                    "
                     class="hidden shrink-0 border-l border-surface-200 bg-surface-0 xl:flex xl:w-[22rem]"
                 >
-                    <QuickAccessSidebar class="w-full" />
+                    <QuickAccessSidebar
+                        ref="quickPanel"
+                        class="w-full"
+                        :can-view-patients="canViewPatients"
+                        :can-view-upcoming="canViewUpcoming"
+                        @select-patient="goToPatient"
+                    />
                 </aside>
             </div>
         </div>

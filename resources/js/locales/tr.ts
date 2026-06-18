@@ -649,6 +649,7 @@ export const tr = {
     },
     quick_access: {
         title: 'Hızlı erişim',
+        search: 'Hasta ara',
         collapse: 'Hızlı erişimi gizle',
         expand: 'Hızlı erişimi göster',
         open: 'Hızlı erişimi aç',

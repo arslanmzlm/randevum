@@ -1,10 +1,31 @@
 <script setup lang="ts">
+import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import UpcomingAppointmentsWidget from '@/components/appointments/UpcomingAppointmentsWidget.vue';
+import PatientSearchSelect from '@/components/PatientSearchSelect.vue';
+import type { PatientSearchResult } from '@/types/patient';
 
-// The right-hand quick-access area. Hosts the upcoming-appointments widget today;
-// frequently-used actions get added here as separate widgets later.
+// The right-hand quick-access area. Hosts the patient search and the
+// upcoming-appointments widget; each is gated by its own capability.
+defineProps<{
+    canViewPatients: boolean;
+    canViewUpcoming: boolean;
+}>();
+
+const emit = defineEmits<{
+    selectPatient: [patient: PatientSearchResult];
+}>();
+
 const { t } = useI18n();
+
+const patientSearch = ref<{ focus: () => void } | null>(null);
+
+// Lets AppLayout focus the docked search (header button / Ctrl·Cmd+K).
+function focusSearch(): void {
+    patientSearch.value?.focus();
+}
+
+defineExpose({ focusSearch });
 </script>
 
 <template>
@@ -18,7 +39,16 @@ const { t } = useI18n();
         </header>
 
         <div class="flex-1 space-y-4 overflow-y-auto px-4 pb-4">
-            <UpcomingAppointmentsWidget variant="compact" />
+            <PatientSearchSelect
+                v-if="canViewPatients"
+                ref="patientSearch"
+                class="w-full"
+                @select="emit('selectPatient', $event)"
+            />
+            <UpcomingAppointmentsWidget
+                v-if="canViewUpcoming"
+                variant="compact"
+            />
         </div>
     </div>
 </template>

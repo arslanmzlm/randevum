@@ -1,37 +1,23 @@
 <script setup lang="ts">
 import { IconLogout } from '@tabler/icons-vue';
-import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import SidebarNav from '@/components/app/SidebarNav.vue';
-import PatientSearchSelect from '@/components/PatientSearchSelect.vue';
 import type { SharedClinic } from '@/types/clinic';
 import type { NavItem } from '@/types/nav';
-import type { PatientSearchResult } from '@/types/patient';
 
 const props = defineProps<{
     collapsed: boolean;
     clinic: SharedClinic | null;
     navItems: NavItem[];
     bottomNavItems: NavItem[];
-    canViewPatients: boolean;
 }>();
 
 const emit = defineEmits<{
     navigate: [];
-    selectPatient: [patient: PatientSearchResult];
     logout: [];
 }>();
 
 const { t } = useI18n();
-
-const patientSearch = ref<{ focus: () => void } | null>(null);
-
-// Lets AppLayout's Ctrl/Cmd+K shortcut focus the sidebar search.
-function focusSearch(): void {
-    patientSearch.value?.focus();
-}
-
-defineExpose({ focusSearch });
 </script>
 
 <template>
@@ -53,14 +39,6 @@ defineExpose({ focusSearch });
             >
                 {{ clinic?.name ?? t('auth.layout.brand') }}
             </span>
-        </div>
-
-        <div v-if="canViewPatients && !props.collapsed" class="px-3 pb-2">
-            <PatientSearchSelect
-                ref="patientSearch"
-                class="w-full"
-                @select="emit('selectPatient', $event)"
-            />
         </div>
 
         <div class="flex-1 overflow-y-auto px-3 py-4">
