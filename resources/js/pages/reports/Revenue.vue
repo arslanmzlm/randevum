@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
-import { IconCalendarStats, IconReportMoney, IconWallet } from '@tabler/icons-vue';
+import {
+    IconCalendarStats,
+    IconReportMoney,
+    IconWallet,
+} from '@tabler/icons-vue';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import StatCard from '@/components/dashboard/StatCard.vue';

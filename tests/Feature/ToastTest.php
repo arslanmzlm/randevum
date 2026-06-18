@@ -32,7 +32,7 @@ it('shares flashed toasts as flash.toasts on inertia responses', function (): vo
         'toasts' => [
             ['severity' => 'success', 'summary' => 'Merhaba', 'detail' => null, 'life' => 4000],
         ],
-    ])->get(route('home'))
+    ])->get(route('login'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->has('flash.toasts', 1)
@@ -42,7 +42,7 @@ it('shares flashed toasts as flash.toasts on inertia responses', function (): vo
 });
 
 it('shares an empty toast list when nothing is flashed', function (): void {
-    $this->get(route('home'))
+    $this->get(route('login'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page->where('flash.toasts', []));
 });

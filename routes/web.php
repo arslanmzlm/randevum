@@ -3,7 +3,7 @@
 use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
 
-Route::inertia('/', 'Welcome')->name('home');
+Route::view('/', 'welcome')->name('home');
 
 /*
 |--------------------------------------------------------------------------
