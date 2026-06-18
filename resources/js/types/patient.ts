@@ -25,6 +25,8 @@ export type Patient = {
     notes: string | null;
     /** ISO 8601 timestamp. */
     created_at: string;
+    /** Most recent completed-treatment time (ISO 8601), or null. Only set on the list query. */
+    last_visit_at?: string | null;
 };
 
 /**
@@ -46,6 +48,12 @@ export type PatientQuery = TableState<{
 export type PatientIndexProps = {
     patients: Paginated<Patient>;
     query: PatientQuery;
+    /**
+     * Remaining balance (billed − paid, positive = owes) per patient id, for the rows on the
+     * current page. Absent when the user lacks `transactions.viewAny`; a patient missing from
+     * the map is square.
+     */
+    balances?: Record<number, string>;
 };
 
 /**

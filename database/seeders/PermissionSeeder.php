@@ -78,6 +78,8 @@ class PermissionSeeder extends Seeder
         'transactions.viewAny' => ['owner', 'manager', 'doctor', 'receptionist'],
         // Refund a payment — owner only per data-model decision (sadece owner iade başlatabilir).
         'transactions.refund' => ['owner'],
+        // Revenue report — clinic financial overview, management-only.
+        'reports.revenue' => ['owner', 'manager'],
         // Cases
         // Open the case list.
         'cases.viewAny' => ['owner', 'manager', 'doctor', 'assistant'],

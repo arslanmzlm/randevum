@@ -3,15 +3,21 @@
 namespace App\Modules\Medical\Services;
 
 use App\Models\Patient;
+use App\Modules\Billing\Contracts\BalanceReaderContract;
 use App\Modules\Medical\Contracts\PatientRegistrarContract;
 use App\Modules\Medical\Exceptions\TrashedPhoneConflictException;
 use App\Modules\Medical\Repositories\PatientRepository;
+use App\Modules\Medical\Repositories\TreatmentRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class PatientService implements PatientRegistrarContract
 {
-    public function __construct(private PatientRepository $repository) {}
+    public function __construct(
+        private PatientRepository $repository,
+        private TreatmentRepository $treatmentRepository,
+        private BalanceReaderContract $balanceReader,
+    ) {}
 
     /**
      * @return LengthAwarePaginator<Patient>
@@ -19,6 +25,37 @@ class PatientService implements PatientRegistrarContract
     public function listForActiveClinic(): LengthAwarePaginator
     {
         return $this->repository->paginateForActiveClinic();
+    }
+
+    /**
+     * Remaining balance (billed − paid) per patient for the active clinic, keyed by id —
+     * for the list page's balance column. Only non-zero balances are returned (a patient
+     * absent from the map is square). billed = Completed treatments (Medical); paid comes
+     * through the Billing read seam, never querying Billing tables directly.
+     *
+     * @param  array<int, int>  $patientIds
+     * @return array<int, string> patient_id => remaining (decimal string; positive = owes)
+     */
+    public function remainingBalancesFor(array $patientIds): array
+    {
+        if ($patientIds === []) {
+            return [];
+        }
+
+        $billed = $this->treatmentRepository->billedTotalsForPatients($patientIds);
+        $paid = $this->balanceReader->paidTotalsForPatients($patientIds);
+
+        $balances = [];
+
+        foreach ($patientIds as $id) {
+            $remaining = bcsub($billed[$id] ?? '0', $paid[$id] ?? '0', 2);
+
+            if (bccomp($remaining, '0', 2) !== 0) {
+                $balances[$id] = $remaining;
+            }
+        }
+
+        return $balances;
     }
 
     /**

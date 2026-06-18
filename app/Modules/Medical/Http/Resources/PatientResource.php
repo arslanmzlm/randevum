@@ -36,6 +36,10 @@ class PatientResource extends JsonResource
             'is_legacy' => (bool) $this->is_legacy,
             'notes' => $this->notes,
             'created_at' => $this->created_at->toISOString(),
+            // Present only on the list query (a sortable subselect); null on show/edit.
+            'last_visit_at' => $this->last_visit_at
+                ? Carbon::parse($this->last_visit_at)->toISOString()
+                : null,
         ];
     }
 }

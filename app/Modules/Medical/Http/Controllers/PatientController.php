@@ -46,13 +46,23 @@ class PatientController extends Controller
 
         $paginator = $this->patientService->listForActiveClinic();
 
-        return Inertia::render('patients/Index', [
+        // Capture ids before PatientResource::collection() maps the paginator's items to resources.
+        $ids = array_map(static fn (Patient $p): int => (int) $p->id, $paginator->items());
+
+        $props = [
             'patients' => PatientResource::collection($paginator),
             'query' => FilterHelper::requestState([
                 'gender' => 'string',
                 'is_legacy' => 'boolean',
             ]),
-        ]);
+        ];
+
+        // Balance column is money — gated by the same permission as the rest of the figures.
+        if ($request->user()->can('transactions.viewAny')) {
+            $props['balances'] = $this->patientService->remainingBalancesFor($ids);
+        }
+
+        return Inertia::render('patients/Index', $props);
     }
 
     public function search(Request $request): JsonResponse

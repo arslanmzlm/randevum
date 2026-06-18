@@ -50,10 +50,29 @@
     }
 }
 
-/* Centers the left-anchored DatePicker overlay under the input: +half the input (8rem=w-64), -half the panel. */
+/* Centers the left-anchored DatePicker overlay under the input (+half the input 8rem=w-64,
+   -half the panel) and slides it up from just below on open. The centering offset lives in
+   --daterange-shift-x so the keyframe can hold it constant — otherwise PrimeVue's default
+   anchored-overlay enter animates the transform and the panel drifts in sideways (from the
+   right) instead of straight up. Driving transform via our own animation overrides that default. */
 @utility daterange-panel-centered {
+    --daterange-shift-x: 0px;
+    transform: translateX(var(--daterange-shift-x));
+    /* !important so it beats PrimeVue's runtime-injected anchored-overlay enter animation. */
+    animation: daterange-slide-up 0.2s ease-out !important;
     @variant sm {
-        transform: translateX(calc(8rem - 50%));
+        --daterange-shift-x: calc(8rem - 50%);
+    }
+}
+
+@keyframes daterange-slide-up {
+    from {
+        opacity: 0;
+        transform: translateX(var(--daterange-shift-x)) translateY(0.75rem);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(var(--daterange-shift-x)) translateY(0);
     }
 }
 

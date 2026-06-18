@@ -2,6 +2,7 @@
 
 namespace App\Modules\Medical\Repositories;
 
+use App\Enums\TreatmentStatus;
 use App\Models\Patient;
 use App\Models\Treatment;
 use Illuminate\Database\Eloquent\Collection;
@@ -14,6 +15,30 @@ class TreatmentRepository
     public function create(array $data): Treatment
     {
         return Treatment::create($data);
+    }
+
+    /**
+     * Sum of total_amount over each patient's Completed treatments, keyed by patient_id —
+     * the "billed" side of the derived balance. Active-clinic scoped (ClinicScope); only the
+     * given patients are queried.
+     *
+     * @param  array<int, int>  $patientIds
+     * @return array<int, string> patient_id => billed total (decimal string)
+     */
+    public function billedTotalsForPatients(array $patientIds): array
+    {
+        if ($patientIds === []) {
+            return [];
+        }
+
+        return Treatment::query()
+            ->whereIn('patient_id', $patientIds)
+            ->where('status', TreatmentStatus::Completed->value)
+            ->groupBy('patient_id')
+            ->selectRaw('patient_id, sum(total_amount) as total')
+            ->pluck('total', 'patient_id')
+            ->map(fn ($total): string => (string) $total)
+            ->all();
     }
 
     /**

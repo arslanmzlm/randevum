@@ -3,7 +3,9 @@
 namespace App\Modules\Medical\Repositories;
 
 use App\Enums\Gender;
+use App\Enums\TreatmentStatus;
 use App\Models\Patient;
+use App\Models\Treatment;
 use App\Support\FilterHelper;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -19,9 +21,20 @@ class PatientRepository
      */
     public function paginateForActiveClinic(): LengthAwarePaginator
     {
-        return FilterHelper::for(Patient::class)
+        // Correlated subquery: the patient's most recent completed-treatment time, surfaced
+        // as a sortable "last visit" column. Treatment's ClinicScope keeps it tenant-safe.
+        $lastVisit = Treatment::query()
+            ->selectRaw('max(completed_at)')
+            ->whereColumn('treatments.patient_id', 'patients.id')
+            ->where('status', TreatmentStatus::Completed->value);
+
+        $query = Patient::query()
+            ->select('patients.*')
+            ->addSelect(['last_visit_at' => $lastVisit]);
+
+        return FilterHelper::for($query)
             ->search('first_name', 'last_name', 'phone')
-            ->sort('first_name', 'last_name', 'created_at')
+            ->sort('first_name', 'last_name', 'created_at', 'last_visit_at')
             ->enum(['gender' => Gender::class])
             ->boolean('is_legacy')
             ->paginate();

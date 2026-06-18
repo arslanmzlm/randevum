@@ -17,6 +17,16 @@ interface BalanceReaderContract
     public function paidTotalForPatient(int $patientId): string;
 
     /**
+     * Paid total (sum of transaction amounts) per patient in the active clinic, keyed by
+     * patient_id, in one grouped query. Patients with no payments are absent from the map.
+     * Lets Medical derive list-page balances without touching Billing tables.
+     *
+     * @param  array<int, int>  $patientIds
+     * @return array<int, string> patient_id => paid total (decimal string)
+     */
+    public function paidTotalsForPatients(array $patientIds): array;
+
+    /**
      * All transactions for a patient in the active clinic, newest first (paid_at DESC, id DESC).
      * Returns plain arrays so no Billing models leak across the boundary.
      *

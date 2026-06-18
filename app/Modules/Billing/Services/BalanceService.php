@@ -20,6 +20,14 @@ class BalanceService implements BalanceReaderContract
     }
 
     /**
+     * {@inheritDoc}
+     */
+    public function paidTotalsForPatients(array $patientIds): array
+    {
+        return $this->repository->paidTotalsForPatients($patientIds);
+    }
+
+    /**
      * @return array<int, array{
      *   id: int,
      *   paid_at: string,

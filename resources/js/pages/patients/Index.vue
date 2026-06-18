@@ -8,6 +8,8 @@ import ButtonLink from '@/components/ButtonLink.vue';
 import DataTableWrapper from '@/components/DataTableWrapper.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import { useCan } from '@/composables/useCan';
+import { useDateTime } from '@/composables/useDateTime';
+import { useMoney } from '@/composables/useMoney';
 import { useTableFilters } from '@/composables/useTableFilters';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { create, destroy, edit, index, show } from '@/routes/patients';
@@ -20,8 +22,16 @@ const props = defineProps<PatientIndexProps>();
 const { t } = useI18n();
 const confirm = useConfirm();
 const { can } = useCan();
+const { formatDate } = useDateTime();
+const { formatMoney } = useMoney();
 const canManage = computed(() => can('patients.create'));
 const canDelete = computed(() => can('patients.delete'));
+const canViewBalance = computed(() => can('transactions.viewAny'));
+
+// Remaining balance for a row (positive = owes); null when square or not provided.
+function balanceFor(patient: Patient): string | null {
+    return props.balances?.[patient.id] ?? null;
+}
 
 const { state, loading, first, sortField, sortOrder, onPage, onSort } =
     useTableFilters<{ gender: string | null; is_legacy: boolean | null }>({
@@ -222,6 +232,44 @@ function removePatient(patient: Patient): void {
                             severity="secondary"
                             :value="genderLabel(data.gender)"
                         />
+                        <span v-else class="text-surface-400">—</span>
+                    </template>
+                </Column>
+
+                <Column
+                    field="last_visit_at"
+                    :header="t('patient.columns.last_visit')"
+                    sortable
+                    class="w-36"
+                >
+                    <template #body="{ data }">
+                        <span
+                            v-if="data.last_visit_at"
+                            class="text-surface-700"
+                        >
+                            {{ formatDate(data.last_visit_at) }}
+                        </span>
+                        <span v-else class="text-surface-400">—</span>
+                    </template>
+                </Column>
+
+                <Column
+                    v-if="canViewBalance"
+                    :header="t('patient.columns.balance')"
+                    class="w-32"
+                >
+                    <template #body="{ data }">
+                        <span
+                            v-if="balanceFor(data) !== null"
+                            class="font-medium"
+                            :class="
+                                Number(balanceFor(data)) > 0
+                                    ? 'text-red-600'
+                                    : 'text-emerald-600'
+                            "
+                        >
+                            {{ formatMoney(balanceFor(data)) }}
+                        </span>
                         <span v-else class="text-surface-400">—</span>
                     </template>
                 </Column>

@@ -15,6 +15,7 @@ import {
     IconMessage,
     IconMessage2,
     IconPackage,
+    IconReportMoney,
     IconSettings,
     IconStethoscope,
     IconTags,
@@ -52,6 +53,7 @@ import { edit as smsSettingsEdit } from '@/routes/clinic/sms-settings';
 import { index as doctorsIndex, mine as doctorsMine } from '@/routes/doctors';
 import { index as patientsIndex, show as patientShow } from '@/routes/patients';
 import { index as productsIndex } from '@/routes/products';
+import { revenue as revenueReport } from '@/routes/reports';
 import { index as availabilityIndex } from '@/routes/schedule-exceptions';
 import { index as servicesIndex } from '@/routes/services';
 import { index as smsLogsIndex } from '@/routes/sms-logs';
@@ -197,6 +199,15 @@ const navItems = computed<NavItem[]>(() => [
                   label: t('nav.appointment_types'),
                   href: appointmentTypesIndex().url,
                   icon: IconTags,
+              },
+          ]
+        : []),
+    ...(can('reports.revenue')
+        ? [
+              {
+                  label: t('nav.revenue'),
+                  href: revenueReport().url,
+                  icon: IconReportMoney,
               },
           ]
         : []),
