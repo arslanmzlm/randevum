@@ -252,6 +252,70 @@ class CaseService
     }
 
     /**
+     * Cases for a patient's detail page, own/all scoped to the user, shaped for the panel.
+     *
+     * @return list<array{id: int, title: string, status: string, treatments_count: int, opened_at: string, follow_up_date: string|null}>
+     */
+    public function casesForPatient(int $patientId, User $user): array
+    {
+        $doctorId = $user->can('cases.viewAll') ? null : $user->doctor?->id;
+
+        return $this->caseRepository->forPatient($patientId, $doctorId)
+            ->map(fn (CaseRecord $c) => [
+                'id' => $c->id,
+                'title' => $c->title,
+                'status' => $c->status->value,
+                'treatments_count' => (int) $c->treatments_count,
+                'opened_at' => $c->opened_at->toIso8601String(),
+                'follow_up_date' => $c->follow_up_date?->format('Y-m-d'),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Open cases for a patient + doctor, shaped for the treatment Process "link to case"
+     * select. ClinicScope isolates the tenant.
+     *
+     * @return list<array{id: int, title: string, opened_at: string, treatments_count: int}>
+     */
+    public function openCasesForProcess(int $patientId, int $doctorId): array
+    {
+        return $this->caseRepository
+            ->openForPatientAndDoctor($patientId, $doctorId)
+            ->map(fn (CaseRecord $case) => [
+                'id' => $case->id,
+                'title' => $case->title,
+                'opened_at' => $case->opened_at->toIso8601String(),
+                'treatments_count' => (int) $case->treatments_count,
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Ungrouped completed treatments for the case's patient + doctor, shaped for the
+     * link-treatments dialog on the case Show page.
+     *
+     * @return list<array{id: int, title: string|null, completed_at: string|null, doctor_id: int, doctor_name: string, total_amount: string}>
+     */
+    public function ungroupedTreatmentsForCase(CaseRecord $case): array
+    {
+        return $this->treatmentRepository
+            ->ungroupedCompletedFor($case->patient_id, $case->doctor_id)
+            ->map(fn (Treatment $t) => [
+                'id' => $t->id,
+                'title' => $t->serviceLines->first()?->service?->name,
+                'completed_at' => $t->completed_at?->toIso8601String(),
+                'doctor_id' => (int) $t->doctor_id,
+                'doctor_name' => $t->doctor->display_name,
+                'total_amount' => (string) $t->total_amount,
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
      * Whether the case title may still be edited (within the edit window).
      */
     public function canEditTitle(CaseRecord $case): bool

@@ -10,7 +10,6 @@ use App\Modules\Core\Http\Requests\StoreDoctorRequest;
 use App\Modules\Core\Http\Requests\UpdateDoctorAvatarRequest;
 use App\Modules\Core\Http\Requests\UpdateDoctorProfileRequest;
 use App\Modules\Core\Http\Resources\DoctorResource;
-use App\Modules\Core\Repositories\DoctorRepository;
 use App\Modules\Core\Services\DoctorProfileService;
 use App\Modules\Core\Support\Toast;
 use Illuminate\Http\JsonResponse;
@@ -22,7 +21,6 @@ use Inertia\Response;
 class DoctorController extends Controller
 {
     public function __construct(
-        private DoctorRepository $repository,
         private DoctorProfileService $profileService,
         private MediaServiceContract $mediaService,
     ) {}
@@ -35,7 +33,7 @@ class DoctorController extends Controller
         $hasOwnProfile = $user->doctor()->withoutGlobalScopes()->exists();
 
         return Inertia::render('doctors/Index', [
-            'doctors' => $this->repository->forClinicList()->map(fn (Doctor $doctor) => (new DoctorResource($doctor))->resolve()),
+            'doctors' => $this->profileService->listForClinic()->map(fn (Doctor $doctor) => (new DoctorResource($doctor))->resolve()),
             'hasOwnProfile' => $hasOwnProfile,
             'canCreateOwn' => $user->can('doctors.createOwn') && ! $hasOwnProfile,
         ]);
@@ -56,7 +54,7 @@ class DoctorController extends Controller
 
         Toast::success(__('messages.doctor.doctor_added'));
 
-        return redirect()->route('doctors.edit', $doctor);
+        return to_route('doctors.edit', $doctor);
     }
 
     public function storeOwn(Request $request): RedirectResponse
@@ -67,7 +65,7 @@ class DoctorController extends Controller
 
         Toast::success(__('messages.doctor.profile_created'));
 
-        return redirect()->route('doctors.edit', $doctor);
+        return to_route('doctors.edit', $doctor);
     }
 
     public function edit(Request $request, Doctor $doctor): Response
@@ -87,7 +85,7 @@ class DoctorController extends Controller
         if ($doctor === null) {
             Toast::info(__('messages.doctor.no_profile_yet'));
 
-            return redirect()->route('doctors.index');
+            return to_route('doctors.index');
         }
 
         $this->authorize('update', $doctor);
@@ -106,7 +104,7 @@ class DoctorController extends Controller
 
         Toast::success(__('messages.doctor.profile_updated'));
 
-        return redirect()->back();
+        return back();
     }
 
     public function destroy(Request $request, Doctor $doctor): RedirectResponse
@@ -117,7 +115,7 @@ class DoctorController extends Controller
 
         Toast::success(__('messages.doctor.doctor_removed'));
 
-        return redirect()->route('doctors.index');
+        return to_route('doctors.index');
     }
 
     public function updateAvatar(UpdateDoctorAvatarRequest $request, Doctor $doctor): RedirectResponse
@@ -128,7 +126,7 @@ class DoctorController extends Controller
 
         Toast::success(__('messages.doctor.avatar_updated'));
 
-        return redirect()->back();
+        return back();
     }
 
     public function removeAvatar(Request $request, Doctor $doctor): RedirectResponse
@@ -139,7 +137,7 @@ class DoctorController extends Controller
 
         Toast::success(__('messages.doctor.avatar_removed'));
 
-        return redirect()->back();
+        return back();
     }
 
     public function offboardPreview(Request $request, Doctor $doctor): JsonResponse
@@ -175,7 +173,7 @@ class DoctorController extends Controller
             'count' => $count,
         ]));
 
-        return redirect()->route('doctors.index');
+        return to_route('doctors.index');
     }
 
     /**

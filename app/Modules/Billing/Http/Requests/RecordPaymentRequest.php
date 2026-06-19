@@ -4,6 +4,7 @@ namespace App\Modules\Billing\Http\Requests;
 
 use App\Enums\PaymentMethod;
 use App\Support\ClinicContext;
+use App\Support\ValidationRules;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -37,7 +38,7 @@ class RecordPaymentRequest extends FormRequest
                     ->where('clinic_id', $clinicId)
                     ->where('patient_id', (int) $this->input('patient_id')),
             ],
-            'amount' => ['required', 'numeric', 'min:0.01', 'max:99999999.99', 'decimal:0,2'],
+            'amount' => ['required', ...ValidationRules::money(0.01)],
             'payment_method' => ['required', Rule::enum(PaymentMethod::class)],
             'note' => ['nullable', 'string', 'max:1000'],
             'paid_at' => ['nullable', 'date', 'before_or_equal:now'],

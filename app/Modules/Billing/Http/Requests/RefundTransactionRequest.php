@@ -3,6 +3,7 @@
 namespace App\Modules\Billing\Http\Requests;
 
 use App\Models\Transaction;
+use App\Support\ValidationRules;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -22,7 +23,7 @@ class RefundTransactionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'amount' => ['required', 'numeric', 'min:0.01', 'decimal:0,2'],
+            'amount' => ['required', ...ValidationRules::money(0.01)],
             'reason' => ['required', 'string', 'max:1000'],
         ];
     }

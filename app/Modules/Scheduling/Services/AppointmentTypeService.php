@@ -35,6 +35,23 @@ class AppointmentTypeService
     }
 
     /**
+     * Active types projected for the booking form select, ordered by name.
+     *
+     * @return \Illuminate\Support\Collection<int, array{id: int, name: string, color: string|null, default_duration_minutes: int|null}>
+     */
+    public function listActiveForBooking(): \Illuminate\Support\Collection
+    {
+        return $this->repository->activeForClinic()
+            ->map(fn (AppointmentType $t) => [
+                'id' => $t->id,
+                'name' => $t->name,
+                'color' => $t->color,
+                'default_duration_minutes' => $t->default_duration_minutes,
+            ])
+            ->values();
+    }
+
+    /**
      * @param  array<string, mixed>  $data
      */
     public function create(array $data): AppointmentType

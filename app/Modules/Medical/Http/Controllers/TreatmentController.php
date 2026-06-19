@@ -5,16 +5,15 @@ namespace App\Modules\Medical\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\AppointmentType;
-use App\Models\Clinic;
 use App\Models\Product;
-use App\Models\Service;
 use App\Models\Treatment;
 use App\Modules\Billing\Contracts\BalanceReaderContract;
+use App\Modules\Catalog\Contracts\ServiceLookupContract;
 use App\Modules\Core\Support\Toast;
 use App\Modules\Medical\Http\Requests\CompleteTreatmentRequest;
 use App\Modules\Medical\Http\Resources\TreatmentProcessResource;
 use App\Modules\Medical\Http\Resources\TreatmentShowResource;
-use App\Modules\Medical\Repositories\CaseRepository;
+use App\Modules\Medical\Services\CaseService;
 use App\Modules\Medical\Services\TreatmentService;
 use App\Support\ClinicContext;
 use Illuminate\Http\RedirectResponse;
@@ -26,7 +25,8 @@ class TreatmentController extends Controller
 {
     public function __construct(
         private TreatmentService $treatmentService,
-        private CaseRepository $caseRepository,
+        private CaseService $caseService,
+        private ServiceLookupContract $serviceLookup,
         private ClinicContext $clinicContext,
         private BalanceReaderContract $balanceReader,
     ) {}
@@ -63,20 +63,9 @@ class TreatmentController extends Controller
 
         $treatment->load(['appointment.appointmentType', 'patient', 'doctor.user', 'details']);
 
-        $clinic = Clinic::findOrFail($this->clinicContext->id());
+        $clinic = $this->clinicContext->clinicOrFail();
 
-        $services = Service::active()
-            ->select(['id', 'name', 'price', 'default_complaint', 'default_diagnosis', 'default_treatment_process'])
-            ->orderBy('name')
-            ->get()
-            ->map(fn (Service $s) => [
-                'id' => $s->id,
-                'name' => $s->name,
-                'price' => $s->price,
-                'default_complaint' => $s->default_complaint,
-                'default_diagnosis' => $s->default_diagnosis,
-                'default_treatment_process' => $s->default_treatment_process,
-            ]);
+        $services = $this->serviceLookup->activeForTreatment();
 
         $products = Product::active()
             ->select(['id', 'name', 'price', 'unit', 'current_stock'])
@@ -90,14 +79,7 @@ class TreatmentController extends Controller
                 'current_stock' => $p->current_stock,
             ]);
 
-        $openCases = $this->caseRepository
-            ->openForPatientAndDoctor($treatment->patient_id, $treatment->doctor_id)
-            ->map(fn ($case) => [
-                'id' => $case->id,
-                'title' => $case->title,
-                'opened_at' => $case->opened_at->toIso8601String(),
-                'treatments_count' => $case->treatments_count,
-            ]);
+        $openCases = $this->caseService->openCasesForProcess($treatment->patient_id, $treatment->doctor_id);
 
         $appointmentTypes = AppointmentType::active()
             ->orderBy('name')
@@ -127,7 +109,22 @@ class TreatmentController extends Controller
     {
         $this->authorize('complete', $treatment);
 
-        $result = $this->treatmentService->complete($treatment, $request->validated(), $request->user());
+        $validated = $request->validated();
+
+        // Sub-actions of completion are gated only when the payload actually triggers them.
+        if (! empty($validated['payments'])) {
+            $this->authorize('transactions.create');
+        }
+
+        if (($validated['case_mode'] ?? 'none') === 'new') {
+            $this->authorize('cases.create');
+        }
+
+        if (($validated['follow_up']['mode'] ?? 'none') !== 'none') {
+            $this->authorize('appointments.create');
+        }
+
+        $result = $this->treatmentService->complete($treatment, $validated, $request->user());
 
         $created = count($result['created']);
         $skipped = count($result['skipped']);

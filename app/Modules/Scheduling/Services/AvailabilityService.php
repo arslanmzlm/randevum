@@ -5,9 +5,9 @@ namespace App\Modules\Scheduling\Services;
 use App\Enums\AvailabilityReason;
 use App\Models\AppointmentType;
 use App\Models\Clinic;
-use App\Models\ScheduleException;
-use App\Models\Service;
+use App\Modules\Catalog\Contracts\ServiceLookupContract;
 use App\Modules\Scheduling\Repositories\AppointmentRepository;
+use App\Modules\Scheduling\Repositories\ScheduleExceptionRepository;
 use Carbon\Carbon;
 
 /**
@@ -18,6 +18,8 @@ class AvailabilityService
 {
     public function __construct(
         private AppointmentRepository $appointmentRepository,
+        private ScheduleExceptionRepository $scheduleExceptionRepository,
+        private ServiceLookupContract $serviceLookup,
     ) {}
 
     /**
@@ -65,10 +67,7 @@ class AvailabilityService
      */
     public function hasScheduleExceptionOverlap(int $doctorId, mixed $start, mixed $end): bool
     {
-        return ScheduleException::forDoctor($doctorId)
-            ->where('starts_at', '<', $end)
-            ->where('ends_at', '>', $start)
-            ->exists();
+        return $this->scheduleExceptionRepository->existsOverlapping($doctorId, $start, $end);
     }
 
     /**
@@ -117,9 +116,9 @@ class AvailabilityService
         }
 
         if ($serviceId !== null) {
-            $service = Service::find($serviceId);
-            if ($service?->duration_minutes) {
-                return $service->duration_minutes;
+            $duration = $this->serviceLookup->durationMinutes($serviceId);
+            if ($duration) {
+                return $duration;
             }
         }
 

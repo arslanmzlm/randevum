@@ -23,7 +23,9 @@ class TransactionRepository
      */
     public function paidTotalForTreatment(int $treatmentId): string
     {
-        return (string) Transaction::where('treatment_id', $treatmentId)->sum('amount');
+        $total = Transaction::where('treatment_id', $treatmentId)->sum('amount');
+
+        return number_format((float) $total, 2, '.', '');
     }
 
     /**
@@ -32,7 +34,9 @@ class TransactionRepository
      */
     public function paidTotalForPatient(int $patientId): string
     {
-        return (string) Transaction::where('patient_id', $patientId)->sum('amount');
+        $total = Transaction::where('patient_id', $patientId)->sum('amount');
+
+        return number_format((float) $total, 2, '.', '');
     }
 
     /**
@@ -65,10 +69,10 @@ class TransactionRepository
      */
     public function refundedTotalFor(int $originalId): string
     {
-        $total = (string) Transaction::where('original_transaction_id', $originalId)->sum('amount');
+        $total = number_format((float) Transaction::where('original_transaction_id', $originalId)->sum('amount'), 2, '.', '');
 
         // SUM of negative amounts is ≤ 0; negate to get the positive refunded figure.
-        return bcsub('0', $total ?: '0', 2);
+        return bcsub('0', $total, 2);
     }
 
     /**

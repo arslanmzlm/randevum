@@ -26,7 +26,7 @@ class RevenueController extends Controller
 
     public function index(Request $request): Response
     {
-        abort_unless($request->user()->can('reports.revenue'), 403);
+        $this->authorize('reports.revenue');
 
         $clinic = Clinic::findOrFail($this->clinicContext->id());
         [$entire, $start, $end] = $this->resolveFilters($request, $clinic->timezone);
@@ -55,7 +55,7 @@ class RevenueController extends Controller
      */
     public function clearCache(Request $request): RedirectResponse
     {
-        abort_unless($request->user()->can('reports.revenue'), 403);
+        $this->authorize('reports.revenue');
 
         $clinic = Clinic::findOrFail($this->clinicContext->id());
         Cache::tags($this->cacheTag($clinic->id))->flush();

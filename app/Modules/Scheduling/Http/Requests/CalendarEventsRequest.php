@@ -3,6 +3,7 @@
 namespace App\Modules\Scheduling\Http\Requests;
 
 use App\Enums\AppointmentStatus;
+use App\Support\ClinicContext;
 use Carbon\Carbon;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -46,10 +47,16 @@ class CalendarEventsRequest extends FormRequest
      */
     public function rules(): array
     {
+        $clinicId = app(ClinicContext::class)->id();
+
         return [
             'start' => ['required', 'date_format:Y-m-d'],
             'end' => ['required', 'date_format:Y-m-d', 'after_or_equal:start'],
-            'doctor_id' => ['nullable', 'integer', Rule::exists('doctors', 'id')],
+            'doctor_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('doctors', 'id')->where('clinic_id', $clinicId),
+            ],
             'statuses' => ['nullable', 'array'],
             'statuses.*' => ['string', Rule::in(self::MVP_STATUSES)],
         ];

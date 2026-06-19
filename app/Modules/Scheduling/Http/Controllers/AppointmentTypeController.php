@@ -50,7 +50,7 @@ class AppointmentTypeController extends Controller
 
         Toast::success(__('messages.appointment_type.created'));
 
-        return redirect()->route('appointment-types.index');
+        return to_route('appointment-types.index');
     }
 
     public function edit(AppointmentType $appointmentType): Response
@@ -70,7 +70,7 @@ class AppointmentTypeController extends Controller
 
         Toast::success(__('messages.appointment_type.updated'));
 
-        return redirect()->route('appointment-types.index');
+        return to_route('appointment-types.index');
     }
 
     public function destroy(AppointmentType $appointmentType): RedirectResponse
@@ -81,6 +81,6 @@ class AppointmentTypeController extends Controller
 
         Toast::success(__('messages.appointment_type.deleted'));
 
-        return redirect()->route('appointment-types.index');
+        return to_route('appointment-types.index');
     }
 }

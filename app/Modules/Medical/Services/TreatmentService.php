@@ -19,6 +19,8 @@ use App\Modules\Medical\Repositories\CaseRepository;
 use App\Modules\Medical\Repositories\TreatmentRepository;
 use App\Support\ClinicContext;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -286,24 +288,7 @@ class TreatmentService
      */
     private function writeServiceLines(Treatment $treatment, array $lines): void
     {
-        $treatment->serviceLines()->delete();
-
-        foreach ($lines as $index => $line) {
-            $qty = (int) $line['quantity'];
-            $unitPrice = (float) $line['unit_price'];
-            $discount = (float) ($line['discount_amount'] ?? 0);
-            $subtotal = max(0, ($qty * $unitPrice) - $discount);
-
-            $treatment->serviceLines()->create([
-                'service_id' => (int) $line['service_id'],
-                'quantity' => $qty,
-                'unit_price' => $unitPrice,
-                'discount_amount' => $discount,
-                'subtotal' => $subtotal,
-                'note' => $line['note'] ?? null,
-                'sort_order' => $index,
-            ]);
-        }
+        $this->writeLines($treatment->serviceLines(), 'service_id', $lines);
     }
 
     /**
@@ -313,7 +298,19 @@ class TreatmentService
      */
     private function writeProductLines(Treatment $treatment, array $lines): void
     {
-        $treatment->productLines()->delete();
+        $this->writeLines($treatment->productLines(), 'product_id', $lines);
+    }
+
+    /**
+     * Replace a treatment's line rows on the given relation, snapshotting unit_price and
+     * computing subtotal = max(0, qty*unit_price − discount) per line.
+     *
+     * @param  HasMany<Model, Treatment>  $relation
+     * @param  list<array<string, mixed>>  $lines
+     */
+    private function writeLines($relation, string $foreignKey, array $lines): void
+    {
+        $relation->delete();
 
         foreach ($lines as $index => $line) {
             $qty = (int) $line['quantity'];
@@ -321,8 +318,8 @@ class TreatmentService
             $discount = (float) ($line['discount_amount'] ?? 0);
             $subtotal = max(0, ($qty * $unitPrice) - $discount);
 
-            $treatment->productLines()->create([
-                'product_id' => (int) $line['product_id'],
+            $relation->create([
+                $foreignKey => (int) $line[$foreignKey],
                 'quantity' => $qty,
                 'unit_price' => $unitPrice,
                 'discount_amount' => $discount,

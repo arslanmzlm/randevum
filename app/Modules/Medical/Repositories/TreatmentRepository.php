@@ -61,6 +61,27 @@ class TreatmentRepository
     }
 
     /**
+     * Ungrouped (case_id null) completed treatments for a patient + doctor, newest first.
+     * Feeds the case Show "link treatments" dialog. ClinicScope isolates the tenant.
+     *
+     * @return Collection<int, Treatment>
+     */
+    public function ungroupedCompletedFor(int $patientId, int $doctorId): Collection
+    {
+        return Treatment::where('patient_id', $patientId)
+            ->where('doctor_id', $doctorId)
+            ->whereNull('case_id')
+            ->where('status', TreatmentStatus::Completed->value)
+            ->with([
+                'doctor.user',
+                'serviceLines' => fn ($q) => $q->orderBy('sort_order')->limit(1),
+                'serviceLines.service',
+            ])
+            ->orderByDesc('completed_at')
+            ->get();
+    }
+
+    /**
      * Treatments for the patient's history panel, newest first.
      * Loads first service line for the title display; scope restricts to own doctor when needed.
      *

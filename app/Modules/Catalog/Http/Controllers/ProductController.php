@@ -3,7 +3,6 @@
 namespace App\Modules\Catalog\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Models\Clinic;
 use App\Models\Product;
 use App\Modules\Catalog\Http\Requests\StoreProductRequest;
 use App\Modules\Catalog\Http\Requests\UpdateProductRequest;
@@ -36,7 +35,7 @@ class ProductController extends Controller
             'query' => FilterHelper::requestState([
                 'is_active' => 'boolean',
             ]),
-            'currency' => $this->activeClinicCurrency(),
+            'currency' => $this->clinicContext->currency(),
         ]);
     }
 
@@ -45,7 +44,7 @@ class ProductController extends Controller
         $this->authorize('create', Product::class);
 
         return Inertia::render('products/Create', [
-            'currency' => $this->activeClinicCurrency(),
+            'currency' => $this->clinicContext->currency(),
             ...$this->catalogService->suggestions(),
         ]);
     }
@@ -58,7 +57,7 @@ class ProductController extends Controller
 
         Toast::success(__('messages.product.created'));
 
-        return redirect()->route('products.index');
+        return to_route('products.index');
     }
 
     public function edit(Product $product): Response
@@ -67,7 +66,7 @@ class ProductController extends Controller
 
         return Inertia::render('products/Edit', [
             'product' => (new ProductResource($product))->resolve(),
-            'currency' => $this->activeClinicCurrency(),
+            'currency' => $this->clinicContext->currency(),
             ...$this->catalogService->suggestions(),
         ]);
     }
@@ -80,7 +79,7 @@ class ProductController extends Controller
 
         Toast::success(__('messages.product.updated'));
 
-        return redirect()->route('products.index');
+        return to_route('products.index');
     }
 
     public function updateStock(UpdateProductStockRequest $request, Product $product): RedirectResponse
@@ -91,7 +90,7 @@ class ProductController extends Controller
 
         Toast::success(__('messages.product.stock_updated'));
 
-        return redirect()->route('products.index');
+        return to_route('products.index');
     }
 
     public function destroy(Product $product): RedirectResponse
@@ -102,13 +101,6 @@ class ProductController extends Controller
 
         Toast::success(__('messages.product.deleted'));
 
-        return redirect()->route('products.index');
-    }
-
-    private function activeClinicCurrency(): string
-    {
-        $clinic = Clinic::find($this->clinicContext->id());
-
-        return $clinic?->currency ?? 'TRY';
+        return to_route('products.index');
     }
 }

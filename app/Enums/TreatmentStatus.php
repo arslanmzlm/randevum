@@ -6,6 +6,6 @@ enum TreatmentStatus: string
 {
     case Draft = 'draft';
     case Completed = 'completed';
-    // Voided ships as an enum case now; the code path is implemented in 1.28.
+    // Voided is defined now; the treatment-voiding code path lands later.
     case Voided = 'voided';
 }

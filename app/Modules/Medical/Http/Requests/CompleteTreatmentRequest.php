@@ -4,7 +4,7 @@ namespace App\Modules\Medical\Http\Requests;
 
 use App\Enums\PaymentMethod;
 use App\Support\ClinicContext;
-use Illuminate\Contracts\Validation\Validator;
+use App\Support\ValidationRules;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -16,27 +16,6 @@ class CompleteTreatmentRequest extends FormRequest
     public function authorize(): bool
     {
         return true;
-    }
-
-    public function withValidator(Validator $validator): void
-    {
-        $validator->after(function (Validator $validator): void {
-            $user = $this->user();
-
-            $payments = $this->input('payments') ?? [];
-
-            if (is_array($payments) && $payments !== [] && ! $user->can('transactions.create')) {
-                $validator->errors()->add('payments', __('treatment.errors.payment_not_allowed'));
-            }
-
-            if ($this->input('case_mode') === 'new' && ! $user->can('cases.create')) {
-                $validator->errors()->add('case_mode', __('treatment.errors.case_create_not_allowed'));
-            }
-
-            if (($this->input('follow_up.mode') ?? 'none') !== 'none' && ! $user->can('appointments.create')) {
-                $validator->errors()->add('follow_up.mode', __('treatment.errors.follow_up_not_allowed'));
-            }
-        });
     }
 
     /**
@@ -55,7 +34,7 @@ class CompleteTreatmentRequest extends FormRequest
             'notes' => ['nullable', 'string', 'max:5000'],
 
             // Treatment-level discount
-            'discount_amount' => ['nullable', 'numeric', 'min:0'],
+            'discount_amount' => ['nullable', ...ValidationRules::money(0)],
 
             // Service line items
             'services' => ['nullable', 'array'],
@@ -65,8 +44,8 @@ class CompleteTreatmentRequest extends FormRequest
                 Rule::exists('services', 'id')->where('clinic_id', $clinicId),
             ],
             'services.*.quantity' => ['required', 'integer', 'min:1'],
-            'services.*.unit_price' => ['required', 'numeric', 'min:0'],
-            'services.*.discount_amount' => ['nullable', 'numeric', 'min:0'],
+            'services.*.unit_price' => ['required', ...ValidationRules::money(0)],
+            'services.*.discount_amount' => ['nullable', ...ValidationRules::money(0)],
             'services.*.note' => ['nullable', 'string', 'max:1000'],
 
             // Product line items
@@ -77,8 +56,8 @@ class CompleteTreatmentRequest extends FormRequest
                 Rule::exists('products', 'id')->where('clinic_id', $clinicId),
             ],
             'products.*.quantity' => ['required', 'integer', 'min:1'],
-            'products.*.unit_price' => ['required', 'numeric', 'min:0'],
-            'products.*.discount_amount' => ['nullable', 'numeric', 'min:0'],
+            'products.*.unit_price' => ['required', ...ValidationRules::money(0)],
+            'products.*.discount_amount' => ['nullable', ...ValidationRules::money(0)],
             'products.*.note' => ['nullable', 'string', 'max:1000'],
 
             // Case linking
@@ -88,7 +67,7 @@ class CompleteTreatmentRequest extends FormRequest
 
             // Optional payments — may be split across methods (e.g. part card, part cash)
             'payments' => ['nullable', 'array', 'max:4'],
-            'payments.*.amount' => ['required', 'numeric', 'min:0.01'],
+            'payments.*.amount' => ['required', ...ValidationRules::money(0.01)],
             'payments.*.method' => ['required', Rule::enum(PaymentMethod::class)],
 
             // Optional follow-up booking

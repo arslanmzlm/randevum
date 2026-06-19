@@ -27,7 +27,7 @@ return new class extends Migration
 
             $table->index(['clinic_id', 'patient_id']);
             $table->index(['clinic_id', 'doctor_id', 'status']);
-            // For 1.24-ready follow-up date queries
+            // For follow-up date queries
             $table->index(['clinic_id', 'status', 'follow_up_date']);
         });
     }

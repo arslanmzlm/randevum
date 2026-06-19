@@ -592,7 +592,7 @@ it('rejects payment rows from an assistant who lacks transactions.create', funct
         ->put(route('treatments.complete', $treatment), ctPayload([
             'payments' => [['amount' => '100.00', 'method' => 'cash']],
         ]))
-        ->assertSessionHasErrors('payments');
+        ->assertForbidden();
 });
 
 it('rejects case_mode=new from a receptionist who lacks cases.create', function (): void {
@@ -606,7 +606,7 @@ it('rejects case_mode=new from a receptionist who lacks cases.create', function 
             'case_mode' => 'new',
             'new_case_title' => 'Test Vaka',
         ]))
-        ->assertSessionHasErrors('case_mode');
+        ->assertForbidden();
 });
 
 it('rejects follow_up.mode=single from an assistant who lacks appointments.create', function (): void {
@@ -622,7 +622,7 @@ it('rejects follow_up.mode=single from an assistant who lacks appointments.creat
                 'occurrences' => [['starts_at' => Carbon::now()->addWeek()->format('Y-m-d H:i:s')]],
             ],
         ]))
-        ->assertSessionHasErrors('follow_up.mode');
+        ->assertForbidden();
 });
 
 it('GET /treatments/{treatment} (show) renders the Show component with treatment data', function (): void {

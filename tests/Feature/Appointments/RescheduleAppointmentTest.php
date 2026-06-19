@@ -507,7 +507,7 @@ it('doctor without assignDoctor cannot set a different doctor_id on update (422 
 
     $this->actingAs($doctorUser)
         ->put(route('appointments.update', $appointment), raPayload($otherDoctor->id, raMondayAt('11:00')))
-        ->assertSessionHasErrors('doctor_id');
+        ->assertForbidden();
 });
 
 it('receptionist (has assignDoctor) can reschedule any appointment', function (): void {

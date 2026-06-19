@@ -3,13 +3,12 @@
 namespace App\Modules\Billing\Services;
 
 use App\Enums\TransactionStatus;
-use App\Enums\TreatmentStatus;
 use App\Models\Transaction;
-use App\Models\Treatment;
 use App\Models\User;
 use App\Modules\Billing\Contracts\PaymentRecorderContract;
 use App\Modules\Billing\Repositories\TransactionRepository;
 use App\Modules\Core\Services\StatusLogService;
+use App\Modules\Medical\Contracts\TreatmentReaderContract;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -18,6 +17,7 @@ class PaymentService implements PaymentRecorderContract
     public function __construct(
         private TransactionRepository $repository,
         private StatusLogService $statusLogService,
+        private TreatmentReaderContract $treatmentReader,
     ) {}
 
     /**
@@ -41,12 +41,12 @@ class PaymentService implements PaymentRecorderContract
         $treatmentId = $data['treatment_id'] ?? null;
 
         if ($treatmentId !== null) {
-            $treatment = Treatment::find($treatmentId);
+            $cap = $this->treatmentReader->completedTotalCap($treatmentId);
 
-            if ($treatment && $treatment->status === TreatmentStatus::Completed) {
+            if ($cap !== null) {
                 $existingPaid = $this->repository->paidTotalForTreatment($treatmentId);
 
-                if (bccomp(bcadd($existingPaid, (string) $data['amount'], 2), $treatment->total_amount, 2) > 0) {
+                if (bccomp(bcadd($existingPaid, (string) $data['amount'], 2), $cap, 2) > 0) {
                     throw ValidationException::withMessages([
                         'amount' => __('treatment.errors.payments_exceed_total'),
                     ]);

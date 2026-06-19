@@ -9,6 +9,7 @@ use App\Modules\Core\Contracts\DoctorDirectoryContract;
 use App\Modules\Scheduling\Repositories\ScheduleExceptionRepository;
 use App\Support\ClinicContext;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
 class ScheduleExceptionService
@@ -36,7 +37,7 @@ class ScheduleExceptionService
         $clinic = Clinic::findOrFail($this->clinicContext->id());
 
         if ($data['scope'] === 'clinic') {
-            // 1.18/1.6: conflicting-appointment preview + cancel handled when appointments exist
+            // Conflicting-appointment preview + cancel handled when appointments exist
             DB::transaction(function () use ($data, $actor, $clinic): void {
                 foreach ($this->doctorDirectory->activeForClinic() as $doctor) {
                     $this->createOne($data, $doctor->id, $actor, $clinic);
@@ -45,6 +46,22 @@ class ScheduleExceptionService
         } else {
             $this->createOne($data, (int) $data['doctor_id'], $actor, $clinic);
         }
+    }
+
+    /**
+     * Exceptions for the active clinic; upcoming only unless $includePast.
+     *
+     * @return Collection<int, ScheduleException>
+     */
+    public function listForClinic(bool $includePast = false): Collection
+    {
+        return $this->repository->listForClinic(includePast: $includePast);
+    }
+
+    /** Count of past exceptions for the active clinic — drives the "show past" hint. */
+    public function pastCountForClinic(): int
+    {
+        return $this->repository->pastCountForClinic();
     }
 
     public function delete(ScheduleException $exception): void

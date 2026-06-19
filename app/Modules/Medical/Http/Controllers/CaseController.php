@@ -3,10 +3,8 @@
 namespace App\Modules\Medical\Http\Controllers;
 
 use App\Enums\CaseStatus;
-use App\Enums\TreatmentStatus;
 use App\Http\Controllers\Controller;
 use App\Models\CaseRecord;
-use App\Models\Treatment;
 use App\Modules\Core\Contracts\DoctorDirectoryContract;
 use App\Modules\Core\Support\Toast;
 use App\Modules\Medical\Http\Requests\ChangeCaseStatusRequest;
@@ -17,7 +15,6 @@ use App\Modules\Medical\Http\Requests\UpdateCaseNotesRequest;
 use App\Modules\Medical\Http\Requests\UpdateCaseTitleRequest;
 use App\Modules\Medical\Http\Resources\CaseListResource;
 use App\Modules\Medical\Http\Resources\CaseShowResource;
-use App\Modules\Medical\Repositories\CaseRepository;
 use App\Modules\Medical\Services\CaseService;
 use App\Support\FilterHelper;
 use Illuminate\Http\RedirectResponse;
@@ -29,7 +26,6 @@ class CaseController extends Controller
 {
     public function __construct(
         private CaseService $caseService,
-        private CaseRepository $caseRepository,
         private DoctorDirectoryContract $doctorDirectory,
     ) {}
 
@@ -80,32 +76,10 @@ class CaseController extends Controller
             ])->orderByDesc('completed_at'),
         ]);
 
-        // Ungrouped completed treatments for the same patient and doctor (for the link dialog).
-        $ungroupedTreatments = Treatment::where('patient_id', $case->patient_id)
-            ->where('doctor_id', $case->doctor_id)
-            ->whereNull('case_id')
-            ->where('status', TreatmentStatus::Completed->value)
-            ->with([
-                'doctor.user',
-                'serviceLines' => fn ($q) => $q->orderBy('sort_order')->limit(1),
-                'serviceLines.service',
-            ])
-            ->orderByDesc('completed_at')
-            ->get()
-            ->map(fn (Treatment $t) => [
-                'id' => $t->id,
-                'title' => $t->serviceLines->first()?->service?->name,
-                'completed_at' => $t->completed_at?->toIso8601String(),
-                'doctor_id' => (int) $t->doctor_id,
-                'doctor_name' => $t->doctor->display_name,
-                'total_amount' => (string) $t->total_amount,
-            ])
-            ->values();
-
         return Inertia::render('cases/Show', [
             'case' => (new CaseShowResource($case))->resolve(),
             'allowedTransitions' => $this->caseService->allowedTransitions($case),
-            'ungroupedTreatments' => $ungroupedTreatments,
+            'ungroupedTreatments' => $this->caseService->ungroupedTreatmentsForCase($case),
             'canEditTitle' => $this->caseService->canEditTitle($case),
             'ownDoctorId' => $request->user()->doctor?->id,
         ]);

@@ -32,6 +32,18 @@ class ScheduleExceptionRepository
     }
 
     /**
+     * Whether any exception for the doctor strictly overlaps [start, end] — back-to-back
+     * with an exception boundary is not a conflict. ClinicScope is applied automatically.
+     */
+    public function existsOverlapping(int $doctorId, mixed $start, mixed $end): bool
+    {
+        return ScheduleException::forDoctor($doctorId)
+            ->where('starts_at', '<', $end)
+            ->where('ends_at', '>', $start)
+            ->exists();
+    }
+
+    /**
      * @param  array<string, mixed>  $data
      */
     public function create(array $data): ScheduleException

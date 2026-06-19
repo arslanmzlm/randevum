@@ -4,12 +4,13 @@ namespace App\Modules\Catalog\Services;
 
 use App\Models\Clinic;
 use App\Models\Service;
+use App\Modules\Catalog\Contracts\ServiceLookupContract;
 use App\Modules\Catalog\Repositories\ServiceRepository;
 use App\Support\ClinicContext;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
-class ServiceCatalogService
+class ServiceCatalogService implements ServiceLookupContract
 {
     public function __construct(
         private ServiceRepository $repository,
@@ -55,5 +56,40 @@ class ServiceCatalogService
     public function delete(Service $service): void
     {
         $this->repository->delete($service);
+    }
+
+    public function durationMinutes(int $serviceId): ?int
+    {
+        return Service::find($serviceId)?->duration_minutes;
+    }
+
+    public function activeForBooking(): \Illuminate\Support\Collection
+    {
+        return Service::active()
+            ->select(['id', 'name', 'duration_minutes', 'price'])
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Service $s): array => [
+                'id' => $s->id,
+                'name' => $s->name,
+                'duration_minutes' => $s->duration_minutes,
+                'price' => $s->price,
+            ]);
+    }
+
+    public function activeForTreatment(): \Illuminate\Support\Collection
+    {
+        return Service::active()
+            ->select(['id', 'name', 'price', 'default_complaint', 'default_diagnosis', 'default_treatment_process'])
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Service $s): array => [
+                'id' => $s->id,
+                'name' => $s->name,
+                'price' => $s->price,
+                'default_complaint' => $s->default_complaint,
+                'default_diagnosis' => $s->default_diagnosis,
+                'default_treatment_process' => $s->default_treatment_process,
+            ]);
     }
 }

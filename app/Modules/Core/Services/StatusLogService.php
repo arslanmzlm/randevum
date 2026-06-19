@@ -4,7 +4,6 @@ namespace App\Modules\Core\Services;
 
 use App\Models\StatusLog;
 use App\Models\User;
-use App\Support\ClinicContext;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -13,10 +12,6 @@ use Illuminate\Database\Eloquent\Model;
  */
 class StatusLogService
 {
-    public function __construct(
-        private ClinicContext $clinicContext,
-    ) {}
-
     public function record(
         Model $loggable,
         ?string $from,
@@ -25,7 +20,9 @@ class StatusLogService
         ?string $reason = null,
     ): void {
         StatusLog::create([
-            'clinic_id' => $this->clinicContext->id(),
+            // A status log always belongs to the loggable's clinic — derive it so the
+            // record is correct even outside a request clinic context (queue/scheduler).
+            'clinic_id' => $loggable->getAttribute('clinic_id'),
             'loggable_type' => $loggable->getMorphClass(),
             'loggable_id' => $loggable->getKey(),
             'from_status' => $from,

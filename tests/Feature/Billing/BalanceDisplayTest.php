@@ -265,7 +265,7 @@ it('patient Show balance remaining equals total minus paid', function (): void {
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->where('balance.total', '300.00')
-            ->where('balance.paid', '200')
+            ->where('balance.paid', '200.00')
             ->where('balance.remaining', '100.00')
         );
 });
@@ -298,7 +298,7 @@ it('patient Show balance correctly nets a refund — remaining goes up when a co
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->where('balance.total', '200.00')
-            ->where('balance.paid', '100')       // 150 + (−50) = 100
+            ->where('balance.paid', '100.00')       // 150 + (−50) = 100
             ->where('balance.remaining', '100.00')
             ->has('transactions', 2)
         );
@@ -314,7 +314,7 @@ it('patient Show sends empty transactions array and zero paid when the patient h
         ->assertInertia(fn ($page) => $page
             ->where('transactions', [])
             ->where('balance.total', '200.00')
-            ->where('balance.paid', '0')
+            ->where('balance.paid', '0.00')
             ->where('balance.remaining', '200.00')
         );
 });
@@ -329,7 +329,7 @@ it('patient Show total is zero when no Completed treatments exist', function ():
         ->assertInertia(fn ($page) => $page
             ->where('transactions', [])
             ->where('balance.total', '0.00')
-            ->where('balance.paid', '0')
+            ->where('balance.paid', '0.00')
             ->where('balance.remaining', '0.00')
         );
 });
@@ -450,7 +450,7 @@ it('patient Show only returns clinic A transactions even if a clinic-B transacti
         ->assertInertia(fn ($page) => $page
             ->has('transactions', 1)
             ->where('transactions.0.id', $txA->id)
-            ->where('balance.paid', '100')       // 999 from clinic B must NOT add in
+            ->where('balance.paid', '100.00')       // 999 from clinic B must NOT add in
         );
 });
 
@@ -524,7 +524,7 @@ it('TransactionRepository paidTotalForPatient is scoped to the active clinic', f
 
     $repo = app(TransactionRepository::class);
 
-    expect($repo->paidTotalForPatient($patient->id))->toBe('200'); // not 700
+    expect($repo->paidTotalForPatient($patient->id))->toBe('200.00'); // not 700
 });
 
 it('TransactionRepository forPatient is scoped to the active clinic', function (): void {

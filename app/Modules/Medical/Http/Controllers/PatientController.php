@@ -2,7 +2,6 @@
 
 namespace App\Modules\Medical\Http\Controllers;
 
-use App\Enums\TreatmentStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\Patient;
@@ -16,7 +15,7 @@ use App\Modules\Medical\Http\Requests\UpdatePatientNotesRequest;
 use App\Modules\Medical\Http\Requests\UpdatePatientRequest;
 use App\Modules\Medical\Http\Resources\PatientResource;
 use App\Modules\Medical\Http\Resources\PatientSearchResource;
-use App\Modules\Medical\Repositories\CaseRepository;
+use App\Modules\Medical\Services\CaseService;
 use App\Modules\Medical\Services\PatientService;
 use App\Modules\Medical\Services\TreatmentService;
 use App\Modules\Messaging\Contracts\SmsHistoryContract;
@@ -33,7 +32,7 @@ class PatientController extends Controller
     public function __construct(
         private PatientService $patientService,
         private TreatmentService $treatmentService,
-        private CaseRepository $caseRepository,
+        private CaseService $caseService,
         private PatientAppointmentsContract $patientAppointments,
         private BalanceReaderContract $balanceReader,
         private SmsHistoryContract $smsHistory,
@@ -121,17 +120,7 @@ class PatientController extends Controller
             'case_title' => $t->case?->title,
         ]);
 
-        $doctorId = $user->can('cases.viewAll') ? null : $user->doctor?->id;
-
-        $cases = $this->caseRepository->forPatient($patient->id, $doctorId)
-            ->map(fn ($c) => [
-                'id' => $c->id,
-                'title' => $c->title,
-                'status' => $c->status->value,
-                'treatments_count' => (int) $c->treatments_count,
-                'opened_at' => $c->opened_at->toIso8601String(),
-                'follow_up_date' => $c->follow_up_date?->format('Y-m-d'),
-            ]);
+        $cases = $this->caseService->casesForPatient($patient->id, $user);
 
         $appointments = $user->can('appointments.viewAny')
             ? $this->patientAppointments->listForPatient($patient, $user)
@@ -175,20 +164,7 @@ class PatientController extends Controller
         ];
 
         if ($user->can('transactions.viewAny')) {
-            // Total billed = sum of total_amount over the patient's Completed treatments.
-            // Scoped to what listForPatient returned (respects treatments.viewAll gate).
-            $total = $treatmentCollection
-                ->filter(fn ($t) => $t->status === TreatmentStatus::Completed)
-                ->reduce(fn ($carry, $t) => bcadd($carry, (string) $t->total_amount, 2), '0.00');
-
-            $paid = $this->balanceReader->paidTotalForPatient($patient->id);
-
-            $props['balance'] = [
-                'total' => $total,
-                'paid' => $paid,
-                'remaining' => bcsub($total, $paid, 2),
-            ];
-
+            $props['balance'] = $this->patientService->balanceForPatient($patient, $treatmentCollection);
             $props['transactions'] = $this->balanceReader->transactionsForPatient($patient->id);
         }
 

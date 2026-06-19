@@ -4,6 +4,7 @@ namespace App\Modules\Medical\Http\Requests;
 
 use App\Support\ClinicContext;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreCaseRequest extends FormRequest
 {
@@ -21,7 +22,7 @@ class StoreCaseRequest extends FormRequest
 
         return [
             'title' => ['required', 'string', 'max:255'],
-            'patient_id' => ['required', 'integer', "exists:patients,id,clinic_id,{$clinicId}"],
+            'patient_id' => ['required', 'integer', Rule::exists('patients', 'id')->where('clinic_id', $clinicId)],
             'doctor_id' => ['nullable', 'integer'],
             'treatment_ids' => ['nullable', 'array'],
             'treatment_ids.*' => ['integer'],

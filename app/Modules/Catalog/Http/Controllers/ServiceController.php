@@ -3,7 +3,6 @@
 namespace App\Modules\Catalog\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Models\Clinic;
 use App\Models\Service;
 use App\Modules\Catalog\Http\Requests\StoreServiceRequest;
 use App\Modules\Catalog\Http\Requests\UpdateServiceRequest;
@@ -35,7 +34,7 @@ class ServiceController extends Controller
             'query' => FilterHelper::requestState([
                 'is_active' => 'boolean',
             ]),
-            'currency' => $this->activeClinicCurrency(),
+            'currency' => $this->clinicContext->currency(),
         ]);
     }
 
@@ -44,7 +43,7 @@ class ServiceController extends Controller
         $this->authorize('create', Service::class);
 
         return Inertia::render('services/Create', [
-            'currency' => $this->activeClinicCurrency(),
+            'currency' => $this->clinicContext->currency(),
         ]);
     }
 
@@ -56,7 +55,7 @@ class ServiceController extends Controller
 
         Toast::success(__('messages.service.created'));
 
-        return redirect()->route('services.index');
+        return to_route('services.index');
     }
 
     public function edit(Service $service): Response
@@ -65,7 +64,7 @@ class ServiceController extends Controller
 
         return Inertia::render('services/Edit', [
             'service' => (new ServiceResource($service))->resolve(),
-            'currency' => $this->activeClinicCurrency(),
+            'currency' => $this->clinicContext->currency(),
         ]);
     }
 
@@ -77,7 +76,7 @@ class ServiceController extends Controller
 
         Toast::success(__('messages.service.updated'));
 
-        return redirect()->route('services.index');
+        return to_route('services.index');
     }
 
     public function destroy(Service $service): RedirectResponse
@@ -88,13 +87,6 @@ class ServiceController extends Controller
 
         Toast::success(__('messages.service.deleted'));
 
-        return redirect()->route('services.index');
-    }
-
-    private function activeClinicCurrency(): string
-    {
-        $clinic = Clinic::find($this->clinicContext->id());
-
-        return $clinic?->currency ?? 'TRY';
+        return to_route('services.index');
     }
 }

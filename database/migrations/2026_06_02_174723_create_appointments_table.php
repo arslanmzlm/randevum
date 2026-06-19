@@ -17,13 +17,13 @@ return new class extends Migration
             $table->foreignId('appointment_type_id')->nullable()->constrained('appointment_types')->nullOnDelete();
             // What the patient is coming in for (visit intent) — customer requirement. Nullable +
             // soft reference: a soft-deleted service must not break the appointment. Distinct from
-            // treatment_services (what was actually performed + priced, 1.10).
+            // treatment_services (what was actually performed + priced).
             $table->foreignId('service_id')->nullable()->constrained('services')->nullOnDelete();
             $table->timestampTz('starts_at');
             $table->timestampTz('ends_at');
             $table->string('status')->default('confirmed');
             $table->boolean('is_walk_in')->default(false);
-            // Idempotency guards for the reminder SMS scheduler (1.16).
+            // Idempotency guards for the reminder SMS scheduler.
             $table->boolean('reminder_24h_sent')->default(false);
             $table->boolean('reminder_1h_sent')->default(false);
             // Nullable + nullOnDelete: deleting a user keeps the appointment row intact.

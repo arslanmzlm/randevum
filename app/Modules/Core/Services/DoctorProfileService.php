@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Modules\Core\Contracts\AppointmentCancellationContract;
 use App\Modules\Core\Repositories\DoctorRepository;
 use App\Support\ClinicContext;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
@@ -19,6 +20,16 @@ class DoctorProfileService
         private ClinicContext $clinicContext,
         private AppointmentCancellationContract $cancellation,
     ) {}
+
+    /**
+     * Ordered list of the active clinic's doctors for the index page.
+     *
+     * @return Collection<int, Doctor>
+     */
+    public function listForClinic(): Collection
+    {
+        return $this->repository->forClinicList();
+    }
 
     /**
      * Create a new user + clinic-scoped doctor role + doctor profile in one transaction.

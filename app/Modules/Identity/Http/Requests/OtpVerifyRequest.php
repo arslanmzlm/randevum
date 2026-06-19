@@ -2,11 +2,21 @@
 
 namespace App\Modules\Identity\Http\Requests;
 
+use App\Http\Requests\Concerns\NormalizesTrPhone;
 use Illuminate\Foundation\Http\FormRequest;
-use Propaganistas\LaravelPhone\PhoneNumber;
 
 class OtpVerifyRequest extends FormRequest
 {
+    use NormalizesTrPhone;
+
+    /**
+     * Public OTP endpoint — no auth required to verify a code.
+     */
+    public function authorize(): bool
+    {
+        return true;
+    }
+
     /**
      * @return array<string, list<string>>
      */
@@ -23,6 +33,6 @@ class OtpVerifyRequest extends FormRequest
      */
     public function e164Phone(): string
     {
-        return (new PhoneNumber($this->validated('phone'), 'TR'))->formatE164();
+        return $this->toE164($this->validated('phone'));
     }
 }

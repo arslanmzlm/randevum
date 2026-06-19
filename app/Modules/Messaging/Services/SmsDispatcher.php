@@ -59,6 +59,8 @@ class SmsDispatcher implements SmsDispatcherContract
      */
     public function wasSent(string $loggableType, int $loggableId, SmsType $type): bool
     {
+        // No clinic_id filter: callers pass none, and loggable_type+id already pins a
+        // single tenant's row. Cross-tenant collision isn't possible on this key.
         return SmsLog::withoutGlobalScopes()
             ->where('loggable_type', $loggableType)
             ->where('loggable_id', $loggableId)

@@ -2,14 +2,15 @@
 
 namespace App\Modules\Scheduling\Http\Requests;
 
+use App\Http\Requests\Concerns\NormalizesTrPhone;
 use App\Support\ClinicContext;
-use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use Propaganistas\LaravelPhone\PhoneNumber;
 
 class StoreAppointmentRequest extends FormRequest
 {
+    use NormalizesTrPhone;
+
     public function authorize(): bool
     {
         // Authorization is handled in the controller via policy.
@@ -23,7 +24,7 @@ class StoreAppointmentRequest extends FormRequest
                 $this->merge([
                     'new_patient' => [
                         ...$this->input('new_patient'),
-                        'phone' => (new PhoneNumber($this->input('new_patient.phone'), 'TR'))->formatE164(),
+                        'phone' => $this->toE164((string) $this->input('new_patient.phone')),
                     ],
                 ]);
             } catch (\Exception) {
@@ -93,24 +94,5 @@ class StoreAppointmentRequest extends FormRequest
             'new_patient.first_name.required_if' => __('validation.required'),
             'new_patient.last_name.required_if' => __('validation.required'),
         ];
-    }
-
-    public function withValidator(Validator $validator): void
-    {
-        $validator->after(function (Validator $validator): void {
-            // Without appointments.assignDoctor a doctor may only book for their own profile.
-            $user = $this->user();
-
-            // Users who can't create at all are rejected by the controller's 403 — don't pre-empt it.
-            if (! $user->can('appointments.create') || $user->can('appointments.assignDoctor')) {
-                return;
-            }
-
-            $ownDoctorId = $user->doctor?->id;
-
-            if ($ownDoctorId === null || (int) $this->input('doctor_id') !== $ownDoctorId) {
-                $validator->errors()->add('doctor_id', __('appointment.errors.doctor_not_allowed'));
-            }
-        });
     }
 }

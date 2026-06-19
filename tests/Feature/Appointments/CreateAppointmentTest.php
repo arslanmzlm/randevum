@@ -1022,7 +1022,7 @@ it('a doctor without assignDoctor cannot book for another doctor (422 on doctor_
 
     $this->actingAs($doctorUser)
         ->post(route('appointments.store'), caPayload($patient->id, $otherDoctor->id))
-        ->assertSessionHasErrors('doctor_id');
+        ->assertForbidden();
 
     expect(Appointment::withoutGlobalScopes()->where('clinic_id', $clinic->id)->exists())->toBeFalse();
 });

@@ -683,7 +683,7 @@ it('rejects follow_up booking from a user without appointments.create', function
             'mode' => 'single',
             'occurrences' => fuOccurrences([fuNextMondaySlot()]),
         ]))
-        ->assertSessionHasErrors('follow_up.mode');
+        ->assertForbidden();
 });
 
 // ---------------------------------------------------------------------------

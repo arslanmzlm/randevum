@@ -2,7 +2,9 @@
 
 namespace App\Modules\Medical\Services;
 
+use App\Enums\TreatmentStatus;
 use App\Models\Patient;
+use App\Models\Treatment;
 use App\Modules\Billing\Contracts\BalanceReaderContract;
 use App\Modules\Medical\Contracts\PatientRegistrarContract;
 use App\Modules\Medical\Exceptions\TrashedPhoneConflictException;
@@ -56,6 +58,29 @@ class PatientService implements PatientRegistrarContract
         }
 
         return $balances;
+    }
+
+    /**
+     * Derived balance figures for a patient's detail page. Billed = total_amount over the
+     * given Completed treatments (passed in so it respects the caller's treatments.viewAll
+     * scoping); paid comes through the Billing read seam. Balance is never stored.
+     *
+     * @param  Collection<int, Treatment>  $treatments
+     * @return array{total: string, paid: string, remaining: string}
+     */
+    public function balanceForPatient(Patient $patient, Collection $treatments): array
+    {
+        $total = $treatments
+            ->filter(fn ($t) => $t->status === TreatmentStatus::Completed)
+            ->reduce(fn (string $carry, $t): string => bcadd($carry, (string) $t->total_amount, 2), '0.00');
+
+        $paid = $this->balanceReader->paidTotalForPatient($patient->id);
+
+        return [
+            'total' => $total,
+            'paid' => $paid,
+            'remaining' => bcsub($total, $paid, 2),
+        ];
     }
 
     /**

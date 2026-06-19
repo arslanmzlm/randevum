@@ -78,7 +78,7 @@ class ScheduleException extends Model
     /**
      * Selects exceptions that overlap the given [start, end] range (inclusive).
      *
-     * Used by the 1.18 conflict-check feature.
+     * Used by the appointment conflict-check feature.
      *
      * @param  Builder<ScheduleException>  $query
      */

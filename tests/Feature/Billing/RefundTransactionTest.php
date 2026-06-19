@@ -327,7 +327,7 @@ it('patient balance remaining increases after refund (negative counter-entry red
     $this->actingAs($owner)
         ->get(route('patients.show', $patient))
         ->assertInertia(fn ($page) => $page
-            ->where('balance.paid', '120')
+            ->where('balance.paid', '120.00')
             ->where('balance.remaining', '80.00')
         );
 });

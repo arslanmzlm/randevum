@@ -4,8 +4,8 @@ namespace App\Modules\Identity\Services;
 
 use App\Enums\SmsType;
 use App\Models\User;
+use App\Modules\Messaging\Contracts\SmsDispatcherContract;
 use App\Modules\Messaging\Data\SmsMessage;
-use App\Modules\Messaging\Jobs\SendSmsJob;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
@@ -16,6 +16,10 @@ use Illuminate\Support\Facades\Hash;
  */
 class OtpAuthService
 {
+    public function __construct(
+        private SmsDispatcherContract $smsDispatcher,
+    ) {}
+
     public function request(string $e164): void
     {
         $user = User::where('phone', $e164)
@@ -44,7 +48,7 @@ class OtpAuthService
         Cache::put("auth:otp:{$e164}", Hash::make($code), $ttl);
         Cache::put("auth:otp:attempts:{$e164}", 0, $ttl);
 
-        SendSmsJob::dispatch(new SmsMessage(
+        $this->smsDispatcher->dispatch(new SmsMessage(
             phone: $e164,
             body: __('auth.otp.sms_body', ['code' => $code, 'ttl' => $ttl]),
             type: SmsType::Otp,

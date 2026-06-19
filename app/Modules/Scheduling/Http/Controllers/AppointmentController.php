@@ -4,10 +4,8 @@ namespace App\Modules\Scheduling\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
-use App\Models\AppointmentType;
-use App\Models\Clinic;
 use App\Models\Patient;
-use App\Models\Service;
+use App\Modules\Catalog\Contracts\ServiceLookupContract;
 use App\Modules\Core\Contracts\DoctorDirectoryContract;
 use App\Modules\Core\Support\Toast;
 use App\Modules\Messaging\Contracts\SmsQuotaContract;
@@ -41,6 +39,7 @@ class AppointmentController extends Controller
         private AppointmentTypeService $appointmentTypeService,
         private AvailabilityService $availabilityService,
         private DoctorDirectoryContract $doctorDirectory,
+        private ServiceLookupContract $serviceLookup,
         private ClinicContext $clinicContext,
         private SmsQuotaContract $smsQuota,
     ) {}
@@ -74,29 +73,14 @@ class AppointmentController extends Controller
     {
         $this->authorize('create', Appointment::class);
 
-        $clinic = Clinic::findOrFail($this->clinicContext->id());
+        $clinic = $this->clinicContext->clinicOrFail();
 
         $doctors = $this->doctorDirectory->activeForClinic()
             ->map(fn ($d) => ['id' => $d->id, 'display_name' => $d->display_name]);
 
-        $services = Service::active()
-            ->select(['id', 'name', 'duration_minutes', 'price'])
-            ->orderBy('name')
-            ->get()
-            ->map(fn (Service $s) => [
-                'id' => $s->id,
-                'name' => $s->name,
-                'duration_minutes' => $s->duration_minutes,
-                'price' => $s->price,
-            ]);
+        $services = $this->serviceLookup->activeForBooking();
 
-        $appointmentTypes = $this->appointmentTypeService->listActiveForClinic()
-            ->map(fn (AppointmentType $t) => [
-                'id' => $t->id,
-                'name' => $t->name,
-                'color' => $t->color,
-                'default_duration_minutes' => $t->default_duration_minutes,
-            ]);
+        $appointmentTypes = $this->appointmentTypeService->listActiveForBooking();
 
         $preselectedPatient = null;
         if ($patientId = $request->integer('patient_id')) {
@@ -128,7 +112,14 @@ class AppointmentController extends Controller
     {
         $this->authorize('create', Appointment::class);
 
-        $appointment = $this->service->create($request->validated(), $request->user());
+        $validated = $request->validated();
+
+        // Booking for another doctor's calendar needs the assign-doctor ability.
+        if ((int) $validated['doctor_id'] !== $request->user()->doctor?->id) {
+            $this->authorize('appointments.assignDoctor');
+        }
+
+        $appointment = $this->service->create($validated, $request->user());
 
         $appointment->loadMissing('patient');
 
@@ -136,7 +127,7 @@ class AppointmentController extends Controller
             $appointment->patient->first_name.' '.$appointment->patient->last_name
         );
         $slot = $appointment->starts_at
-            ->setTimezone($this->activeClinicTimezone())
+            ->setTimezone($this->clinicContext->timezone())
             ->format('d.m.Y H:i');
 
         Toast::success(__('appointment.created', ['patient' => $patientName, 'time' => $slot]));
@@ -150,30 +141,15 @@ class AppointmentController extends Controller
 
         $appointment->loadMissing('patient', 'doctor.user', 'service', 'appointmentType');
 
-        $clinic = Clinic::findOrFail($this->clinicContext->id());
+        $clinic = $this->clinicContext->clinicOrFail();
         $user = $request->user();
 
         $doctors = $this->doctorDirectory->activeForClinic()
             ->map(fn ($d) => ['id' => $d->id, 'display_name' => $d->display_name]);
 
-        $services = Service::active()
-            ->select(['id', 'name', 'duration_minutes', 'price'])
-            ->orderBy('name')
-            ->get()
-            ->map(fn (Service $s) => [
-                'id' => $s->id,
-                'name' => $s->name,
-                'duration_minutes' => $s->duration_minutes,
-                'price' => $s->price,
-            ]);
+        $services = $this->serviceLookup->activeForBooking();
 
-        $appointmentTypes = $this->appointmentTypeService->listActiveForClinic()
-            ->map(fn (AppointmentType $t) => [
-                'id' => $t->id,
-                'name' => $t->name,
-                'color' => $t->color,
-                'default_duration_minutes' => $t->default_duration_minutes,
-            ]);
+        $appointmentTypes = $this->appointmentTypeService->listActiveForBooking();
 
         return Inertia::render('appointments/Edit', [
             'doctors' => $doctors,
@@ -205,7 +181,14 @@ class AppointmentController extends Controller
     {
         $this->authorize('update', $appointment);
 
-        $this->service->reschedule($appointment, $request->validated(), $request->user());
+        $validated = $request->validated();
+
+        // Moving the appointment to another doctor needs the assign-doctor ability.
+        if ((int) $validated['doctor_id'] !== $request->user()->doctor?->id) {
+            $this->authorize('appointments.assignDoctor');
+        }
+
+        $this->service->reschedule($appointment, $validated, $request->user());
 
         Toast::success(__('appointment.rescheduled'));
 
@@ -259,7 +242,7 @@ class AppointmentController extends Controller
     {
         $this->authorize('create', Appointment::class);
 
-        $clinic = Clinic::findOrFail($this->clinicContext->id());
+        $clinic = $this->clinicContext->clinicOrFail();
         $validated = $request->validated();
 
         $startsAt = Carbon::parse($validated['starts_at'], $clinic->timezone)->utc();
@@ -294,9 +277,8 @@ class AppointmentController extends Controller
     {
         $this->authorize('create', Appointment::class);
 
-        $clinic = Clinic::findOrFail($this->clinicContext->id());
         $validated = $request->validated();
-        $tz = $clinic->timezone;
+        $tz = $this->clinicContext->timezone();
 
         $dayStart = Carbon::createFromFormat('Y-m-d', $validated['date'], $tz)->startOfDay()->utc();
         $dayEnd = $dayStart->copy()->addDay();
@@ -330,7 +312,6 @@ class AppointmentController extends Controller
     {
         $this->authorize('bulkCancel', Appointment::class);
 
-        $clinic = Clinic::findOrFail($this->clinicContext->id());
         $user = $request->user();
 
         $doctors = $user->can('appointments.viewAll')
@@ -341,7 +322,7 @@ class AppointmentController extends Controller
 
         return Inertia::render('appointments/BulkCancel', [
             'doctors' => $doctors,
-            'timezone' => $clinic->timezone,
+            'timezone' => $this->clinicContext->timezone(),
             'ownDoctorId' => $user->doctor?->id,
         ]);
     }
@@ -403,12 +384,5 @@ class AppointmentController extends Controller
         }
 
         return back();
-    }
-
-    private function activeClinicTimezone(): string
-    {
-        $clinic = Clinic::find($this->clinicContext->id());
-
-        return $clinic?->timezone ?? 'UTC';
     }
 }
