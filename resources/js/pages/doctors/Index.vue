@@ -11,6 +11,7 @@ import { useConfirm } from 'primevue/useconfirm';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import ButtonLink from '@/components/ButtonLink.vue';
+import EmptyState from '@/components/EmptyState.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import { useCan } from '@/composables/useCan';
 import { useDateTime } from '@/composables/useDateTime';
@@ -247,13 +248,12 @@ function removeDoctor(doctor: Doctor): void {
                 </div>
             </template>
 
-            <div
+            <EmptyState
                 v-else
-                class="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center"
-            >
-                <IconStethoscope class="size-10 text-surface-300" />
-                <p class="text-sm text-surface-500">{{ t('doctor.empty') }}</p>
-            </div>
+                :icon="IconStethoscope"
+                :message="t('doctor.empty')"
+                :bordered="false"
+            />
         </section>
     </div>
 </template>

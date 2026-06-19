@@ -5,9 +5,10 @@ import type {
 } from 'primevue/datatable';
 
 // Thin shell around PrimeVue DataTable that wires the repetitive server-side
-// lazy props from a `useTableFilters` instance. The `#toolbar` slot holds the
-// search + filter controls; the default slot forwards the `<Column>`s into the
-// inner table; `#empty` is the no-results message.
+// lazy props from a `useTableFilters` instance, and owns the list card surface so
+// index pages don't re-wrap it. The `#toolbar` slot holds the search + filter
+// controls; the default slot forwards the `<Column>`s into the inner table;
+// `#empty` is the no-results message.
 withDefaults(
     defineProps<{
         value: unknown[];
@@ -36,7 +37,9 @@ const emit = defineEmits<{
 </script>
 
 <template>
-    <div>
+    <section
+        class="rounded-xl border border-surface-200 bg-surface-0 p-2 sm:p-3"
+    >
         <div
             v-if="$slots.toolbar"
             class="flex flex-col gap-2 p-2 sm:flex-row sm:flex-wrap sm:items-center"
@@ -67,5 +70,5 @@ const emit = defineEmits<{
                 <slot name="empty" />
             </template>
         </DataTable>
-    </div>
+    </section>
 </template>

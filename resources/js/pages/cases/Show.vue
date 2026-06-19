@@ -3,7 +3,6 @@ import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import {
     IconArrowLeft,
     IconCalendarEvent,
-    IconChevronRight,
     IconLink,
     IconNotes,
     IconPencil,
@@ -14,6 +13,8 @@ import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import ButtonLink from '@/components/ButtonLink.vue';
 import CaseStatusTag from '@/components/CaseStatusTag.vue';
+import EmptyState from '@/components/EmptyState.vue';
+import EntityLinkRow from '@/components/EntityLinkRow.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import TreatmentStatusTag from '@/components/TreatmentStatusTag.vue';
 import { useCan } from '@/composables/useCan';
@@ -440,53 +441,35 @@ const metaRows = computed(() => {
                             v-for="item in caseRecord.treatments"
                             :key="item.id"
                         >
-                            <Link
+                            <EntityLinkRow
                                 :href="treatmentShow(item.id).url"
-                                class="flex items-center gap-3 rounded-xl border border-surface-200 p-3 transition-colors hover:border-primary-300 hover:bg-surface-50"
+                                :title="item.title || t('treatment.untitled')"
+                                :meta="
+                                    item.completed_at
+                                        ? formatDate(item.completed_at)
+                                        : t('treatment.in_progress')
+                                "
                             >
-                                <div class="flex min-w-0 flex-1 flex-col gap-1">
-                                    <div class="flex items-center gap-2">
-                                        <span
-                                            class="truncate text-sm font-medium text-surface-900"
-                                        >
-                                            {{
-                                                item.title ||
-                                                t('treatment.untitled')
-                                            }}
-                                        </span>
-                                        <TreatmentStatusTag
-                                            :status="item.status"
-                                        />
-                                    </div>
-                                    <span class="text-xs text-surface-500">
-                                        {{
-                                            item.completed_at
-                                                ? formatDate(item.completed_at)
-                                                : t('treatment.in_progress')
-                                        }}
+                                <template #status>
+                                    <TreatmentStatusTag :status="item.status" />
+                                </template>
+                                <template #trailing>
+                                    <span
+                                        class="text-sm font-medium text-surface-700"
+                                    >
+                                        {{ formatMoney(item.total_amount) }}
                                     </span>
-                                </div>
-                                <span
-                                    class="text-sm font-medium text-surface-700"
-                                >
-                                    {{ formatMoney(item.total_amount) }}
-                                </span>
-                                <IconChevronRight
-                                    class="size-4 shrink-0 text-surface-400"
-                                />
-                            </Link>
+                                </template>
+                            </EntityLinkRow>
                         </li>
                     </ul>
 
-                    <div
+                    <EmptyState
                         v-else
-                        class="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-surface-200 px-4 py-10 text-center"
-                    >
-                        <IconStethoscope class="size-8 text-surface-300" />
-                        <p class="text-sm text-surface-500">
-                            {{ t('case.no_treatments') }}
-                        </p>
-                    </div>
+                        variant="dashed"
+                        :icon="IconStethoscope"
+                        :message="t('case.no_treatments')"
+                    />
                 </section>
             </div>
 

@@ -98,6 +98,16 @@ export function formatLongDate(value: string | Date, locale: string): string {
     }).format(toDate(value));
 }
 
+/** Short weekday name, e.g. "Cmt" — for calendar column/cell headers (civil, no tz). */
+export function formatWeekdayShort(
+    value: string | Date,
+    locale: string,
+): string {
+    return localeDateFormatter(locale, { weekday: 'short' }).format(
+        toDate(value),
+    );
+}
+
 /** Long weekday + full date, e.g. "Cumartesi, 6 Haziran 2026". */
 export function formatFullDate(value: string | Date, locale: string): string {
     return localeDateFormatter(locale, {
@@ -139,6 +149,11 @@ export function formatRange(
 /** True when the instant is strictly in the past (tz-independent — compares absolute time). */
 export function isPast(value: string | Date): boolean {
     return toDate(value).getTime() < Date.now();
+}
+
+/** Whole days elapsed since the given instant (floored; tz-independent). */
+export function daysSince(value: string | Date): number {
+    return Math.floor((Date.now() - toDate(value).getTime()) / 86_400_000);
 }
 
 // Date-only helpers (NO timezone) — for calendar dates that are NOT instants: birthdates,

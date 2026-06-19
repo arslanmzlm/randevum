@@ -6,6 +6,7 @@ import ButtonLink from '@/components/ButtonLink.vue';
 import ColorField from '@/components/ColorField.vue';
 import FormField from '@/components/FormField.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import SettingRow from '@/components/SettingRow.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { index, update } from '@/routes/appointment-types';
 import type {
@@ -113,19 +114,12 @@ function submit(): void {
                         />
                     </FormField>
 
-                    <div
-                        class="flex items-center justify-between gap-4 rounded-lg border border-surface-200 p-4"
+                    <SettingRow
+                        :label="t('appointment_type.fields.is_active')"
+                        :description="t('appointment_type.hints.is_active')"
                     >
-                        <div class="flex min-w-0 flex-col gap-1">
-                            <span class="text-sm font-medium text-surface-900">
-                                {{ t('appointment_type.fields.is_active') }}
-                            </span>
-                            <span class="text-xs text-surface-500">
-                                {{ t('appointment_type.hints.is_active') }}
-                            </span>
-                        </div>
                         <ToggleSwitch v-model="form.is_active" />
-                    </div>
+                    </SettingRow>
                 </div>
             </section>
 

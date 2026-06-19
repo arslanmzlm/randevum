@@ -15,6 +15,7 @@ import OffboardDialog from '@/components/doctors/OffboardDialog.vue';
 import FormField from '@/components/FormField.vue';
 import ImageUploadField from '@/components/ImageUploadField.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import SettingRow from '@/components/SettingRow.vue';
 import { useCan } from '@/composables/useCan';
 import { useDateTime } from '@/composables/useDateTime';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -160,22 +161,13 @@ function submit(): void {
                             <InputText v-model="form.license_number" fluid />
                         </FormField>
 
-                        <div
+                        <SettingRow
                             v-if="canManage"
-                            class="flex items-center justify-between gap-4 rounded-lg border border-surface-200 p-4"
+                            :label="t('doctor.fields.is_active')"
+                            :description="t('doctor.hints.is_active')"
                         >
-                            <div class="flex min-w-0 flex-col gap-1">
-                                <span
-                                    class="text-sm font-medium text-surface-900"
-                                >
-                                    {{ t('doctor.fields.is_active') }}
-                                </span>
-                                <span class="text-xs text-surface-500">
-                                    {{ t('doctor.hints.is_active') }}
-                                </span>
-                            </div>
                             <ToggleSwitch v-model="form.is_active" />
-                        </div>
+                        </SettingRow>
                     </div>
                 </section>
 

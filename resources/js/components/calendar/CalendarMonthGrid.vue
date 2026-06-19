@@ -3,7 +3,7 @@ import { addDays, startOfMonth, startOfWeek } from 'date-fns';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { CalendarDaySummary } from '@/types/calendar';
-import { toDateString } from '@/utils/datetime';
+import { formatWeekdayShort, toDateString } from '@/utils/datetime';
 
 // Month overview: a 6×7 grid showing ONE chip per doctor per day ("Dr X · N") instead of every
 // appointment — a readable summary, not a noisy list. Clicking a day drills into it; clicking a
@@ -27,10 +27,11 @@ const { locale } = useI18n();
 const MAX_CHIPS = 3;
 
 const weekdayNames = computed(() => {
-    const fmt = new Intl.DateTimeFormat(locale.value, { weekday: 'short' });
     const monday = startOfWeek(props.viewDate, { weekStartsOn: 1 });
 
-    return Array.from({ length: 7 }, (_, i) => fmt.format(addDays(monday, i)));
+    return Array.from({ length: 7 }, (_, i) =>
+        formatWeekdayShort(addDays(monday, i), locale.value),
+    );
 });
 
 const weeks = computed(() => {

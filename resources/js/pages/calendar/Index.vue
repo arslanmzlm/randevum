@@ -50,7 +50,11 @@ import {
     MVP_APPOINTMENT_STATUSES,
 } from '@/utils/appointmentStatus';
 import { wallClockDate, wallClockMinutes } from '@/utils/calendarLayout';
-import { parseDateString, toDateString } from '@/utils/datetime';
+import {
+    formatWeekdayShort,
+    parseDateString,
+    toDateString,
+} from '@/utils/datetime';
 
 defineOptions({ layout: AppLayout });
 
@@ -292,10 +296,6 @@ function closedBandsFor(date: Date) {
     return bands;
 }
 
-const weekdayFormatter = computed(
-    () => new Intl.DateTimeFormat(locale.value, { weekday: 'short' }),
-);
-
 const gridColumns = computed<CalendarColumn[]>(() => {
     if (activeView.value === 'month') {
         return [];
@@ -319,7 +319,7 @@ const gridColumns = computed<CalendarColumn[]>(() => {
             cols.push({
                 key: ds,
                 date,
-                label: weekdayFormatter.value.format(date),
+                label: formatWeekdayShort(date, locale.value),
                 sublabel: String(date.getDate()),
                 isToday: ds === todayKey.value,
                 events: eventsForDate(ds),

@@ -4,8 +4,10 @@ import { IconCalendarOff, IconPlus, IconTrash } from '@tabler/icons-vue';
 import { useConfirm } from 'primevue/useconfirm';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import EmptyState from '@/components/EmptyState.vue';
 import FormField from '@/components/FormField.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import SettingRow from '@/components/SettingRow.vue';
 import { useCan } from '@/composables/useCan';
 import { useDateTime } from '@/composables/useDateTime';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -196,19 +198,15 @@ function removeException(exception: ScheduleException): void {
             {{ t('availability.show_past') }}
         </label>
 
-        <div
+        <EmptyState
             v-if="exceptions.length === 0"
-            class="flex flex-col items-center justify-center gap-3 rounded-xl border border-surface-200 bg-surface-0 px-6 py-16 text-center"
-        >
-            <IconCalendarOff class="size-10 text-surface-300" />
-            <p class="text-sm text-surface-500">
-                {{
-                    !showPast && hasPast
-                        ? t('availability.empty_has_past')
-                        : t('availability.empty')
-                }}
-            </p>
-        </div>
+            :icon="IconCalendarOff"
+            :message="
+                !showPast && hasPast
+                    ? t('availability.empty_has_past')
+                    : t('availability.empty')
+            "
+        />
 
         <section
             v-else
@@ -361,14 +359,9 @@ function removeException(exception: ScheduleException): void {
                     />
                 </FormField>
 
-                <div
-                    class="flex items-center justify-between gap-4 rounded-lg border border-surface-200 p-4"
-                >
-                    <span class="text-sm font-medium text-surface-900">
-                        {{ t('availability.all_day') }}
-                    </span>
+                <SettingRow :label="t('availability.all_day')">
                     <ToggleSwitch v-model="form.is_all_day" />
-                </div>
+                </SettingRow>
 
                 <FormField
                     v-if="form.is_all_day"

@@ -6,6 +6,7 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import ButtonLink from '@/components/ButtonLink.vue';
 import DataTableWrapper from '@/components/DataTableWrapper.vue';
+import EmptyState from '@/components/EmptyState.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import { useCan } from '@/composables/useCan';
 import { useTableFilters } from '@/composables/useTableFilters';
@@ -97,145 +98,133 @@ function removeType(appointmentType: AppointmentType): void {
             </template>
         </PageHeader>
 
-        <div
+        <EmptyState
             v-if="showEmptyState"
-            class="flex flex-col items-center justify-center gap-3 rounded-xl border border-surface-200 bg-surface-0 px-6 py-16 text-center"
-        >
-            <IconTags class="size-10 text-surface-300" />
-            <p class="text-sm text-surface-500">
-                {{ t('appointment_type.empty') }}
-            </p>
-        </div>
+            :icon="IconTags"
+            :message="t('appointment_type.empty')"
+        />
 
-        <section
+        <DataTableWrapper
             v-else
-            class="rounded-xl border border-surface-200 bg-surface-0 p-2 sm:p-3"
+            :value="appointmentTypes.data"
+            :total-records="appointmentTypes.meta.total"
+            :rows="state.per_page"
+            :first="first"
+            :loading="loading"
+            :sort-field="sortField"
+            :sort-order="sortOrder"
+            @page="onPage"
+            @sort="onSort"
         >
-            <DataTableWrapper
-                :value="appointmentTypes.data"
-                :total-records="appointmentTypes.meta.total"
-                :rows="state.per_page"
-                :first="first"
-                :loading="loading"
-                :sort-field="sortField"
-                :sort-order="sortOrder"
-                @page="onPage"
-                @sort="onSort"
-            >
-                <template #toolbar>
-                    <IconField>
-                        <InputIcon>
-                            <IconSearch class="size-4 text-surface-400" />
-                        </InputIcon>
-                        <InputText
-                            v-model="state.search"
-                            :placeholder="
-                                t('appointment_type.search_placeholder')
-                            "
-                            class="w-full sm:w-72"
-                        />
-                    </IconField>
-                    <Select
-                        v-model="state.is_active"
-                        :options="statusOptions"
-                        option-label="label"
-                        option-value="value"
-                        :placeholder="t('appointment_type.filter_status')"
-                        show-clear
-                        class="w-full sm:w-44"
+            <template #toolbar>
+                <IconField>
+                    <InputIcon>
+                        <IconSearch class="size-4 text-surface-400" />
+                    </InputIcon>
+                    <InputText
+                        v-model="state.search"
+                        :placeholder="t('appointment_type.search_placeholder')"
+                        class="w-full sm:w-72"
                     />
-                </template>
+                </IconField>
+                <Select
+                    v-model="state.is_active"
+                    :options="statusOptions"
+                    option-label="label"
+                    option-value="value"
+                    :placeholder="t('appointment_type.filter_status')"
+                    show-clear
+                    class="w-full sm:w-44"
+                />
+            </template>
 
-                <Column
-                    field="name"
-                    :header="t('appointment_type.columns.name')"
-                    sortable
-                >
-                    <template #body="{ data }">
-                        <div class="flex min-w-0 items-center gap-2">
-                            <span
-                                class="size-3.5 shrink-0 rounded-full"
-                                :style="{ backgroundColor: data.color }"
-                                :aria-hidden="true"
-                            />
-                            <span class="truncate font-medium text-surface-900">
-                                {{ data.name }}
-                            </span>
-                        </div>
-                    </template>
-                </Column>
-
-                <Column
-                    field="default_duration_minutes"
-                    :header="t('appointment_type.columns.duration')"
-                    sortable
-                    class="w-40"
-                >
-                    <template #body="{ data }">
-                        <span class="text-surface-700">
-                            {{
-                                t('appointment_type.minutes', {
-                                    minutes: data.default_duration_minutes,
-                                })
-                            }}
-                        </span>
-                    </template>
-                </Column>
-
-                <Column
-                    field="is_active"
-                    :header="t('appointment_type.columns.status')"
-                    sortable
-                    class="w-32"
-                >
-                    <template #body="{ data }">
-                        <Tag
-                            :severity="data.is_active ? 'success' : 'secondary'"
-                            :value="
-                                data.is_active
-                                    ? t('appointment_type.active')
-                                    : t('appointment_type.passive')
-                            "
+            <Column
+                field="name"
+                :header="t('appointment_type.columns.name')"
+                sortable
+            >
+                <template #body="{ data }">
+                    <div class="flex min-w-0 items-center gap-2">
+                        <span
+                            class="size-3.5 shrink-0 rounded-full"
+                            :style="{ backgroundColor: data.color }"
+                            :aria-hidden="true"
                         />
-                    </template>
-                </Column>
-
-                <Column
-                    v-if="canManage"
-                    :header="t('appointment_type.columns.actions')"
-                    class="w-32"
-                >
-                    <template #body="{ data }">
-                        <div class="flex items-center justify-end gap-1">
-                            <ButtonLink
-                                :href="edit(data.id).url"
-                                :label="t('appointment_type.edit')"
-                                severity="secondary"
-                                outlined
-                                size="small"
-                            />
-                            <Button
-                                type="button"
-                                severity="danger"
-                                text
-                                size="small"
-                                :aria-label="t('appointment_type.remove')"
-                                @click="removeType(data)"
-                            >
-                                <IconTrash />
-                            </Button>
-                        </div>
-                    </template>
-                </Column>
-
-                <template #empty>
-                    <div
-                        class="px-6 py-10 text-center text-sm text-surface-500"
-                    >
-                        {{ t('appointment_type.empty_filtered') }}
+                        <span class="truncate font-medium text-surface-900">
+                            {{ data.name }}
+                        </span>
                     </div>
                 </template>
-            </DataTableWrapper>
-        </section>
+            </Column>
+
+            <Column
+                field="default_duration_minutes"
+                :header="t('appointment_type.columns.duration')"
+                sortable
+                class="w-40"
+            >
+                <template #body="{ data }">
+                    <span class="text-surface-700">
+                        {{
+                            t('appointment_type.minutes', {
+                                minutes: data.default_duration_minutes,
+                            })
+                        }}
+                    </span>
+                </template>
+            </Column>
+
+            <Column
+                field="is_active"
+                :header="t('appointment_type.columns.status')"
+                sortable
+                class="w-32"
+            >
+                <template #body="{ data }">
+                    <Tag
+                        :severity="data.is_active ? 'success' : 'secondary'"
+                        :value="
+                            data.is_active
+                                ? t('appointment_type.active')
+                                : t('appointment_type.passive')
+                        "
+                    />
+                </template>
+            </Column>
+
+            <Column
+                v-if="canManage"
+                :header="t('appointment_type.columns.actions')"
+                class="w-32"
+            >
+                <template #body="{ data }">
+                    <div class="flex items-center justify-end gap-1">
+                        <ButtonLink
+                            :href="edit(data.id).url"
+                            :label="t('appointment_type.edit')"
+                            severity="secondary"
+                            outlined
+                            size="small"
+                        />
+                        <Button
+                            type="button"
+                            severity="danger"
+                            text
+                            size="small"
+                            :aria-label="t('appointment_type.remove')"
+                            @click="removeType(data)"
+                        >
+                            <IconTrash />
+                        </Button>
+                    </div>
+                </template>
+            </Column>
+
+            <template #empty>
+                <div class="px-6 py-10 text-center text-sm text-surface-500">
+                    {{ t('appointment_type.empty_filtered') }}
+                </div>
+            </template>
+        </DataTableWrapper>
     </div>
 </template>

@@ -11,6 +11,7 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { bulkCancel } from '@/actions/App/Modules/Scheduling/Http/Controllers/AppointmentController';
 import AppointmentStatusTag from '@/components/AppointmentStatusTag.vue';
+import EmptyState from '@/components/EmptyState.vue';
 import FormField from '@/components/FormField.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import { useBulkCancelPreview } from '@/composables/useBulkCancelPreview';
@@ -250,15 +251,13 @@ function submit(): void {
                 </header>
 
                 <!-- Idle: no range chosen yet -->
-                <div
+                <EmptyState
                     v-if="state === 'idle'"
-                    class="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-16 text-center"
-                >
-                    <IconCalendarOff class="size-9 text-surface-300" />
-                    <p class="text-sm text-surface-500">
-                        {{ t('appointment_bulk_cancel.pick_range') }}
-                    </p>
-                </div>
+                    :icon="IconCalendarOff"
+                    :message="t('appointment_bulk_cancel.pick_range')"
+                    :bordered="false"
+                    class="flex-1"
+                />
 
                 <!-- Loading -->
                 <div
@@ -272,15 +271,13 @@ function submit(): void {
                 </div>
 
                 <!-- Empty: range chosen, nothing cancellable -->
-                <div
+                <EmptyState
                     v-else-if="count === 0"
-                    class="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-16 text-center"
-                >
-                    <IconCalendarOff class="size-9 text-surface-300" />
-                    <p class="text-sm text-surface-500">
-                        {{ t('appointment_bulk_cancel.empty') }}
-                    </p>
-                </div>
+                    :icon="IconCalendarOff"
+                    :message="t('appointment_bulk_cancel.empty')"
+                    :bordered="false"
+                    class="flex-1"
+                />
 
                 <!-- Affected appointments -->
                 <DataTable

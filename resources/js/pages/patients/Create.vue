@@ -12,6 +12,7 @@ import ButtonLink from '@/components/ButtonLink.vue';
 import FormField from '@/components/FormField.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PhoneInput from '@/components/PhoneInput.vue';
+import SettingRow from '@/components/SettingRow.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { index, restore, store } from '@/routes/patients';
 import type { PatientFormData, RestorablePatient } from '@/types/patient';
@@ -214,41 +215,21 @@ function acceptRestore(): void {
                     </header>
 
                     <div class="flex flex-col gap-5">
-                        <div
-                            class="flex items-center justify-between gap-4 rounded-lg border border-surface-200 p-4"
+                        <SettingRow
+                            :label="t('patient.fields.notification_enabled')"
+                            :description="
+                                t('patient.hints.notification_enabled')
+                            "
                         >
-                            <div class="flex min-w-0 flex-col gap-1">
-                                <span
-                                    class="text-sm font-medium text-surface-900"
-                                >
-                                    {{
-                                        t('patient.fields.notification_enabled')
-                                    }}
-                                </span>
-                                <span class="text-xs text-surface-500">
-                                    {{
-                                        t('patient.hints.notification_enabled')
-                                    }}
-                                </span>
-                            </div>
                             <ToggleSwitch v-model="form.notification_enabled" />
-                        </div>
+                        </SettingRow>
 
-                        <div
-                            class="flex items-center justify-between gap-4 rounded-lg border border-surface-200 p-4"
+                        <SettingRow
+                            :label="t('patient.fields.is_legacy')"
+                            :description="t('patient.hints.is_legacy')"
                         >
-                            <div class="flex min-w-0 flex-col gap-1">
-                                <span
-                                    class="text-sm font-medium text-surface-900"
-                                >
-                                    {{ t('patient.fields.is_legacy') }}
-                                </span>
-                                <span class="text-xs text-surface-500">
-                                    {{ t('patient.hints.is_legacy') }}
-                                </span>
-                            </div>
                             <ToggleSwitch v-model="form.is_legacy" />
-                        </div>
+                        </SettingRow>
 
                         <FormField
                             :label="t('patient.fields.notes')"

@@ -4,6 +4,7 @@ import { IconAlertTriangle, IconMessage, IconSearch } from '@tabler/icons-vue';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import DataTableWrapper from '@/components/DataTableWrapper.vue';
+import EmptyState from '@/components/EmptyState.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import SmsStatusTag from '@/components/SmsStatusTag.vue';
 import { useDateTime } from '@/composables/useDateTime';
@@ -120,148 +121,138 @@ const dateRange = computed<(Date | null)[] | null>({
             :breadcrumbs="[{ label: t('nav.sms_logs') }]"
         />
 
-        <div
+        <EmptyState
             v-if="showEmptyState"
-            class="flex flex-col items-center justify-center gap-3 rounded-xl border border-surface-200 bg-surface-0 px-6 py-16 text-center"
-        >
-            <IconMessage class="size-10 text-surface-300" />
-            <p class="text-sm text-surface-500">
-                {{ t('sms.log.empty') }}
-            </p>
-        </div>
+            :icon="IconMessage"
+            :message="t('sms.log.empty')"
+        />
 
-        <section
+        <DataTableWrapper
             v-else
-            class="rounded-xl border border-surface-200 bg-surface-0 p-2 sm:p-3"
+            :value="smsLogs.data"
+            :total-records="smsLogs.meta.total"
+            :rows="state.per_page"
+            :first="first"
+            :loading="loading"
+            @page="onPage"
         >
-            <DataTableWrapper
-                :value="smsLogs.data"
-                :total-records="smsLogs.meta.total"
-                :rows="state.per_page"
-                :first="first"
-                :loading="loading"
-                @page="onPage"
-            >
-                <template #toolbar>
-                    <IconField>
-                        <InputIcon>
-                            <IconSearch class="size-4 text-surface-400" />
-                        </InputIcon>
-                        <InputText
-                            v-model="state.search"
-                            :placeholder="t('sms.log.search_placeholder')"
-                            class="w-full sm:w-64"
-                        />
-                    </IconField>
-                    <Select
-                        v-model="state.status"
-                        :options="statusOptions"
-                        option-label="label"
-                        option-value="value"
-                        :placeholder="t('sms.log.filter_status')"
-                        show-clear
-                        class="w-full sm:w-48"
-                    />
-                    <Select
-                        v-model="state.type"
-                        :options="typeOptions"
-                        option-label="label"
-                        option-value="value"
-                        :placeholder="t('sms.log.filter_type')"
-                        show-clear
-                        class="w-full sm:w-56"
-                    />
-                    <DatePicker
-                        v-model="dateRange"
-                        selection-mode="range"
-                        :number-of-months="2"
-                        :manual-input="false"
-                        date-format="dd.mm.yy"
-                        show-button-bar
-                        :placeholder="t('sms.log.filter_date_range')"
+            <template #toolbar>
+                <IconField>
+                    <InputIcon>
+                        <IconSearch class="size-4 text-surface-400" />
+                    </InputIcon>
+                    <InputText
+                        v-model="state.search"
+                        :placeholder="t('sms.log.search_placeholder')"
                         class="w-full sm:w-64"
-                        :pt="{ panel: { class: 'daterange-panel-centered' } }"
                     />
+                </IconField>
+                <Select
+                    v-model="state.status"
+                    :options="statusOptions"
+                    option-label="label"
+                    option-value="value"
+                    :placeholder="t('sms.log.filter_status')"
+                    show-clear
+                    class="w-full sm:w-48"
+                />
+                <Select
+                    v-model="state.type"
+                    :options="typeOptions"
+                    option-label="label"
+                    option-value="value"
+                    :placeholder="t('sms.log.filter_type')"
+                    show-clear
+                    class="w-full sm:w-56"
+                />
+                <DatePicker
+                    v-model="dateRange"
+                    selection-mode="range"
+                    :number-of-months="2"
+                    :manual-input="false"
+                    date-format="dd.mm.yy"
+                    show-button-bar
+                    :placeholder="t('sms.log.filter_date_range')"
+                    class="w-full sm:w-64"
+                    :pt="{ panel: { class: 'daterange-panel-centered' } }"
+                />
+            </template>
+
+            <Column
+                field="created_at"
+                :header="t('sms.log.columns.datetime')"
+                class="w-44"
+            >
+                <template #body="{ data }">
+                    <span class="text-surface-700">
+                        {{ formatDateTime(data.created_at) }}
+                    </span>
                 </template>
+            </Column>
 
-                <Column
-                    field="created_at"
-                    :header="t('sms.log.columns.datetime')"
-                    class="w-44"
-                >
-                    <template #body="{ data }">
-                        <span class="text-surface-700">
-                            {{ formatDateTime(data.created_at) }}
+            <Column :header="t('sms.log.columns.type')" class="w-44">
+                <template #body="{ data }">
+                    <span class="text-surface-700">
+                        {{ t(`sms.type.${data.type}`) }}
+                    </span>
+                </template>
+            </Column>
+
+            <Column :header="t('sms.log.columns.recipient')">
+                <template #body="{ data }">
+                    <div class="flex min-w-0 flex-col">
+                        <span class="truncate font-medium text-surface-800">
+                            {{
+                                data.patient_name ||
+                                data.phone ||
+                                t('sms.log.no_recipient')
+                            }}
                         </span>
-                    </template>
-                </Column>
-
-                <Column :header="t('sms.log.columns.type')" class="w-44">
-                    <template #body="{ data }">
-                        <span class="text-surface-700">
-                            {{ t(`sms.type.${data.type}`) }}
-                        </span>
-                    </template>
-                </Column>
-
-                <Column :header="t('sms.log.columns.recipient')">
-                    <template #body="{ data }">
-                        <div class="flex min-w-0 flex-col">
-                            <span class="truncate font-medium text-surface-800">
-                                {{
-                                    data.patient_name ||
-                                    data.phone ||
-                                    t('sms.log.no_recipient')
-                                }}
-                            </span>
-                            <span
-                                v-if="data.patient_name && data.phone"
-                                class="text-xs text-surface-500"
-                            >
-                                {{ data.phone }}
-                            </span>
-                        </div>
-                    </template>
-                </Column>
-
-                <Column
-                    field="status"
-                    :header="t('sms.log.columns.status')"
-                    class="w-32"
-                >
-                    <template #body="{ data }">
-                        <div class="flex items-center gap-1.5">
-                            <SmsStatusTag :status="data.status" />
-                            <IconAlertTriangle
-                                v-if="data.error"
-                                v-tooltip.top="
-                                    `${t('sms.log.error_label')}: ${data.error}`
-                                "
-                                class="size-4 shrink-0 text-red-500"
-                            />
-                        </div>
-                    </template>
-                </Column>
-
-                <Column :header="t('sms.log.columns.body')">
-                    <template #body="{ data }">
                         <span
-                            v-tooltip.top="data.body"
-                            class="line-clamp-2 max-w-md text-sm text-surface-600"
+                            v-if="data.patient_name && data.phone"
+                            class="text-xs text-surface-500"
                         >
-                            {{ data.body }}
+                            {{ data.phone }}
                         </span>
-                    </template>
-                </Column>
-
-                <template #empty>
-                    <div
-                        class="px-6 py-10 text-center text-sm text-surface-500"
-                    >
-                        {{ t('sms.log.empty_filtered') }}
                     </div>
                 </template>
-            </DataTableWrapper>
-        </section>
+            </Column>
+
+            <Column
+                field="status"
+                :header="t('sms.log.columns.status')"
+                class="w-32"
+            >
+                <template #body="{ data }">
+                    <div class="flex items-center gap-1.5">
+                        <SmsStatusTag :status="data.status" />
+                        <IconAlertTriangle
+                            v-if="data.error"
+                            v-tooltip.top="
+                                `${t('sms.log.error_label')}: ${data.error}`
+                            "
+                            class="size-4 shrink-0 text-red-500"
+                        />
+                    </div>
+                </template>
+            </Column>
+
+            <Column :header="t('sms.log.columns.body')">
+                <template #body="{ data }">
+                    <span
+                        v-tooltip.top="data.body"
+                        class="line-clamp-2 max-w-md text-sm text-surface-600"
+                    >
+                        {{ data.body }}
+                    </span>
+                </template>
+            </Column>
+
+            <template #empty>
+                <div class="px-6 py-10 text-center text-sm text-surface-500">
+                    {{ t('sms.log.empty_filtered') }}
+                </div>
+            </template>
+        </DataTableWrapper>
     </div>
 </template>

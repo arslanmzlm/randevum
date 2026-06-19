@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n';
 import FormField from '@/components/FormField.vue';
 import { useCan } from '@/composables/useCan';
 import type { CaseMode, OpenCaseOption } from '@/types/treatment';
+import { daysSince } from '@/utils/datetime';
 import { useTreatmentForm } from './formContext';
 
 const props = defineProps<{ openCases: OpenCaseOption[] }>();
@@ -38,10 +39,7 @@ const modeOptions = computed<Array<{ value: CaseMode; label: string }>>(() => {
 
 // "{title} — {vaka yaşı}, {N} ziyaret" — case age derived from opened_at as a coarse duration.
 function caseAge(openedAt: string): string {
-    const days = Math.max(
-        0,
-        Math.floor((Date.now() - new Date(openedAt).getTime()) / 86_400_000),
-    );
+    const days = Math.max(0, daysSince(openedAt));
 
     if (days < 7) {
         return t('treatment.case.age_days', { count: days });

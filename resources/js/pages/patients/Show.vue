@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { Head, router, useForm } from '@inertiajs/vue3';
 import {
     IconArrowLeft,
     IconCalendarEvent,
     IconCash,
-    IconChevronRight,
     IconFolderOff,
     IconFolders,
     IconLink,
@@ -23,6 +22,8 @@ import { useI18n } from 'vue-i18n';
 import AppointmentStatusTag from '@/components/AppointmentStatusTag.vue';
 import ButtonLink from '@/components/ButtonLink.vue';
 import CaseStatusTag from '@/components/CaseStatusTag.vue';
+import EmptyState from '@/components/EmptyState.vue';
+import EntityLinkRow from '@/components/EntityLinkRow.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import RecordPaymentDialog from '@/components/payments/RecordPaymentDialog.vue';
 import TransactionList from '@/components/payments/TransactionList.vue';
@@ -468,59 +469,40 @@ function submitLinkCase(): void {
 
                 <ul v-if="treatments.length" class="flex flex-col gap-2">
                     <li v-for="item in treatments" :key="item.id">
-                        <Link
+                        <EntityLinkRow
                             :href="treatmentShow(item.id).url"
-                            class="flex items-center gap-3 rounded-xl border border-surface-200 p-3 transition-colors hover:border-primary-300 hover:bg-surface-50"
+                            :title="item.title || t('treatment.untitled')"
+                            :sub-meta="item.case_title || undefined"
                         >
-                            <div class="flex min-w-0 flex-1 flex-col gap-1">
-                                <div class="flex items-center gap-2">
-                                    <span
-                                        class="truncate text-sm font-medium text-surface-900"
-                                    >
-                                        {{
-                                            item.title ||
-                                            t('treatment.untitled')
-                                        }}
-                                    </span>
-                                    <TreatmentStatusTag :status="item.status" />
-                                </div>
-                                <span class="text-xs text-surface-500">
-                                    {{
-                                        item.completed_at
-                                            ? formatDate(item.completed_at)
-                                            : t('treatment.in_progress')
-                                    }}
-                                    · {{ item.doctor_name }}
-                                </span>
+                            <template #status>
+                                <TreatmentStatusTag :status="item.status" />
+                            </template>
+                            <template #meta>
+                                {{
+                                    item.completed_at
+                                        ? formatDate(item.completed_at)
+                                        : t('treatment.in_progress')
+                                }}
+                                · {{ item.doctor_name }}
+                            </template>
+                            <template #trailing>
                                 <span
-                                    v-if="item.case_title"
-                                    class="truncate text-xs text-surface-400"
+                                    class="text-sm font-medium text-surface-700"
                                 >
-                                    {{ item.case_title }}
+                                    {{ formatMoney(item.total_amount) }}
                                 </span>
-                            </div>
-                            <span class="text-sm font-medium text-surface-700">
-                                {{ formatMoney(item.total_amount) }}
-                            </span>
-                            <IconChevronRight
-                                class="size-4 shrink-0 text-surface-400"
-                            />
-                        </Link>
+                            </template>
+                        </EntityLinkRow>
                     </li>
                 </ul>
 
-                <div
+                <EmptyState
                     v-else
-                    class="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-surface-200 px-4 py-10 text-center"
-                >
-                    <IconNotes class="size-8 text-surface-300" />
-                    <p class="text-sm text-surface-500">
-                        {{ t('patient.no_treatments') }}
-                    </p>
-                    <p class="text-xs text-surface-400">
-                        {{ t('patient.no_treatments_hint') }}
-                    </p>
-                </div>
+                    variant="dashed"
+                    :icon="IconNotes"
+                    :message="t('patient.no_treatments')"
+                    :description="t('patient.no_treatments_hint')"
+                />
             </section>
         </div>
 
@@ -544,23 +526,13 @@ function submitLinkCase(): void {
                         v-if="upcomingAppointments.length"
                         class="flex flex-col gap-2"
                     >
-                        <li
-                            v-for="item in upcomingAppointments"
-                            :key="item.id"
-                            class="flex items-center gap-3 rounded-xl border border-surface-200 p-3"
-                        >
-                            <div class="flex min-w-0 flex-1 flex-col gap-1">
-                                <div class="flex items-center gap-2">
-                                    <span
-                                        class="text-sm font-medium text-surface-900"
-                                    >
-                                        {{
-                                            formatRange(
-                                                item.starts_at,
-                                                item.ends_at,
-                                            )
-                                        }}
-                                    </span>
+                        <li v-for="item in upcomingAppointments" :key="item.id">
+                            <EntityLinkRow
+                                :title="
+                                    formatRange(item.starts_at, item.ends_at)
+                                "
+                            >
+                                <template #status>
                                     <AppointmentStatusTag
                                         :status="item.status"
                                     />
@@ -569,27 +541,28 @@ function submitLinkCase(): void {
                                         severity="secondary"
                                         :value="t('appointment.walk_in')"
                                     />
-                                </div>
-                                <span
-                                    class="flex items-center gap-1.5 text-xs text-surface-500"
-                                >
-                                    {{ item.doctor_name }}
-                                    <template v-if="item.service_name">
-                                        · {{ item.service_name }}
-                                    </template>
-                                    <template v-if="item.appointment_type">
-                                        ·
-                                        <span
-                                            class="inline-block size-2 shrink-0 rounded-full"
-                                            :style="{
-                                                backgroundColor:
-                                                    item.appointment_type.color,
-                                            }"
-                                        />
-                                        {{ item.appointment_type.name }}
-                                    </template>
-                                </span>
-                            </div>
+                                </template>
+                                <template #meta>
+                                    <span class="flex items-center gap-1.5">
+                                        {{ item.doctor_name }}
+                                        <template v-if="item.service_name">
+                                            · {{ item.service_name }}
+                                        </template>
+                                        <template v-if="item.appointment_type">
+                                            ·
+                                            <span
+                                                class="inline-block size-2 shrink-0 rounded-full"
+                                                :style="{
+                                                    backgroundColor:
+                                                        item.appointment_type
+                                                            .color,
+                                                }"
+                                            />
+                                            {{ item.appointment_type.name }}
+                                        </template>
+                                    </span>
+                                </template>
+                            </EntityLinkRow>
                         </li>
                     </ul>
                     <p v-else class="text-sm text-surface-400">
@@ -605,23 +578,13 @@ function submitLinkCase(): void {
                         v-if="pastAppointments.length"
                         class="flex flex-col gap-2"
                     >
-                        <li
-                            v-for="item in pastAppointments"
-                            :key="item.id"
-                            class="flex items-center gap-3 rounded-xl border border-surface-200 p-3"
-                        >
-                            <div class="flex min-w-0 flex-1 flex-col gap-1">
-                                <div class="flex items-center gap-2">
-                                    <span
-                                        class="text-sm font-medium text-surface-900"
-                                    >
-                                        {{
-                                            formatRange(
-                                                item.starts_at,
-                                                item.ends_at,
-                                            )
-                                        }}
-                                    </span>
+                        <li v-for="item in pastAppointments" :key="item.id">
+                            <EntityLinkRow
+                                :title="
+                                    formatRange(item.starts_at, item.ends_at)
+                                "
+                            >
+                                <template #status>
                                     <AppointmentStatusTag
                                         :status="item.status"
                                     />
@@ -630,27 +593,28 @@ function submitLinkCase(): void {
                                         severity="secondary"
                                         :value="t('appointment.walk_in')"
                                     />
-                                </div>
-                                <span
-                                    class="flex items-center gap-1.5 text-xs text-surface-500"
-                                >
-                                    {{ item.doctor_name }}
-                                    <template v-if="item.service_name">
-                                        · {{ item.service_name }}
-                                    </template>
-                                    <template v-if="item.appointment_type">
-                                        ·
-                                        <span
-                                            class="inline-block size-2 shrink-0 rounded-full"
-                                            :style="{
-                                                backgroundColor:
-                                                    item.appointment_type.color,
-                                            }"
-                                        />
-                                        {{ item.appointment_type.name }}
-                                    </template>
-                                </span>
-                            </div>
+                                </template>
+                                <template #meta>
+                                    <span class="flex items-center gap-1.5">
+                                        {{ item.doctor_name }}
+                                        <template v-if="item.service_name">
+                                            · {{ item.service_name }}
+                                        </template>
+                                        <template v-if="item.appointment_type">
+                                            ·
+                                            <span
+                                                class="inline-block size-2 shrink-0 rounded-full"
+                                                :style="{
+                                                    backgroundColor:
+                                                        item.appointment_type
+                                                            .color,
+                                                }"
+                                            />
+                                            {{ item.appointment_type.name }}
+                                        </template>
+                                    </span>
+                                </template>
+                            </EntityLinkRow>
                         </li>
                     </ul>
                     <p v-else class="text-sm text-surface-400">
@@ -716,42 +680,27 @@ function submitLinkCase(): void {
                     </h3>
                     <ul v-if="openCases.length" class="flex flex-col gap-2">
                         <li v-for="item in openCases" :key="item.id">
-                            <Link
+                            <EntityLinkRow
                                 :href="caseShow(item.id).url"
-                                class="flex items-center gap-3 rounded-xl border border-surface-200 p-3 transition-colors hover:border-primary-300 hover:bg-surface-50"
+                                :title="item.title"
                             >
-                                <div class="flex min-w-0 flex-1 flex-col gap-1">
-                                    <div class="flex items-center gap-2">
-                                        <span
-                                            class="truncate text-sm font-medium text-surface-900"
-                                        >
-                                            {{ item.title }}
-                                        </span>
-                                        <CaseStatusTag :status="item.status" />
-                                    </div>
-                                    <span class="text-xs text-surface-500">
+                                <template #status>
+                                    <CaseStatusTag :status="item.status" />
+                                </template>
+                                <template #meta>
+                                    {{
+                                        t('patient.cases.treatments_count', {
+                                            count: item.treatments_count,
+                                        })
+                                    }}
+                                    <template v-if="item.follow_up_date">
+                                        ·
                                         {{
-                                            t(
-                                                'patient.cases.treatments_count',
-                                                {
-                                                    count: item.treatments_count,
-                                                },
-                                            )
+                                            formatDateOnly(item.follow_up_date)
                                         }}
-                                        <template v-if="item.follow_up_date">
-                                            ·
-                                            {{
-                                                formatDateOnly(
-                                                    item.follow_up_date,
-                                                )
-                                            }}
-                                        </template>
-                                    </span>
-                                </div>
-                                <IconChevronRight
-                                    class="size-4 shrink-0 text-surface-400"
-                                />
-                            </Link>
+                                    </template>
+                                </template>
+                            </EntityLinkRow>
                         </li>
                     </ul>
                     <p v-else class="text-sm text-surface-400">
@@ -765,34 +714,19 @@ function submitLinkCase(): void {
                     </h3>
                     <ul v-if="closedCases.length" class="flex flex-col gap-2">
                         <li v-for="item in closedCases" :key="item.id">
-                            <Link
+                            <EntityLinkRow
                                 :href="caseShow(item.id).url"
-                                class="flex items-center gap-3 rounded-xl border border-surface-200 p-3 transition-colors hover:border-primary-300 hover:bg-surface-50"
+                                :title="item.title"
+                                :meta="
+                                    t('patient.cases.treatments_count', {
+                                        count: item.treatments_count,
+                                    })
+                                "
                             >
-                                <div class="flex min-w-0 flex-1 flex-col gap-1">
-                                    <div class="flex items-center gap-2">
-                                        <span
-                                            class="truncate text-sm font-medium text-surface-900"
-                                        >
-                                            {{ item.title }}
-                                        </span>
-                                        <CaseStatusTag :status="item.status" />
-                                    </div>
-                                    <span class="text-xs text-surface-500">
-                                        {{
-                                            t(
-                                                'patient.cases.treatments_count',
-                                                {
-                                                    count: item.treatments_count,
-                                                },
-                                            )
-                                        }}
-                                    </span>
-                                </div>
-                                <IconChevronRight
-                                    class="size-4 shrink-0 text-surface-400"
-                                />
-                            </Link>
+                                <template #status>
+                                    <CaseStatusTag :status="item.status" />
+                                </template>
+                            </EntityLinkRow>
                         </li>
                     </ul>
                     <p v-else class="text-sm text-surface-400">

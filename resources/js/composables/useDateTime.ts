@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { FormatRangeOptions } from '@/utils/datetime';
 import {
+    daysSince,
     formatDate,
     formatDateOnly,
     formatDateTime,
@@ -11,6 +12,7 @@ import {
     formatMonthYear,
     formatRange,
     formatTime,
+    formatWeekdayShort,
     isPast,
     parseUtc,
 } from '@/utils/datetime';
@@ -45,6 +47,8 @@ export function useDateTime(tzOverride?: string) {
             formatDateTime(value, ctx.value),
         formatMonthYear: (value: string | Date) =>
             formatMonthYear(value, locale.value),
+        formatWeekdayShort: (value: string | Date) =>
+            formatWeekdayShort(value, locale.value),
         formatFullDate: (value: string | Date) =>
             formatFullDate(value, locale.value),
         formatLongDate: (value: string | Date) =>
@@ -58,5 +62,6 @@ export function useDateTime(tzOverride?: string) {
         formatDateOnly: (value: string | Date) =>
             formatDateOnly(value, locale.value),
         isPast,
+        daysSince,
     };
 }

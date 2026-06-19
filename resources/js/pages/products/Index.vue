@@ -12,9 +12,11 @@ import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import ButtonLink from '@/components/ButtonLink.vue';
 import DataTableWrapper from '@/components/DataTableWrapper.vue';
+import EmptyState from '@/components/EmptyState.vue';
 import FormField from '@/components/FormField.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import { useCan } from '@/composables/useCan';
+import { useMoney } from '@/composables/useMoney';
 import { useTableFilters } from '@/composables/useTableFilters';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { create, destroy, edit, index } from '@/routes/products';
@@ -29,9 +31,10 @@ defineOptions({ layout: AppLayout });
 
 const props = defineProps<ProductIndexProps>();
 
-const { t, locale } = useI18n();
+const { t } = useI18n();
 const confirm = useConfirm();
 const { can } = useCan();
+const { formatMoney } = useMoney();
 const canManage = computed(() => can('products.create'));
 
 const { state, loading, first, sortField, sortOrder, onPage, onSort } =
@@ -58,18 +61,6 @@ const hasActiveFilters = computed(
 const showEmptyState = computed(
     () => props.products.meta.total === 0 && !hasActiveFilters.value,
 );
-
-const priceFormatter = computed(
-    () =>
-        new Intl.NumberFormat(locale.value, {
-            style: 'currency',
-            currency: props.currency,
-        }),
-);
-
-function formatPrice(value: string): string {
-    return priceFormatter.value.format(Number(value));
-}
 
 function subtitle(product: Product): string {
     return [product.brand, product.category].filter(Boolean).join(' · ');
@@ -143,171 +134,159 @@ function removeProduct(product: Product): void {
             </template>
         </PageHeader>
 
-        <div
+        <EmptyState
             v-if="showEmptyState"
-            class="flex flex-col items-center justify-center gap-3 rounded-xl border border-surface-200 bg-surface-0 px-6 py-16 text-center"
-        >
-            <IconPackage class="size-10 text-surface-300" />
-            <p class="text-sm text-surface-500">{{ t('product.empty') }}</p>
-        </div>
+            :icon="IconPackage"
+            :message="t('product.empty')"
+        />
 
-        <section
+        <DataTableWrapper
             v-else
-            class="rounded-xl border border-surface-200 bg-surface-0 p-2 sm:p-3"
+            :value="products.data"
+            :total-records="products.meta.total"
+            :rows="state.per_page"
+            :first="first"
+            :loading="loading"
+            :sort-field="sortField"
+            :sort-order="sortOrder"
+            @page="onPage"
+            @sort="onSort"
         >
-            <DataTableWrapper
-                :value="products.data"
-                :total-records="products.meta.total"
-                :rows="state.per_page"
-                :first="first"
-                :loading="loading"
-                :sort-field="sortField"
-                :sort-order="sortOrder"
-                @page="onPage"
-                @sort="onSort"
-            >
-                <template #toolbar>
-                    <IconField>
-                        <InputIcon>
-                            <IconSearch class="size-4 text-surface-400" />
-                        </InputIcon>
-                        <InputText
-                            v-model="state.search"
-                            :placeholder="t('product.search_placeholder')"
-                            class="w-full sm:w-72"
-                        />
-                    </IconField>
-                    <Select
-                        v-model="state.is_active"
-                        :options="statusOptions"
-                        option-label="label"
-                        option-value="value"
-                        :placeholder="t('product.filter_status')"
-                        show-clear
-                        class="w-full sm:w-44"
+            <template #toolbar>
+                <IconField>
+                    <InputIcon>
+                        <IconSearch class="size-4 text-surface-400" />
+                    </InputIcon>
+                    <InputText
+                        v-model="state.search"
+                        :placeholder="t('product.search_placeholder')"
+                        class="w-full sm:w-72"
                     />
-                </template>
+                </IconField>
+                <Select
+                    v-model="state.is_active"
+                    :options="statusOptions"
+                    option-label="label"
+                    option-value="value"
+                    :placeholder="t('product.filter_status')"
+                    show-clear
+                    class="w-full sm:w-44"
+                />
+            </template>
 
-                <Column
-                    field="name"
-                    :header="t('product.columns.name')"
-                    sortable
-                >
-                    <template #body="{ data }">
-                        <div class="flex min-w-0 flex-col">
-                            <span class="truncate font-medium text-surface-900">
-                                {{ data.name }}
-                            </span>
-                            <span
-                                v-if="subtitle(data)"
-                                class="truncate text-xs text-surface-500"
-                            >
-                                {{ subtitle(data) }}
-                            </span>
-                        </div>
-                    </template>
-                </Column>
-
-                <Column
-                    field="price"
-                    :header="t('product.columns.price')"
-                    sortable
-                    class="w-40"
-                >
-                    <template #body="{ data }">
-                        <span class="font-medium text-surface-700">
-                            {{ formatPrice(data.price) }}
+            <Column field="name" :header="t('product.columns.name')" sortable>
+                <template #body="{ data }">
+                    <div class="flex min-w-0 flex-col">
+                        <span class="truncate font-medium text-surface-900">
+                            {{ data.name }}
                         </span>
-                    </template>
-                </Column>
-
-                <Column
-                    field="current_stock"
-                    :header="t('product.columns.stock')"
-                    sortable
-                    class="w-44"
-                >
-                    <template #body="{ data }">
-                        <div class="flex items-center gap-2">
-                            <Tag
-                                v-if="data.current_stock < 0"
-                                severity="danger"
-                                :value="`${data.current_stock} ${data.unit}`"
-                            />
-                            <span v-else class="text-surface-700">
-                                {{ data.current_stock }} {{ data.unit }}
-                            </span>
-                            <Button
-                                v-if="canManage"
-                                type="button"
-                                severity="secondary"
-                                outlined
-                                size="small"
-                                :aria-label="t('product.update_stock')"
-                                v-tooltip.top="t('product.update_stock')"
-                                @click="openStockDialog(data)"
-                            >
-                                <IconStack2 />
-                            </Button>
-                        </div>
-                    </template>
-                </Column>
-
-                <Column
-                    field="is_active"
-                    :header="t('product.columns.status')"
-                    sortable
-                    class="w-32"
-                >
-                    <template #body="{ data }">
-                        <Tag
-                            :severity="data.is_active ? 'success' : 'secondary'"
-                            :value="
-                                data.is_active
-                                    ? t('product.active')
-                                    : t('product.passive')
-                            "
-                        />
-                    </template>
-                </Column>
-
-                <Column
-                    v-if="canManage"
-                    :header="t('product.columns.actions')"
-                    class="w-32"
-                >
-                    <template #body="{ data }">
-                        <div class="flex items-center justify-end gap-1">
-                            <ButtonLink
-                                :href="edit(data.id).url"
-                                :label="t('product.edit')"
-                                severity="secondary"
-                                outlined
-                                size="small"
-                            />
-                            <Button
-                                type="button"
-                                severity="danger"
-                                text
-                                size="small"
-                                :aria-label="t('product.remove')"
-                                @click="removeProduct(data)"
-                            >
-                                <IconTrash />
-                            </Button>
-                        </div>
-                    </template>
-                </Column>
-
-                <template #empty>
-                    <div
-                        class="px-6 py-10 text-center text-sm text-surface-500"
-                    >
-                        {{ t('product.empty_filtered') }}
+                        <span
+                            v-if="subtitle(data)"
+                            class="truncate text-xs text-surface-500"
+                        >
+                            {{ subtitle(data) }}
+                        </span>
                     </div>
                 </template>
-            </DataTableWrapper>
-        </section>
+            </Column>
+
+            <Column
+                field="price"
+                :header="t('product.columns.price')"
+                sortable
+                class="w-40"
+            >
+                <template #body="{ data }">
+                    <span class="font-medium text-surface-700">
+                        {{ formatMoney(data.price) }}
+                    </span>
+                </template>
+            </Column>
+
+            <Column
+                field="current_stock"
+                :header="t('product.columns.stock')"
+                sortable
+                class="w-44"
+            >
+                <template #body="{ data }">
+                    <div class="flex items-center gap-2">
+                        <Tag
+                            v-if="data.current_stock < 0"
+                            severity="danger"
+                            :value="`${data.current_stock} ${data.unit}`"
+                        />
+                        <span v-else class="text-surface-700">
+                            {{ data.current_stock }} {{ data.unit }}
+                        </span>
+                        <Button
+                            v-if="canManage"
+                            type="button"
+                            severity="secondary"
+                            outlined
+                            size="small"
+                            :aria-label="t('product.update_stock')"
+                            v-tooltip.top="t('product.update_stock')"
+                            @click="openStockDialog(data)"
+                        >
+                            <IconStack2 />
+                        </Button>
+                    </div>
+                </template>
+            </Column>
+
+            <Column
+                field="is_active"
+                :header="t('product.columns.status')"
+                sortable
+                class="w-32"
+            >
+                <template #body="{ data }">
+                    <Tag
+                        :severity="data.is_active ? 'success' : 'secondary'"
+                        :value="
+                            data.is_active
+                                ? t('product.active')
+                                : t('product.passive')
+                        "
+                    />
+                </template>
+            </Column>
+
+            <Column
+                v-if="canManage"
+                :header="t('product.columns.actions')"
+                class="w-32"
+            >
+                <template #body="{ data }">
+                    <div class="flex items-center justify-end gap-1">
+                        <ButtonLink
+                            :href="edit(data.id).url"
+                            :label="t('product.edit')"
+                            severity="secondary"
+                            outlined
+                            size="small"
+                        />
+                        <Button
+                            type="button"
+                            severity="danger"
+                            text
+                            size="small"
+                            :aria-label="t('product.remove')"
+                            @click="removeProduct(data)"
+                        >
+                            <IconTrash />
+                        </Button>
+                    </div>
+                </template>
+            </Column>
+
+            <template #empty>
+                <div class="px-6 py-10 text-center text-sm text-surface-500">
+                    {{ t('product.empty_filtered') }}
+                </div>
+            </template>
+        </DataTableWrapper>
 
         <Dialog
             v-model:visible="stockDialogVisible"
