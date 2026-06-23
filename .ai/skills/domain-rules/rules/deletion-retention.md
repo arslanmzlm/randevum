@@ -21,3 +21,13 @@
 
 - Version legal documents immutably: editing text creates a NEW row (new `version`, prior `is_active=false`); never delete old rows. Existing `consents` stay bound to the old `legal_document_id`.
 - Capture consent audit trail on `consents`: `accepted_at`, `ip_address`, `user_agent`, `accepted_by_user_id` (null when self-consent). Share one form+consent infrastructure between KVKK consent and the anamnesis form.
+
+## KVKK consent model (decided — full sourced memo in .localdev/docs/kvkk-consent-legal-research.md; a KVKK lawyer must review pre-launch)
+
+- Roles (KVKK m.3): **clinic = controller (veri sorumlusu)**, **platform = processor (veri işleyen)**. Storing data is processing, NOT controllership.
+- Patient KVKK is the **clinic's** responsibility — platform is only *disclosed* as a sub-processor in the clinic's aydınlatma metni. NEVER take a separate platform→patient consent (it signals controller status and raises liability).
+- Treatment-purpose health-data processing needs **NO açık rıza** (m.6/3, secrecy-duty persons) — only aydınlatma (clinic, offline). So **MVP patient-create has no consent field**.
+- Açık rıza must be the patient's OWN affirmative act (staff ticking a box ≠ valid) → patient açık rıza lives in the **Faz-2 patient self-service app**, not staff screens. `consents.consentable` morph + `revoked_at`/`revoked_reason` already support append-on-toggle.
+- Platform liability shield = the **signup DPA (Veri İşleme Sözleşmesi) + ToS + Privacy** accepted by the clinic owner at registration (`consents.consentable_type='user'`). KVKK has no automatic joint-and-several liability; the DPA must contractually push misuse risk to the clinic.
+- Legal-document content: MVP stores plain text (seeded from `resources/legal/<type>/<version>.md`), renders **escaped** (`{{ }}` + `whitespace-pre-line`, **no `v-html`**) → no XSS surface, no purifier. The Faz-3 DB-managed editor = **Tiptap** (outputs HTML) → switching the render to `v-html` REQUIRES server-side HTML sanitization (e.g. `mews/purifier`) first.
+- Landmines: AWS Frankfurt = cross-border transfer (amended m.9, eff. 1 Jun 2024) → needs Kurum-notified SCCs; VERBİS registration falls on the clinics; if the platform ever uses patient/health data for its OWN purpose it becomes a controller for that purpose (keep a hard wall + irreversibly anonymise).
