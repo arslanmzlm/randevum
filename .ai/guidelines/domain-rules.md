@@ -1,8 +1,6 @@
 # Domain rules live in the `domain-rules` skill
 
-Cross-cutting invariants stay here in `.ai/guidelines/` (always loaded, merged into CLAUDE.md): architecture/module boundaries, data modeling, multi-tenancy, auth & permissions, i18n, frontend/PrimeVue, comments, testing, ddev.
-
-Business-domain rules are NOT here — they live in the **`domain-rules`** skill, loaded on demand:
+Business-domain rules are NOT in `.ai/guidelines/` — they live in the **`domain-rules`** skill, loaded on demand:
 clinical (cases/treatments), scheduling & appointments, payments/billing & stock, SMS/messaging,
 media, anamnesis & EAV forms, verticals, deletion/edit windows & retention (KVKK), identity &
 clinic-membership layering, state machines & status transitions, runtime/ops (queues, Horizon,
