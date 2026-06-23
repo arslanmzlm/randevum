@@ -148,7 +148,6 @@ function submit(): void {
                                 <InputText
                                     v-model="form.phone"
                                     type="tel"
-                                    autocomplete="tel"
                                     fluid
                                 />
                             </FormField>
@@ -161,7 +160,6 @@ function submit(): void {
                                     <InputText
                                         v-model="form.email"
                                         type="email"
-                                        autocomplete="email"
                                         fluid
                                     />
                                 </FormField>

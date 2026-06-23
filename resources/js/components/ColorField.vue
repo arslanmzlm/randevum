@@ -52,7 +52,7 @@ function selectPreset(color: string): void {
                 v-for="color in presets"
                 :key="color"
                 type="button"
-                class="flex size-7 items-center justify-center rounded-full ring-offset-2 ring-offset-surface-0 transition-shadow"
+                class="flex size-7 cursor-pointer items-center justify-center rounded-full ring-offset-2 ring-offset-surface-0 transition-shadow"
                 :class="
                     isSelected(color)
                         ? 'ring-2 ring-surface-400'

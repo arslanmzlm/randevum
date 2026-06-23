@@ -14,6 +14,9 @@ const fieldId = useId();
 
 // Auto-inject the field id (as `inputId` for PrimeVue controls that wrap an inner
 // input, else `id`) and `invalid` into the slotted control — so callers pass neither.
+// Also default browser autofill off so a staff member's own saved name/email/phone is never
+// suggested into a patient/entity field; a caller that sets `autocomplete` explicitly
+// (auth + own-account forms, or a password field's `new-password`) keeps its value.
 function FieldControl(): VNode[] {
     return (slots.default?.() ?? []).map((vnode) => {
         if (typeof vnode.type !== 'object') {
@@ -28,7 +31,16 @@ function FieldControl(): VNode[] {
             : Object.keys(declared ?? {});
         const idProp = names.includes('inputId') ? 'inputId' : 'id';
 
-        return cloneVNode(vnode, { [idProp]: fieldId, invalid: !!props.error });
+        const injected: Record<string, unknown> = {
+            [idProp]: fieldId,
+            invalid: !!props.error,
+        };
+
+        if (vnode.props?.autocomplete == null) {
+            injected.autocomplete = 'off';
+        }
+
+        return cloneVNode(vnode, injected);
     });
 }
 </script>

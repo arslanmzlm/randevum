@@ -107,11 +107,7 @@ function submit(): void {
                                 :error="form.errors.first_name"
                                 required
                             >
-                                <InputText
-                                    v-model="form.first_name"
-                                    autocomplete="given-name"
-                                    fluid
-                                />
+                                <InputText v-model="form.first_name" fluid />
                             </FormField>
 
                             <FormField
@@ -119,11 +115,7 @@ function submit(): void {
                                 :error="form.errors.last_name"
                                 required
                             >
-                                <InputText
-                                    v-model="form.last_name"
-                                    autocomplete="family-name"
-                                    fluid
-                                />
+                                <InputText v-model="form.last_name" fluid />
                             </FormField>
                         </div>
 

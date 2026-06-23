@@ -12,7 +12,7 @@ import {
     IconUser,
     IconWalk,
 } from '@tabler/icons-vue';
-import { computed, ref } from 'vue';
+import { computed, nextTick, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import AppointmentStatusTag from '@/components/AppointmentStatusTag.vue';
 import type { AppointmentActions } from '@/composables/useAppointmentActions';
@@ -34,9 +34,15 @@ const { formatDateOnly } = useDateTime();
 const popover = ref();
 const appointment = ref<CalendarEventDto | null>(null);
 
-function show(event: Event, value: CalendarEventDto): void {
+async function show(event: Event, value: CalendarEventDto): Promise<void> {
     appointment.value = value;
     popover.value?.show(event);
+    // PrimeVue positions the panel only on its enter transition. When it's already open and the user
+    // clicks another chip, show() swaps the target but skips repositioning, so it stays anchored to
+    // the previous chip. Realign once the new content has rendered (harmless redundant align on first
+    // open — it targets the same chip).
+    await nextTick();
+    popover.value?.alignOverlay();
 }
 
 function hide(): void {

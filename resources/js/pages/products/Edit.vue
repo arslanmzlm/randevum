@@ -125,6 +125,20 @@ function submitStock(): void {
                                 />
                             </FormField>
 
+                            <!-- Read-only mirror of the current stock so this grid keeps the same
+                                 field positions as the create form; edits go through the Stock panel. -->
+                            <FormField
+                                :label="t('product.fields.current_stock')"
+                                :hint="t('product.hints.stock_managed')"
+                            >
+                                <InputNumber
+                                    :model-value="product.current_stock"
+                                    :use-grouping="false"
+                                    disabled
+                                    fluid
+                                />
+                            </FormField>
+
                             <FormField
                                 :label="t('product.fields.brand')"
                                 :error="form.errors.brand"
