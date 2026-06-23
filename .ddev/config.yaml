@@ -16,7 +16,7 @@ web_environment:
     # Pest browser tests (pest-plugin-browser → Playwright) look for browsers here;
     # baked into the web image by .ddev/web-build/Dockerfile. Run `ddev restart` after changes.
     - PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
-corepack_enable: false
+corepack_enable: true
 
 # Expose the Vite dev server (port 5173) through ddev-router so HMR works over
 # https://randevum.test:5173. Pairs with server.origin in vite.config.ts.

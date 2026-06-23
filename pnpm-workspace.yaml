@@ -1,5 +1,9 @@
 packages:
   - '.'
 
+allowBuilds:
+  core-js-pure: false
+  unrs-resolver: false
+
 publicHoistPattern:
   - '@inertiajs/core'
