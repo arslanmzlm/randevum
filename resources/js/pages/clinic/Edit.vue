@@ -8,11 +8,14 @@ import {
     IconPhoto,
 } from '@tabler/icons-vue';
 import { useI18n } from 'vue-i18n';
-import FormField from '@/components/FormField.vue';
+import ClinicAddressFields from '@/components/clinic/ClinicAddressFields.vue';
+import ClinicContactFields from '@/components/clinic/ClinicContactFields.vue';
+import ClinicHoursFields from '@/components/clinic/ClinicHoursFields.vue';
+import ClinicInfoFields from '@/components/clinic/ClinicInfoFields.vue';
+import { provideClinicForm } from '@/components/clinic/formContext';
 import ImageUploadField from '@/components/ImageUploadField.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import SectionCard from '@/components/SectionCard.vue';
-import WorkingHoursEditor from '@/components/WorkingHoursEditor.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { update } from '@/routes/clinic';
 import {
@@ -58,6 +61,9 @@ const form = useForm({
     ) as WorkingHours,
 });
 
+// Shared with the field partials (ClinicInfoFields / ClinicContactFields / ClinicAddressFields / ClinicHoursFields).
+provideClinicForm(form);
+
 const verticalKey = `clinic.verticals.${props.vertical.name}`;
 const verticalLabel = te(verticalKey) ? t(verticalKey) : props.vertical.name;
 
@@ -83,155 +89,24 @@ function submit(): void {
                         :icon="IconBuildingHospital"
                         :title="t('clinic.sections.info')"
                     >
-                        <div class="flex flex-col gap-5">
-                            <FormField
-                                :label="t('clinic.fields.name')"
-                                :error="form.errors.name"
-                                required
-                            >
-                                <InputText v-model="form.name" fluid />
-                            </FormField>
-
-                            <FormField
-                                :label="t('clinic.fields.slug')"
-                                :error="form.errors.slug"
-                                :hint="t('clinic.hints.slug')"
-                                required
-                            >
-                                <InputText v-model="form.slug" fluid />
-                            </FormField>
-
-                            <FormField
-                                :label="t('clinic.fields.description')"
-                                :error="form.errors.description"
-                            >
-                                <Textarea
-                                    v-model="form.description"
-                                    rows="3"
-                                    auto-resize
-                                    fluid
-                                />
-                            </FormField>
-
-                            <FormField :label="t('clinic.fields.vertical')">
-                                <InputText
-                                    :model-value="verticalLabel"
-                                    fluid
-                                    disabled
-                                />
-                            </FormField>
-                        </div>
+                        <ClinicInfoFields :vertical-label="verticalLabel" />
                     </SectionCard>
 
                     <SectionCard
                         :icon="IconPhone"
                         :title="t('clinic.sections.contact')"
                     >
-                        <div class="flex flex-col gap-5">
-                            <FormField
-                                :label="t('clinic.fields.phone')"
-                                :error="form.errors.phone"
-                            >
-                                <InputText
-                                    v-model="form.phone"
-                                    type="tel"
-                                    fluid
-                                />
-                            </FormField>
-
-                            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                                <FormField
-                                    :label="t('clinic.fields.email')"
-                                    :error="form.errors.email"
-                                >
-                                    <InputText
-                                        v-model="form.email"
-                                        type="email"
-                                        fluid
-                                    />
-                                </FormField>
-
-                                <FormField
-                                    :label="t('clinic.fields.website')"
-                                    :error="form.errors.website"
-                                >
-                                    <InputText
-                                        v-model="form.website"
-                                        type="url"
-                                        fluid
-                                    />
-                                </FormField>
-                            </div>
-                        </div>
+                        <ClinicContactFields />
                     </SectionCard>
 
                     <SectionCard
                         :icon="IconMapPin"
                         :title="t('clinic.sections.address')"
                     >
-                        <div class="flex flex-col gap-5">
-                            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                                <FormField
-                                    :label="t('clinic.fields.country')"
-                                    :error="form.errors.country_id"
-                                    required
-                                >
-                                    <Select
-                                        v-model="form.country_id"
-                                        :options="countries"
-                                        option-label="name"
-                                        option-value="id"
-                                        fluid
-                                    />
-                                </FormField>
-
-                                <FormField
-                                    :label="t('clinic.fields.city')"
-                                    :error="form.errors.city_id"
-                                >
-                                    <Select
-                                        v-model="form.city_id"
-                                        :options="cities"
-                                        option-label="name"
-                                        option-value="id"
-                                        show-clear
-                                        filter
-                                        fluid
-                                    />
-                                </FormField>
-                            </div>
-
-                            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                                <FormField
-                                    :label="t('clinic.fields.district')"
-                                    :error="form.errors.district"
-                                >
-                                    <InputText v-model="form.district" fluid />
-                                </FormField>
-
-                                <FormField
-                                    :label="t('clinic.fields.postal_code')"
-                                    :error="form.errors.postal_code"
-                                >
-                                    <InputText
-                                        v-model="form.postal_code"
-                                        fluid
-                                    />
-                                </FormField>
-                            </div>
-
-                            <FormField
-                                :label="t('clinic.fields.address')"
-                                :error="form.errors.address"
-                            >
-                                <Textarea
-                                    v-model="form.address"
-                                    rows="2"
-                                    auto-resize
-                                    fluid
-                                />
-                            </FormField>
-                        </div>
+                        <ClinicAddressFields
+                            :countries="countries"
+                            :cities="cities"
+                        />
                     </SectionCard>
                 </div>
 
@@ -240,31 +115,7 @@ function submit(): void {
                         :icon="IconClock"
                         :title="t('clinic.sections.hours')"
                     >
-                        <div class="flex flex-col gap-6">
-                            <FormField
-                                :label="t('clinic.fields.slot_duration')"
-                                :error="
-                                    form.errors.default_slot_duration_minutes
-                                "
-                                :hint="t('clinic.hints.slot_duration')"
-                                required
-                            >
-                                <InputNumber
-                                    v-model="form.default_slot_duration_minutes"
-                                    :min="5"
-                                    :max="480"
-                                    :step="5"
-                                    show-buttons
-                                    suffix=" dk"
-                                    fluid
-                                />
-                            </FormField>
-
-                            <WorkingHoursEditor
-                                v-model="form.working_hours"
-                                :errors="form.errors"
-                            />
-                        </div>
+                        <ClinicHoursFields />
                     </SectionCard>
 
                     <SectionCard

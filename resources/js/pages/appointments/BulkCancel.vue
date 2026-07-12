@@ -10,13 +10,12 @@ import { useConfirm } from 'primevue/useconfirm';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { bulkCancel } from '@/actions/App/Modules/Scheduling/Http/Controllers/AppointmentController';
-import AppointmentStatusTag from '@/components/AppointmentStatusTag.vue';
+import BulkCancelTable from '@/components/appointments/BulkCancelTable.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import FormField from '@/components/FormField.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import { useBulkCancelPreview } from '@/composables/useBulkCancelPreview';
 import type { BulkCancelPreviewParams } from '@/composables/useBulkCancelPreview';
-import { useDateTime } from '@/composables/useDateTime';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { index } from '@/routes/appointments';
 import type { BulkCancelProps } from '@/types/appointment';
@@ -27,7 +26,6 @@ defineOptions({ layout: AppLayout });
 defineProps<BulkCancelProps>();
 
 const { t } = useI18n();
-const { formatDate, formatTime } = useDateTime();
 const confirm = useConfirm();
 
 // Closing a past day has no useful effect (those appointments are terminal), so the pickers
@@ -280,76 +278,7 @@ function submit(): void {
                 />
 
                 <!-- Affected appointments -->
-                <DataTable
-                    v-else
-                    :value="rows"
-                    data-key="id"
-                    scrollable
-                    scroll-height="28rem"
-                    class="text-sm"
-                >
-                    <Column
-                        :header="t('appointment_bulk_cancel.columns.datetime')"
-                        class="w-44"
-                    >
-                        <template #body="{ data }">
-                            <div class="flex flex-col">
-                                <span class="font-medium text-surface-800">
-                                    {{ formatDate(data.starts_at) }}
-                                </span>
-                                <span class="text-xs text-surface-500">
-                                    {{ formatTime(data.starts_at) }}
-                                </span>
-                            </div>
-                        </template>
-                    </Column>
-
-                    <Column
-                        field="patient_name"
-                        :header="t('appointment_bulk_cancel.columns.patient')"
-                    >
-                        <template #body="{ data }">
-                            <span class="text-surface-800">
-                                {{ data.patient_name }}
-                            </span>
-                        </template>
-                    </Column>
-
-                    <Column
-                        field="doctor_name"
-                        :header="t('appointment_bulk_cancel.columns.doctor')"
-                    >
-                        <template #body="{ data }">
-                            <span class="text-surface-700">
-                                {{ data.doctor_name }}
-                            </span>
-                        </template>
-                    </Column>
-
-                    <Column
-                        :header="t('appointment_bulk_cancel.columns.service')"
-                    >
-                        <template #body="{ data }">
-                            <span
-                                v-if="data.service_name"
-                                class="text-surface-700"
-                            >
-                                {{ data.service_name }}
-                            </span>
-                            <span v-else class="text-surface-400">—</span>
-                        </template>
-                    </Column>
-
-                    <Column
-                        field="status"
-                        :header="t('appointment_bulk_cancel.columns.status')"
-                        class="w-36"
-                    >
-                        <template #body="{ data }">
-                            <AppointmentStatusTag :status="data.status" />
-                        </template>
-                    </Column>
-                </DataTable>
+                <BulkCancelTable v-else :appointments="rows" />
             </section>
         </div>
     </div>

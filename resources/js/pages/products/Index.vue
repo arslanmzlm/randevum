@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, router, useForm } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import {
     IconPackage,
     IconPlus,
@@ -13,19 +13,15 @@ import { useI18n } from 'vue-i18n';
 import ButtonLink from '@/components/ButtonLink.vue';
 import DataTableWrapper from '@/components/DataTableWrapper.vue';
 import EmptyState from '@/components/EmptyState.vue';
-import FormField from '@/components/FormField.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import AdjustStockDialog from '@/components/products/AdjustStockDialog.vue';
 import { useCan } from '@/composables/useCan';
 import { useMoney } from '@/composables/useMoney';
 import { useTableFilters } from '@/composables/useTableFilters';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { create, destroy, edit, index } from '@/routes/products';
-import { update as updateStock } from '@/routes/products/stock';
-import type {
-    Product,
-    ProductIndexProps,
-    ProductStockFormData,
-} from '@/types/product';
+import type { Product, ProductIndexProps } from '@/types/product';
+import { productColumns } from './columns';
 
 defineOptions({ layout: AppLayout });
 
@@ -71,29 +67,17 @@ const statusOptions = computed(() => [
     { label: t('product.passive'), value: false },
 ]);
 
+const columns = computed(() =>
+    productColumns(t).filter((col) => !col.requiresManage || canManage.value),
+);
+
 // Stock-adjust modal — the same PATCH .../stock operation as the edit page, reachable from the list.
 const stockDialogVisible = ref(false);
 const stockTarget = ref<Product | null>(null);
-const stockForm = useForm<ProductStockFormData>({ current_stock: 0 });
 
 function openStockDialog(product: Product): void {
     stockTarget.value = product;
-    stockForm.clearErrors();
-    stockForm.current_stock = product.current_stock;
     stockDialogVisible.value = true;
-}
-
-function submitStock(): void {
-    if (!stockTarget.value) {
-        return;
-    }
-
-    stockForm.patch(updateStock(stockTarget.value.id).url, {
-        preserveScroll: true,
-        onSuccess: () => {
-            stockDialogVisible.value = false;
-        },
-    });
 }
 
 function removeProduct(product: Product): void {
@@ -174,9 +158,19 @@ function removeProduct(product: Product): void {
                 />
             </template>
 
-            <Column field="name" :header="t('product.columns.name')" sortable>
+            <Column
+                v-for="col in columns"
+                :key="col.key"
+                :field="col.field"
+                :header="col.header"
+                :sortable="col.sortable"
+                :class="col.class"
+            >
                 <template #body="{ data }">
-                    <div class="flex min-w-0 flex-col">
+                    <div
+                        v-if="col.key === 'name'"
+                        class="flex min-w-0 flex-col"
+                    >
                         <span class="truncate font-medium text-surface-900">
                             {{ data.name }}
                         </span>
@@ -187,30 +181,18 @@ function removeProduct(product: Product): void {
                             {{ subtitle(data) }}
                         </span>
                     </div>
-                </template>
-            </Column>
 
-            <Column
-                field="price"
-                :header="t('product.columns.price')"
-                sortable
-                class="w-40"
-            >
-                <template #body="{ data }">
-                    <span class="font-medium text-surface-700">
+                    <span
+                        v-else-if="col.key === 'price'"
+                        class="font-medium text-surface-700"
+                    >
                         {{ formatMoney(data.price) }}
                     </span>
-                </template>
-            </Column>
 
-            <Column
-                field="current_stock"
-                :header="t('product.columns.stock')"
-                sortable
-                class="w-44"
-            >
-                <template #body="{ data }">
-                    <div class="flex items-center gap-2">
+                    <div
+                        v-else-if="col.key === 'current_stock'"
+                        class="flex items-center gap-2"
+                    >
                         <Tag
                             v-if="data.current_stock < 0"
                             severity="danger"
@@ -232,17 +214,9 @@ function removeProduct(product: Product): void {
                             <IconStack2 />
                         </Button>
                     </div>
-                </template>
-            </Column>
 
-            <Column
-                field="is_active"
-                :header="t('product.columns.status')"
-                sortable
-                class="w-32"
-            >
-                <template #body="{ data }">
                     <Tag
+                        v-else-if="col.key === 'is_active'"
                         :severity="data.is_active ? 'success' : 'secondary'"
                         :value="
                             data.is_active
@@ -250,16 +224,11 @@ function removeProduct(product: Product): void {
                                 : t('product.passive')
                         "
                     />
-                </template>
-            </Column>
 
-            <Column
-                v-if="canManage"
-                :header="t('product.columns.actions')"
-                class="w-32"
-            >
-                <template #body="{ data }">
-                    <div class="flex items-center justify-end gap-1">
+                    <div
+                        v-else-if="col.key === 'actions'"
+                        class="flex items-center justify-end gap-1"
+                    >
                         <ButtonLink
                             :href="edit(data.id).url"
                             :label="t('product.edit')"
@@ -288,46 +257,9 @@ function removeProduct(product: Product): void {
             </template>
         </DataTableWrapper>
 
-        <Dialog
+        <AdjustStockDialog
             v-model:visible="stockDialogVisible"
-            modal
-            :draggable="false"
-            :header="t('product.update_stock')"
-            class="w-full max-w-sm"
-        >
-            <p v-if="stockTarget" class="mb-4 text-sm text-surface-500">
-                {{ stockTarget.name }}
-            </p>
-
-            <form novalidate @submit.prevent="submitStock">
-                <FormField
-                    :label="t('product.fields.current_stock')"
-                    :error="stockForm.errors.current_stock"
-                    :hint="t('product.hints.stock')"
-                >
-                    <InputNumber
-                        v-model="stockForm.current_stock"
-                        :use-grouping="false"
-                        show-buttons
-                        fluid
-                    />
-                </FormField>
-
-                <div class="mt-6 flex justify-end gap-2">
-                    <Button
-                        type="button"
-                        severity="secondary"
-                        text
-                        :label="t('common.cancel')"
-                        @click="stockDialogVisible = false"
-                    />
-                    <Button
-                        type="submit"
-                        :label="t('product.stock_save')"
-                        :loading="stockForm.processing"
-                    />
-                </div>
-            </form>
-        </Dialog>
+            :product="stockTarget"
+        />
     </div>
 </template>

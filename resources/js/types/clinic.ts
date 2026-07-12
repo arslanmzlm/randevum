@@ -1,3 +1,5 @@
+import type { InertiaForm } from '@inertiajs/vue3';
+
 export const WEEK_DAYS = [
     'monday',
     'tuesday',
@@ -36,6 +38,26 @@ export type Clinic = {
     cover_url: string | null;
     cover_mobile_url: string | null;
 };
+
+/** Editable clinic-settings fields (media is handled separately via ImageUploadField). */
+export type ClinicFormData = {
+    name: string;
+    slug: string;
+    description: string;
+    phone: string;
+    email: string;
+    website: string;
+    country_id: number;
+    city_id: number | null;
+    district: string;
+    address: string;
+    postal_code: string;
+    default_slot_duration_minutes: number;
+    working_hours: WorkingHours;
+};
+
+/** The clinic-settings Inertia form, shared with the field partial components. */
+export type ClinicForm = InertiaForm<ClinicFormData>;
 
 export type ClinicVertical = { id: number; name: string };
 export type ClinicCountry = { id: number; name: string; code: string };

@@ -1,3 +1,4 @@
+import type { InertiaForm } from '@inertiajs/vue3';
 import type { PatientBalance, TransactionItem } from '@/types/balance';
 import type { PatientCaseItem } from '@/types/case';
 import type { AppointmentStatus } from '@/types/enums';
@@ -73,6 +74,9 @@ export type PatientFormData = {
     is_legacy: boolean;
     notes: string;
 };
+
+/** The create/edit Inertia form, shared with the field partials via provide/inject. */
+export type PatientForm = InertiaForm<PatientFormData>;
 
 /** Shared restore prompt payload (flash) when a phone matches a soft-deleted patient. */
 export type RestorablePatient = {

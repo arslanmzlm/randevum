@@ -6,14 +6,15 @@ import {
     IconSettings,
     IconUser,
 } from '@tabler/icons-vue';
-import { computed, ref, watch } from 'vue';
+import { ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import ButtonLink from '@/components/ButtonLink.vue';
-import FormField from '@/components/FormField.vue';
 import PageHeader from '@/components/PageHeader.vue';
-import PhoneInput from '@/components/PhoneInput.vue';
+import { providePatientForm } from '@/components/patients/formContext';
+import PatientContactFields from '@/components/patients/PatientContactFields.vue';
+import PatientInfoFields from '@/components/patients/PatientInfoFields.vue';
+import PatientMetaFields from '@/components/patients/PatientMetaFields.vue';
 import SectionCard from '@/components/SectionCard.vue';
-import SettingRow from '@/components/SettingRow.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { index, restore, store } from '@/routes/patients';
 import type { PatientFormData, RestorablePatient } from '@/types/patient';
@@ -23,14 +24,6 @@ defineOptions({ layout: AppLayout });
 
 const { t } = useI18n();
 const page = usePage();
-
-const genderOptions = computed(() => [
-    { label: t('patient.gender.male'), value: 'male' as const },
-    { label: t('patient.gender.female'), value: 'female' as const },
-    { label: t('patient.gender.other'), value: 'other' as const },
-]);
-
-const maxBirthDate = new Date();
 
 const form = useForm<PatientFormData>({
     first_name: '',
@@ -49,6 +42,9 @@ form.transform((data) => ({
     ...data,
     birth_date: data.birth_date ? toDateString(data.birth_date) : null,
 }));
+
+// Shared with the field partials (PatientInfoFields / PatientContactFields / PatientMetaFields).
+providePatientForm(form);
 
 function submit(): void {
     form.post(store().url);
@@ -113,84 +109,14 @@ function acceptRestore(): void {
                     :icon="IconUser"
                     :title="t('patient.sections.info')"
                 >
-                    <div class="flex flex-col gap-5">
-                        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                            <FormField
-                                :label="t('patient.fields.first_name')"
-                                :error="form.errors.first_name"
-                                required
-                            >
-                                <InputText v-model="form.first_name" fluid />
-                            </FormField>
-
-                            <FormField
-                                :label="t('patient.fields.last_name')"
-                                :error="form.errors.last_name"
-                                required
-                            >
-                                <InputText v-model="form.last_name" fluid />
-                            </FormField>
-                        </div>
-
-                        <FormField
-                            :label="t('patient.fields.birth_date')"
-                            :error="form.errors.birth_date"
-                        >
-                            <DatePicker
-                                v-model="form.birth_date"
-                                date-format="dd.mm.yy"
-                                :max-date="maxBirthDate"
-                                fluid
-                            />
-                        </FormField>
-
-                        <FormField
-                            :label="t('patient.fields.gender')"
-                            :error="form.errors.gender"
-                        >
-                            <Select
-                                v-model="form.gender"
-                                :options="genderOptions"
-                                option-label="label"
-                                option-value="value"
-                                show-clear
-                                fluid
-                            />
-                        </FormField>
-                    </div>
+                    <PatientInfoFields />
                 </SectionCard>
 
                 <SectionCard
                     :icon="IconPhone"
                     :title="t('patient.sections.contact')"
                 >
-                    <div class="flex flex-col gap-5">
-                        <FormField
-                            :label="t('patient.fields.phone')"
-                            :error="form.errors.phone"
-                        >
-                            <PhoneInput v-model="form.phone" />
-                        </FormField>
-
-                        <FormField
-                            :label="t('patient.fields.contact_phone')"
-                            :error="form.errors.contact_phone"
-                            :hint="t('patient.hints.contact_phone')"
-                        >
-                            <PhoneInput v-model="form.contact_phone" />
-                        </FormField>
-
-                        <FormField
-                            :label="t('patient.fields.email')"
-                            :error="form.errors.email"
-                        >
-                            <InputText
-                                v-model="form.email"
-                                type="email"
-                                fluid
-                            />
-                        </FormField>
-                    </div>
+                    <PatientContactFields />
                 </SectionCard>
 
                 <SectionCard
@@ -198,35 +124,7 @@ function acceptRestore(): void {
                     :icon="IconSettings"
                     :title="t('patient.sections.preferences')"
                 >
-                    <div class="flex flex-col gap-5">
-                        <SettingRow
-                            :label="t('patient.fields.notification_enabled')"
-                            :description="
-                                t('patient.hints.notification_enabled')
-                            "
-                        >
-                            <ToggleSwitch v-model="form.notification_enabled" />
-                        </SettingRow>
-
-                        <SettingRow
-                            :label="t('patient.fields.is_legacy')"
-                            :description="t('patient.hints.is_legacy')"
-                        >
-                            <ToggleSwitch v-model="form.is_legacy" />
-                        </SettingRow>
-
-                        <FormField
-                            :label="t('patient.fields.notes')"
-                            :error="form.errors.notes"
-                        >
-                            <Textarea
-                                v-model="form.notes"
-                                rows="3"
-                                auto-resize
-                                fluid
-                            />
-                        </FormField>
-                    </div>
+                    <PatientMetaFields />
                 </SectionCard>
             </div>
 
