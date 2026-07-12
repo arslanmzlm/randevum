@@ -13,6 +13,7 @@ import { useI18n } from 'vue-i18n';
 import ButtonLink from '@/components/ButtonLink.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import SectionCard from '@/components/SectionCard.vue';
 import { useCan } from '@/composables/useCan';
 import { useDateTime } from '@/composables/useDateTime';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -130,9 +131,7 @@ function removeDoctor(doctor: Doctor): void {
             </template>
         </PageHeader>
 
-        <section
-            class="rounded-xl border border-surface-200 bg-surface-0 p-2 sm:p-3"
-        >
+        <SectionCard padding="p-2 sm:p-3">
             <template v-if="doctors.length">
                 <div
                     class="flex flex-col gap-2 p-2 sm:flex-row sm:items-center"
@@ -254,6 +253,6 @@ function removeDoctor(doctor: Doctor): void {
                 :message="t('doctor.empty')"
                 :bordered="false"
             />
-        </section>
+        </SectionCard>
     </div>
 </template>

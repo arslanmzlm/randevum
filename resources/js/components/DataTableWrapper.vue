@@ -3,6 +3,7 @@ import type {
     DataTablePageEvent,
     DataTableSortEvent,
 } from 'primevue/datatable';
+import SectionCard from '@/components/SectionCard.vue';
 
 // Thin shell around PrimeVue DataTable that wires the repetitive server-side
 // lazy props from a `useTableFilters` instance, and owns the list card surface so
@@ -37,9 +38,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-    <section
-        class="rounded-xl border border-surface-200 bg-surface-0 p-2 sm:p-3"
-    >
+    <SectionCard padding="p-2 sm:p-3">
         <div
             v-if="$slots.toolbar"
             class="flex flex-col gap-2 p-2 sm:flex-row sm:flex-wrap sm:items-center"
@@ -70,5 +69,5 @@ const emit = defineEmits<{
                 <slot name="empty" />
             </template>
         </DataTable>
-    </section>
+    </SectionCard>
 </template>
