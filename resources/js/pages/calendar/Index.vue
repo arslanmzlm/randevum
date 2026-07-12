@@ -7,20 +7,7 @@ import {
     IconLoader2,
 } from '@tabler/icons-vue';
 import { useElementSize, useNow } from '@vueuse/core';
-import {
-    addDays,
-    addMonths,
-    addWeeks,
-    endOfDay,
-    endOfMonth,
-    endOfWeek,
-    startOfDay,
-    startOfMonth,
-    startOfWeek,
-    subDays,
-    subMonths,
-    subWeeks,
-} from 'date-fns';
+import { addDays, startOfWeek } from 'date-fns';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import AppointmentCancelDialog from '@/components/appointments/AppointmentCancelDialog.vue';
@@ -31,6 +18,7 @@ import CalendarTimeGrid from '@/components/calendar/CalendarTimeGrid.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import { useAppointmentActions } from '@/composables/useAppointmentActions';
 import { useCalendarEvents } from '@/composables/useCalendarEvents';
+import { useCalendarNavigation } from '@/composables/useCalendarNavigation';
 import { useCan } from '@/composables/useCan';
 import { useDateTime } from '@/composables/useDateTime';
 import { useTreatmentActions } from '@/composables/useTreatmentActions';
@@ -41,7 +29,6 @@ import type {
     CalendarDaySummary,
     CalendarEventDto,
     CalendarIndexProps,
-    CalendarView,
 } from '@/types/calendar';
 import type { WeekDay } from '@/types/clinic';
 import type { AppointmentStatus } from '@/types/enums';
@@ -62,8 +49,7 @@ const props = defineProps<CalendarIndexProps>();
 
 const { t, locale } = useI18n();
 const { can } = useCan();
-const { formatMonthYear, formatFullDate, formatLongDate, parseUtc } =
-    useDateTime();
+const { parseUtc } = useDateTime();
 const canViewAll = computed(() => can('appointments.viewAll'));
 
 // A doctor with full visibility defaults to their own column; a non-doctor (owner/manager/
@@ -73,51 +59,9 @@ const doctorFilter = ref<number | null>(
 );
 const statuses = ref<AppointmentStatus[]>([...DEFAULT_CALENDAR_STATUSES]);
 
-const activeView = ref<CalendarView>(props.defaultView);
-const viewDate = ref<Date>(new Date());
-
-// The fetch range derived from view + date, so events refetch on every navigation. Month fetches
-// the full visible grid (≤6 weeks).
-const range = computed<{ start: Date; end: Date }>(() => {
-    const d = viewDate.value;
-
-    if (activeView.value === 'month') {
-        return {
-            start: startOfWeek(startOfMonth(d), { weekStartsOn: 1 }),
-            end: endOfWeek(endOfMonth(d), { weekStartsOn: 1 }),
-        };
-    }
-
-    if (activeView.value === 'day') {
-        return { start: startOfDay(d), end: endOfDay(d) };
-    }
-
-    return {
-        start: startOfWeek(d, { weekStartsOn: 1 }),
-        end: endOfWeek(d, { weekStartsOn: 1 }),
-    };
-});
-
-const currentTitle = computed(() => {
-    if (activeView.value === 'month') {
-        return formatMonthYear(viewDate.value);
-    }
-
-    if (activeView.value === 'day') {
-        return formatFullDate(viewDate.value);
-    }
-
-    const weekStart = startOfWeek(viewDate.value, { weekStartsOn: 1 });
-    const weekEnd = endOfWeek(viewDate.value, { weekStartsOn: 1 });
-    const sameMonth =
-        weekStart.getMonth() === weekEnd.getMonth() &&
-        weekStart.getFullYear() === weekEnd.getFullYear();
-
-    // Long form, e.g. "1 – 7 Haziran 2026" (same month) or "28 Haziran – 4 Temmuz 2026".
-    return sameMonth
-        ? `${weekStart.getDate()} – ${formatLongDate(weekEnd)}`
-        : `${formatLongDate(weekStart)} – ${formatLongDate(weekEnd)}`;
-});
+// View/date state + the fetch range, header title, and prev/next/today stepping (pure nav math).
+const { activeView, viewDate, range, currentTitle, goPrev, goNext, goToday } =
+    useCalendarNavigation(props.defaultView);
 
 const WEEK_ORDER: WeekDay[] = [
     'monday',
@@ -437,24 +381,6 @@ function onSummaryClick(date: string, doctorId: number): void {
 
     viewDate.value = parseDateString(date);
     activeView.value = 'day';
-}
-
-function goPrev(): void {
-    const shift = { month: subMonths, week: subWeeks, day: subDays }[
-        activeView.value
-    ];
-    viewDate.value = shift(viewDate.value, 1);
-}
-
-function goNext(): void {
-    const shift = { month: addMonths, week: addWeeks, day: addDays }[
-        activeView.value
-    ];
-    viewDate.value = shift(viewDate.value, 1);
-}
-
-function goToday(): void {
-    viewDate.value = new Date();
 }
 
 // Shared lifecycle actions — same gating the list uses, so the popover never drifts. Pair with the
