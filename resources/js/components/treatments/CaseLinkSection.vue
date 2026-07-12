@@ -3,6 +3,8 @@ import { IconFolder } from '@tabler/icons-vue';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import FormField from '@/components/FormField.vue';
+import ModeSelectRow from '@/components/ModeSelectRow.vue';
+import SectionCard from '@/components/SectionCard.vue';
 import { useCan } from '@/composables/useCan';
 import type { CaseMode, OpenCaseOption } from '@/types/treatment';
 import { daysSince } from '@/utils/datetime';
@@ -65,57 +67,36 @@ const caseOptions = computed(() =>
 </script>
 
 <template>
-    <section
-        class="flex flex-col gap-5 rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
-    >
-        <header class="flex items-center gap-2">
-            <IconFolder class="size-5 text-surface-500" />
-            <h2 class="text-lg font-semibold text-surface-900">
-                {{ t('treatment.sections.case') }}
-            </h2>
-        </header>
-
-        <div class="flex flex-wrap gap-4">
-            <div
-                v-for="option in modeOptions"
-                :key="option.value"
-                class="flex items-center gap-2"
-            >
-                <RadioButton
-                    v-model="form.case_mode"
-                    :input-id="`case-mode-${option.value}`"
-                    :value="option.value"
-                />
-                <label
-                    :for="`case-mode-${option.value}`"
-                    class="cursor-pointer text-sm text-surface-700"
-                >
-                    {{ option.label }}
-                </label>
-            </div>
-        </div>
-
-        <FormField
-            v-if="form.case_mode === 'existing'"
-            :label="t('treatment.case.select_label')"
-            :error="form.errors.case_id"
-        >
-            <Select
-                v-model="form.case_id"
-                :options="caseOptions"
-                option-label="label"
-                option-value="value"
-                fluid
+    <SectionCard :icon="IconFolder" :title="t('treatment.sections.case')">
+        <div class="flex flex-col gap-5">
+            <ModeSelectRow
+                v-model="form.case_mode"
+                :options="modeOptions"
+                id-prefix="case-mode"
             />
-        </FormField>
 
-        <FormField
-            v-else-if="form.case_mode === 'new'"
-            :label="t('treatment.case.new_title_label')"
-            :error="form.errors.new_case_title"
-            required
-        >
-            <InputText v-model="form.new_case_title" fluid />
-        </FormField>
-    </section>
+            <FormField
+                v-if="form.case_mode === 'existing'"
+                :label="t('treatment.case.select_label')"
+                :error="form.errors.case_id"
+            >
+                <Select
+                    v-model="form.case_id"
+                    :options="caseOptions"
+                    option-label="label"
+                    option-value="value"
+                    fluid
+                />
+            </FormField>
+
+            <FormField
+                v-else-if="form.case_mode === 'new'"
+                :label="t('treatment.case.new_title_label')"
+                :error="form.errors.new_case_title"
+                required
+            >
+                <InputText v-model="form.new_case_title" fluid />
+            </FormField>
+        </div>
+    </SectionCard>
 </template>

@@ -6,6 +6,8 @@ import { useI18n } from 'vue-i18n';
 import AppointmentTypeSelect from '@/components/AppointmentTypeSelect.vue';
 import AvailabilityBadge from '@/components/AvailabilityBadge.vue';
 import FormField from '@/components/FormField.vue';
+import ModeSelectRow from '@/components/ModeSelectRow.vue';
+import SectionCard from '@/components/SectionCard.vue';
 import { useAvailabilityCheck } from '@/composables/useAvailabilityCheck';
 import type {
     FollowUpAppointmentTypeOption,
@@ -207,120 +209,27 @@ const { state: availabilityState, reason: availabilityReason } =
 </script>
 
 <template>
-    <section
-        class="flex flex-col gap-5 rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
+    <SectionCard
+        :icon="IconCalendarPlus"
+        :title="t('treatment.sections.follow_up')"
     >
-        <header class="flex items-center gap-2">
-            <IconCalendarPlus class="size-5 text-surface-500" />
-            <h2 class="text-lg font-semibold text-surface-900">
-                {{ t('treatment.sections.follow_up') }}
-            </h2>
-        </header>
+        <div class="flex flex-col gap-5">
+            <ModeSelectRow
+                v-model="form.follow_up.mode"
+                :options="modeOptions"
+                id-prefix="follow-up"
+            />
 
-        <div class="flex flex-wrap gap-4">
-            <div
-                v-for="option in modeOptions"
-                :key="option.value"
-                class="flex items-center gap-2"
-            >
-                <RadioButton
-                    v-model="form.follow_up.mode"
-                    :input-id="`follow-up-${option.value}`"
-                    :value="option.value"
-                />
-                <label
-                    :for="`follow-up-${option.value}`"
-                    class="cursor-pointer text-sm text-surface-700"
+            <template v-if="isActive">
+                <div
+                    class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3"
                 >
-                    {{ option.label }}
-                </label>
-            </div>
-        </div>
-
-        <template v-if="isActive">
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                <FormField
-                    v-if="!isPackage"
-                    :label="t('treatment.follow_up.date')"
-                    :error="singleDateError"
-                    required
-                >
-                    <DatePicker
-                        v-model="form.follow_up.date"
-                        :min-date="minDate"
-                        date-format="dd.mm.yy"
-                        show-icon
-                        fluid
-                    />
-                </FormField>
-
-                <FormField
-                    v-if="!isPackage"
-                    :label="t('treatment.follow_up.time')"
-                    :error="singleTimeError"
-                    required
-                >
-                    <InputMask
-                        v-model="form.follow_up.time"
-                        mask="99:99"
-                        fluid
-                        @blur="onTimeBlur"
-                    />
-                </FormField>
-
-                <FormField
-                    :label="t('treatment.follow_up.service')"
-                    :error="fieldError('follow_up.service_id')"
-                    :hint="t('treatment.follow_up.service_hint')"
-                >
-                    <Select
-                        v-model="form.follow_up.service_id"
-                        :options="serviceOptions"
-                        option-label="label"
-                        option-value="value"
-                        filter
-                        show-clear
-                        fluid
-                    />
-                </FormField>
-
-                <FormField
-                    v-if="typeOptions.length"
-                    :label="t('appointment.fields.appointment_type')"
-                    :hint="
-                        isPackage
-                            ? t('treatment.follow_up.seed_hint')
-                            : undefined
-                    "
-                >
-                    <AppointmentTypeSelect
-                        v-model="form.follow_up.appointment_type_id"
-                        :options="typeOptions"
-                    />
-                </FormField>
-
-                <FormField
-                    :label="t('appointment.fields.duration_minutes')"
-                    :hint="
-                        isPackage
-                            ? t('treatment.follow_up.seed_hint')
-                            : t('appointment.hints.duration_minutes')
-                    "
-                >
-                    <InputNumber
-                        v-model="form.follow_up.duration_minutes"
-                        :min="5"
-                        :max="480"
-                        :step="5"
-                        suffix=" dk"
-                        show-buttons
-                        :use-grouping="false"
-                        fluid
-                    />
-                </FormField>
-
-                <template v-if="isPackage">
-                    <FormField :label="t('treatment.follow_up.date')" required>
+                    <FormField
+                        v-if="!isPackage"
+                        :label="t('treatment.follow_up.date')"
+                        :error="singleDateError"
+                        required
+                    >
                         <DatePicker
                             v-model="form.follow_up.date"
                             :min-date="minDate"
@@ -330,7 +239,12 @@ const { state: availabilityState, reason: availabilityReason } =
                         />
                     </FormField>
 
-                    <FormField :label="t('treatment.follow_up.time')" required>
+                    <FormField
+                        v-if="!isPackage"
+                        :label="t('treatment.follow_up.time')"
+                        :error="singleTimeError"
+                        required
+                    >
                         <InputMask
                             v-model="form.follow_up.time"
                             mask="99:99"
@@ -340,72 +254,152 @@ const { state: availabilityState, reason: availabilityReason } =
                     </FormField>
 
                     <FormField
-                        :label="t('treatment.follow_up.count')"
-                        :hint="t('treatment.follow_up.count_hint')"
+                        :label="t('treatment.follow_up.service')"
+                        :error="fieldError('follow_up.service_id')"
+                        :hint="t('treatment.follow_up.service_hint')"
+                    >
+                        <Select
+                            v-model="form.follow_up.service_id"
+                            :options="serviceOptions"
+                            option-label="label"
+                            option-value="value"
+                            filter
+                            show-clear
+                            fluid
+                        />
+                    </FormField>
+
+                    <FormField
+                        v-if="typeOptions.length"
+                        :label="t('appointment.fields.appointment_type')"
+                        :hint="
+                            isPackage
+                                ? t('treatment.follow_up.seed_hint')
+                                : undefined
+                        "
+                    >
+                        <AppointmentTypeSelect
+                            v-model="form.follow_up.appointment_type_id"
+                            :options="typeOptions"
+                        />
+                    </FormField>
+
+                    <FormField
+                        :label="t('appointment.fields.duration_minutes')"
+                        :hint="
+                            isPackage
+                                ? t('treatment.follow_up.seed_hint')
+                                : t('appointment.hints.duration_minutes')
+                        "
                     >
                         <InputNumber
-                            v-model="form.follow_up.count"
-                            :min="2"
-                            :max="12"
+                            v-model="form.follow_up.duration_minutes"
+                            :min="5"
+                            :max="480"
+                            :step="5"
+                            suffix=" dk"
                             show-buttons
                             :use-grouping="false"
                             fluid
                         />
                     </FormField>
 
-                    <FormField :label="t('treatment.follow_up.interval')">
-                        <Select
-                            v-model="form.follow_up.interval"
-                            :options="intervalOptions"
-                            option-label="label"
-                            option-value="value"
-                            fluid
-                        />
-                    </FormField>
-                </template>
-            </div>
+                    <template v-if="isPackage">
+                        <FormField
+                            :label="t('treatment.follow_up.date')"
+                            required
+                        >
+                            <DatePicker
+                                v-model="form.follow_up.date"
+                                :min-date="minDate"
+                                date-format="dd.mm.yy"
+                                show-icon
+                                fluid
+                            />
+                        </FormField>
 
-            <!-- Single mode: the occurrence error renders inside the date/time FormFields; the
-                 advisory badge only shows when there is no error to surface. -->
-            <template v-if="!isPackage">
-                <AvailabilityBadge
-                    v-if="!singleError"
-                    :state="availabilityState"
-                    :reason="availabilityReason"
-                />
-            </template>
+                        <FormField
+                            :label="t('treatment.follow_up.time')"
+                            required
+                        >
+                            <InputMask
+                                v-model="form.follow_up.time"
+                                mask="99:99"
+                                fluid
+                                @blur="onTimeBlur"
+                            />
+                        </FormField>
 
-            <!-- Package mode: editable, removable occurrence rows with per-row availability. -->
-            <template v-else>
-                <p class="text-xs text-surface-400">
-                    {{ t('treatment.follow_up.regenerated_hint') }}
-                </p>
+                        <FormField
+                            :label="t('treatment.follow_up.count')"
+                            :hint="t('treatment.follow_up.count_hint')"
+                        >
+                            <InputNumber
+                                v-model="form.follow_up.count"
+                                :min="2"
+                                :max="12"
+                                show-buttons
+                                :use-grouping="false"
+                                fluid
+                            />
+                        </FormField>
 
-                <!-- List-level error (required / min:2) must render even when the generated list is
-                     empty (invalid generator start), so it lives outside the row-list wrapper. -->
-                <small v-if="occurrencesError" class="text-xs text-red-500">
-                    {{ occurrencesError }}
-                </small>
-
-                <div v-if="form.follow_up.occurrences.length">
-                    <h3 class="mb-3 text-sm font-semibold text-surface-700">
-                        {{ t('treatment.follow_up.occurrences_title') }}
-                    </h3>
-
-                    <div class="grid grid-cols-1 gap-3">
-                        <FollowUpOccurrenceRow
-                            v-for="(occurrence, index) in form.follow_up
-                                .occurrences"
-                            :key="index"
-                            :index="index"
-                            :doctor-id="doctorId"
-                            :type-options="typeOptions"
-                            :removable="form.follow_up.occurrences.length > 2"
-                            @remove="removeOccurrence(index)"
-                        />
-                    </div>
+                        <FormField :label="t('treatment.follow_up.interval')">
+                            <Select
+                                v-model="form.follow_up.interval"
+                                :options="intervalOptions"
+                                option-label="label"
+                                option-value="value"
+                                fluid
+                            />
+                        </FormField>
+                    </template>
                 </div>
+
+                <!-- Single mode: the occurrence error renders inside the date/time FormFields; the
+                 advisory badge only shows when there is no error to surface. -->
+                <template v-if="!isPackage">
+                    <AvailabilityBadge
+                        v-if="!singleError"
+                        :state="availabilityState"
+                        :reason="availabilityReason"
+                    />
+                </template>
+
+                <!-- Package mode: editable, removable occurrence rows with per-row availability. -->
+                <template v-else>
+                    <p class="text-xs text-surface-400">
+                        {{ t('treatment.follow_up.regenerated_hint') }}
+                    </p>
+
+                    <!-- List-level error (required / min:2) must render even when the generated list is
+                     empty (invalid generator start), so it lives outside the row-list wrapper. -->
+                    <small v-if="occurrencesError" class="text-xs text-red-500">
+                        {{ occurrencesError }}
+                    </small>
+
+                    <div v-if="form.follow_up.occurrences.length">
+                        <h3 class="mb-3 text-sm font-semibold text-surface-700">
+                            {{ t('treatment.follow_up.occurrences_title') }}
+                        </h3>
+
+                        <div class="grid grid-cols-1 gap-3">
+                            <FollowUpOccurrenceRow
+                                v-for="(occurrence, index) in form.follow_up
+                                    .occurrences"
+                                :key="index"
+                                :index="index"
+                                :doctor-id="doctorId"
+                                :type-options="typeOptions"
+                                :removable="
+                                    form.follow_up.occurrences.length > 2
+                                "
+                                @remove="removeOccurrence(index)"
+                            />
+                        </div>
+                    </div>
+                </template>
             </template>
-        </template>
-    </section>
+        </div>
+    </SectionCard>
 </template>

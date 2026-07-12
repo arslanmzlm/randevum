@@ -2,6 +2,8 @@
 import { IconCash, IconPlus, IconTrash } from '@tabler/icons-vue';
 import { computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import ModeSelectRow from '@/components/ModeSelectRow.vue';
+import SectionCard from '@/components/SectionCard.vue';
 import { useMoney } from '@/composables/useMoney';
 import type { PaymentMethod } from '@/types/enums';
 import type { PaymentEntryMode } from '@/types/treatment';
@@ -76,123 +78,105 @@ function removeRow(index: number): void {
 </script>
 
 <template>
-    <section
-        class="flex flex-col gap-5 rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
-    >
-        <header class="flex items-center gap-2">
-            <IconCash class="size-5 text-surface-500" />
-            <h2 class="text-lg font-semibold text-surface-900">
-                {{ t('treatment.sections.payment') }}
-            </h2>
-        </header>
+    <SectionCard :icon="IconCash" :title="t('treatment.sections.payment')">
+        <div class="flex flex-col gap-5">
+            <ModeSelectRow
+                v-model="form.payment.mode"
+                :options="modeOptions"
+                id-prefix="payment-mode"
+                gap="gap-x-6 gap-y-3"
+            />
 
-        <div class="flex flex-wrap gap-x-6 gap-y-3">
-            <div
-                v-for="option in modeOptions"
-                :key="option.value"
-                class="flex items-center gap-2"
-            >
-                <RadioButton
-                    v-model="form.payment.mode"
-                    :input-id="`payment-mode-${option.value}`"
-                    :value="option.value"
-                />
-                <label
-                    :for="`payment-mode-${option.value}`"
-                    class="cursor-pointer text-sm text-surface-700"
+            <p class="text-sm text-surface-500">
+                {{ t('treatment.payment.hint') }}
+            </p>
+
+            <template v-if="form.payment.mode !== 'none'">
+                <div
+                    v-for="(row, index) in form.payment.rows"
+                    :key="index"
+                    class="flex items-end gap-2"
                 >
-                    {{ option.label }}
-                </label>
-            </div>
+                    <div class="flex flex-1 flex-col gap-1">
+                        <label class="text-xs text-surface-500">
+                            {{ t('treatment.payment.method') }}
+                        </label>
+                        <Select
+                            v-model="row.method"
+                            :options="methodOptions"
+                            option-label="label"
+                            option-value="value"
+                            :invalid="
+                                Boolean(fieldError(`payments.${index}.method`))
+                            "
+                            fluid
+                        />
+                    </div>
+
+                    <div class="flex flex-1 flex-col gap-1">
+                        <label class="text-xs text-surface-500">
+                            {{ t('treatment.payment.amount') }}
+                        </label>
+                        <InputNumber
+                            v-model="row.amount"
+                            mode="currency"
+                            :currency="currency"
+                            :min="0"
+                            :max-fraction-digits="2"
+                            :invalid="
+                                Boolean(fieldError(`payments.${index}.amount`))
+                            "
+                            fluid
+                        />
+                    </div>
+
+                    <Button
+                        v-if="form.payment.rows.length > 1"
+                        type="button"
+                        severity="danger"
+                        text
+                        rounded
+                        :aria-label="t('treatment.payment.remove_method')"
+                        @click="removeRow(index)"
+                    >
+                        <IconTrash class="size-4" />
+                    </Button>
+                </div>
+
+                <small v-if="fieldError('payments')" class="text-red-500">
+                    {{ fieldError('payments') }}
+                </small>
+
+                <div class="flex items-center justify-between">
+                    <Button
+                        v-if="form.payment.rows.length < 4"
+                        type="button"
+                        severity="secondary"
+                        outlined
+                        size="small"
+                        :label="t('treatment.payment.add_method')"
+                        @click="addRow"
+                    >
+                        <template #icon>
+                            <IconPlus class="size-4" />
+                        </template>
+                    </Button>
+                    <span v-else />
+
+                    <span
+                        class="text-sm font-medium"
+                        :class="
+                            exceedsTotal ? 'text-red-500' : 'text-surface-700'
+                        "
+                    >
+                        {{
+                            exceedsTotal
+                                ? t('treatment.payment.exceeds_total')
+                                : `${t('treatment.payment.remaining')}: ${formatMoney(remaining)}`
+                        }}
+                    </span>
+                </div>
+            </template>
         </div>
-
-        <p class="text-sm text-surface-500">
-            {{ t('treatment.payment.hint') }}
-        </p>
-
-        <template v-if="form.payment.mode !== 'none'">
-            <div
-                v-for="(row, index) in form.payment.rows"
-                :key="index"
-                class="flex items-end gap-2"
-            >
-                <div class="flex flex-1 flex-col gap-1">
-                    <label class="text-xs text-surface-500">
-                        {{ t('treatment.payment.method') }}
-                    </label>
-                    <Select
-                        v-model="row.method"
-                        :options="methodOptions"
-                        option-label="label"
-                        option-value="value"
-                        :invalid="
-                            Boolean(fieldError(`payments.${index}.method`))
-                        "
-                        fluid
-                    />
-                </div>
-
-                <div class="flex flex-1 flex-col gap-1">
-                    <label class="text-xs text-surface-500">
-                        {{ t('treatment.payment.amount') }}
-                    </label>
-                    <InputNumber
-                        v-model="row.amount"
-                        mode="currency"
-                        :currency="currency"
-                        :min="0"
-                        :max-fraction-digits="2"
-                        :invalid="
-                            Boolean(fieldError(`payments.${index}.amount`))
-                        "
-                        fluid
-                    />
-                </div>
-
-                <Button
-                    v-if="form.payment.rows.length > 1"
-                    type="button"
-                    severity="danger"
-                    text
-                    rounded
-                    :aria-label="t('treatment.payment.remove_method')"
-                    @click="removeRow(index)"
-                >
-                    <IconTrash class="size-4" />
-                </Button>
-            </div>
-
-            <small v-if="fieldError('payments')" class="text-red-500">
-                {{ fieldError('payments') }}
-            </small>
-
-            <div class="flex items-center justify-between">
-                <Button
-                    v-if="form.payment.rows.length < 4"
-                    type="button"
-                    severity="secondary"
-                    outlined
-                    size="small"
-                    :label="t('treatment.payment.add_method')"
-                    @click="addRow"
-                >
-                    <template #icon>
-                        <IconPlus class="size-4" />
-                    </template>
-                </Button>
-                <span v-else />
-
-                <span
-                    class="text-sm font-medium"
-                    :class="exceedsTotal ? 'text-red-500' : 'text-surface-700'"
-                >
-                    {{
-                        exceedsTotal
-                            ? t('treatment.payment.exceeds_total')
-                            : `${t('treatment.payment.remaining')}: ${formatMoney(remaining)}`
-                    }}
-                </span>
-            </div>
-        </template>
-    </section>
+    </SectionCard>
 </template>
