@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n';
 import ButtonLink from '@/components/ButtonLink.vue';
 import FormField from '@/components/FormField.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import SectionCard from '@/components/SectionCard.vue';
 import SettingRow from '@/components/SettingRow.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { index, update } from '@/routes/products';
@@ -90,16 +91,10 @@ function submitStock(): void {
                 class="flex flex-col gap-6 lg:col-span-2"
                 @submit.prevent="submit"
             >
-                <section
-                    class="rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
+                <SectionCard
+                    :icon="IconPackage"
+                    :title="t('product.sections.info')"
                 >
-                    <header class="mb-6 flex items-center gap-2">
-                        <IconPackage class="size-5 text-surface-500" />
-                        <h2 class="text-lg font-semibold text-surface-900">
-                            {{ t('product.sections.info') }}
-                        </h2>
-                    </header>
-
                     <div class="flex flex-col gap-5">
                         <FormField
                             :label="t('product.fields.name')"
@@ -218,7 +213,7 @@ function submitStock(): void {
                             :loading="form.processing"
                         />
                     </div>
-                </section>
+                </SectionCard>
             </form>
 
             <!-- Quick stock adjust — its own PATCH endpoint, independent of the catalog form.
@@ -229,18 +224,22 @@ function submitStock(): void {
                 class="flex flex-col"
                 @submit.prevent="submitStock"
             >
-                <section
-                    class="rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
-                >
-                    <header class="mb-2 flex items-center gap-2">
-                        <IconStack2 class="size-5 text-surface-500" />
-                        <h2 class="text-lg font-semibold text-surface-900">
-                            {{ t('product.sections.stock') }}
-                        </h2>
-                    </header>
-                    <p class="mb-6 text-sm text-surface-500">
-                        {{ t('product.hints.stock') }}
-                    </p>
+                <SectionCard>
+                    <template #title>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <IconStack2 class="size-5 text-surface-500" />
+                                <h2
+                                    class="text-lg font-semibold text-surface-900"
+                                >
+                                    {{ t('product.sections.stock') }}
+                                </h2>
+                            </div>
+                            <p class="mt-2 text-sm text-surface-500">
+                                {{ t('product.hints.stock') }}
+                            </p>
+                        </div>
+                    </template>
 
                     <div class="flex flex-col gap-5">
                         <FormField
@@ -262,7 +261,7 @@ function submitStock(): void {
                             :loading="stockForm.processing"
                         />
                     </div>
-                </section>
+                </SectionCard>
             </form>
         </div>
     </div>

@@ -4,6 +4,7 @@ import { IconMessage } from '@tabler/icons-vue';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import PageHeader from '@/components/PageHeader.vue';
+import SectionCard from '@/components/SectionCard.vue';
 import SmsQuotaPanel from '@/components/sms-settings/SmsQuotaPanel.vue';
 import SmsTypeToggleRow from '@/components/sms-settings/SmsTypeToggleRow.vue';
 import { useCan } from '@/composables/useCan';
@@ -51,16 +52,7 @@ function submit(): void {
         <SmsQuotaPanel :quota="props.quota" />
 
         <form novalidate class="flex flex-col gap-6" @submit.prevent="submit">
-            <section
-                class="rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
-            >
-                <header class="mb-6 flex items-center gap-2">
-                    <IconMessage class="size-5 text-surface-500" />
-                    <h2 class="text-lg font-semibold text-surface-900">
-                        {{ t('sms_settings.section') }}
-                    </h2>
-                </header>
-
+            <SectionCard :icon="IconMessage" :title="t('sms_settings.section')">
                 <div class="grid grid-cols-1 gap-3 lg:grid-cols-2">
                     <SmsTypeToggleRow
                         v-for="type in types"
@@ -71,7 +63,7 @@ function submit(): void {
                         :disabled="!canUpdate"
                     />
                 </div>
-            </section>
+            </SectionCard>
 
             <div v-if="canUpdate" class="flex justify-end">
                 <Button

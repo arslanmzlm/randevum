@@ -7,6 +7,7 @@ import {
 } from '@tabler/icons-vue';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import SectionCard from '@/components/SectionCard.vue';
 import { useMoney } from '@/composables/useMoney';
 import type {
     ProductLineForm,
@@ -116,203 +117,198 @@ function error(index: number, field: string): string | undefined {
 </script>
 
 <template>
-    <section
-        class="flex flex-col gap-4 rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
+    <SectionCard
+        :icon="isService ? IconClipboardList : IconPackage"
+        :title="
+            isService
+                ? t('treatment.sections.services')
+                : t('treatment.sections.products')
+        "
     >
-        <header class="flex items-center gap-2">
-            <component
-                :is="isService ? IconClipboardList : IconPackage"
-                class="size-5 text-surface-500"
-            />
-            <h2 class="text-lg font-semibold text-surface-900">
+        <div class="flex flex-col gap-4">
+            <p
+                v-if="!lines.length"
+                class="rounded-lg border border-dashed border-surface-200 px-4 py-6 text-center text-sm text-surface-400"
+            >
                 {{
                     isService
-                        ? t('treatment.sections.services')
-                        : t('treatment.sections.products')
+                        ? t('treatment.lines.no_services')
+                        : t('treatment.lines.no_products')
                 }}
-            </h2>
-        </header>
+            </p>
 
-        <p
-            v-if="!lines.length"
-            class="rounded-lg border border-dashed border-surface-200 px-4 py-6 text-center text-sm text-surface-400"
-        >
-            {{
-                isService
-                    ? t('treatment.lines.no_services')
-                    : t('treatment.lines.no_products')
-            }}
-        </p>
-
-        <div
-            v-for="(line, index) in lines"
-            :key="index"
-            class="relative flex flex-col gap-3 rounded-lg border border-surface-200 p-4"
-        >
-            <Button
-                type="button"
-                severity="danger"
-                text
-                size="small"
-                class="absolute -top-2.5 -right-2.5 rounded-md border border-surface-200 bg-surface-0 shadow-sm"
-                :aria-label="t('treatment.lines.remove')"
-                @click="removeLine(index)"
+            <div
+                v-for="(line, index) in lines"
+                :key="index"
+                class="relative flex flex-col gap-3 rounded-lg border border-surface-200 p-4"
             >
-                <IconTrash class="size-4" />
-            </Button>
+                <Button
+                    type="button"
+                    severity="danger"
+                    text
+                    size="small"
+                    class="absolute -top-2.5 -right-2.5 rounded-md border border-surface-200 bg-surface-0 shadow-sm"
+                    :aria-label="t('treatment.lines.remove')"
+                    @click="removeLine(index)"
+                >
+                    <IconTrash class="size-4" />
+                </Button>
 
-            <div class="grid grid-cols-1 gap-3 sm:grid-cols-12">
-                <div class="flex flex-col gap-1 sm:col-span-9">
-                    <label class="text-xs text-surface-500">
-                        {{
-                            isService
-                                ? t('treatment.lines.service')
-                                : t('treatment.lines.product')
-                        }}
-                    </label>
-                    <Select
-                        :model-value="lineKey(line)"
-                        :options="options"
-                        option-label="name"
-                        option-value="id"
-                        filter
-                        :invalid="
-                            Boolean(
-                                error(
-                                    index,
-                                    isService ? 'service_id' : 'product_id',
-                                ),
-                            )
-                        "
-                        fluid
-                        @update:model-value="
-                            (value: number) => {
-                                (line as Record<string, unknown>)[idField] =
-                                    value;
-                                onSelect(line);
-                            }
-                        "
-                    >
-                        <template #option="{ option }">
-                            <div
-                                class="flex w-full items-center justify-between gap-3"
-                            >
-                                <span>{{ option.name }}</span>
-                                <span
-                                    v-if="'current_stock' in option"
-                                    class="text-xs"
-                                    :class="
-                                        option.current_stock <= 0
-                                            ? 'text-red-500'
-                                            : 'text-surface-400'
-                                    "
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-12">
+                    <div class="flex flex-col gap-1 sm:col-span-9">
+                        <label class="text-xs text-surface-500">
+                            {{
+                                isService
+                                    ? t('treatment.lines.service')
+                                    : t('treatment.lines.product')
+                            }}
+                        </label>
+                        <Select
+                            :model-value="lineKey(line)"
+                            :options="options"
+                            option-label="name"
+                            option-value="id"
+                            filter
+                            :invalid="
+                                Boolean(
+                                    error(
+                                        index,
+                                        isService ? 'service_id' : 'product_id',
+                                    ),
+                                )
+                            "
+                            fluid
+                            @update:model-value="
+                                (value: number) => {
+                                    (line as Record<string, unknown>)[idField] =
+                                        value;
+                                    onSelect(line);
+                                }
+                            "
+                        >
+                            <template #option="{ option }">
+                                <div
+                                    class="flex w-full items-center justify-between gap-3"
                                 >
-                                    {{
-                                        t('treatment.lines.in_stock', {
-                                            count: option.current_stock,
-                                        })
-                                    }}
-                                </span>
-                            </div>
-                        </template>
-                    </Select>
-                    <small
-                        v-if="!isService && stockFor(lineKey(line)) !== null"
-                        class="text-xs"
-                        :class="
-                            (stockFor(lineKey(line)) ?? 0) <= 0
-                                ? 'text-red-500'
-                                : 'text-surface-400'
-                        "
-                    >
-                        {{
-                            t('treatment.lines.in_stock', {
-                                count: stockFor(lineKey(line)),
-                            })
-                        }}
-                    </small>
-                </div>
+                                    <span>{{ option.name }}</span>
+                                    <span
+                                        v-if="'current_stock' in option"
+                                        class="text-xs"
+                                        :class="
+                                            option.current_stock <= 0
+                                                ? 'text-red-500'
+                                                : 'text-surface-400'
+                                        "
+                                    >
+                                        {{
+                                            t('treatment.lines.in_stock', {
+                                                count: option.current_stock,
+                                            })
+                                        }}
+                                    </span>
+                                </div>
+                            </template>
+                        </Select>
+                        <small
+                            v-if="
+                                !isService && stockFor(lineKey(line)) !== null
+                            "
+                            class="text-xs"
+                            :class="
+                                (stockFor(lineKey(line)) ?? 0) <= 0
+                                    ? 'text-red-500'
+                                    : 'text-surface-400'
+                            "
+                        >
+                            {{
+                                t('treatment.lines.in_stock', {
+                                    count: stockFor(lineKey(line)),
+                                })
+                            }}
+                        </small>
+                    </div>
 
-                <div class="flex flex-col gap-1 sm:col-span-3">
-                    <label class="text-xs text-surface-500">
-                        {{ t('treatment.lines.quantity') }}
-                    </label>
-                    <InputNumber
-                        v-model="line.quantity"
-                        :min="1"
-                        :max="999"
-                        show-buttons
-                        :use-grouping="false"
-                        :invalid="Boolean(error(index, 'quantity'))"
-                        fluid
-                    />
-                </div>
+                    <div class="flex flex-col gap-1 sm:col-span-3">
+                        <label class="text-xs text-surface-500">
+                            {{ t('treatment.lines.quantity') }}
+                        </label>
+                        <InputNumber
+                            v-model="line.quantity"
+                            :min="1"
+                            :max="999"
+                            show-buttons
+                            :use-grouping="false"
+                            :invalid="Boolean(error(index, 'quantity'))"
+                            fluid
+                        />
+                    </div>
 
-                <div class="flex flex-col gap-1 sm:col-span-4">
-                    <label class="text-xs text-surface-500">
-                        {{ t('treatment.lines.unit_price') }}
-                    </label>
-                    <InputNumber
-                        v-model="line.unit_price"
-                        mode="currency"
-                        :currency="currency"
-                        :min="0"
-                        :max-fraction-digits="2"
-                        :invalid="Boolean(error(index, 'unit_price'))"
-                        fluid
-                    />
-                </div>
+                    <div class="flex flex-col gap-1 sm:col-span-4">
+                        <label class="text-xs text-surface-500">
+                            {{ t('treatment.lines.unit_price') }}
+                        </label>
+                        <InputNumber
+                            v-model="line.unit_price"
+                            mode="currency"
+                            :currency="currency"
+                            :min="0"
+                            :max-fraction-digits="2"
+                            :invalid="Boolean(error(index, 'unit_price'))"
+                            fluid
+                        />
+                    </div>
 
-                <div class="flex flex-col gap-1 sm:col-span-4">
-                    <label class="text-xs text-surface-500">
-                        {{ t('treatment.lines.discount') }}
-                    </label>
-                    <InputNumber
-                        v-model="line.discount_amount"
-                        mode="currency"
-                        :currency="currency"
-                        :min="0"
-                        :max-fraction-digits="2"
-                        fluid
-                    />
-                    <small class="text-xs text-surface-400">
-                        {{ t('treatment.lines.discount_hint') }}
-                    </small>
-                </div>
+                    <div class="flex flex-col gap-1 sm:col-span-4">
+                        <label class="text-xs text-surface-500">
+                            {{ t('treatment.lines.discount') }}
+                        </label>
+                        <InputNumber
+                            v-model="line.discount_amount"
+                            mode="currency"
+                            :currency="currency"
+                            :min="0"
+                            :max-fraction-digits="2"
+                            fluid
+                        />
+                        <small class="text-xs text-surface-400">
+                            {{ t('treatment.lines.discount_hint') }}
+                        </small>
+                    </div>
 
-                <div class="flex flex-col gap-1 sm:col-span-4">
-                    <label class="text-xs text-surface-500">
-                        {{ t('treatment.lines.line_total') }}
-                    </label>
-                    <InputNumber
-                        :model-value="lineSubtotal(line)"
-                        mode="currency"
-                        :currency="currency"
-                        :max-fraction-digits="2"
-                        readonly
-                        fluid
-                    />
+                    <div class="flex flex-col gap-1 sm:col-span-4">
+                        <label class="text-xs text-surface-500">
+                            {{ t('treatment.lines.line_total') }}
+                        </label>
+                        <InputNumber
+                            :model-value="lineSubtotal(line)"
+                            mode="currency"
+                            :currency="currency"
+                            :max-fraction-digits="2"
+                            readonly
+                            fluid
+                        />
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div>
-            <Button
-                type="button"
-                severity="secondary"
-                outlined
-                size="small"
-                :label="
-                    isService
-                        ? t('treatment.lines.add_service')
-                        : t('treatment.lines.add_product')
-                "
-                @click="addLine"
-            >
-                <template #icon>
-                    <IconPlus class="size-4" />
-                </template>
-            </Button>
+            <div>
+                <Button
+                    type="button"
+                    severity="secondary"
+                    outlined
+                    size="small"
+                    :label="
+                        isService
+                            ? t('treatment.lines.add_service')
+                            : t('treatment.lines.add_product')
+                    "
+                    @click="addLine"
+                >
+                    <template #icon>
+                        <IconPlus class="size-4" />
+                    </template>
+                </Button>
+            </div>
         </div>
-    </section>
+    </SectionCard>
 </template>

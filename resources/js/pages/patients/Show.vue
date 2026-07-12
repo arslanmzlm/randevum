@@ -27,6 +27,7 @@ import EntityLinkRow from '@/components/EntityLinkRow.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import RecordPaymentDialog from '@/components/payments/RecordPaymentDialog.vue';
 import TransactionList from '@/components/payments/TransactionList.vue';
+import SectionCard from '@/components/SectionCard.vue';
 import SmsStatusTag from '@/components/SmsStatusTag.vue';
 import TreatmentStatusTag from '@/components/TreatmentStatusTag.vue';
 import { useCan } from '@/composables/useCan';
@@ -328,145 +329,136 @@ function submitLinkCase(): void {
         </PageHeader>
 
         <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
-            <section
-                class="flex flex-col gap-5 rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8 lg:col-span-2"
+            <SectionCard
+                class="lg:col-span-2"
+                :icon="IconUser"
+                :title="t('patient.sections.profile')"
             >
-                <header class="flex items-center gap-2">
-                    <IconUser class="size-5 text-surface-500" />
-                    <h2 class="text-lg font-semibold text-surface-900">
-                        {{ t('patient.sections.profile') }}
-                    </h2>
-                    <Tag
-                        v-if="patient.is_legacy"
-                        severity="warn"
-                        :value="t('patient.legacy_badge')"
-                        class="ml-auto"
-                    />
-                </header>
+                <template v-if="patient.is_legacy" #actions>
+                    <Tag severity="warn" :value="t('patient.legacy_badge')" />
+                </template>
 
-                <dl class="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
-                    <div
-                        v-for="(row, idx) in contactRows"
-                        :key="idx"
-                        class="flex items-start gap-3"
-                    >
-                        <component
-                            :is="row.icon"
-                            class="mt-0.5 size-4 shrink-0 text-surface-400"
-                        />
-                        <div class="flex min-w-0 flex-col">
-                            <dt class="text-xs text-surface-500">
-                                {{ row.label }}
-                            </dt>
-                            <dd class="text-sm text-surface-900">
-                                {{ row.value || t('patient.not_specified') }}
-                            </dd>
+                <div class="flex flex-col gap-5">
+                    <dl class="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+                        <div
+                            v-for="(row, idx) in contactRows"
+                            :key="idx"
+                            class="flex items-start gap-3"
+                        >
+                            <component
+                                :is="row.icon"
+                                class="mt-0.5 size-4 shrink-0 text-surface-400"
+                            />
+                            <div class="flex min-w-0 flex-col">
+                                <dt class="text-xs text-surface-500">
+                                    {{ row.label }}
+                                </dt>
+                                <dd class="text-sm text-surface-900">
+                                    {{
+                                        row.value || t('patient.not_specified')
+                                    }}
+                                </dd>
+                            </div>
                         </div>
-                    </div>
-                </dl>
+                    </dl>
 
-                <div
-                    class="flex items-center justify-between gap-4 rounded-lg border border-surface-200 p-4"
-                >
-                    <span class="text-sm font-medium text-surface-900">
-                        {{ t('patient.fields.notification_enabled') }}
-                    </span>
-                    <Tag
-                        :severity="
-                            patient.notification_enabled
-                                ? 'success'
-                                : 'secondary'
-                        "
-                        :value="
-                            patient.notification_enabled
-                                ? t('patient.notifications_on')
-                                : t('patient.notifications_off')
-                        "
-                    />
-                </div>
-
-                <div class="flex flex-col gap-2">
-                    <header class="flex items-center gap-2">
-                        <IconNotes class="size-5 text-surface-500" />
-                        <h3 class="text-sm font-semibold text-surface-900">
-                            {{ t('patient.sections.notes') }}
-                        </h3>
-                        <Button
-                            v-if="canEditNotes && !editingNotes"
-                            type="button"
-                            severity="secondary"
-                            outlined
-                            size="small"
-                            class="ml-auto"
-                            :label="t('patient.notes_edit')"
-                            @click="startEditNotes"
-                        >
-                            <template #icon>
-                                <IconPencil />
-                            </template>
-                        </Button>
-                    </header>
-
-                    <template v-if="editingNotes">
-                        <Textarea
-                            v-model="notesForm.notes"
-                            rows="4"
-                            auto-resize
-                            fluid
-                            :invalid="Boolean(notesForm.errors.notes)"
-                            :placeholder="t('patient.notes_placeholder')"
-                            :aria-label="t('patient.sections.notes')"
+                    <div
+                        class="flex items-center justify-between gap-4 rounded-lg border border-surface-200 p-4"
+                    >
+                        <span class="text-sm font-medium text-surface-900">
+                            {{ t('patient.fields.notification_enabled') }}
+                        </span>
+                        <Tag
+                            :severity="
+                                patient.notification_enabled
+                                    ? 'success'
+                                    : 'secondary'
+                            "
+                            :value="
+                                patient.notification_enabled
+                                    ? t('patient.notifications_on')
+                                    : t('patient.notifications_off')
+                            "
                         />
-                        <small
-                            v-if="notesForm.errors.notes"
-                            class="text-red-500"
-                        >
-                            {{ notesForm.errors.notes }}
-                        </small>
-                        <div class="flex justify-end gap-2">
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <header class="flex items-center gap-2">
+                            <IconNotes class="size-5 text-surface-500" />
+                            <h3 class="text-sm font-semibold text-surface-900">
+                                {{ t('patient.sections.notes') }}
+                            </h3>
                             <Button
+                                v-if="canEditNotes && !editingNotes"
                                 type="button"
                                 severity="secondary"
                                 outlined
                                 size="small"
-                                :label="t('common.cancel')"
-                                :disabled="notesForm.processing"
-                                @click="cancelEditNotes"
-                            />
-                            <Button
-                                type="button"
-                                size="small"
-                                :label="t('patient.save')"
-                                :loading="notesForm.processing"
-                                @click="saveNotes"
-                            />
-                        </div>
-                    </template>
+                                class="ml-auto"
+                                :label="t('patient.notes_edit')"
+                                @click="startEditNotes"
+                            >
+                                <template #icon>
+                                    <IconPencil />
+                                </template>
+                            </Button>
+                        </header>
 
-                    <template v-else>
-                        <p
-                            v-if="patient.notes"
-                            class="text-sm whitespace-pre-line text-surface-700"
-                        >
-                            {{ patient.notes }}
-                        </p>
-                        <p v-else class="text-sm text-surface-400">
-                            {{ t('patient.no_notes') }}
-                        </p>
-                    </template>
+                        <template v-if="editingNotes">
+                            <Textarea
+                                v-model="notesForm.notes"
+                                rows="4"
+                                auto-resize
+                                fluid
+                                :invalid="Boolean(notesForm.errors.notes)"
+                                :placeholder="t('patient.notes_placeholder')"
+                                :aria-label="t('patient.sections.notes')"
+                            />
+                            <small
+                                v-if="notesForm.errors.notes"
+                                class="text-red-500"
+                            >
+                                {{ notesForm.errors.notes }}
+                            </small>
+                            <div class="flex justify-end gap-2">
+                                <Button
+                                    type="button"
+                                    severity="secondary"
+                                    outlined
+                                    size="small"
+                                    :label="t('common.cancel')"
+                                    :disabled="notesForm.processing"
+                                    @click="cancelEditNotes"
+                                />
+                                <Button
+                                    type="button"
+                                    size="small"
+                                    :label="t('patient.save')"
+                                    :loading="notesForm.processing"
+                                    @click="saveNotes"
+                                />
+                            </div>
+                        </template>
+
+                        <template v-else>
+                            <p
+                                v-if="patient.notes"
+                                class="text-sm whitespace-pre-line text-surface-700"
+                            >
+                                {{ patient.notes }}
+                            </p>
+                            <p v-else class="text-sm text-surface-400">
+                                {{ t('patient.no_notes') }}
+                            </p>
+                        </template>
+                    </div>
                 </div>
-            </section>
+            </SectionCard>
 
-            <section
-                class="flex flex-col gap-4 rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
+            <SectionCard
+                :icon="IconNotes"
+                :title="t('patient.sections.treatments')"
             >
-                <header class="flex items-center gap-2">
-                    <IconNotes class="size-5 text-surface-500" />
-                    <h2 class="text-lg font-semibold text-surface-900">
-                        {{ t('patient.sections.treatments') }}
-                    </h2>
-                </header>
-
                 <ul v-if="treatments.length" class="flex flex-col gap-2">
                     <li v-for="item in treatments" :key="item.id">
                         <EntityLinkRow
@@ -503,20 +495,14 @@ function submitLinkCase(): void {
                     :message="t('patient.no_treatments')"
                     :description="t('patient.no_treatments_hint')"
                 />
-            </section>
+            </SectionCard>
         </div>
 
-        <section
+        <SectionCard
             v-if="canViewAppointments"
-            class="flex flex-col gap-4 rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
+            :icon="IconCalendarEvent"
+            :title="t('patient.sections.appointments')"
         >
-            <header class="flex items-center gap-2">
-                <IconCalendarEvent class="size-5 text-surface-500" />
-                <h2 class="text-lg font-semibold text-surface-900">
-                    {{ t('patient.sections.appointments') }}
-                </h2>
-            </header>
-
             <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <div class="flex flex-col gap-2">
                     <h3 class="text-sm font-semibold text-surface-700">
@@ -622,18 +608,9 @@ function submitLinkCase(): void {
                     </p>
                 </div>
             </div>
-        </section>
+        </SectionCard>
 
-        <section
-            class="flex flex-col gap-4 rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
-        >
-            <header class="flex items-center gap-2">
-                <IconMessage class="size-5 text-surface-500" />
-                <h2 class="text-lg font-semibold text-surface-900">
-                    {{ t('sms.log.patient.title') }}
-                </h2>
-            </header>
-
+        <SectionCard :icon="IconMessage" :title="t('sms.log.patient.title')">
             <ul v-if="smsLogs.length" class="flex flex-col gap-2">
                 <li
                     v-for="log in smsLogs"
@@ -660,19 +637,13 @@ function submitLinkCase(): void {
             <p v-else class="text-sm text-surface-400">
                 {{ t('sms.log.patient.empty') }}
             </p>
-        </section>
+        </SectionCard>
 
-        <section
+        <SectionCard
             v-if="cases.length"
-            class="flex flex-col gap-4 rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
+            :icon="IconFolders"
+            :title="t('patient.sections.cases')"
         >
-            <header class="flex items-center gap-2">
-                <IconFolders class="size-5 text-surface-500" />
-                <h2 class="text-lg font-semibold text-surface-900">
-                    {{ t('patient.sections.cases') }}
-                </h2>
-            </header>
-
             <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <div class="flex flex-col gap-2">
                     <h3 class="text-sm font-semibold text-surface-700">
@@ -734,169 +705,166 @@ function submitLinkCase(): void {
                     </p>
                 </div>
             </div>
-        </section>
+        </SectionCard>
 
-        <section
-            v-if="ungroupedTreatments.length"
-            class="flex flex-col gap-4 rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
-        >
-            <header class="flex flex-col gap-1">
-                <div class="flex items-center gap-2">
-                    <IconFolderOff class="size-5 text-surface-500" />
-                    <h2 class="text-lg font-semibold text-surface-900">
-                        {{ t('patient.sections.ungrouped') }}
-                    </h2>
+        <SectionCard v-if="ungroupedTreatments.length">
+            <template #title>
+                <div class="flex flex-col gap-1">
+                    <div class="flex items-center gap-2">
+                        <IconFolderOff class="size-5 text-surface-500" />
+                        <h2 class="text-lg font-semibold text-surface-900">
+                            {{ t('patient.sections.ungrouped') }}
+                        </h2>
+                    </div>
+                    <p class="text-sm text-surface-500">
+                        {{ t('patient.ungrouped.hint') }}
+                    </p>
                 </div>
-                <p class="text-sm text-surface-500">
-                    {{ t('patient.ungrouped.hint') }}
-                </p>
-            </header>
+            </template>
 
-            <ul class="flex flex-col gap-2">
-                <li
-                    v-for="item in ungroupedTreatments"
-                    :key="item.id"
-                    class="flex items-center gap-3 rounded-xl border border-surface-200 p-3"
-                >
-                    <Checkbox
-                        v-if="isActionable(item)"
-                        v-model="selectedTreatmentIds"
-                        :value="item.id"
-                        :disabled="!isSelectable(item)"
-                        :input-id="`ungrouped-${item.id}`"
-                    />
-                    <label
-                        :for="`ungrouped-${item.id}`"
-                        class="flex min-w-0 flex-1 flex-col gap-0.5"
-                        :class="isActionable(item) ? 'cursor-pointer' : ''"
+            <div class="flex flex-col gap-4">
+                <ul class="flex flex-col gap-2">
+                    <li
+                        v-for="item in ungroupedTreatments"
+                        :key="item.id"
+                        class="flex items-center gap-3 rounded-xl border border-surface-200 p-3"
                     >
-                        <span
-                            class="truncate text-sm font-medium text-surface-900"
+                        <Checkbox
+                            v-if="isActionable(item)"
+                            v-model="selectedTreatmentIds"
+                            :value="item.id"
+                            :disabled="!isSelectable(item)"
+                            :input-id="`ungrouped-${item.id}`"
+                        />
+                        <label
+                            :for="`ungrouped-${item.id}`"
+                            class="flex min-w-0 flex-1 flex-col gap-0.5"
+                            :class="isActionable(item) ? 'cursor-pointer' : ''"
                         >
-                            {{ item.title || t('treatment.untitled') }}
+                            <span
+                                class="truncate text-sm font-medium text-surface-900"
+                            >
+                                {{ item.title || t('treatment.untitled') }}
+                            </span>
+                            <span class="text-xs text-surface-500">
+                                {{
+                                    item.completed_at
+                                        ? formatDate(item.completed_at)
+                                        : t('treatment.in_progress')
+                                }}
+                                · {{ item.doctor_name }}
+                            </span>
+                        </label>
+                        <span class="text-sm font-medium text-surface-700">
+                            {{ formatMoney(item.total_amount) }}
                         </span>
-                        <span class="text-xs text-surface-500">
-                            {{
-                                item.completed_at
-                                    ? formatDate(item.completed_at)
-                                    : t('treatment.in_progress')
-                            }}
-                            · {{ item.doctor_name }}
-                        </span>
-                    </label>
-                    <span class="text-sm font-medium text-surface-700">
-                        {{ formatMoney(item.total_amount) }}
+                    </li>
+                </ul>
+
+                <div
+                    v-if="selectedTreatmentIds.length && canActOnSelection"
+                    class="flex flex-wrap items-center justify-end gap-2 border-t border-surface-200 pt-4"
+                >
+                    <span class="mr-auto text-sm text-surface-500">
+                        {{
+                            t('patient.ungrouped.selected', {
+                                count: selectedTreatmentIds.length,
+                            })
+                        }}
                     </span>
-                </li>
-            </ul>
-
-            <div
-                v-if="selectedTreatmentIds.length && canActOnSelection"
-                class="flex flex-wrap items-center justify-end gap-2 border-t border-surface-200 pt-4"
-            >
-                <span class="mr-auto text-sm text-surface-500">
-                    {{
-                        t('patient.ungrouped.selected', {
-                            count: selectedTreatmentIds.length,
-                        })
-                    }}
-                </span>
-                <Button
-                    v-if="canLinkCases && linkableOpenCases.length"
-                    type="button"
-                    severity="secondary"
-                    outlined
-                    :label="t('patient.ungrouped.link_existing')"
-                    @click="openLinkCaseDialog"
-                >
-                    <template #icon>
-                        <IconLink class="size-4" />
-                    </template>
-                </Button>
-                <Button
-                    v-if="canCreateCases"
-                    type="button"
-                    :label="t('patient.ungrouped.create_case')"
-                    @click="openCreateCaseDialog"
-                >
-                    <template #icon>
-                        <IconPlus class="size-4" />
-                    </template>
-                </Button>
-            </div>
-        </section>
-
-        <section
-            v-if="canViewBalance && balance"
-            class="flex flex-col gap-5 rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
-        >
-            <header class="flex items-center gap-2">
-                <IconCash class="size-5 text-surface-500" />
-                <h2 class="text-lg font-semibold text-surface-900">
-                    {{ t('balance.section_title') }}
-                </h2>
-            </header>
-
-            <dl class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <div
-                    class="flex flex-col gap-1 rounded-lg border border-surface-200 p-4"
-                >
-                    <dt class="text-xs text-surface-500">
-                        {{ t('balance.total') }}
-                    </dt>
-                    <dd class="text-lg font-semibold text-surface-900">
-                        {{ formatMoney(balance.total) }}
-                    </dd>
-                </div>
-                <div
-                    class="flex flex-col gap-1 rounded-lg border border-surface-200 p-4"
-                >
-                    <dt class="text-xs text-surface-500">
-                        {{ t('balance.paid') }}
-                    </dt>
-                    <dd class="text-lg font-semibold text-green-600">
-                        {{ formatMoney(balance.paid) }}
-                    </dd>
-                </div>
-                <div
-                    class="flex flex-col gap-1 rounded-lg border border-surface-200 p-4"
-                >
-                    <dt class="text-xs text-surface-500">
-                        {{
-                            remainingIsCredit
-                                ? t('balance.credit')
-                                : t('balance.remaining')
-                        }}
-                    </dt>
-                    <dd
-                        class="text-lg font-semibold"
-                        :class="
-                            remainingIsCredit
-                                ? 'text-green-600'
-                                : 'text-surface-900'
-                        "
+                    <Button
+                        v-if="canLinkCases && linkableOpenCases.length"
+                        type="button"
+                        severity="secondary"
+                        outlined
+                        :label="t('patient.ungrouped.link_existing')"
+                        @click="openLinkCaseDialog"
                     >
-                        {{
-                            formatMoney(
-                                remainingIsCredit
-                                    ? Math.abs(Number(balance.remaining))
-                                    : balance.remaining,
-                            )
-                        }}
-                    </dd>
+                        <template #icon>
+                            <IconLink class="size-4" />
+                        </template>
+                    </Button>
+                    <Button
+                        v-if="canCreateCases"
+                        type="button"
+                        :label="t('patient.ungrouped.create_case')"
+                        @click="openCreateCaseDialog"
+                    >
+                        <template #icon>
+                            <IconPlus class="size-4" />
+                        </template>
+                    </Button>
                 </div>
-            </dl>
-
-            <div class="flex flex-col gap-3">
-                <h3 class="text-sm font-semibold text-surface-700">
-                    {{ t('balance.transactions_title') }}
-                </h3>
-                <TransactionList
-                    :transactions="transactions ?? []"
-                    show-treatment
-                />
             </div>
-        </section>
+        </SectionCard>
+
+        <SectionCard
+            v-if="canViewBalance && balance"
+            :icon="IconCash"
+            :title="t('balance.section_title')"
+        >
+            <div class="flex flex-col gap-5">
+                <dl class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    <div
+                        class="flex flex-col gap-1 rounded-lg border border-surface-200 p-4"
+                    >
+                        <dt class="text-xs text-surface-500">
+                            {{ t('balance.total') }}
+                        </dt>
+                        <dd class="text-lg font-semibold text-surface-900">
+                            {{ formatMoney(balance.total) }}
+                        </dd>
+                    </div>
+                    <div
+                        class="flex flex-col gap-1 rounded-lg border border-surface-200 p-4"
+                    >
+                        <dt class="text-xs text-surface-500">
+                            {{ t('balance.paid') }}
+                        </dt>
+                        <dd class="text-lg font-semibold text-green-600">
+                            {{ formatMoney(balance.paid) }}
+                        </dd>
+                    </div>
+                    <div
+                        class="flex flex-col gap-1 rounded-lg border border-surface-200 p-4"
+                    >
+                        <dt class="text-xs text-surface-500">
+                            {{
+                                remainingIsCredit
+                                    ? t('balance.credit')
+                                    : t('balance.remaining')
+                            }}
+                        </dt>
+                        <dd
+                            class="text-lg font-semibold"
+                            :class="
+                                remainingIsCredit
+                                    ? 'text-green-600'
+                                    : 'text-surface-900'
+                            "
+                        >
+                            {{
+                                formatMoney(
+                                    remainingIsCredit
+                                        ? Math.abs(Number(balance.remaining))
+                                        : balance.remaining,
+                                )
+                            }}
+                        </dd>
+                    </div>
+                </dl>
+
+                <div class="flex flex-col gap-3">
+                    <h3 class="text-sm font-semibold text-surface-700">
+                        {{ t('balance.transactions_title') }}
+                    </h3>
+                    <TransactionList
+                        :transactions="transactions ?? []"
+                        show-treatment
+                    />
+                </div>
+            </div>
+        </SectionCard>
 
         <Dialog
             v-model:visible="showCreateCaseDialog"

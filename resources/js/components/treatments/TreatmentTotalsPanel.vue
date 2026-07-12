@@ -3,6 +3,7 @@ import { IconReceipt } from '@tabler/icons-vue';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import FormField from '@/components/FormField.vue';
+import SectionCard from '@/components/SectionCard.vue';
 import { useMoney } from '@/composables/useMoney';
 import type {
     TreatmentProductOption,
@@ -60,81 +61,74 @@ const total = computed(() =>
 </script>
 
 <template>
-    <section
-        class="flex flex-col gap-4 rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
-    >
-        <header class="flex items-center gap-2">
-            <IconReceipt class="size-5 text-surface-500" />
-            <h2 class="text-lg font-semibold text-surface-900">
-                {{ t('treatment.sections.totals') }}
-            </h2>
-        </header>
+    <SectionCard :icon="IconReceipt" :title="t('treatment.sections.totals')">
+        <div class="flex flex-col gap-4">
+            <dl class="flex flex-col gap-2 text-sm">
+                <div
+                    v-for="(item, index) in itemized"
+                    :key="index"
+                    class="flex items-center justify-between gap-3"
+                >
+                    <dt class="truncate text-surface-600">
+                        {{ item.quantity }} × {{ item.name }}
+                    </dt>
+                    <dd class="shrink-0 font-medium text-surface-800">
+                        {{ formatMoney(item.amount) }}
+                    </dd>
+                </div>
 
-        <dl class="flex flex-col gap-2 text-sm">
-            <div
-                v-for="(item, index) in itemized"
-                :key="index"
-                class="flex items-center justify-between gap-3"
+                <div
+                    v-if="lineDiscounts > 0"
+                    class="flex items-center justify-between"
+                >
+                    <dt class="text-surface-500">
+                        {{ t('treatment.totals.line_discounts') }}
+                    </dt>
+                    <dd class="font-medium text-red-500">
+                        −{{ formatMoney(lineDiscounts) }}
+                    </dd>
+                </div>
+                <div
+                    class="flex items-center justify-between"
+                    :class="
+                        itemized.length
+                            ? 'mt-2 border-t border-surface-200 pt-4'
+                            : undefined
+                    "
+                >
+                    <dt class="text-surface-500">
+                        {{ t('treatment.totals.subtotal') }}
+                    </dt>
+                    <dd class="font-medium text-surface-800">
+                        {{ formatMoney(subtotal) }}
+                    </dd>
+                </div>
+            </dl>
+
+            <FormField
+                :label="t('treatment.totals.discount')"
+                :error="form.errors.discount_amount"
             >
-                <dt class="truncate text-surface-600">
-                    {{ item.quantity }} × {{ item.name }}
-                </dt>
-                <dd class="shrink-0 font-medium text-surface-800">
-                    {{ formatMoney(item.amount) }}
-                </dd>
-            </div>
+                <InputNumber
+                    v-model="form.discount_amount"
+                    mode="currency"
+                    :currency="currency"
+                    :min="0"
+                    :max-fraction-digits="2"
+                    fluid
+                />
+            </FormField>
 
             <div
-                v-if="lineDiscounts > 0"
-                class="flex items-center justify-between"
+                class="mt-1 flex items-center justify-between border-t border-surface-200 pt-4"
             >
-                <dt class="text-surface-500">
-                    {{ t('treatment.totals.line_discounts') }}
-                </dt>
-                <dd class="font-medium text-red-500">
-                    −{{ formatMoney(lineDiscounts) }}
-                </dd>
+                <span class="text-base font-semibold text-surface-900">
+                    {{ t('treatment.totals.total') }}
+                </span>
+                <span class="text-base font-semibold text-surface-900">
+                    {{ formatMoney(total) }}
+                </span>
             </div>
-            <div
-                class="flex items-center justify-between"
-                :class="
-                    itemized.length
-                        ? 'mt-2 border-t border-surface-200 pt-4'
-                        : undefined
-                "
-            >
-                <dt class="text-surface-500">
-                    {{ t('treatment.totals.subtotal') }}
-                </dt>
-                <dd class="font-medium text-surface-800">
-                    {{ formatMoney(subtotal) }}
-                </dd>
-            </div>
-        </dl>
-
-        <FormField
-            :label="t('treatment.totals.discount')"
-            :error="form.errors.discount_amount"
-        >
-            <InputNumber
-                v-model="form.discount_amount"
-                mode="currency"
-                :currency="currency"
-                :min="0"
-                :max-fraction-digits="2"
-                fluid
-            />
-        </FormField>
-
-        <div
-            class="mt-1 flex items-center justify-between border-t border-surface-200 pt-4"
-        >
-            <span class="text-base font-semibold text-surface-900">
-                {{ t('treatment.totals.total') }}
-            </span>
-            <span class="text-base font-semibold text-surface-900">
-                {{ formatMoney(total) }}
-            </span>
         </div>
-    </section>
+    </SectionCard>
 </template>

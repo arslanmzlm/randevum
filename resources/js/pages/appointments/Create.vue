@@ -8,6 +8,7 @@ import DaySchedulePanel from '@/components/appointments/DaySchedulePanel.vue';
 import { provideAppointmentForm } from '@/components/appointments/formContext';
 import PatientPicker from '@/components/appointments/PatientPicker.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import SectionCard from '@/components/SectionCard.vue';
 import { useCan } from '@/composables/useCan';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { store } from '@/routes/appointments';
@@ -121,9 +122,7 @@ function submit(): void {
         />
 
         <form novalidate class="flex flex-col gap-6" @submit.prevent="submit">
-            <section
-                class="rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
-            >
+            <SectionCard>
                 <div
                     class="grid grid-cols-1 divide-y divide-surface-200 lg:grid-cols-3 lg:divide-x lg:divide-y-0"
                 >
@@ -136,7 +135,7 @@ function submit(): void {
                         :doctor-locked="doctorLocked"
                     />
                 </div>
-            </section>
+            </SectionCard>
 
             <DaySchedulePanel :doctor-id="form.doctor_id" :date="form.date" />
         </form>

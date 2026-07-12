@@ -8,6 +8,7 @@ import DateTimeFields from '@/components/appointments/DateTimeFields.vue';
 import DaySchedulePanel from '@/components/appointments/DaySchedulePanel.vue';
 import { provideAppointmentForm } from '@/components/appointments/formContext';
 import PageHeader from '@/components/PageHeader.vue';
+import SectionCard from '@/components/SectionCard.vue';
 import { useDateTime } from '@/composables/useDateTime';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { index as appointmentsIndex, update } from '@/routes/appointments';
@@ -122,9 +123,7 @@ function submit(): void {
         />
 
         <form novalidate class="flex flex-col gap-6" @submit.prevent="submit">
-            <section
-                class="rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
-            >
+            <SectionCard>
                 <div
                     class="grid grid-cols-1 divide-y divide-surface-200 lg:grid-cols-3 lg:divide-x lg:divide-y-0"
                 >
@@ -174,7 +173,7 @@ function submit(): void {
                         :show-walk-in="false"
                     />
                 </div>
-            </section>
+            </SectionCard>
 
             <DaySchedulePanel :doctor-id="form.doctor_id" :date="form.date" />
         </form>

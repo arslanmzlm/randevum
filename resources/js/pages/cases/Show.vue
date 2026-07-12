@@ -16,6 +16,7 @@ import CaseStatusTag from '@/components/CaseStatusTag.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import EntityLinkRow from '@/components/EntityLinkRow.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import SectionCard from '@/components/SectionCard.vue';
 import TreatmentStatusTag from '@/components/TreatmentStatusTag.vue';
 import { useCan } from '@/composables/useCan';
 import { useDateTime } from '@/composables/useDateTime';
@@ -296,134 +297,134 @@ const metaRows = computed(() => {
 
         <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
             <div class="flex flex-col gap-6 lg:col-span-2">
-                <section
-                    class="flex flex-col gap-5 rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
+                <SectionCard
+                    :icon="IconStethoscope"
+                    :title="t('case.sections.info')"
                 >
-                    <header class="flex flex-wrap items-center gap-3">
-                        <IconStethoscope class="size-5 text-surface-500" />
-                        <h2 class="text-lg font-semibold text-surface-900">
-                            {{ t('case.sections.info') }}
-                        </h2>
-                        <CaseStatusTag
-                            :status="caseRecord.status"
-                            class="ml-auto"
-                        />
-                    </header>
+                    <template #actions>
+                        <CaseStatusTag :status="caseRecord.status" />
+                    </template>
 
-                    <div class="flex flex-col gap-1">
-                        <div class="flex items-center gap-2">
-                            <span class="text-xs text-surface-500">
-                                {{ t('case.fields.title') }}
-                            </span>
-                            <Button
-                                v-if="
-                                    canManage && canEditTitle && !editingTitle
-                                "
-                                type="button"
-                                severity="secondary"
-                                text
-                                size="small"
-                                class="ml-auto"
-                                :label="t('case.edit_title')"
-                                @click="startEditTitle"
-                            >
-                                <template #icon>
-                                    <IconPencil class="size-4" />
-                                </template>
-                            </Button>
-                        </div>
-
-                        <template v-if="editingTitle">
-                            <InputText
-                                v-model="titleForm.title"
-                                fluid
-                                :invalid="Boolean(titleForm.errors.title)"
-                                :aria-label="t('case.fields.title')"
-                            />
-                            <small
-                                v-if="titleForm.errors.title"
-                                class="text-red-500"
-                            >
-                                {{ titleForm.errors.title }}
-                            </small>
-                            <div class="mt-1 flex justify-end gap-2">
+                    <div class="flex flex-col gap-5">
+                        <div class="flex flex-col gap-1">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs text-surface-500">
+                                    {{ t('case.fields.title') }}
+                                </span>
                                 <Button
+                                    v-if="
+                                        canManage &&
+                                        canEditTitle &&
+                                        !editingTitle
+                                    "
                                     type="button"
                                     severity="secondary"
-                                    outlined
+                                    text
                                     size="small"
-                                    :label="t('common.cancel')"
-                                    :disabled="titleForm.processing"
-                                    @click="editingTitle = false"
-                                />
-                                <Button
-                                    type="button"
-                                    size="small"
-                                    :label="t('case.save')"
-                                    :loading="titleForm.processing"
-                                    @click="saveTitle"
-                                />
-                            </div>
-                        </template>
-                        <p v-else class="text-sm font-medium text-surface-900">
-                            {{ caseRecord.title }}
-                        </p>
-                    </div>
-
-                    <dl class="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
-                        <div class="flex flex-col gap-0.5">
-                            <dt class="text-xs text-surface-500">
-                                {{ t('case.fields.patient') }}
-                            </dt>
-                            <dd>
-                                <Link
-                                    :href="
-                                        patientShow(caseRecord.patient.id).url
-                                    "
-                                    class="text-sm font-medium text-primary-600 transition-colors hover:text-primary-700"
+                                    class="ml-auto"
+                                    :label="t('case.edit_title')"
+                                    @click="startEditTitle"
                                 >
-                                    {{ caseRecord.patient.full_name }}
-                                </Link>
-                            </dd>
-                        </div>
-                        <div class="flex flex-col gap-0.5">
-                            <dt class="text-xs text-surface-500">
-                                {{ t('case.fields.doctor') }}
-                            </dt>
-                            <dd class="text-sm text-surface-900">
-                                {{ caseRecord.doctor.display_name }}
-                            </dd>
-                        </div>
-                        <div
-                            v-for="(row, idx) in metaRows"
-                            :key="idx"
-                            class="flex flex-col gap-0.5"
-                        >
-                            <dt class="text-xs text-surface-500">
-                                {{ row.label }}
-                            </dt>
-                            <dd class="text-sm text-surface-900">
-                                {{ row.value }}
-                            </dd>
-                        </div>
-                    </dl>
-                </section>
+                                    <template #icon>
+                                        <IconPencil class="size-4" />
+                                    </template>
+                                </Button>
+                            </div>
 
-                <section
-                    class="flex flex-col gap-4 rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
+                            <template v-if="editingTitle">
+                                <InputText
+                                    v-model="titleForm.title"
+                                    fluid
+                                    :invalid="Boolean(titleForm.errors.title)"
+                                    :aria-label="t('case.fields.title')"
+                                />
+                                <small
+                                    v-if="titleForm.errors.title"
+                                    class="text-red-500"
+                                >
+                                    {{ titleForm.errors.title }}
+                                </small>
+                                <div class="mt-1 flex justify-end gap-2">
+                                    <Button
+                                        type="button"
+                                        severity="secondary"
+                                        outlined
+                                        size="small"
+                                        :label="t('common.cancel')"
+                                        :disabled="titleForm.processing"
+                                        @click="editingTitle = false"
+                                    />
+                                    <Button
+                                        type="button"
+                                        size="small"
+                                        :label="t('case.save')"
+                                        :loading="titleForm.processing"
+                                        @click="saveTitle"
+                                    />
+                                </div>
+                            </template>
+                            <p
+                                v-else
+                                class="text-sm font-medium text-surface-900"
+                            >
+                                {{ caseRecord.title }}
+                            </p>
+                        </div>
+
+                        <dl
+                            class="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2"
+                        >
+                            <div class="flex flex-col gap-0.5">
+                                <dt class="text-xs text-surface-500">
+                                    {{ t('case.fields.patient') }}
+                                </dt>
+                                <dd>
+                                    <Link
+                                        :href="
+                                            patientShow(caseRecord.patient.id)
+                                                .url
+                                        "
+                                        class="text-sm font-medium text-primary-600 transition-colors hover:text-primary-700"
+                                    >
+                                        {{ caseRecord.patient.full_name }}
+                                    </Link>
+                                </dd>
+                            </div>
+                            <div class="flex flex-col gap-0.5">
+                                <dt class="text-xs text-surface-500">
+                                    {{ t('case.fields.doctor') }}
+                                </dt>
+                                <dd class="text-sm text-surface-900">
+                                    {{ caseRecord.doctor.display_name }}
+                                </dd>
+                            </div>
+                            <div
+                                v-for="(row, idx) in metaRows"
+                                :key="idx"
+                                class="flex flex-col gap-0.5"
+                            >
+                                <dt class="text-xs text-surface-500">
+                                    {{ row.label }}
+                                </dt>
+                                <dd class="text-sm text-surface-900">
+                                    {{ row.value }}
+                                </dd>
+                            </div>
+                        </dl>
+                    </div>
+                </SectionCard>
+
+                <SectionCard
+                    :icon="IconStethoscope"
+                    :title="t('case.sections.treatments')"
                 >
-                    <header class="flex flex-wrap items-center gap-2">
-                        <IconStethoscope class="size-5 text-surface-500" />
-                        <h2 class="text-lg font-semibold text-surface-900">
-                            {{ t('case.sections.treatments') }}
-                        </h2>
+                    <template #actions>
                         <Button
                             v-if="canLink && ungroupedTreatments.length"
                             type="button"
                             severity="secondary"
                             outlined
                             size="small"
-                            class="ml-auto"
                             :label="t('case.link.add')"
                             @click="openLinkDialog"
                         >
@@ -431,7 +432,7 @@ const metaRows = computed(() => {
                                 <IconLink class="size-4" />
                             </template>
                         </Button>
-                    </header>
+                    </template>
 
                     <ul
                         v-if="caseRecord.treatments.length"
@@ -470,7 +471,7 @@ const metaRows = computed(() => {
                         :icon="IconStethoscope"
                         :message="t('case.no_treatments')"
                     />
-                </section>
+                </SectionCard>
             </div>
 
             <div class="flex flex-col gap-6">

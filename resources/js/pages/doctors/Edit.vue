@@ -15,6 +15,7 @@ import OffboardDialog from '@/components/doctors/OffboardDialog.vue';
 import FormField from '@/components/FormField.vue';
 import ImageUploadField from '@/components/ImageUploadField.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import SectionCard from '@/components/SectionCard.vue';
 import SettingRow from '@/components/SettingRow.vue';
 import { useCan } from '@/composables/useCan';
 import { useDateTime } from '@/composables/useDateTime';
@@ -90,16 +91,10 @@ function submit(): void {
                 class="flex flex-col gap-6 lg:col-span-2"
                 @submit.prevent="submit"
             >
-                <section
-                    class="rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
+                <SectionCard
+                    :icon="IconUser"
+                    :title="t('doctor.sections.info')"
                 >
-                    <header class="mb-6 flex items-center gap-2">
-                        <IconUser class="size-5 text-surface-500" />
-                        <h2 class="text-lg font-semibold text-surface-900">
-                            {{ t('doctor.sections.info') }}
-                        </h2>
-                    </header>
-
                     <div class="flex flex-col gap-5">
                         <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
                             <FormField
@@ -161,18 +156,12 @@ function submit(): void {
                             <ToggleSwitch v-model="form.is_active" />
                         </SettingRow>
                     </div>
-                </section>
+                </SectionCard>
 
-                <section
-                    class="rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
+                <SectionCard
+                    :icon="IconNotes"
+                    :title="t('doctor.sections.about')"
                 >
-                    <header class="mb-6 flex items-center gap-2">
-                        <IconNotes class="size-5 text-surface-500" />
-                        <h2 class="text-lg font-semibold text-surface-900">
-                            {{ t('doctor.sections.about') }}
-                        </h2>
-                    </header>
-
                     <div class="flex flex-col gap-5">
                         <FormField
                             :label="t('doctor.fields.bio')"
@@ -198,7 +187,7 @@ function submit(): void {
                             />
                         </FormField>
                     </div>
-                </section>
+                </SectionCard>
 
                 <div class="flex justify-end">
                     <Button
@@ -210,16 +199,10 @@ function submit(): void {
             </form>
 
             <div class="flex flex-col gap-6">
-                <section
-                    class="rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
+                <SectionCard
+                    :icon="IconPhoto"
+                    :title="t('doctor.sections.avatar')"
                 >
-                    <header class="mb-6 flex items-center gap-2">
-                        <IconPhoto class="size-5 text-surface-500" />
-                        <h2 class="text-lg font-semibold text-surface-900">
-                            {{ t('doctor.sections.avatar') }}
-                        </h2>
-                    </header>
-
                     <ImageUploadField
                         :url="doctor.avatar_url"
                         :label="t('doctor.fields.avatar')"
@@ -229,19 +212,13 @@ function submit(): void {
                         :remove-confirm="t('doctor.avatar.remove_confirm')"
                         aspect-class="aspect-square"
                     />
-                </section>
+                </SectionCard>
 
-                <section
+                <SectionCard
                     v-if="canOffboard"
-                    class="rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
+                    :icon="IconSettings"
+                    :title="t('doctor.sections.actions')"
                 >
-                    <header class="mb-6 flex items-center gap-2">
-                        <IconSettings class="size-5 text-surface-500" />
-                        <h2 class="text-lg font-semibold text-surface-900">
-                            {{ t('doctor.sections.actions') }}
-                        </h2>
-                    </header>
-
                     <div
                         v-if="doctor.is_offboarded"
                         class="flex items-center gap-2 text-sm text-surface-600"
@@ -271,7 +248,7 @@ function submit(): void {
                             <IconLogout />
                         </template>
                     </Button>
-                </section>
+                </SectionCard>
             </div>
         </div>
 

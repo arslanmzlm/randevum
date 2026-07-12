@@ -10,6 +10,7 @@ import { useI18n } from 'vue-i18n';
 import StatCard from '@/components/dashboard/StatCard.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import RevenueDateFilter from '@/components/reports/RevenueDateFilter.vue';
+import SectionCard from '@/components/SectionCard.vue';
 import { useMoney } from '@/composables/useMoney';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { RevenueReportProps } from '@/types/revenue';
@@ -56,9 +57,7 @@ function periodLabel(period: string): string {
             />
         </div>
 
-        <section
-            class="flex flex-col gap-5 rounded-xl border border-surface-200 bg-surface-0 p-5"
-        >
+        <SectionCard class="flex flex-col gap-5" padding="p-5">
             <RevenueDateFilter :filters="filters" />
 
             <div
@@ -130,6 +129,6 @@ function periodLabel(period: string): string {
                 <IconReportMoney class="size-9 text-surface-300" />
                 <p class="text-sm text-surface-500">{{ t('revenue.empty') }}</p>
             </div>
-        </section>
+        </SectionCard>
     </div>
 </template>

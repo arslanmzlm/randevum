@@ -24,7 +24,7 @@ function doLogout(): void {
         <Head :title="t('admin.title')" />
 
         <div
-            class="w-full max-w-md rounded-xl border border-surface-200 bg-white p-8 text-center shadow-sm"
+            class="w-full max-w-md rounded-xl border border-surface-200 bg-surface-0 p-8 text-center shadow-sm"
         >
             <h1 class="mb-2 text-2xl font-semibold text-surface-900">
                 {{ t('admin.title') }}

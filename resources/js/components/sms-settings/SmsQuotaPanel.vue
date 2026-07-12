@@ -2,6 +2,7 @@
 import { IconAlertTriangle, IconGauge } from '@tabler/icons-vue';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import SectionCard from '@/components/SectionCard.vue';
 import { useDateTime } from '@/composables/useDateTime';
 
 const props = defineProps<{
@@ -31,16 +32,7 @@ const blocked = computed(() => props.quota.remaining <= 0);
 </script>
 
 <template>
-    <section
-        class="rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
-    >
-        <header class="mb-6 flex items-center gap-2">
-            <IconGauge class="size-5 text-surface-500" />
-            <h2 class="text-lg font-semibold text-surface-900">
-                {{ t('sms_settings.quota.title') }}
-            </h2>
-        </header>
-
+    <SectionCard :icon="IconGauge" :title="t('sms_settings.quota.title')">
         <div class="flex flex-col gap-4">
             <div class="flex flex-wrap items-baseline justify-between gap-2">
                 <span class="text-sm font-medium text-surface-900">
@@ -87,5 +79,5 @@ const blocked = computed(() => props.quota.remaining <= 0);
                 {{ t('sms_settings.quota.blocked') }}
             </Message>
         </div>
-    </section>
+    </SectionCard>
 </template>

@@ -15,6 +15,7 @@ import ButtonLink from '@/components/ButtonLink.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import RecordPaymentDialog from '@/components/payments/RecordPaymentDialog.vue';
 import TransactionList from '@/components/payments/TransactionList.vue';
+import SectionCard from '@/components/SectionCard.vue';
 import TreatmentStatusTag from '@/components/TreatmentStatusTag.vue';
 import { useCan } from '@/composables/useCan';
 import { useDateTime } from '@/composables/useDateTime';
@@ -99,146 +100,146 @@ const hasProductLines = computed(() => props.treatment.productLines.length > 0);
         <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
             <div class="flex flex-col gap-6 lg:col-span-2">
                 <!-- Clinical record: pill-labeled sections (Şikayet / Tanı / Tedavi Süreci). -->
-                <section
-                    class="flex flex-col gap-5 rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
+                <SectionCard
+                    :icon="IconStethoscope"
+                    :title="t('treatment.sections.clinical')"
                 >
-                    <header class="flex items-center gap-2">
-                        <IconStethoscope class="size-5 text-surface-500" />
-                        <h2 class="text-lg font-semibold text-surface-900">
-                            {{ t('treatment.sections.clinical') }}
-                        </h2>
-                    </header>
-
-                    <div
-                        v-for="block in clinicalBlocks"
-                        :key="block.label"
-                        class="flex flex-col gap-2"
-                    >
-                        <span
-                            class="w-fit rounded-full bg-primary-50 px-4 py-1 text-sm font-semibold text-primary-700"
+                    <div class="flex flex-col gap-5">
+                        <div
+                            v-for="block in clinicalBlocks"
+                            :key="block.label"
+                            class="flex flex-col gap-2"
                         >
-                            {{ block.label }}
-                        </span>
-                        <p
-                            v-if="block.value"
-                            class="text-sm whitespace-pre-line text-surface-700"
-                        >
-                            {{ block.value }}
-                        </p>
-                        <p v-else class="text-sm text-surface-400">
-                            {{ t('treatment.empty_field') }}
-                        </p>
-                    </div>
+                            <span
+                                class="w-fit rounded-full bg-primary-50 px-4 py-1 text-sm font-semibold text-primary-700"
+                            >
+                                {{ block.label }}
+                            </span>
+                            <p
+                                v-if="block.value"
+                                class="text-sm whitespace-pre-line text-surface-700"
+                            >
+                                {{ block.value }}
+                            </p>
+                            <p v-else class="text-sm text-surface-400">
+                                {{ t('treatment.empty_field') }}
+                            </p>
+                        </div>
 
-                    <div v-if="treatment.notes" class="flex flex-col gap-1">
-                        <span class="text-xs text-surface-500">
-                            {{ t('treatment.fields.notes') }}
-                        </span>
-                        <p class="text-sm whitespace-pre-line text-surface-700">
-                            {{ treatment.notes }}
-                        </p>
+                        <div v-if="treatment.notes" class="flex flex-col gap-1">
+                            <span class="text-xs text-surface-500">
+                                {{ t('treatment.fields.notes') }}
+                            </span>
+                            <p
+                                class="text-sm whitespace-pre-line text-surface-700"
+                            >
+                                {{ treatment.notes }}
+                            </p>
+                        </div>
                     </div>
-                </section>
+                </SectionCard>
 
                 <!-- Line items -->
-                <section
+                <SectionCard
                     v-if="hasServiceLines || hasProductLines"
-                    class="flex flex-col gap-5 rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
+                    :icon="IconListDetails"
+                    :title="t('treatment.sections.line_items')"
                 >
-                    <header class="flex items-center gap-2">
-                        <IconListDetails class="size-5 text-surface-500" />
-                        <h2 class="text-lg font-semibold text-surface-900">
-                            {{ t('treatment.sections.line_items') }}
-                        </h2>
-                    </header>
+                    <div class="flex flex-col gap-5">
+                        <DataTable
+                            v-if="hasServiceLines"
+                            :value="treatment.serviceLines"
+                            size="small"
+                        >
+                            <Column
+                                :header="t('treatment.lines.service')"
+                                field="name"
+                            />
+                            <Column
+                                :header="t('treatment.lines.quantity')"
+                                class="w-20 text-right"
+                            >
+                                <template
+                                    #body="{ data }: { data: TreatmentLine }"
+                                >
+                                    {{ data.quantity }}
+                                </template>
+                            </Column>
+                            <Column
+                                :header="t('treatment.lines.unit_price')"
+                                class="w-28 text-right"
+                            >
+                                <template
+                                    #body="{ data }: { data: TreatmentLine }"
+                                >
+                                    {{ formatMoney(data.unit_price) }}
+                                </template>
+                            </Column>
+                            <Column
+                                :header="t('treatment.lines.subtotal')"
+                                class="w-28 text-right"
+                            >
+                                <template
+                                    #body="{ data }: { data: TreatmentLine }"
+                                >
+                                    {{ formatMoney(data.subtotal) }}
+                                </template>
+                            </Column>
+                        </DataTable>
 
-                    <DataTable
-                        v-if="hasServiceLines"
-                        :value="treatment.serviceLines"
-                        size="small"
-                    >
-                        <Column
-                            :header="t('treatment.lines.service')"
-                            field="name"
-                        />
-                        <Column
-                            :header="t('treatment.lines.quantity')"
-                            class="w-20 text-right"
+                        <DataTable
+                            v-if="hasProductLines"
+                            :value="treatment.productLines"
+                            size="small"
                         >
-                            <template #body="{ data }: { data: TreatmentLine }">
-                                {{ data.quantity }}
-                            </template>
-                        </Column>
-                        <Column
-                            :header="t('treatment.lines.unit_price')"
-                            class="w-28 text-right"
-                        >
-                            <template #body="{ data }: { data: TreatmentLine }">
-                                {{ formatMoney(data.unit_price) }}
-                            </template>
-                        </Column>
-                        <Column
-                            :header="t('treatment.lines.subtotal')"
-                            class="w-28 text-right"
-                        >
-                            <template #body="{ data }: { data: TreatmentLine }">
-                                {{ formatMoney(data.subtotal) }}
-                            </template>
-                        </Column>
-                    </DataTable>
-
-                    <DataTable
-                        v-if="hasProductLines"
-                        :value="treatment.productLines"
-                        size="small"
-                    >
-                        <Column
-                            :header="t('treatment.lines.product')"
-                            field="name"
-                        />
-                        <Column
-                            :header="t('treatment.lines.quantity')"
-                            class="w-20 text-right"
-                        >
-                            <template #body="{ data }: { data: TreatmentLine }">
-                                {{ data.quantity }}
-                            </template>
-                        </Column>
-                        <Column
-                            :header="t('treatment.lines.unit_price')"
-                            class="w-28 text-right"
-                        >
-                            <template #body="{ data }: { data: TreatmentLine }">
-                                {{ formatMoney(data.unit_price) }}
-                            </template>
-                        </Column>
-                        <Column
-                            :header="t('treatment.lines.subtotal')"
-                            class="w-28 text-right"
-                        >
-                            <template #body="{ data }: { data: TreatmentLine }">
-                                {{ formatMoney(data.subtotal) }}
-                            </template>
-                        </Column>
-                    </DataTable>
-                </section>
+                            <Column
+                                :header="t('treatment.lines.product')"
+                                field="name"
+                            />
+                            <Column
+                                :header="t('treatment.lines.quantity')"
+                                class="w-20 text-right"
+                            >
+                                <template
+                                    #body="{ data }: { data: TreatmentLine }"
+                                >
+                                    {{ data.quantity }}
+                                </template>
+                            </Column>
+                            <Column
+                                :header="t('treatment.lines.unit_price')"
+                                class="w-28 text-right"
+                            >
+                                <template
+                                    #body="{ data }: { data: TreatmentLine }"
+                                >
+                                    {{ formatMoney(data.unit_price) }}
+                                </template>
+                            </Column>
+                            <Column
+                                :header="t('treatment.lines.subtotal')"
+                                class="w-28 text-right"
+                            >
+                                <template
+                                    #body="{ data }: { data: TreatmentLine }"
+                                >
+                                    {{ formatMoney(data.subtotal) }}
+                                </template>
+                            </Column>
+                        </DataTable>
+                    </div>
+                </SectionCard>
 
                 <!-- Payments / collections recorded against this treatment. -->
-                <section
+                <SectionCard
                     v-if="canViewTransactions"
-                    class="flex flex-col gap-5 rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
+                    :icon="IconCash"
+                    :title="t('balance.transactions_title')"
                 >
-                    <header class="flex items-center gap-2">
-                        <IconCash class="size-5 text-surface-500" />
-                        <h2 class="text-lg font-semibold text-surface-900">
-                            {{ t('balance.transactions_title') }}
-                        </h2>
-                    </header>
-
                     <TransactionList
                         :transactions="treatment.transactions ?? []"
                     />
-                </section>
+                </SectionCard>
             </div>
 
             <!-- Summary sidebar -->

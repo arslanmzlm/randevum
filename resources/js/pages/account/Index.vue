@@ -4,6 +4,7 @@ import { IconEye, IconEyeOff } from '@tabler/icons-vue';
 import { useI18n } from 'vue-i18n';
 import FormField from '@/components/FormField.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import SectionCard from '@/components/SectionCard.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { update as updatePassword } from '@/routes/user-password';
 import { update as updateProfileInformation } from '@/routes/user-profile-information';
@@ -50,17 +51,17 @@ function submitPassword(): void {
             :breadcrumbs="[{ label: t('nav.account') }]"
         />
 
-        <section
-            class="rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
-        >
-            <header class="mb-6">
-                <h2 class="text-lg font-semibold text-surface-900">
-                    {{ t('account.profile.heading') }}
-                </h2>
-                <p class="mt-1 text-sm text-surface-500">
-                    {{ t('account.profile.description') }}
-                </p>
-            </header>
+        <SectionCard>
+            <template #title>
+                <div>
+                    <h2 class="text-lg font-semibold text-surface-900">
+                        {{ t('account.profile.heading') }}
+                    </h2>
+                    <p class="mt-1 text-sm text-surface-500">
+                        {{ t('account.profile.description') }}
+                    </p>
+                </div>
+            </template>
 
             <form novalidate @submit.prevent="submitProfile">
                 <div class="flex flex-col gap-5">
@@ -96,19 +97,19 @@ function submitPassword(): void {
                     />
                 </div>
             </form>
-        </section>
+        </SectionCard>
 
-        <section
-            class="rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
-        >
-            <header class="mb-6">
-                <h2 class="text-lg font-semibold text-surface-900">
-                    {{ t('account.password.heading') }}
-                </h2>
-                <p class="mt-1 text-sm text-surface-500">
-                    {{ t('account.password.description') }}
-                </p>
-            </header>
+        <SectionCard>
+            <template #title>
+                <div>
+                    <h2 class="text-lg font-semibold text-surface-900">
+                        {{ t('account.password.heading') }}
+                    </h2>
+                    <p class="mt-1 text-sm text-surface-500">
+                        {{ t('account.password.description') }}
+                    </p>
+                </div>
+            </template>
 
             <form novalidate @submit.prevent="submitPassword">
                 <div class="flex flex-col gap-5">
@@ -198,6 +199,6 @@ function submitPassword(): void {
                     />
                 </div>
             </form>
-        </section>
+        </SectionCard>
     </div>
 </template>

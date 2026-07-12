@@ -9,6 +9,7 @@ import { useI18n } from 'vue-i18n';
 import ButtonLink from '@/components/ButtonLink.vue';
 import FormField from '@/components/FormField.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import SectionCard from '@/components/SectionCard.vue';
 import SettingRow from '@/components/SettingRow.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { index, store } from '@/routes/services';
@@ -64,16 +65,10 @@ function submit(): void {
 
         <form novalidate class="flex flex-col gap-6" @submit.prevent="submit">
             <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
-                <section
-                    class="rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
+                <SectionCard
+                    :icon="IconClipboardList"
+                    :title="t('service.sections.info')"
                 >
-                    <header class="mb-6 flex items-center gap-2">
-                        <IconClipboardList class="size-5 text-surface-500" />
-                        <h2 class="text-lg font-semibold text-surface-900">
-                            {{ t('service.sections.info') }}
-                        </h2>
-                    </header>
-
                     <div class="flex flex-col gap-5">
                         <FormField
                             :label="t('service.fields.name')"
@@ -133,20 +128,24 @@ function submit(): void {
                             <ToggleSwitch v-model="form.is_active" />
                         </SettingRow>
                     </div>
-                </section>
+                </SectionCard>
 
-                <section
-                    class="rounded-xl border border-surface-200 bg-surface-0 p-6 sm:p-8"
-                >
-                    <header class="mb-2 flex items-center gap-2">
-                        <IconFileText class="size-5 text-surface-500" />
-                        <h2 class="text-lg font-semibold text-surface-900">
-                            {{ t('service.sections.templates') }}
-                        </h2>
-                    </header>
-                    <p class="mb-6 text-sm text-surface-500">
-                        {{ t('service.hints.templates') }}
-                    </p>
+                <SectionCard>
+                    <template #title>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <IconFileText class="size-5 text-surface-500" />
+                                <h2
+                                    class="text-lg font-semibold text-surface-900"
+                                >
+                                    {{ t('service.sections.templates') }}
+                                </h2>
+                            </div>
+                            <p class="mt-2 text-sm text-surface-500">
+                                {{ t('service.hints.templates') }}
+                            </p>
+                        </div>
+                    </template>
 
                     <div class="flex flex-col gap-5">
                         <FormField
@@ -187,7 +186,7 @@ function submit(): void {
                             />
                         </FormField>
                     </div>
-                </section>
+                </SectionCard>
             </div>
 
             <div class="flex justify-end">

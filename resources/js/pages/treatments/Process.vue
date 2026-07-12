@@ -15,6 +15,7 @@ import { watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import ButtonLink from '@/components/ButtonLink.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import SectionCard from '@/components/SectionCard.vue';
 import CaseLinkSection from '@/components/treatments/CaseLinkSection.vue';
 import ClinicalFieldsSection from '@/components/treatments/ClinicalFieldsSection.vue';
 import FollowUpSection from '@/components/treatments/FollowUpSection.vue';
@@ -240,8 +241,8 @@ function submit(): void {
         </PageHeader>
 
         <!-- Patient + appointment context for the visit being recorded. -->
-        <section
-            class="flex flex-col gap-4 rounded-xl border border-surface-200 bg-surface-0 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8"
+        <SectionCard
+            class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
         >
             <div class="flex items-center gap-3">
                 <span
@@ -306,7 +307,7 @@ function submit(): void {
                     </span>
                 </div>
             </div>
-        </section>
+        </SectionCard>
 
         <p
             v-if="treatment.patient.notes"
