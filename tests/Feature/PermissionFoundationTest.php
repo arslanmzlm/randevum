@@ -75,6 +75,8 @@ it('grants the owner role the full clinic + doctor + service + product + patient
             'smsSettings.view',
             'smsSettings.update',
             'smsLogs.viewAny',
+            'tags.manage',
+            'segments.manage',
         ]);
 });
 
@@ -135,6 +137,8 @@ it('grants the manager role full management except clinic and self-create', func
             'smsSettings.view',
             'smsSettings.update',
             'smsLogs.viewAny',
+            'tags.manage',
+            'segments.manage',
         ]);
 });
 

@@ -6,6 +6,8 @@ use App\Modules\Core\Http\Controllers\ClinicController;
 use App\Modules\Core\Http\Controllers\DoctorController;
 use App\Modules\Medical\Http\Controllers\CaseController;
 use App\Modules\Medical\Http\Controllers\PatientController;
+use App\Modules\Medical\Http\Controllers\SegmentController;
+use App\Modules\Medical\Http\Controllers\TagController;
 use App\Modules\Medical\Http\Controllers\TreatmentController;
 use App\Modules\Medical\Http\Controllers\TreatmentMediaController;
 use App\Modules\Medical\Http\Controllers\TreatmentReportController;
@@ -55,6 +57,21 @@ Route::middleware('auth')->group(function () {
     Route::delete('/patients/{patient}', [PatientController::class, 'destroy'])->name('patients.destroy');
     Route::patch('/patients/{patient}/notes', [PatientController::class, 'updateNotes'])->name('patients.notes.update');
     Route::post('/patients/{patient}/restore', [PatientController::class, 'restore'])->name('patients.restore');
+    Route::put('/patients/{patient}/tags', [PatientController::class, 'syncTags'])->name('patients.tags.sync');
+});
+
+// Tag management (clinic-curated CRM tags).
+Route::middleware('auth')->group(function () {
+    Route::get('/tags', [TagController::class, 'index'])->name('tags.index');
+    Route::post('/tags', [TagController::class, 'store'])->name('tags.store');
+    Route::put('/tags/{tag}', [TagController::class, 'update'])->name('tags.update');
+    Route::delete('/tags/{tag}', [TagController::class, 'destroy'])->name('tags.destroy');
+});
+
+// Patient segments (saved filter presets).
+Route::middleware('auth')->group(function () {
+    Route::post('/patient-segments', [SegmentController::class, 'store'])->name('patient-segments.store');
+    Route::delete('/patient-segments/{segment}', [SegmentController::class, 'destroy'])->name('patient-segments.destroy');
 });
 
 // Service catalog.

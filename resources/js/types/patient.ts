@@ -4,6 +4,7 @@ import type { PatientCaseItem } from '@/types/case';
 import type { AppointmentStatus } from '@/types/enums';
 import type { SmsLogItem } from '@/types/smsLog';
 import type { Paginated, TableState } from '@/types/table';
+import type { Tag } from '@/types/tag';
 import type { PatientTreatmentHistoryItem } from '@/types/treatment';
 
 export type PatientGender = 'male' | 'female' | 'other';
@@ -28,6 +29,26 @@ export type Patient = {
     created_at: string;
     /** Most recent completed-treatment time (ISO 8601), or null. Only set on the list query. */
     last_visit_at?: string | null;
+    /** Clinic-defined tags attached to the patient. Present when the query eager-loads tags. */
+    tags?: Tag[];
+};
+
+/** Saved-segment criteria — the queryable subset of the patient-list filters (search excluded). */
+export type SegmentCriteria = {
+    gender?: PatientGender;
+    is_legacy?: boolean;
+    tags?: number[];
+    /** Y-m-d. */
+    last_visit_after?: string;
+    /** Y-m-d. */
+    last_visit_before?: string;
+};
+
+/** A clinic-shared saved filter preset. */
+export type PatientSegment = {
+    id: number;
+    name: string;
+    criteria: SegmentCriteria;
 };
 
 /**
@@ -44,11 +65,21 @@ export type PatientSearchResult = {
 export type PatientQuery = TableState<{
     gender: string;
     is_legacy: boolean | null;
+    /** Selected tag ids (as strings, from the URL query). */
+    tags: string[];
+    /** Y-m-d or empty string. */
+    last_visit_after: string;
+    /** Y-m-d or empty string. */
+    last_visit_before: string;
 }>;
 
 export type PatientIndexProps = {
     patients: Paginated<Patient>;
     query: PatientQuery;
+    /** All active-clinic tags — filter options + chip lookup for the list. */
+    tags: Tag[];
+    /** Clinic-shared saved filter presets. */
+    segments: PatientSegment[];
     /**
      * Remaining balance (billed − paid, positive = owes) per patient id, for the rows on the
      * current page. Absent when the user lacks `transactions.viewAny`; a patient missing from
@@ -112,6 +143,8 @@ export type PatientShowProps = {
     balance?: PatientBalance;
     /** All the patient's transactions, newest first. Absent when denied (see `balance`). */
     transactions?: TransactionItem[];
+    /** All active-clinic tags — options for the detail add/remove tag picker. */
+    allTags: Tag[];
 };
 
 /** Payload for the inline patient-level note quick-edit endpoint. */

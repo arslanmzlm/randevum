@@ -286,9 +286,10 @@ class FilterHelper
      * URL query and the serialized reload payload): the `filter` bag (`search` is always
      * included; each declared filter is read from `filter[<column>]` and cast by type),
      * the single `sort` token, and `per_page`. A `boolean`/`integer` filter is `null`
-     * when absent (three-state); a `string` filter defaults to `''`.
+     * when absent (three-state); a `string`/`date` filter defaults to `''`; an `array`
+     * filter defaults to `[]`.
      *
-     * @param  array<string, 'string'|'boolean'|'integer'>  $filters  column => type
+     * @param  array<string, 'string'|'boolean'|'integer'|'array'|'date'>  $filters  column => type
      * @return array{filter: array<string, mixed>, sort: string, per_page: int}
      */
     public static function requestState(array $filters = [], int $perPage = 20): array
@@ -302,6 +303,10 @@ class FilterHelper
             $bag[$column] = match ($type) {
                 'boolean' => $present ? request()->boolean($key) : null,
                 'integer' => $present ? request()->integer($key) : null,
+                'array' => $present && is_string(request()->input($key))
+                    ? explode(',', (string) request()->input($key))
+                    : [],
+                'date' => $present ? request()->input($key) : null,
                 default => request()->input($key, ''),
             };
         }

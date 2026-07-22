@@ -320,7 +320,19 @@ return [
         // treatment media
         'file' => 'file',
         'caption' => 'caption',
+        // tags / segments
+        'tag_ids' => 'tags',
+        'tag_ids.*' => 'tag',
+        'criteria' => 'criteria',
+        'criteria.gender' => 'gender',
+        'criteria.is_legacy' => 'legacy patient',
+        'criteria.tags' => 'tags',
+        'criteria.tags.*' => 'tag',
+        'criteria.last_visit_after' => 'last visit (from)',
+        'criteria.last_visit_before' => 'last visit (to)',
     ],
+
+    'tag_name_taken' => 'This tag name is already in use (case-insensitive).',
 
     'sms_template_unknown_type' => ':attribute is not a valid customizable SMS type.',
     'sms_template_unknown_variable' => ':attribute contains a variable that is not allowed: :variable',

@@ -191,7 +191,19 @@ return [
         // treatment media
         'file' => 'Dosya',
         'caption' => 'Not',
+        // tags / segments
+        'tag_ids' => 'Etiketler',
+        'tag_ids.*' => 'Etiket',
+        'criteria' => 'Kriterler',
+        'criteria.gender' => 'Cinsiyet',
+        'criteria.is_legacy' => 'Sistem öncesi hasta',
+        'criteria.tags' => 'Etiketler',
+        'criteria.tags.*' => 'Etiket',
+        'criteria.last_visit_after' => 'Son ziyaret (başlangıç)',
+        'criteria.last_visit_before' => 'Son ziyaret (bitiş)',
     ],
+
+    'tag_name_taken' => 'Bu etiket adı (büyük/küçük harf fark etmeksizin) zaten kullanılıyor.',
 
     'working_hours_closed_conflict' => ':attribute kapalı olarak işaretlenmiş günlerde açılış/kapanış saati belirtilemez.',
     'working_hours_open_close_required' => ':attribute için açılış ve kapanış saati zorunludur.',

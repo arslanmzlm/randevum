@@ -424,6 +424,58 @@ it('searchRelation ignores empty search and returns all records', function (): v
     expect($result->total())->toBe(3);
 });
 
+// ---------------------------------------------------------------------------
+// requestState() — 'array' and 'date' filter types
+// ---------------------------------------------------------------------------
+
+it('requestState array type defaults to an empty array when absent', function (): void {
+    request()->replace([]);
+
+    $state = FilterHelper::requestState(['tags' => 'array']);
+
+    expect($state['filter']['tags'])->toBe([]);
+});
+
+it('requestState array type explodes a comma-separated value', function (): void {
+    request()->replace(['filter' => ['tags' => '1,2,3']]);
+
+    $state = FilterHelper::requestState(['tags' => 'array']);
+
+    expect($state['filter']['tags'])->toBe(['1', '2', '3']);
+});
+
+it('requestState array type is empty for a blank value', function (): void {
+    request()->replace(['filter' => ['tags' => '']]);
+
+    $state = FilterHelper::requestState(['tags' => 'array']);
+
+    expect($state['filter']['tags'])->toBe([]);
+});
+
+it('requestState date type defaults to null when absent', function (): void {
+    request()->replace([]);
+
+    $state = FilterHelper::requestState(['last_visit_after' => 'date']);
+
+    expect($state['filter']['last_visit_after'])->toBeNull();
+});
+
+it('requestState date type echoes the raw request string when present', function (): void {
+    request()->replace(['filter' => ['last_visit_after' => '2026-01-15']]);
+
+    $state = FilterHelper::requestState(['last_visit_after' => 'date']);
+
+    expect($state['filter']['last_visit_after'])->toBe('2026-01-15');
+});
+
+it('requestState date type is null for a blank value', function (): void {
+    request()->replace(['filter' => ['last_visit_after' => '']]);
+
+    $state = FilterHelper::requestState(['last_visit_after' => 'date']);
+
+    expect($state['filter']['last_visit_after'])->toBeNull();
+});
+
 it('searchRelation matches across multiple fields on the relation (OR logic)', function (): void {
     $clinic = Clinic::factory()->create();
     app(ClinicContext::class)->set($clinic->id);

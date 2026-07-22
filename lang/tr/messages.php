@@ -82,4 +82,16 @@ return [
         'cannot_offboard_self' => 'Kendinizi işten çıkaramazsınız.',
     ],
 
+    'tag' => [
+        'created' => 'Etiket oluşturuldu.',
+        'updated' => 'Etiket güncellendi.',
+        'deleted' => 'Etiket silindi.',
+        'synced' => 'Hasta etiketleri güncellendi.',
+    ],
+
+    'segment' => [
+        'saved' => 'Segment kaydedildi.',
+        'deleted' => 'Segment silindi.',
+    ],
+
 ];

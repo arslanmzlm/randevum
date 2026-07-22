@@ -8,13 +8,20 @@ import ButtonLink from '@/components/ButtonLink.vue';
 import DataTableWrapper from '@/components/DataTableWrapper.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import SegmentPicker from '@/components/patients/SegmentPicker.vue';
+import TagChip from '@/components/TagChip.vue';
 import { useCan } from '@/composables/useCan';
 import { useDateTime } from '@/composables/useDateTime';
 import { useMoney } from '@/composables/useMoney';
 import { useTableFilters } from '@/composables/useTableFilters';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { create, destroy, edit, index, show } from '@/routes/patients';
-import type { Patient, PatientIndexProps } from '@/types/patient';
+import type {
+    Patient,
+    PatientIndexProps,
+    SegmentCriteria,
+} from '@/types/patient';
+import { parseDateString, toDateString } from '@/utils/datetime';
 
 defineOptions({ layout: AppLayout });
 
@@ -28,6 +35,7 @@ const { formatMoney } = useMoney();
 const canManage = computed(() => can('patients.create'));
 const canDelete = computed(() => can('patients.delete'));
 const canViewBalance = computed(() => can('transactions.viewAny'));
+const canManageSegments = computed(() => can('segments.manage'));
 
 // Remaining balance for a row (positive = owes); null when square or not provided.
 function balanceFor(patient: Patient): string | null {
@@ -35,7 +43,13 @@ function balanceFor(patient: Patient): string | null {
 }
 
 const { state, loading, first, sortField, sortOrder, onPage, onSort } =
-    useTableFilters<{ gender: string | null; is_legacy: boolean | null }>({
+    useTableFilters<{
+        gender: string | null;
+        is_legacy: boolean | null;
+        tags: string[];
+        last_visit_after: Date | null;
+        last_visit_before: Date | null;
+    }>({
         url: index().url,
         only: ['patients', 'query'],
         currentPage: props.patients.meta.current_page,
@@ -51,12 +65,87 @@ const { state, loading, first, sortField, sortOrder, onPage, onSort } =
                 type: 'boolean',
                 value: props.query.filter.is_legacy,
             },
+            tags: {
+                type: 'array',
+                value: props.query.filter.tags ?? [],
+            },
+            last_visit_after: {
+                type: 'date',
+                value: props.query.filter.last_visit_after
+                    ? parseDateString(props.query.filter.last_visit_after)
+                    : null,
+            },
+            last_visit_before: {
+                type: 'date',
+                value: props.query.filter.last_visit_before
+                    ? parseDateString(props.query.filter.last_visit_before)
+                    : null,
+            },
         },
     });
 
+// MultiSelect binds numeric tag ids; the filter state keeps string ids (URL/CSV canonical form).
+const selectedTagIds = computed<number[]>({
+    get: () => state.tags.map(Number),
+    set: (ids) => {
+        state.tags = ids.map(String);
+    },
+});
+
 const hasActiveFilters = computed(
-    () => !!state.search || !!state.gender || state.is_legacy !== null,
+    () =>
+        !!state.search ||
+        !!state.gender ||
+        state.is_legacy !== null ||
+        state.tags.length > 0 ||
+        !!state.last_visit_after ||
+        !!state.last_visit_before,
 );
+
+// The queryable filter subset a segment persists / restores (search deliberately excluded).
+const currentCriteria = computed<SegmentCriteria>(() => {
+    const criteria: SegmentCriteria = {};
+
+    if (state.gender) {
+        criteria.gender = state.gender as SegmentCriteria['gender'];
+    }
+
+    if (state.is_legacy !== null) {
+        criteria.is_legacy = state.is_legacy;
+    }
+
+    if (state.tags.length > 0) {
+        criteria.tags = state.tags.map(Number);
+    }
+
+    if (state.last_visit_after) {
+        criteria.last_visit_after = toDateString(state.last_visit_after);
+    }
+
+    if (state.last_visit_before) {
+        criteria.last_visit_before = toDateString(state.last_visit_before);
+    }
+
+    return criteria;
+});
+
+const hasCriteria = computed(
+    () => Object.keys(currentCriteria.value).length > 0,
+);
+
+// Apply a saved segment: set every filter dimension from its criteria in one batch
+// (the filter watcher reloads once), leaving free-text search untouched.
+function applySegment(criteria: SegmentCriteria): void {
+    state.gender = criteria.gender ?? null;
+    state.is_legacy = criteria.is_legacy ?? null;
+    state.tags = (criteria.tags ?? []).map(String);
+    state.last_visit_after = criteria.last_visit_after
+        ? parseDateString(criteria.last_visit_after)
+        : null;
+    state.last_visit_before = criteria.last_visit_before
+        ? parseDateString(criteria.last_visit_before)
+        : null;
+}
 
 // Big empty state only when the clinic genuinely has no patients (not a filtered miss).
 const showEmptyState = computed(
@@ -176,6 +265,50 @@ function removePatient(patient: Patient): void {
                     show-clear
                     class="w-full sm:w-52"
                 />
+                <MultiSelect
+                    v-if="tags.length"
+                    v-model="selectedTagIds"
+                    :options="tags"
+                    option-label="name"
+                    option-value="id"
+                    :placeholder="t('patient.filter_tags')"
+                    :max-selected-labels="0"
+                    :selected-items-label="`{0} ${t('tag.selected_suffix')}`"
+                    show-clear
+                    filter
+                    class="w-full sm:w-52"
+                >
+                    <template #option="{ option }">
+                        <TagChip :label="option.name" :color="option.color" />
+                    </template>
+                </MultiSelect>
+                <DatePicker
+                    v-model="state.last_visit_after"
+                    :placeholder="t('patient.filter_last_visit_after')"
+                    date-format="dd.mm.yy"
+                    show-icon
+                    show-button-bar
+                    icon-display="input"
+                    class="w-full sm:w-52"
+                />
+                <DatePicker
+                    v-model="state.last_visit_before"
+                    v-tooltip.top="t('patient.filter_last_visit_before_hint')"
+                    :placeholder="t('patient.filter_last_visit_before')"
+                    date-format="dd.mm.yy"
+                    show-icon
+                    show-button-bar
+                    icon-display="input"
+                    class="w-full sm:w-52"
+                />
+                <SegmentPicker
+                    :segments="segments"
+                    :current-criteria="currentCriteria"
+                    :has-criteria="hasCriteria"
+                    :can-manage="canManageSegments"
+                    class="sm:ml-auto"
+                    @apply="applySegment"
+                />
             </template>
 
             <Column
@@ -231,6 +364,23 @@ function removePatient(patient: Patient): void {
                         severity="secondary"
                         :value="genderLabel(data.gender)"
                     />
+                    <span v-else class="text-surface-400">—</span>
+                </template>
+            </Column>
+
+            <Column :header="t('patient.columns.tags')" class="w-56">
+                <template #body="{ data }">
+                    <div
+                        v-if="data.tags && data.tags.length"
+                        class="flex flex-wrap gap-1"
+                    >
+                        <TagChip
+                            v-for="tag in data.tags"
+                            :key="tag.id"
+                            :label="tag.name"
+                            :color="tag.color"
+                        />
+                    </div>
                     <span v-else class="text-surface-400">—</span>
                 </template>
             </Column>

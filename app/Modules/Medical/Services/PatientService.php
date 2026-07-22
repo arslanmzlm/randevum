@@ -10,6 +10,7 @@ use App\Modules\Medical\Contracts\PatientRegistrarContract;
 use App\Modules\Medical\Exceptions\TrashedPhoneConflictException;
 use App\Modules\Medical\Repositories\PatientRepository;
 use App\Modules\Medical\Repositories\TreatmentRepository;
+use App\Support\ClinicContext;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -19,6 +20,7 @@ class PatientService implements PatientRegistrarContract
         private PatientRepository $repository,
         private TreatmentRepository $treatmentRepository,
         private BalanceReaderContract $balanceReader,
+        private ClinicContext $clinicContext,
     ) {}
 
     /**
@@ -26,7 +28,7 @@ class PatientService implements PatientRegistrarContract
      */
     public function listForActiveClinic(): LengthAwarePaginator
     {
-        return $this->repository->paginateForActiveClinic();
+        return $this->repository->paginateForActiveClinic($this->clinicContext->timezone());
     }
 
     /**

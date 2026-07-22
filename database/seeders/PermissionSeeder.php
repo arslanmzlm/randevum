@@ -109,6 +109,12 @@ class PermissionSeeder extends Seeder
         'smsSettings.update' => ['owner', 'manager'],
         // SMS log — read-only list of sent/failed/queued messages.
         'smsLogs.viewAny' => ['owner', 'manager', 'receptionist'],
+        // Tag-definition CRUD (settings). Applying/removing existing tags on a patient
+        // uses patients.update instead — reception applies tags, doesn't define them.
+        'tags.manage' => ['owner', 'manager'],
+        // Saved segment (filter preset) create/delete. Applying one / the list's tag +
+        // last-visit filters need no permission — read-only over patients.viewAny.
+        'segments.manage' => ['owner', 'manager'],
     ];
 
     public function run(): void

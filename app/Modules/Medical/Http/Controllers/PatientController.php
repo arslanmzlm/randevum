@@ -11,12 +11,15 @@ use App\Modules\Core\Contracts\PatientAppointmentsContract;
 use App\Modules\Core\Support\Toast;
 use App\Modules\Medical\Exceptions\TrashedPhoneConflictException;
 use App\Modules\Medical\Http\Requests\StorePatientRequest;
+use App\Modules\Medical\Http\Requests\SyncPatientTagsRequest;
 use App\Modules\Medical\Http\Requests\UpdatePatientNotesRequest;
 use App\Modules\Medical\Http\Requests\UpdatePatientRequest;
 use App\Modules\Medical\Http\Resources\PatientResource;
 use App\Modules\Medical\Http\Resources\PatientSearchResource;
 use App\Modules\Medical\Services\CaseService;
 use App\Modules\Medical\Services\PatientService;
+use App\Modules\Medical\Services\SegmentService;
+use App\Modules\Medical\Services\TagService;
 use App\Modules\Medical\Services\TreatmentService;
 use App\Modules\Messaging\Contracts\SmsHistoryContract;
 use App\Support\ClinicContext;
@@ -37,6 +40,8 @@ class PatientController extends Controller
         private BalanceReaderContract $balanceReader,
         private SmsHistoryContract $smsHistory,
         private ClinicContext $clinicContext,
+        private TagService $tagService,
+        private SegmentService $segmentService,
     ) {}
 
     public function index(Request $request): Response
@@ -50,9 +55,18 @@ class PatientController extends Controller
 
         $props = [
             'patients' => PatientResource::collection($paginator),
+            'tags' => $this->tagService->listOptionsForActiveClinic(),
+            'segments' => $this->segmentService->listForActiveClinic()->map(fn ($segment) => [
+                'id' => $segment->id,
+                'name' => $segment->name,
+                'criteria' => $segment->criteria,
+            ])->values(),
             'query' => FilterHelper::requestState([
                 'gender' => 'string',
                 'is_legacy' => 'boolean',
+                'tags' => 'array',
+                'last_visit_after' => 'date',
+                'last_visit_before' => 'date',
             ]),
         ];
 
@@ -105,6 +119,8 @@ class PatientController extends Controller
         $this->authorize('view', $patient);
 
         $user = $request->user();
+
+        $patient->loadMissing('tags');
 
         $treatmentCollection = $this->treatmentService->listForPatient($patient, $user);
 
@@ -161,6 +177,7 @@ class PatientController extends Controller
             'appointments' => $appointments,
             'smsLogs' => $smsLogs,
             'ownDoctorId' => $user->doctor?->id,
+            'allTags' => $this->tagService->listOptionsForActiveClinic(),
         ];
 
         if ($user->can('transactions.viewAny')) {
@@ -226,5 +243,16 @@ class PatientController extends Controller
         Toast::success(__('messages.patient.restored'));
 
         return redirect()->route('patients.show', $patientModel);
+    }
+
+    public function syncTags(SyncPatientTagsRequest $request, Patient $patient): RedirectResponse
+    {
+        $this->authorize('update', $patient);
+
+        $patient->tags()->sync($request->validated('tag_ids', []));
+
+        Toast::success(__('messages.tag.synced'));
+
+        return redirect()->route('patients.show', $patient);
     }
 }

@@ -82,4 +82,16 @@ return [
         'cannot_offboard_self' => 'You cannot offboard yourself.',
     ],
 
+    'tag' => [
+        'created' => 'Tag created.',
+        'updated' => 'Tag updated.',
+        'deleted' => 'Tag deleted.',
+        'synced' => 'Patient tags updated.',
+    ],
+
+    'segment' => [
+        'saved' => 'Segment saved.',
+        'deleted' => 'Segment deleted.',
+    ],
+
 ];

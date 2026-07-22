@@ -19,6 +19,7 @@ import {
     IconSearch,
     IconSettings,
     IconStethoscope,
+    IconTag,
     IconTags,
     IconUserCircle,
     IconUsers,
@@ -60,6 +61,7 @@ import { revenue as revenueReport } from '@/routes/reports';
 import { index as availabilityIndex } from '@/routes/schedule-exceptions';
 import { index as servicesIndex } from '@/routes/services';
 import { index as smsLogsIndex } from '@/routes/sms-logs';
+import { index as tagsIndex } from '@/routes/tags';
 import type { NavItem } from '@/types/nav';
 import type { PatientSearchResult } from '@/types/patient';
 
@@ -213,6 +215,15 @@ const navItems = computed<NavItem[]>(() => [
                   label: t('nav.appointment_types'),
                   href: appointmentTypesIndex().url,
                   icon: IconTags,
+              },
+          ]
+        : []),
+    ...(can('tags.manage')
+        ? [
+              {
+                  label: t('nav.tags'),
+                  href: tagsIndex().url,
+                  icon: IconTag,
               },
           ]
         : []),

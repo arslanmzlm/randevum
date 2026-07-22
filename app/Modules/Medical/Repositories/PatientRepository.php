@@ -7,6 +7,7 @@ use App\Enums\TreatmentStatus;
 use App\Models\Patient;
 use App\Models\Treatment;
 use App\Support\FilterHelper;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -19,7 +20,7 @@ class PatientRepository
      *
      * @return LengthAwarePaginator<Patient>
      */
-    public function paginateForActiveClinic(): LengthAwarePaginator
+    public function paginateForActiveClinic(string $timezone): LengthAwarePaginator
     {
         // Correlated subquery: the patient's most recent completed-treatment time, surfaced
         // as a sortable "last visit" column. Treatment's ClinicScope keeps it tenant-safe.
@@ -30,7 +31,11 @@ class PatientRepository
 
         $query = Patient::query()
             ->select('patients.*')
-            ->addSelect(['last_visit_at' => $lastVisit]);
+            ->addSelect(['last_visit_at' => $lastVisit])
+            ->with('tags');
+
+        $this->applyTagFilter($query);
+        $this->applyLastVisitFilter($query, $timezone);
 
         return FilterHelper::for($query)
             ->search('first_name', 'last_name', 'phone')
@@ -38,6 +43,70 @@ class PatientRepository
             ->enum(['gender' => Gender::class])
             ->boolean('is_legacy')
             ->paginate();
+    }
+
+    /**
+     * `filter[tags]` — comma-separated tag ids, OR-matched (patient holds ANY of them).
+     * Non-numeric members are dropped; ClinicScope on `tags` keeps a foreign-clinic id
+     * a no-op (it simply matches nothing) rather than a cross-tenant leak.
+     *
+     * @param  Builder<Patient>  $query
+     */
+    private function applyTagFilter(Builder $query): void
+    {
+        $raw = request()->input('filter.tags');
+
+        if (blank($raw) || ! is_string($raw)) {
+            return;
+        }
+
+        $ids = array_values(array_filter(array_map(
+            static fn (string $id): ?int => is_numeric($id) ? (int) $id : null,
+            explode(',', $raw),
+        )));
+
+        if ($ids === []) {
+            return;
+        }
+
+        $query->whereHas('tags', fn (Builder $q) => $q->whereIn('tags.id', $ids));
+    }
+
+    /**
+     * `filter[last_visit_after]` / `filter[last_visit_before]` (Y-m-d, clinic timezone) —
+     * over the patient's most recent Completed treatment.
+     *
+     * `before` resolves to "hasn't visited since that date" (whereDoesntHave), which by
+     * design ALSO matches patients who have never visited — the re-engagement "son X ayda
+     * gelmeyen" wide net (GATE-1 OPEN-3, deliberate — not a bug).
+     *
+     * @param  Builder<Patient>  $query
+     */
+    private function applyLastVisitFilter(Builder $query, string $timezone): void
+    {
+        $after = rescue(fn () => request()->date('filter.last_visit_after', tz: $timezone), null, report: false);
+        $before = rescue(fn () => request()->date('filter.last_visit_before', tz: $timezone), null, report: false);
+
+        if ($after !== null) {
+            // Bindings are sent as plain strings — normalize to UTC first so a clinic-local
+            // day boundary compares correctly against the timestamptz column (mirrors
+            // AppointmentRepository's day/week/month range helpers).
+            $start = $after->startOfDay()->utc();
+
+            $query->whereHas('treatments', function (Builder $q) use ($start): void {
+                $q->where('status', TreatmentStatus::Completed->value)
+                    ->where('completed_at', '>=', $start);
+            });
+        }
+
+        if ($before !== null) {
+            $end = $before->endOfDay()->utc();
+
+            $query->whereDoesntHave('treatments', function (Builder $q) use ($end): void {
+                $q->where('status', TreatmentStatus::Completed->value)
+                    ->where('completed_at', '>=', $end);
+            });
+        }
     }
 
     /**

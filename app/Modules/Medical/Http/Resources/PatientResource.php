@@ -40,6 +40,11 @@ class PatientResource extends JsonResource
             'last_visit_at' => $this->last_visit_at
                 ? Carbon::parse($this->last_visit_at)->toISOString()
                 : null,
+            'tags' => $this->whenLoaded('tags', fn () => $this->tags->map(fn ($tag) => [
+                'id' => $tag->id,
+                'name' => $tag->name,
+                'color' => $tag->color,
+            ])->values()),
         ];
     }
 }
