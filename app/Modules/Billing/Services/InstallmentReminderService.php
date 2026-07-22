@@ -2,6 +2,7 @@
 
 namespace App\Modules\Billing\Services;
 
+use App\Enums\InstallmentStatus;
 use App\Enums\SmsType;
 use App\Models\PaymentPlanInstallment;
 use App\Modules\Billing\Repositories\PaymentPlanRepository;
@@ -9,6 +10,7 @@ use App\Modules\Messaging\Contracts\SmsDispatcherContract;
 use App\Modules\Messaging\Contracts\SmsTemplateRendererContract;
 use App\Modules\Messaging\Data\SmsMessage;
 use Carbon\CarbonInterface;
+use Illuminate\Validation\ValidationException;
 
 class InstallmentReminderService
 {
@@ -48,14 +50,27 @@ class InstallmentReminderService
      * Manual "Hatırlat" triggered by staff for a single installment. Uses InstallmentDue1d
      * as the canonical type. Does NOT read or set the reminder_*_sent flags — staff may
      * deliberately resend regardless of the automatic wave's state.
+     *
+     * @return bool true when the SMS was actually dispatched, false when the gate skipped
+     *              it (e.g. the clinic disabled installment reminders) — the controller
+     *              uses this to show a truthful toast instead of always "sent".
+     *
+     * @throws ValidationException when the installment is not Pending (already
+     *                             collected or cancelled — nothing left to remind about).
      */
-    public function sendManual(PaymentPlanInstallment $installment): void
+    public function sendManual(PaymentPlanInstallment $installment): bool
     {
+        if ($installment->status !== InstallmentStatus::Pending) {
+            throw ValidationException::withMessages([
+                'installment' => [__('payment_plan.errors.not_pending')],
+            ]);
+        }
+
         $installment->loadMissing('plan.patient', 'plan.clinic');
 
         $message = $this->buildMessage($installment, SmsType::InstallmentDue1d);
 
-        $this->dispatcher->dispatch($message);
+        return $this->dispatcher->dispatch($message);
     }
 
     private function processWave(string $onDate, string $flagColumn, SmsType $type): int

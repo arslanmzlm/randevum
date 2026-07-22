@@ -468,3 +468,72 @@ it('doctor is denied the manual remind endpoint (lacks paymentPlans.sendReminder
 
     Queue::assertNothingPushed();
 });
+
+// ---------------------------------------------------------------------------
+// Guard — only a Pending installment may be reminded
+// ---------------------------------------------------------------------------
+
+it('rejects a manual remind on an already-Paid installment and dispatches nothing', function (): void {
+    Queue::fake();
+    ['clinic' => $clinic, 'installment' => $installment] = installmentDueOn(now()->addDays(20)->toDateString());
+    $installment->update(['status' => InstallmentStatus::Paid, 'paid_at' => now()]);
+
+    $owner = User::factory()->create();
+    pirRole($owner, 'owner', $clinic->id);
+
+    $this->actingAs($owner)
+        ->post(route('payment-plans.installments.remind', $installment))
+        ->assertSessionHasErrors('installment');
+
+    Queue::assertNothingPushed();
+});
+
+it('rejects a manual remind on a Cancelled installment and dispatches nothing', function (): void {
+    Queue::fake();
+    ['clinic' => $clinic, 'installment' => $installment] = installmentDueOn(now()->addDays(20)->toDateString());
+    $installment->update(['status' => InstallmentStatus::Cancelled]);
+
+    $owner = User::factory()->create();
+    pirRole($owner, 'owner', $clinic->id);
+
+    $this->actingAs($owner)
+        ->post(route('payment-plans.installments.remind', $installment))
+        ->assertSessionHasErrors('installment');
+
+    Queue::assertNothingPushed();
+});
+
+// ---------------------------------------------------------------------------
+// Truthful outcome — clinic disabled installment SMS
+// ---------------------------------------------------------------------------
+
+it('shows a warning toast (not the success toast) and dispatches nothing when the clinic disabled installment_due_1d', function (): void {
+    Queue::fake();
+    ['clinic' => $clinic, 'installment' => $installment] = installmentDueOn(now()->addDays(20)->toDateString());
+
+    ClinicSmsSetting::factory()->forType(SmsType::InstallmentDue1d)->disabled()->create([
+        'clinic_id' => $clinic->id,
+    ]);
+
+    $owner = User::factory()->create();
+    pirRole($owner, 'owner', $clinic->id);
+
+    $response = $this->actingAs($owner)
+        ->post(route('payment-plans.installments.remind', $installment))
+        ->assertRedirect();
+
+    Queue::assertNothingPushed();
+
+    $toasts = $response->getSession()->get('toasts');
+    expect($toasts)->toHaveCount(1)
+        ->and($toasts[0]['severity'])->toBe('warn')
+        ->and($toasts[0]['summary'])->toBe(__('messages.payment_plan.reminder_skipped'));
+
+    $log = SmsLog::withoutGlobalScopes()
+        ->where('loggable_type', 'payment_plan_installment')
+        ->where('loggable_id', $installment->id)
+        ->sole();
+
+    expect($log->status)->toBe(SmsStatus::Skipped)
+        ->and($log->error)->toBe('disabled by clinic');
+});

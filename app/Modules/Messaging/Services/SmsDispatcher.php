@@ -25,33 +25,35 @@ class SmsDispatcher implements SmsDispatcherContract
      * A null phone (patient has no registered number) is logged as Skipped with
      * error='no phone' so it appears in the future SMS-log UI without a retry.
      */
-    public function dispatch(SmsMessage $message): void
+    public function dispatch(SmsMessage $message): bool
     {
         if ($message->clinicId === null || ! $message->type->isClinicScoped()) {
             SendSmsJob::dispatch($message);
 
-            return;
+            return true;
         }
 
         if (! $this->settings->isEnabled($message->clinicId, $message->type)) {
             $this->writeSkipped($message, 'disabled by clinic');
 
-            return;
+            return false;
         }
 
         if (! $this->quota->hasRoom($message->clinicId)) {
             $this->writeSkipped($message, 'quota exceeded');
 
-            return;
+            return false;
         }
 
         if ($message->phone === null) {
             $this->writeSkipped($message, 'no phone');
 
-            return;
+            return false;
         }
 
         SendSmsJob::dispatch($message);
+
+        return true;
     }
 
     /**

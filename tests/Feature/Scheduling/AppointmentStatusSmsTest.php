@@ -316,7 +316,7 @@ it('a dispatcher that throws does not roll back the appointment creation (post-c
     app()->bind(SmsDispatcherContract::class, function (): SmsDispatcherContract {
         return new class implements SmsDispatcherContract
         {
-            public function dispatch(SmsMessage $message): void
+            public function dispatch(SmsMessage $message): bool
             {
                 throw new RuntimeException('Simulated dispatcher failure');
             }
@@ -360,7 +360,7 @@ it('a dispatcher that throws does not roll back the cancellation (post-commit is
     app()->bind(SmsDispatcherContract::class, function (): SmsDispatcherContract {
         return new class implements SmsDispatcherContract
         {
-            public function dispatch(SmsMessage $message): void
+            public function dispatch(SmsMessage $message): bool
             {
                 throw new RuntimeException('Simulated dispatcher failure');
             }
@@ -483,7 +483,7 @@ it('a throwing dispatcher in bulkCancel does not roll back the bulk cancellation
     app()->bind(SmsDispatcherContract::class, function (): SmsDispatcherContract {
         return new class implements SmsDispatcherContract
         {
-            public function dispatch(SmsMessage $message): void
+            public function dispatch(SmsMessage $message): bool
             {
                 throw new RuntimeException('Simulated dispatcher failure');
             }

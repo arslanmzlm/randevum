@@ -80,19 +80,23 @@ class PaymentPlanService implements PaymentPlanCreatorContract
         $installment->loadMissing('plan');
         $plan = $installment->plan;
 
-        return DB::transaction(function () use ($installment, $plan, $data, $actor): Transaction {
+        // Resolve once so a backdated collection shows the same date on the transaction
+        // and the installment row (PaymentPlanCard reads installment.paid_at).
+        $paidAt = $data['paid_at'] ?? now();
+
+        return DB::transaction(function () use ($installment, $plan, $data, $actor, $paidAt): Transaction {
             $transaction = $this->paymentRecorder->record([
                 'amount' => $installment->amount,
                 'payment_method' => $data['payment_method'],
                 'patient_id' => $plan->patient_id,
                 'treatment_id' => $plan->treatment_id,
                 'note' => $data['note'] ?? null,
-                'paid_at' => $data['paid_at'] ?? now(),
+                'paid_at' => $paidAt,
                 'payment_plan_installment_id' => $installment->id,
             ], $actor);
 
             $installment->status = InstallmentStatus::Paid;
-            $installment->paid_at = now();
+            $installment->paid_at = $paidAt;
             $installment->save();
 
             $this->statusLogService->record(

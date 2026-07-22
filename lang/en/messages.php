@@ -63,6 +63,7 @@ return [
         'created' => 'Payment plan created.',
         'collected' => 'Installment collected.',
         'reminder_sent' => 'Reminder SMS sent.',
+        'reminder_skipped' => 'Reminder SMS was not sent (the clinic may have this notification disabled, or a quota/phone issue).',
         'cancelled' => 'Payment plan cancelled.',
     ],
 

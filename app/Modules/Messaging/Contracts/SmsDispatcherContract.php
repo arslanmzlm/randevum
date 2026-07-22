@@ -15,7 +15,11 @@ use App\Modules\Messaging\Data\SmsMessage;
  */
 interface SmsDispatcherContract
 {
-    public function dispatch(SmsMessage $message): void;
+    /**
+     * @return bool true when the send job was queued, false when the gate skipped it
+     *              (disabled by clinic, quota exceeded, or no phone on file).
+     */
+    public function dispatch(SmsMessage $message): bool;
 
     /**
      * Second idempotency guard: true when an sms_logs row for this loggable+type

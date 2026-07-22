@@ -63,6 +63,7 @@ return [
         'created' => 'Taksit planı oluşturuldu.',
         'collected' => 'Taksit tahsil edildi.',
         'reminder_sent' => 'Hatırlatma SMS\'i gönderildi.',
+        'reminder_skipped' => 'Hatırlatma SMS\'i gönderilmedi (klinik için bu bildirim kapalı olabilir veya kota/telefon sorunu var).',
         'cancelled' => 'Taksit planı iptal edildi.',
     ],
 

@@ -114,9 +114,13 @@ class PaymentPlanController extends Controller
 
         $this->authorize('sendReminder', $installment->plan);
 
-        $this->reminderService->sendManual($installment);
+        $dispatched = $this->reminderService->sendManual($installment);
 
-        Toast::success(__('messages.payment_plan.reminder_sent'));
+        if ($dispatched) {
+            Toast::success(__('messages.payment_plan.reminder_sent'));
+        } else {
+            Toast::warning(__('messages.payment_plan.reminder_skipped'));
+        }
 
         return back();
     }

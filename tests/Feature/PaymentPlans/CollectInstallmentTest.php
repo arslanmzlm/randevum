@@ -177,6 +177,28 @@ it('collects a pending installment: creates a linked Completed transaction and f
         ->and($installment->paid_at)->not->toBeNull();
 });
 
+it('records a backdated paid_at identically on the transaction and the installment', function (): void {
+    ['owner' => $owner, 'installments' => $installments] = pciSetup(100.00, 2);
+    $installment = $installments->first();
+    $backdated = now()->subDays(3)->startOfSecond();
+
+    $this->actingAs($owner)
+        ->post(route('payment-plans.installments.collect', $installment), pciPayload([
+            'paid_at' => $backdated->toDateTimeString(),
+        ]))
+        ->assertRedirect();
+
+    $tx = Transaction::withoutGlobalScopes()
+        ->where('payment_plan_installment_id', $installment->id)
+        ->first();
+
+    $installment->refresh();
+
+    expect($tx->paid_at->equalTo($backdated))->toBeTrue()
+        ->and($installment->paid_at->equalTo($backdated))->toBeTrue()
+        ->and($installment->paid_at->equalTo($tx->paid_at))->toBeTrue();
+});
+
 it('writes a pending → paid status_log for the collected installment', function (): void {
     ['owner' => $owner, 'installments' => $installments] = pciSetup(100.00, 2);
     $installment = $installments->first();
