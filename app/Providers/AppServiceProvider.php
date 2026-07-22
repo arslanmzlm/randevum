@@ -11,6 +11,8 @@ use App\Models\Doctor;
 use App\Models\Expense;
 use App\Models\Patient;
 use App\Models\PatientSegment;
+use App\Models\PaymentPlan;
+use App\Models\PaymentPlanInstallment;
 use App\Models\PodiatryTreatmentDetail;
 use App\Models\Product;
 use App\Models\ScheduleException;
@@ -29,6 +31,7 @@ use App\Policies\DoctorPolicy;
 use App\Policies\ExpensePolicy;
 use App\Policies\PatientPolicy;
 use App\Policies\PatientSegmentPolicy;
+use App\Policies\PaymentPlanPolicy;
 use App\Policies\ProductPolicy;
 use App\Policies\ScheduleExceptionPolicy;
 use App\Policies\ServicePolicy;
@@ -84,6 +87,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Expense::class, ExpensePolicy::class);
         Gate::policy(Patient::class, PatientPolicy::class);
         Gate::policy(PatientSegment::class, PatientSegmentPolicy::class);
+        Gate::policy(PaymentPlan::class, PaymentPlanPolicy::class);
         Gate::policy(Product::class, ProductPolicy::class);
         Gate::policy(ScheduleException::class, ScheduleExceptionPolicy::class);
         Gate::policy(Service::class, ServicePolicy::class);
@@ -108,6 +112,8 @@ class AppServiceProvider extends ServiceProvider
             'patient' => Patient::class,
             'user' => User::class,
             'podiatry' => PodiatryTreatmentDetail::class,
+            'payment_plan' => PaymentPlan::class,
+            'payment_plan_installment' => PaymentPlanInstallment::class,
         ]);
     }
 

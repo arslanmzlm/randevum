@@ -25,6 +25,7 @@ class Transaction extends Model
         'patient_id',
         'treatment_id',
         'original_transaction_id',
+        'payment_plan_installment_id',
         'amount',
         'payment_method',
         'status',
@@ -43,6 +44,7 @@ class Transaction extends Model
             'patient_id' => 'integer',
             'treatment_id' => 'integer',
             'original_transaction_id' => 'integer',
+            'payment_plan_installment_id' => 'integer',
             'amount' => 'decimal:2',
             'payment_method' => PaymentMethod::class,
             'status' => TransactionStatus::class,
@@ -101,6 +103,17 @@ class Transaction extends Model
     public function refunds(): HasMany
     {
         return $this->hasMany(Transaction::class, 'original_transaction_id');
+    }
+
+    /**
+     * The payment-plan installment this collection settles (null on a normal/split payment
+     * or a down payment, which is never installment-linked).
+     *
+     * @return BelongsTo<PaymentPlanInstallment, $this>
+     */
+    public function installment(): BelongsTo
+    {
+        return $this->belongsTo(PaymentPlanInstallment::class, 'payment_plan_installment_id');
     }
 
     /**

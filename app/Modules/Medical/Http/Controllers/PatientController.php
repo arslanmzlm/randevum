@@ -183,6 +183,7 @@ class PatientController extends Controller
         if ($user->can('transactions.viewAny')) {
             $props['balance'] = $this->patientService->balanceForPatient($patient, $treatmentCollection);
             $props['transactions'] = $this->balanceReader->transactionsForPatient($patient->id);
+            $props['paymentPlans'] = $this->balanceReader->paymentPlansForPatient($patient->id);
         }
 
         return Inertia::render('patients/Show', $props);

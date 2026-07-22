@@ -22,11 +22,16 @@ return new class extends Migration
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             // Links a refund counter-entry back to the payment it reverses; null on normal payments.
             $table->foreignId('original_transaction_id')->nullable()->constrained('transactions')->nullOnDelete();
+            // Links a collection to the payment-plan installment it settles (Faz-2 taksit takibi).
+            // No FK constraint here — payment_plan_installments doesn't exist yet at this migration's
+            // timestamp; the installments migration attaches the FK once both tables exist.
+            $table->unsignedBigInteger('payment_plan_installment_id')->nullable();
             $table->timestampsTz();
 
             $table->index(['clinic_id', 'treatment_id']);
             $table->index(['clinic_id', 'patient_id', 'paid_at']);
             $table->index(['clinic_id', 'original_transaction_id']);
+            $table->index(['clinic_id', 'payment_plan_installment_id']);
         });
     }
 

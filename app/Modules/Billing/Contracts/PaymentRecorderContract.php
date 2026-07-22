@@ -23,6 +23,7 @@ interface PaymentRecorderContract
      *     treatment_id: int|null,
      *     note?: string|null,
      *     paid_at?: string|\DateTimeInterface|null,
+     *     payment_plan_installment_id?: int|null,
      * }  $data
      */
     public function record(array $data, User $actor): Transaction;

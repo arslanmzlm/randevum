@@ -18,4 +18,10 @@ return [
         ],
     ],
 
+    'installment' => [
+        'due' => [
+            'body' => ':clinic: your installment of :amount is due on :date.',
+        ],
+    ],
+
 ];

@@ -59,6 +59,13 @@ return [
         'recorded' => 'İade kaydedildi.',
     ],
 
+    'payment_plan' => [
+        'created' => 'Taksit planı oluşturuldu.',
+        'collected' => 'Taksit tahsil edildi.',
+        'reminder_sent' => 'Hatırlatma SMS\'i gönderildi.',
+        'cancelled' => 'Taksit planı iptal edildi.',
+    ],
+
     'sms_settings' => [
         'updated' => 'SMS tercihleri güncellendi.',
     ],

@@ -14,6 +14,7 @@ import PageHeader from '@/components/PageHeader.vue';
 import PatientAppointmentsSection from '@/components/patients/PatientAppointmentsSection.vue';
 import PatientBalanceSection from '@/components/patients/PatientBalanceSection.vue';
 import PatientCasesSection from '@/components/patients/PatientCasesSection.vue';
+import PatientPaymentPlansSection from '@/components/patients/PatientPaymentPlansSection.vue';
 import PatientProfileCard from '@/components/patients/PatientProfileCard.vue';
 import PatientSmsLogList from '@/components/patients/PatientSmsLogList.vue';
 import PatientTagsSection from '@/components/patients/PatientTagsSection.vue';
@@ -135,6 +136,13 @@ function removePatient(): void {
         <PatientBalanceSection
             :balance="balance"
             :transactions="transactions"
+        />
+
+        <PatientPaymentPlansSection
+            v-if="paymentPlans"
+            :patient-id="patient.id"
+            :plans="paymentPlans"
+            :treatments="treatments"
         />
 
         <RecordPaymentDialog

@@ -3,6 +3,7 @@ import { IconCash, IconPlus, IconTrash } from '@tabler/icons-vue';
 import { computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import ModeSelectRow from '@/components/ModeSelectRow.vue';
+import InstallmentBuilder from '@/components/payment-plans/InstallmentBuilder.vue';
 import SectionCard from '@/components/SectionCard.vue';
 import { useMoney } from '@/composables/useMoney';
 import type { PaymentMethod } from '@/types/enums';
@@ -19,7 +20,7 @@ const form = useTreatmentForm();
 const fieldError = (key: string): string | undefined =>
     (form.errors as Record<string, string | undefined>)[key];
 
-const modes: PaymentEntryMode[] = ['received', 'none'];
+const modes: PaymentEntryMode[] = ['received', 'none', 'installment'];
 
 const modeOptions = computed(() =>
     modes.map((mode) => ({
@@ -87,11 +88,41 @@ function removeRow(index: number): void {
                 gap="gap-x-6 gap-y-3"
             />
 
-            <p class="text-sm text-surface-500">
+            <p
+                v-if="form.payment.mode === 'received'"
+                class="text-sm text-surface-500"
+            >
                 {{ t('treatment.payment.hint') }}
             </p>
 
-            <template v-if="form.payment.mode !== 'none'">
+            <template v-if="form.payment.mode === 'installment'">
+                <InstallmentBuilder
+                    v-model:count="form.payment.installment.count"
+                    v-model:start-date="form.payment.installment.start_date"
+                    v-model:down-payment="form.payment.installment.down_payment"
+                    v-model:down-payment-method="
+                        form.payment.installment.down_payment_method
+                    "
+                    v-model:installments="form.payment.installment.installments"
+                    :total="total"
+                    :method-options="methodOptions"
+                />
+
+                <small
+                    v-if="
+                        fieldError('installment_plan.installments') ||
+                        fieldError('installment_plan')
+                    "
+                    class="text-xs text-red-500"
+                >
+                    {{
+                        fieldError('installment_plan.installments') ??
+                        fieldError('installment_plan')
+                    }}
+                </small>
+            </template>
+
+            <template v-else-if="form.payment.mode === 'received'">
                 <div
                     v-for="(row, index) in form.payment.rows"
                     :key="index"

@@ -4,6 +4,7 @@ import {
     IconArrowsMaximize,
     IconArrowsMinimize,
     IconBuildingHospital,
+    IconCalendarDollar,
     IconCalendarEvent,
     IconCalendarOff,
     IconCalendarPlus,
@@ -60,6 +61,7 @@ import { edit as smsSettingsEdit } from '@/routes/clinic/sms-settings';
 import { index as doctorsIndex, mine as doctorsMine } from '@/routes/doctors';
 import { index as expensesIndex } from '@/routes/expenses';
 import { index as patientsIndex, show as patientShow } from '@/routes/patients';
+import { installments as paymentPlansIndex } from '@/routes/payment-plans';
 import { index as productsIndex } from '@/routes/products';
 import { finance as financeReport } from '@/routes/reports';
 import { index as availabilityIndex } from '@/routes/schedule-exceptions';
@@ -255,6 +257,15 @@ const navItems = computed<NavItem[]>(() => [
                   label: t('nav.expenses'),
                   href: expensesIndex().url,
                   icon: IconReceipt,
+              },
+          ]
+        : []),
+    ...(can('paymentPlans.viewAny')
+        ? [
+              {
+                  label: t('nav.payment_plans'),
+                  href: paymentPlansIndex().url,
+                  icon: IconCalendarDollar,
               },
           ]
         : []),

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
-import { IconBell, IconMessage } from '@tabler/icons-vue';
+import { IconBell, IconCalendarDollar, IconMessage } from '@tabler/icons-vue';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import PageHeader from '@/components/PageHeader.vue';
@@ -132,6 +132,29 @@ function submit(): void {
                     :hint="t('sms_settings.type.balance_reminder.hint')"
                     :disabled="!canUpdate"
                 />
+            </SectionCard>
+
+            <SectionCard
+                :icon="IconCalendarDollar"
+                :title="t('sms_settings.card.installments.title')"
+            >
+                <p class="-mt-2 mb-4 text-sm text-surface-500">
+                    {{ t('sms_settings.card.installments.description') }}
+                </p>
+                <div class="flex flex-col gap-3">
+                    <SmsTypeToggleRow
+                        v-model="form.settings.installment_due_7d"
+                        :label="t('sms_settings.type.installment_due_7d.label')"
+                        :hint="t('sms_settings.type.installment_due_7d.hint')"
+                        :disabled="!canUpdate"
+                    />
+                    <SmsTypeToggleRow
+                        v-model="form.settings.installment_due_1d"
+                        :label="t('sms_settings.type.installment_due_1d.label')"
+                        :hint="t('sms_settings.type.installment_due_1d.hint')"
+                        :disabled="!canUpdate"
+                    />
+                </div>
             </SectionCard>
 
             <div v-if="canUpdate" class="flex justify-end">

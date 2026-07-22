@@ -34,6 +34,7 @@ class PaymentService implements PaymentRecorderContract
      *     treatment_id: int|null,
      *     note?: string|null,
      *     paid_at?: string|\DateTimeInterface|null,
+     *     payment_plan_installment_id?: int|null,
      * }  $data
      */
     public function record(array $data, User $actor): Transaction
@@ -64,6 +65,7 @@ class PaymentService implements PaymentRecorderContract
                 'paid_at' => $data['paid_at'] ?? now(),
                 'note' => $data['note'] ?? null,
                 'created_by' => $actor->id,
+                'payment_plan_installment_id' => $data['payment_plan_installment_id'] ?? null,
             ]);
 
             $this->statusLogService->record(

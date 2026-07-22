@@ -62,4 +62,25 @@ interface BalanceReaderContract
      * }>
      */
     public function transactionsForTreatment(int $treatmentId): array;
+
+    /**
+     * A patient's payment plans (with installment schedules) in the active clinic, newest
+     * first. Plain-array shape so no Billing models leak across the boundary; Medical's
+     * patient Show reads this instead of touching PaymentPlan directly.
+     *
+     * @return array<int, array{
+     *   id: int,
+     *   status: string,
+     *   total_amount: string,
+     *   down_payment: string|null,
+     *   installment_count: int,
+     *   treatment_id: int|null,
+     *   created_at: string,
+     *   installments: array<int, array{
+     *     id: int, sequence: int, due_date: string, amount: string,
+     *     status: string, paid_at: string|null, is_overdue: bool,
+     *   }>,
+     * }>
+     */
+    public function paymentPlansForPatient(int $patientId): array;
 }

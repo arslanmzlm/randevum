@@ -87,6 +87,15 @@ class PermissionSeeder extends Seeder
         'transactions.viewAny' => ['owner', 'manager', 'doctor', 'receptionist'],
         // Refund a payment — owner only per data-model decision (sadece owner iade başlatabilir).
         'transactions.refund' => ['owner'],
+        // Payment plans (taksit) — collections screen; excludes doctor/assistant (money screen).
+        'paymentPlans.viewAny' => ['owner', 'manager', 'receptionist'],
+        // Mirrors transactions.create — plan created where payments are recorded.
+        'paymentPlans.create' => ['owner', 'manager', 'doctor', 'receptionist'],
+        // Managerial, higher blast radius — not in the brief; narrow set like appointments.delete.
+        'paymentPlans.cancel' => ['owner', 'manager'],
+        // Manual "Hatırlat" — mirrors appointments.sendReminder.
+        'paymentPlans.sendReminder' => ['owner', 'manager', 'receptionist'],
+        // Installment collect reuses transactions.create (no dedicated permission).
         // Revenue report — clinic financial overview, management-only. Now also gates
         // the merged finance page (revenue + expense + net); route renamed to
         // reports.finance but the permission name is unchanged.

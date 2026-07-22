@@ -34,6 +34,16 @@ export type TransactionStatus =
     | 'partially_refunded'
     | 'refunded';
 
+/** Mirrors `App\Enums\PaymentPlanStatus`; the FE branches on it (status→severity/label). */
+export type PaymentPlanStatus = 'active' | 'completed' | 'cancelled';
+
+/**
+ * Mirrors `App\Enums\InstallmentStatus`; the FE branches on it (status→severity/label).
+ * "Overdue" is NOT a stored status — it is derived (`is_overdue`) and rendered as a distinct
+ * visual on top of `pending`.
+ */
+export type InstallmentStatus = 'pending' | 'paid' | 'cancelled';
+
 /**
  * Mirrors `App\Enums\SmsType`. The SMS-settings page keys its toggle map off the
  * clinic-scoped types (every case except `otp`, which always bypasses the gate);
@@ -46,12 +56,16 @@ export type SmsType =
     | 'reminder_24h'
     | 'reminder_1h'
     | 'balance_reminder'
+    | 'installment_due_7d'
+    | 'installment_due_1d'
     | 'otp';
 
 /**
- * The 5 SMS types a clinic may override with a custom template (mirrors
- * `App\Enums\SmsType::customizableCases()` — every case except `balance_reminder`
- * and `otp`). Keys the `templates`/`defaults` maps on the SMS-settings page.
+ * The SMS types the settings-page template editor operates on — the appointment set.
+ * Server-side `SmsType::customizableCases()` also marks the installment-due types
+ * customizable, but the UI surfaces those as plain on/off toggles (their body carries
+ * an `:amount` variable the template editor's allow-list doesn't expose), so they stay
+ * out of this union. Keys the `templates`/`defaults` maps on the SMS-settings page.
  */
 export type CustomizableSmsType =
     | 'appointment_created'

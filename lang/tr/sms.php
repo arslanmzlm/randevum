@@ -18,4 +18,10 @@ return [
         ],
     ],
 
+    'installment' => [
+        'due' => [
+            'body' => ':clinic: :amount tutarındaki taksitinizin son ödeme tarihi :date.',
+        ],
+    ],
+
 ];

@@ -11,6 +11,7 @@ use App\Models\Patient;
 use App\Models\PodiatryTreatmentDetail;
 use App\Models\Treatment;
 use App\Models\User;
+use App\Modules\Billing\Contracts\PaymentPlanCreatorContract;
 use App\Modules\Billing\Contracts\PaymentRecorderContract;
 use App\Modules\Catalog\Contracts\StockAdjusterContract;
 use App\Modules\Core\Contracts\AppointmentLifecycleContract;
@@ -35,6 +36,7 @@ class TreatmentService
         private StatusLogService $statusLogService,
         private AppointmentLifecycleContract $appointmentLifecycle,
         private PaymentRecorderContract $paymentRecorder,
+        private PaymentPlanCreatorContract $paymentPlanCreator,
         private StockAdjusterContract $stockAdjuster,
         private ClinicContext $clinicContext,
     ) {}
@@ -162,27 +164,41 @@ class TreatmentService
                 $this->stockAdjuster->adjust($line->product_id, -$line->quantity);
             }
 
-            // 6. Optional payments — one transaction per method (split payment supported)
-            $payments = $data['payments'] ?? [];
+            // 6. Optional payment — either a split payment set or a taksit (installment) plan.
+            $installmentPlan = $data['installment_plan'] ?? null;
 
-            $paidTotal = array_sum(array_map(
-                fn (array $payment): float => (float) $payment['amount'],
-                $payments,
-            ));
-
-            if (round($paidTotal, 2) > round($total, 2)) {
-                throw ValidationException::withMessages([
-                    'payments' => [__('treatment.errors.payments_exceed_total')],
-                ]);
-            }
-
-            foreach ($payments as $payment) {
-                $this->paymentRecorder->record([
-                    'amount' => $payment['amount'],
-                    'payment_method' => $payment['method'],
+            if (! empty($installmentPlan)) {
+                $this->paymentPlanCreator->create([
                     'patient_id' => $treatment->patient_id,
                     'treatment_id' => $treatment->id,
+                    'total_amount' => $total,
+                    'down_payment' => $installmentPlan['down_payment'] ?? null,
+                    'down_payment_method' => $installmentPlan['down_payment_method'] ?? null,
+                    'installment_count' => $installmentPlan['installment_count'],
+                    'installments' => $installmentPlan['installments'],
                 ], $actor);
+            } else {
+                $payments = $data['payments'] ?? [];
+
+                $paidTotal = array_sum(array_map(
+                    fn (array $payment): float => (float) $payment['amount'],
+                    $payments,
+                ));
+
+                if (round($paidTotal, 2) > round($total, 2)) {
+                    throw ValidationException::withMessages([
+                        'payments' => [__('treatment.errors.payments_exceed_total')],
+                    ]);
+                }
+
+                foreach ($payments as $payment) {
+                    $this->paymentRecorder->record([
+                        'amount' => $payment['amount'],
+                        'payment_method' => $payment['method'],
+                        'patient_id' => $treatment->patient_id,
+                        'treatment_id' => $treatment->id,
+                    ], $actor);
+                }
             }
 
             // 7. Follow-up appointment(s)

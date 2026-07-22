@@ -79,6 +79,10 @@ it('grants the owner role the full clinic + doctor + service + product + patient
             'segments.manage',
             'expenses.viewAny',
             'expenses.create',
+            'paymentPlans.viewAny',
+            'paymentPlans.create',
+            'paymentPlans.cancel',
+            'paymentPlans.sendReminder',
         ]);
 });
 
@@ -143,6 +147,10 @@ it('grants the manager role full management except clinic and self-create', func
             'segments.manage',
             'expenses.viewAny',
             'expenses.create',
+            'paymentPlans.viewAny',
+            'paymentPlans.create',
+            'paymentPlans.cancel',
+            'paymentPlans.sendReminder',
         ]);
 });
 
@@ -177,6 +185,7 @@ it('grants the doctor role read access to catalog and full patient management', 
             'cases.create',
             'cases.update',
             'expenses.create',
+            'paymentPlans.create',
         ]);
 });
 
@@ -210,6 +219,9 @@ it('grants receptionist full patient management and doctor list access', functio
             'smsSettings.view',
             'smsLogs.viewAny',
             'expenses.create',
+            'paymentPlans.viewAny',
+            'paymentPlans.create',
+            'paymentPlans.sendReminder',
         ]);
 });
 

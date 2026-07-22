@@ -2,6 +2,7 @@ import type { InertiaForm } from '@inertiajs/vue3';
 import type { PatientBalance, TransactionItem } from '@/types/balance';
 import type { PatientCaseItem } from '@/types/case';
 import type { AppointmentStatus } from '@/types/enums';
+import type { PatientPaymentPlan } from '@/types/payment-plan';
 import type { SmsLogItem } from '@/types/smsLog';
 import type { Paginated, TableState } from '@/types/table';
 import type { Tag } from '@/types/tag';
@@ -143,6 +144,8 @@ export type PatientShowProps = {
     balance?: PatientBalance;
     /** All the patient's transactions, newest first. Absent when denied (see `balance`). */
     transactions?: TransactionItem[];
+    /** The patient's payment plans + schedules. Absent when the user lacks `transactions.viewAny`. */
+    paymentPlans?: PatientPaymentPlan[];
     /** All active-clinic tags — options for the detail add/remove tag picker. */
     allTags: Tag[];
 };

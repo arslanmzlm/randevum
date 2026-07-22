@@ -59,6 +59,13 @@ return [
         'recorded' => 'Refund recorded.',
     ],
 
+    'payment_plan' => [
+        'created' => 'Payment plan created.',
+        'collected' => 'Installment collected.',
+        'reminder_sent' => 'Reminder SMS sent.',
+        'cancelled' => 'Payment plan cancelled.',
+    ],
+
     'sms_settings' => [
         'updated' => 'SMS preferences updated.',
     ],

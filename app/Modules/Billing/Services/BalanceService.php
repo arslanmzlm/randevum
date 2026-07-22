@@ -2,16 +2,24 @@
 
 namespace App\Modules\Billing\Services;
 
+use App\Enums\InstallmentStatus;
 use App\Enums\TransactionStatus;
+use App\Models\PaymentPlan;
+use App\Models\PaymentPlanInstallment;
 use App\Models\Transaction;
 use App\Modules\Billing\Contracts\BalanceReaderContract;
+use App\Modules\Billing\Repositories\PaymentPlanRepository;
 use App\Modules\Billing\Repositories\TransactionRepository;
+use App\Support\ClinicContext;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 
 class BalanceService implements BalanceReaderContract
 {
     public function __construct(
         private TransactionRepository $repository,
+        private PaymentPlanRepository $paymentPlanRepository,
+        private ClinicContext $clinicContext,
     ) {}
 
     public function paidTotalForPatient(int $patientId): string
@@ -48,6 +56,38 @@ class BalanceService implements BalanceReaderContract
     public function transactionsForTreatment(int $treatmentId): array
     {
         return $this->serialize($this->repository->forTreatment($treatmentId));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function paymentPlansForPatient(int $patientId): array
+    {
+        $today = Carbon::now($this->clinicContext->timezone())->toDateString();
+
+        return $this->paymentPlanRepository->plansForPatient($patientId)
+            ->map(fn (PaymentPlan $plan) => [
+                'id' => $plan->id,
+                'status' => $plan->status->value,
+                'total_amount' => (string) $plan->total_amount,
+                'down_payment' => $plan->down_payment !== null ? (string) $plan->down_payment : null,
+                'installment_count' => $plan->installment_count,
+                'treatment_id' => $plan->treatment_id,
+                'created_at' => $plan->created_at->toIso8601String(),
+                'installments' => $plan->installments
+                    ->map(fn (PaymentPlanInstallment $installment) => [
+                        'id' => $installment->id,
+                        'sequence' => $installment->sequence,
+                        'due_date' => $installment->due_date->toDateString(),
+                        'amount' => (string) $installment->amount,
+                        'status' => $installment->status->value,
+                        'paid_at' => $installment->paid_at?->toIso8601String(),
+                        'is_overdue' => $installment->status === InstallmentStatus::Pending
+                            && $installment->due_date->toDateString() < $today,
+                    ])
+                    ->all(),
+            ])
+            ->all();
     }
 
     /**

@@ -167,7 +167,7 @@ it('settings prop reflects a persisted disabled preference', function (): void {
         );
 });
 
-it('types prop contains all 6 clinic-scoped SmsType values', function (): void {
+it('types prop contains all 8 clinic-scoped SmsType values', function (): void {
     $clinic = Clinic::factory()->create();
     $owner = User::factory()->create();
     smsRole($owner, 'owner', $clinic->id);
@@ -176,7 +176,7 @@ it('types prop contains all 6 clinic-scoped SmsType values', function (): void {
         ->get(route('clinic.sms-settings.edit'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->has('types', 6)
+            ->has('types', 8)
         );
 });
 
@@ -184,7 +184,7 @@ it('types prop contains all 6 clinic-scoped SmsType values', function (): void {
 // GET /clinic/sms-settings — templates / defaults / variables / sample props
 // ---------------------------------------------------------------------------
 
-it('templates prop contains all 5 customizable SmsType keys, null (no custom template) by default', function (): void {
+it('templates prop contains all 7 customizable SmsType keys, null (no custom template) by default', function (): void {
     $clinic = Clinic::factory()->create();
     $owner = User::factory()->create();
     smsRole($owner, 'owner', $clinic->id);
@@ -193,12 +193,14 @@ it('templates prop contains all 5 customizable SmsType keys, null (no custom tem
         ->get(route('clinic.sms-settings.edit'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->has('templates', 5)
+            ->has('templates', 7)
             ->where('templates.appointment_created', null)
             ->where('templates.appointment_cancelled', null)
             ->where('templates.appointment_rescheduled', null)
             ->where('templates.reminder_24h', null)
             ->where('templates.reminder_1h', null)
+            ->where('templates.installment_due_7d', null)
+            ->where('templates.installment_due_1d', null)
         );
 });
 

@@ -3,6 +3,7 @@ import type { AppointmentTypeOption, WorkingHours } from '@/types/appointment';
 import type { TransactionItem } from '@/types/balance';
 import type { PaymentMethod, TreatmentStatus } from '@/types/enums';
 import type { MediaItem } from '@/types/media';
+import type { InstallmentPlanForm } from '@/types/payment-plan';
 
 /** Active appointment type for the follow-up booking (duration resolves server-side). */
 export type FollowUpAppointmentTypeOption = Pick<
@@ -96,8 +97,11 @@ export type ProductLineForm = {
 };
 
 export type CaseMode = 'none' | 'existing' | 'new';
-/** Payment intent at completion: received = one or more method rows, none = all debt. */
-export type PaymentEntryMode = 'received' | 'none';
+/**
+ * Payment intent at completion: received = one or more method rows, none = all debt,
+ * installment = a scheduled taksit plan (mutually exclusive with the method rows).
+ */
+export type PaymentEntryMode = 'received' | 'none' | 'installment';
 
 /** One payment row — a treatment's payment may be split across methods (part card, part cash). */
 export type PaymentRowForm = {
@@ -133,6 +137,8 @@ export type TreatmentFormData = {
     payment: {
         mode: PaymentEntryMode;
         rows: PaymentRowForm[];
+        /** Installment-mode sub-state (the dynamic builder); ignored unless mode = 'installment'. */
+        installment: InstallmentPlanForm;
     };
     follow_up: {
         mode: FollowUpMode;

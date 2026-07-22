@@ -35,6 +35,8 @@ import type {
     TreatmentServiceOption,
 } from '@/types/treatment';
 import { combineDateTime } from '@/utils/appointmentTime';
+import { toDateString } from '@/utils/datetime';
+import { defaultInstallmentStart } from '@/utils/installmentOccurrences';
 
 defineOptions({ layout: AppLayout });
 
@@ -59,7 +61,17 @@ const form = useForm<TreatmentFormData>({
     case_mode: props.openCases.length ? 'existing' : 'none',
     case_id: props.openCases.length ? props.openCases[0].id : null,
     new_case_title: '',
-    payment: { mode: 'received', rows: [{ method: null, amount: null }] },
+    payment: {
+        mode: 'received',
+        rows: [{ method: null, amount: null }],
+        installment: {
+            count: 3,
+            start_date: defaultInstallmentStart(),
+            down_payment: null,
+            down_payment_method: null,
+            installments: [],
+        },
+    },
     follow_up: {
         mode: 'none',
         date: null,
@@ -181,13 +193,37 @@ form.transform((data) => ({
     case_mode: data.case_mode,
     case_id: data.case_mode === 'existing' ? data.case_id : null,
     new_case_title: data.case_mode === 'new' ? data.new_case_title : null,
-    // One transaction per row; an untouched empty row is dropped, not validated.
+    // One transaction per row; an untouched empty row is dropped, not validated. Only 'received'
+    // mode sends rows — 'installment' sends a plan payload instead, 'none' sends neither.
     payments:
-        data.payment.mode === 'none'
-            ? []
-            : data.payment.rows
+        data.payment.mode === 'received'
+            ? data.payment.rows
                   .filter((row) => row.amount !== null || row.method !== null)
-                  .map((row) => ({ amount: row.amount, method: row.method })),
+                  .map((row) => ({ amount: row.amount, method: row.method }))
+            : [],
+    // Taksit plan — server reads this instead of `payments` and runs the sum-check against the
+    // computed treatment total. `installment_count` is derived from the generated rows.
+    installment_plan:
+        data.payment.mode === 'installment'
+            ? {
+                  installment_count:
+                      data.payment.installment.installments.length,
+                  down_payment: data.payment.installment.down_payment,
+                  down_payment_method:
+                      (data.payment.installment.down_payment ?? 0) > 0
+                          ? data.payment.installment.down_payment_method
+                          : null,
+                  installments: data.payment.installment.installments.map(
+                      (row) => ({
+                          sequence: row.sequence,
+                          due_date: row.due_date
+                              ? toDateString(row.due_date)
+                              : null,
+                          amount: row.amount,
+                      }),
+                  ),
+              }
+            : null,
     follow_up: {
         mode: data.follow_up.mode,
         service_id: data.follow_up.service_id,

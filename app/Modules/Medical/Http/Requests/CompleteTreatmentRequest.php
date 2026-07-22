@@ -65,10 +65,28 @@ class CompleteTreatmentRequest extends FormRequest
             'case_id' => ['required_if:case_mode,existing', 'nullable', 'integer'],
             'new_case_title' => ['required_if:case_mode,new', 'nullable', 'string', 'max:255'],
 
-            // Optional payments — may be split across methods (e.g. part card, part cash)
+            // Optional payments — may be split across methods (e.g. part card, part cash).
+            // Mutually exclusive with installment_plan (the 3rd PaymentSection mode); when
+            // installment_plan is present, TreatmentService uses it instead of this loop.
             'payments' => ['nullable', 'array', 'max:4'],
             'payments.*.amount' => ['required', ...ValidationRules::money(0.01)],
             'payments.*.method' => ['required', Rule::enum(PaymentMethod::class)],
+
+            // Optional taksit (installment) plan — the sum-check against the computed
+            // treatment total runs in the Service (the total isn't known until the line
+            // items above are totalled), not here.
+            'installment_plan' => ['nullable', 'array'],
+            'installment_plan.installment_count' => ['required_with:installment_plan', 'integer', 'min:1', 'max:60'],
+            'installment_plan.down_payment' => ['nullable', ...ValidationRules::money(0)],
+            'installment_plan.down_payment_method' => [
+                Rule::requiredIf(fn () => (float) ($this->input('installment_plan.down_payment') ?? 0) > 0),
+                'nullable',
+                Rule::enum(PaymentMethod::class),
+            ],
+            'installment_plan.installments' => ['required_with:installment_plan', 'array', 'min:1'],
+            'installment_plan.installments.*.sequence' => ['required', 'integer', 'min:1'],
+            'installment_plan.installments.*.due_date' => ['required', 'date'],
+            'installment_plan.installments.*.amount' => ['required', ...ValidationRules::money(0.01)],
 
             // Optional follow-up booking
             'follow_up' => ['nullable', 'array'],
