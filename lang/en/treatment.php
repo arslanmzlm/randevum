@@ -33,6 +33,37 @@ return [
         ],
     ],
 
+    'fields' => [
+        'complaint' => 'Complaint',
+        'diagnosis' => 'Diagnosis',
+        'treatment_process' => 'Treatment Process',
+        'notes' => 'Note',
+    ],
+
+    'report' => [
+        'title' => 'Treatment Summary',
+        'document_no' => 'Document No',
+        'date' => 'Date',
+        'patient' => 'Patient',
+        'doctor' => 'Doctor',
+        'services' => 'Services',
+        'products' => 'Products',
+        'line_item' => 'Description',
+        'quantity' => 'Qty',
+        'unit_price' => 'Unit Price',
+        'discount' => 'Discount',
+        'subtotal' => 'Subtotal',
+        'total' => 'Total',
+        'paid_total' => 'Paid',
+        'remaining_balance' => 'Remaining Balance',
+        'payments' => 'Payments',
+        'payment_date' => 'Date',
+        'payment_method' => 'Method',
+        'payment_amount' => 'Amount',
+        'no_payments' => 'No payments recorded.',
+        'clinical_info' => 'Clinical Information',
+    ],
+
     'follow_up' => [
         'mode' => [
             'none' => 'No follow-up',

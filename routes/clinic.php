@@ -8,6 +8,7 @@ use App\Modules\Medical\Http\Controllers\CaseController;
 use App\Modules\Medical\Http\Controllers\PatientController;
 use App\Modules\Medical\Http\Controllers\TreatmentController;
 use App\Modules\Medical\Http\Controllers\TreatmentMediaController;
+use App\Modules\Medical\Http\Controllers\TreatmentReportController;
 use App\Modules\Scheduling\Http\Controllers\AppointmentController;
 use App\Modules\Scheduling\Http\Controllers\AppointmentTypeController;
 use App\Modules\Scheduling\Http\Controllers\CalendarController;
@@ -135,6 +136,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/appointments/{appointment}/treatment', [TreatmentController::class, 'start'])->name('treatments.start');
     Route::get('/treatments/{treatment}/process', [TreatmentController::class, 'process'])->name('treatments.process');
     Route::put('/treatments/{treatment}/complete', [TreatmentController::class, 'complete'])->name('treatments.complete');
+    Route::get('/treatments/{treatment}/report', [TreatmentReportController::class, 'show'])->name('treatments.report');
     Route::get('/treatments/{treatment}', [TreatmentController::class, 'show'])->name('treatments.show');
     Route::post('/treatments/{treatment}/media', [TreatmentMediaController::class, 'store'])->name('treatments.media.store');
     Route::get('/treatments/{treatment}/media/{media}', [TreatmentMediaController::class, 'show'])->name('treatments.media.show');

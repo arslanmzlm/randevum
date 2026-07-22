@@ -33,6 +33,37 @@ return [
         ],
     ],
 
+    'fields' => [
+        'complaint' => 'Şikayet',
+        'diagnosis' => 'Tanı',
+        'treatment_process' => 'Tedavi Süreci',
+        'notes' => 'Not',
+    ],
+
+    'report' => [
+        'title' => 'Tedavi Özeti',
+        'document_no' => 'Belge No',
+        'date' => 'Tarih',
+        'patient' => 'Hasta',
+        'doctor' => 'Doktor',
+        'services' => 'Hizmetler',
+        'products' => 'Ürünler',
+        'line_item' => 'Açıklama',
+        'quantity' => 'Adet',
+        'unit_price' => 'Birim Fiyat',
+        'discount' => 'İndirim',
+        'subtotal' => 'Ara Toplam',
+        'total' => 'Toplam',
+        'paid_total' => 'Ödenen',
+        'remaining_balance' => 'Kalan Bakiye',
+        'payments' => 'Ödemeler',
+        'payment_date' => 'Tarih',
+        'payment_method' => 'Yöntem',
+        'payment_amount' => 'Tutar',
+        'no_payments' => 'Ödeme kaydı yok.',
+        'clinical_info' => 'Tedavi Bilgileri',
+    ],
+
     'follow_up' => [
         'mode' => [
             'none' => 'Takip randevusu yok',

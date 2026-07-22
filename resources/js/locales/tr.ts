@@ -897,6 +897,9 @@ export const tr = {
             start: 'Tedaviye başla',
             resume: 'Tedaviye devam et',
         },
+        report: {
+            download: 'Tedavi özeti (PDF)',
+        },
     },
     case_list: {
         title: 'Vakalar',

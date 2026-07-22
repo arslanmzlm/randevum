@@ -4,6 +4,7 @@ import {
     IconArrowLeft,
     IconCalendarEvent,
     IconCash,
+    IconFileText,
     IconFolder,
     IconListDetails,
     IconPaperclip,
@@ -24,6 +25,7 @@ import { useDateTime } from '@/composables/useDateTime';
 import { useMoney } from '@/composables/useMoney';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { show as patientShow } from '@/routes/patients';
+import { report as treatmentReport } from '@/routes/treatments';
 import type { TreatmentLine, TreatmentShowProps } from '@/types/treatment';
 
 defineOptions({ layout: AppLayout });
@@ -86,6 +88,18 @@ const hasProductLines = computed(() => props.treatment.productLines.length > 0);
             ]"
         >
             <template #actions>
+                <!-- Binary PDF stream: plain anchor to a new tab, never an Inertia visit. -->
+                <Button
+                    as="a"
+                    :href="treatmentReport(treatment.id).url"
+                    target="_blank"
+                    rel="noopener"
+                    :label="t('treatment.report.download')"
+                >
+                    <template #icon>
+                        <IconFileText />
+                    </template>
+                </Button>
                 <ButtonLink
                     :href="patientShow(treatment.patient.id).url"
                     :label="t('common.back')"

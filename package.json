@@ -47,6 +47,7 @@
         "date-fns-tz": "^3.2.0",
         "laravel-vite-plugin": "^3.1",
         "primevue": "^4.5.5",
+        "puppeteer": "^25.3.0",
         "tailwind-merge": "^3.2.0",
         "tailwindcss": "^4.1.1",
         "tailwindcss-primeui": "^0.6.1",

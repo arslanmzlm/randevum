@@ -3,6 +3,7 @@ packages:
 
 allowBuilds:
   core-js-pure: false
+  puppeteer: true
   unrs-resolver: false
 
 publicHoistPattern:

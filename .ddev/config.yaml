@@ -16,6 +16,10 @@ web_environment:
     # Pest browser tests (pest-plugin-browser → Playwright) look for browsers here;
     # baked into the web image by .ddev/web-build/Dockerfile. Run `ddev restart` after changes.
     - PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+    # spatie/laravel-pdf's Browsershot driver needs the `puppeteer` npm package to drive
+    # Chrome, but we reuse the Chromium the line above already bakes — skip puppeteer's
+    # own (redundant) Chromium download at `pnpm install` time.
+    - PUPPETEER_SKIP_DOWNLOAD=true
 corepack_enable: true
 
 # Expose the Vite dev server (port 5173) through ddev-router so HMR works over
