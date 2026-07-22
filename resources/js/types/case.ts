@@ -1,4 +1,5 @@
 import type { CaseStatus, TreatmentStatus } from '@/types/enums';
+import type { CaseMediaItem } from '@/types/media';
 import type { Paginated, TableState } from '@/types/table';
 
 /** One row of the cases index list (mirrors CaseListResource). */
@@ -61,6 +62,9 @@ export type CaseDetail = {
     patient: { id: number; full_name: string };
     doctor: { id: number; display_name: string };
     treatments: CaseTreatmentItem[];
+    /** Read-only rollup of media across all the case's treatments. Absent when the
+     *  user lacks `treatments.media.view` (server omits it). No upload here. */
+    media?: CaseMediaItem[];
 };
 
 /** An ungrouped completed treatment available to link into the case. */

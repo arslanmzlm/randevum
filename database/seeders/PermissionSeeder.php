@@ -76,6 +76,11 @@ class PermissionSeeder extends Seeder
         // Absent → scoped to own doctor; doctors confined to own via policy ownership branch.
         'treatments.viewAll' => ['owner', 'manager', 'receptionist', 'assistant'],
         'treatments.create' => ['owner', 'manager', 'doctor', 'assistant'],
+        // Treatment media (photos/documents) — KVKK-min: doctor + assistant ONLY,
+        // never owner/manager/receptionist (brief-fixed, unlike treatments.viewAll).
+        'treatments.media.view' => ['doctor', 'assistant'],
+        'treatments.media.upload' => ['doctor', 'assistant'],
+        'treatments.media.delete' => ['doctor', 'assistant'],
         // Payment recording — exercised inside Process submit; fully exposed by 1.22.
         'transactions.create' => ['owner', 'manager', 'doctor', 'receptionist'],
         // Balance / transaction list display — hidden from assistant (money figures).

@@ -1182,6 +1182,22 @@ export const tr = {
         placeholder:
             'Superadmin / Admin / Moderatör paneli — ilerleyen fazlarda geliştirilecek.',
     },
+    media: {
+        title: 'Dosyalar',
+        add: 'Dosya seç',
+        upload: 'Yükle',
+        remove: 'Kaldır',
+        download: 'İndir',
+        preview: 'Önizle',
+        document: 'Belge',
+        caption_placeholder: 'Açıklama (opsiyonel)',
+        formats_hint:
+            'Görsel (JPG, PNG, WEBP, HEIC) veya belge (PDF, DOCX, XLSX)',
+        max_size_hint: 'En fazla {max} MB',
+        too_large: 'Dosya {max} MB sınırını aşıyor.',
+        confirm_delete: 'Bu dosyayı silmek istediğinize emin misiniz?',
+        empty: 'Henüz dosya eklenmedi.',
+    },
     common: {
         form_error: 'Girdiğiniz bilgileri kontrol edin.',
         too_many_requests:

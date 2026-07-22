@@ -7,6 +7,7 @@ import { useI18n } from 'vue-i18n';
 import ButtonLink from '@/components/ButtonLink.vue';
 import CaseFollowUpCard from '@/components/cases/CaseFollowUpCard.vue';
 import CaseInfoCard from '@/components/cases/CaseInfoCard.vue';
+import CaseMediaCard from '@/components/cases/CaseMediaCard.vue';
 import CaseNotesCard from '@/components/cases/CaseNotesCard.vue';
 import {
     CASE_ACTION_SEVERITY,
@@ -132,6 +133,11 @@ function onTransition(target: CaseStatus): void {
                     :can-link="canLink"
                     :ungrouped-count="ungroupedTreatments.length"
                     @open-link="showLinkDialog = true"
+                />
+
+                <CaseMediaCard
+                    v-if="caseRecord.media?.length"
+                    :items="caseRecord.media"
                 />
             </div>
 

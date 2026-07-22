@@ -21,6 +21,7 @@ import ClinicalFieldsSection from '@/components/treatments/ClinicalFieldsSection
 import FollowUpSection from '@/components/treatments/FollowUpSection.vue';
 import { provideTreatmentForm } from '@/components/treatments/formContext';
 import LineItemsEditor from '@/components/treatments/LineItemsEditor.vue';
+import MediaSection from '@/components/treatments/MediaSection.vue';
 import PaymentSection from '@/components/treatments/PaymentSection.vue';
 import TreatmentTotalsPanel from '@/components/treatments/TreatmentTotalsPanel.vue';
 import { useCan } from '@/composables/useCan';
@@ -330,6 +331,11 @@ function submit(): void {
                     :doctor-id="treatment.doctor.id"
                     :services="services"
                     :appointment-types="appointmentTypes"
+                />
+                <MediaSection
+                    v-if="can('treatments.media.upload')"
+                    :treatment-id="treatment.id"
+                    :items="treatment.media ?? []"
                 />
             </div>
 

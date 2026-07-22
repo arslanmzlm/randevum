@@ -15,6 +15,7 @@ use App\Modules\Medical\Http\Resources\TreatmentProcessResource;
 use App\Modules\Medical\Http\Resources\TreatmentShowResource;
 use App\Modules\Medical\Services\CaseService;
 use App\Modules\Medical\Services\TreatmentService;
+use App\Modules\Medical\Support\MediaItemMapper;
 use App\Support\ClinicContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -61,7 +62,7 @@ class TreatmentController extends Controller
             return redirect()->route('treatments.show', $treatment);
         }
 
-        $treatment->load(['appointment.appointmentType', 'patient', 'doctor.user', 'details']);
+        $treatment->load(['appointment.appointmentType', 'patient', 'doctor.user', 'details', 'media']);
 
         $clinic = $this->clinicContext->clinicOrFail();
 
@@ -90,8 +91,18 @@ class TreatmentController extends Controller
                 'color' => $type->color,
             ]);
 
+        $treatmentData = (new TreatmentProcessResource($treatment))->resolve();
+
+        // KVKK-min: treatment media is doctor + assistant only, never owner/manager/
+        // receptionist — same gating style as the Show page's transactions block.
+        if ($request->user()?->can('treatments.media.view')) {
+            $treatmentData['media'] = $treatment->getMedia('treatment_media')
+                ->map(fn ($media) => MediaItemMapper::map($treatment, $media))
+                ->all();
+        }
+
         return Inertia::render('treatments/Process', [
-            'treatment' => (new TreatmentProcessResource($treatment))->resolve(),
+            'treatment' => $treatmentData,
             'services' => $services,
             'products' => $products,
             'openCases' => $openCases,
@@ -158,6 +169,7 @@ class TreatmentController extends Controller
             'serviceLines.service',
             'productLines.product',
             'transactions',
+            'media',
         ]);
 
         $data = (new TreatmentShowResource($treatment))->resolve();
@@ -165,6 +177,13 @@ class TreatmentController extends Controller
         // Transaction list is Billing-owned; pull it through the contract, gated like the patient page.
         if ($request->user()?->can('transactions.viewAny')) {
             $data['transactions'] = $this->balanceReader->transactionsForTreatment($treatment->id);
+        }
+
+        // KVKK-min: treatment media is doctor + assistant only. Absent/empty → gallery hidden.
+        if ($request->user()?->can('treatments.media.view')) {
+            $data['media'] = $treatment->getMedia('treatment_media')
+                ->map(fn ($media) => MediaItemMapper::map($treatment, $media))
+                ->all();
         }
 
         return Inertia::render('treatments/Show', [

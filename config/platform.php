@@ -54,6 +54,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Medical media
+    |--------------------------------------------------------------------------
+    |
+    | Treatment file/photo uploads (private disk). delete_window is the 48h
+    | "wrong file uploaded" hard-delete correction affordance — after it, delete
+    | is blocked (full KVKK retention lifecycle is a later feature, not this one).
+    |
+    */
+
+    'media' => [
+        'max_file_size' => (int) env('PLATFORM_MEDIA_MAX_FILE_SIZE', 50 * 1024 * 1024),
+        'delete_window' => (int) env('PLATFORM_MEDIA_DELETE_WINDOW', 48 * 3600),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | OTP (phone-based passwordless login)
     |--------------------------------------------------------------------------
     |

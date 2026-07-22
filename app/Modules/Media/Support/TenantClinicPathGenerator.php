@@ -4,6 +4,7 @@ namespace App\Modules\Media\Support;
 
 use App\Models\Clinic;
 use App\Models\Doctor;
+use App\Models\Treatment;
 use LogicException;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\MediaLibrary\Support\PathGenerator\PathGenerator;
@@ -57,6 +58,12 @@ final class TenantClinicPathGenerator implements PathGenerator
             $clinic = $owner->clinic;
 
             return "tenants/{$clinic->tenant_id}/clinics/{$clinic->getKey()}/doctors/{$owner->getKey()}/{$media->getKey()}";
+        }
+
+        if ($owner instanceof Treatment) {
+            $clinic = $owner->clinic;
+
+            return "tenants/{$clinic->tenant_id}/clinics/{$clinic->getKey()}/patients/{$owner->patient_id}/treatments/{$owner->getKey()}/{$media->getKey()}";
         }
 
         if ($owner !== null && $owner->getAttribute('clinic_id') !== null) {

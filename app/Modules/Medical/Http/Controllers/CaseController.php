@@ -16,6 +16,7 @@ use App\Modules\Medical\Http\Requests\UpdateCaseTitleRequest;
 use App\Modules\Medical\Http\Resources\CaseListResource;
 use App\Modules\Medical\Http\Resources\CaseShowResource;
 use App\Modules\Medical\Services\CaseService;
+use App\Modules\Medical\Support\MediaItemMapper;
 use App\Support\FilterHelper;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -73,11 +74,34 @@ class CaseController extends Controller
             'treatments' => fn ($q) => $q->with([
                 'serviceLines' => fn ($sq) => $sq->orderBy('sort_order')->limit(1),
                 'serviceLines.service',
+                'media',
             ])->orderByDesc('completed_at'),
         ]);
 
+        $data = (new CaseShowResource($case))->resolve();
+
+        // Read-only rollup across the case's treatments — KVKK-min, doctor + assistant
+        // only. No upload/delete affordance here (upload only on treatment Process).
+        $user = $request->user();
+
+        if ($user->can('treatments.media.view')) {
+            $data['media'] = $case->treatments
+                // Per-treatment authorization, not the bare permission: a user may hold
+                // treatments.media.view + cases.viewAll without treatments.viewAll, so
+                // filter each treatment through the viewMedia policy (viewAll || owns).
+                ->filter(fn ($treatment) => $user->can('viewMedia', $treatment))
+                ->flatMap(fn ($treatment) => $treatment->getMedia('treatment_media')->map(
+                    fn ($media) => MediaItemMapper::map($treatment, $media) + [
+                        'treatment_id' => $treatment->id,
+                        'treatment_date' => $treatment->completed_at?->toIso8601String(),
+                    ]
+                ))
+                ->values()
+                ->all();
+        }
+
         return Inertia::render('cases/Show', [
-            'case' => (new CaseShowResource($case))->resolve(),
+            'case' => $data,
             'allowedTransitions' => $this->caseService->allowedTransitions($case),
             'ungroupedTreatments' => $this->caseService->ungroupedTreatmentsForCase($case),
             'canEditTitle' => $this->caseService->canEditTitle($case),

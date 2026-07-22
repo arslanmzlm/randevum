@@ -6,12 +6,14 @@ import {
     IconCash,
     IconFolder,
     IconListDetails,
+    IconPaperclip,
     IconStethoscope,
     IconUser,
 } from '@tabler/icons-vue';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import ButtonLink from '@/components/ButtonLink.vue';
+import MediaGallery from '@/components/media/MediaGallery.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import RecordPaymentDialog from '@/components/payments/RecordPaymentDialog.vue';
 import TransactionList from '@/components/payments/TransactionList.vue';
@@ -239,6 +241,15 @@ const hasProductLines = computed(() => props.treatment.productLines.length > 0);
                     <TransactionList
                         :transactions="treatment.transactions ?? []"
                     />
+                </SectionCard>
+
+                <!-- Attached files / photos (doctor + assistant only; server-gated). -->
+                <SectionCard
+                    v-if="treatment.media?.length"
+                    :icon="IconPaperclip"
+                    :title="t('media.title')"
+                >
+                    <MediaGallery :items="treatment.media" />
                 </SectionCard>
             </div>
 

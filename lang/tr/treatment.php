@@ -5,6 +5,11 @@ return [
     'completed' => 'Tedavi tamamlandı.',
     'completed_with_followups' => 'Tedavi tamamlandı. :created randevu oluşturuldu, :skipped çakışma nedeniyle atlandı.',
 
+    'media' => [
+        'uploaded' => 'Dosya yüklendi.',
+        'deleted' => 'Dosya silindi.',
+    ],
+
     'status' => [
         'draft' => 'Taslak',
         'completed' => 'Tamamlandı',
@@ -52,6 +57,7 @@ return [
         'case_create_not_allowed' => 'Yeni vaka oluşturma yetkiniz bulunmamaktadır.',
         'follow_up_not_allowed' => 'Takip randevusu oluşturma yetkiniz bulunmamaktadır.',
         'vertical_mismatch' => 'Kliniğin uzmanlık alanı bu tedavi türüyle uyumsuz.',
+        'media_delete_window_expired' => 'Bu dosya 48 saatlik düzeltme süresi geçtiği için silinemez.',
     ],
 
 ];

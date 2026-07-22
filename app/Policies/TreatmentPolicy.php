@@ -64,6 +64,28 @@ class TreatmentPolicy
     }
 
     /**
+     * Treatment media (photos/documents) is KVKK-min: doctor + assistant only,
+     * regardless of treatments.viewAll — owner/manager/receptionist never see it.
+     */
+    public function viewMedia(User $user, Treatment $treatment): bool
+    {
+        return $user->can('treatments.media.view')
+            && ($user->can('treatments.viewAll') || $this->ownsTreatment($user, $treatment));
+    }
+
+    public function uploadMedia(User $user, Treatment $treatment): bool
+    {
+        return $user->can('treatments.media.upload')
+            && ($user->can('treatments.viewAll') || $this->ownsTreatment($user, $treatment));
+    }
+
+    public function deleteMedia(User $user, Treatment $treatment): bool
+    {
+        return $user->can('treatments.media.delete')
+            && ($user->can('treatments.viewAll') || $this->ownsTreatment($user, $treatment));
+    }
+
+    /**
      * A user "owns" a treatment when it belongs to their doctor profile.
      */
     private function ownsTreatment(User $user, Treatment $treatment): bool

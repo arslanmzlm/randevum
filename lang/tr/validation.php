@@ -188,6 +188,9 @@ return [
         'payment_method' => 'Ödeme yöntemi',
         'note' => 'Not',
         'paid_at' => 'Ödeme tarihi',
+        // treatment media
+        'file' => 'Dosya',
+        'caption' => 'Not',
     ],
 
     'working_hours_closed_conflict' => ':attribute kapalı olarak işaretlenmiş günlerde açılış/kapanış saati belirtilemez.',

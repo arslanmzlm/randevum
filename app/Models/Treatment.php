@@ -12,11 +12,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
-class Treatment extends Model
+/**
+ * Deliberately does NOT use the HasImageUrls trait: treatment media is medical
+ * data and must never expose a public getUrl() — access is only via the
+ * authorized streaming route (TreatmentMediaController).
+ */
+class Treatment extends Model implements HasMedia
 {
     /** @use HasFactory<TreatmentFactory> */
-    use BelongsToClinic, HasFactory;
+    use BelongsToClinic, HasFactory, InteractsWithMedia;
 
     /**
      * @var list<string>
@@ -163,5 +171,46 @@ class Treatment extends Model
     public function scopeForDoctor(Builder $query, int $doctorId): void
     {
         $query->where('doctor_id', $doctorId);
+    }
+
+    /**
+     * Multi-file — no singleFile(), unlike Clinic/Doctor's single-image collections.
+     * Accepted MIME types are defense-in-depth; the FormRequest is the primary gate.
+     */
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('treatment_media')
+            ->useDisk('media_private')
+            ->acceptsMimeTypes([
+                'image/jpeg',
+                'image/png',
+                'image/webp',
+                'image/heic',
+                'image/heif',
+                'application/pdf',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            ]);
+    }
+
+    /**
+     * Images only (documents get no conversions — download-only, no docx→pdf per brief).
+     * Width-only (no crop) since foot photos/before-after shots have no fixed aspect ratio.
+     * Conversions run queued + non-fatal: a failure never blocks the original upload.
+     */
+    public function registerMediaConversions(?Media $media = null): void
+    {
+        if ($media === null || ! str_starts_with((string) $media->mime_type, 'image/')) {
+            return;
+        }
+
+        foreach (['large' => 1920, 'medium' => 800, 'thumb' => 300] as $name => $width) {
+            $this->addMediaConversion($name)
+                ->width($width)
+                ->format('webp')
+                ->quality(85)
+                ->performOnCollections('treatment_media')
+                ->queued();
+        }
     }
 }

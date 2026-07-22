@@ -2,6 +2,7 @@ import type { InertiaForm } from '@inertiajs/vue3';
 import type { AppointmentTypeOption, WorkingHours } from '@/types/appointment';
 import type { TransactionItem } from '@/types/balance';
 import type { PaymentMethod, TreatmentStatus } from '@/types/enums';
+import type { MediaItem } from '@/types/media';
 
 /** Active appointment type for the follow-up booking (duration resolves server-side). */
 export type FollowUpAppointmentTypeOption = Pick<
@@ -62,6 +63,9 @@ export type ProcessTreatment = {
         treatment_process: string | null;
     };
     notes: string | null;
+    /** Files attached to this Draft treatment. Absent when the user lacks
+     *  `treatments.media.view` (server omits it). */
+    media?: MediaItem[];
 };
 
 /** Props for the `treatments/Process` page (TreatmentController@process). */
@@ -184,6 +188,8 @@ export type TreatmentShowProps = {
         /** This treatment's transactions, newest first. Absent when the user lacks
          *  `transactions.viewAny` (server omits it). */
         transactions?: TransactionItem[];
+        /** Attached files. Absent when the user lacks `treatments.media.view`. */
+        media?: MediaItem[];
     };
 };
 

@@ -5,6 +5,11 @@ return [
     'completed' => 'Treatment completed.',
     'completed_with_followups' => 'Treatment completed. :created follow-up appointment(s) created, :skipped skipped due to conflicts.',
 
+    'media' => [
+        'uploaded' => 'File uploaded.',
+        'deleted' => 'File deleted.',
+    ],
+
     'status' => [
         'draft' => 'Draft',
         'completed' => 'Completed',
@@ -52,6 +57,7 @@ return [
         'case_create_not_allowed' => 'You do not have permission to create a new case.',
         'follow_up_not_allowed' => 'You do not have permission to create follow-up appointments.',
         'vertical_mismatch' => "The clinic's vertical is not compatible with this treatment type.",
+        'media_delete_window_expired' => 'This file can no longer be deleted — the 48-hour correction window has passed.',
     ],
 
 ];

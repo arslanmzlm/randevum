@@ -35,10 +35,13 @@ return [
     'disk_name' => env('MEDIA_DISK', 'public'),
 
     /*
-     * The maximum file size of an item in bytes.
-     * Adding a larger file will result in an exception.
+     * The maximum file size of an item in bytes. Raised for treatment media (50MB);
+     * the FormRequest still enforces the precise per-feature limit. Reads the same
+     * PLATFORM_MEDIA_MAX_FILE_SIZE env var as config/platform.php's media.max_file_size
+     * directly (not via config('platform...')) — config files load alphabetically, so
+     * platform.php is not yet loaded when this file is evaluated.
      */
-    'max_file_size' => 1024 * 1024 * 10, // 10MB
+    'max_file_size' => (int) env('PLATFORM_MEDIA_MAX_FILE_SIZE', 50 * 1024 * 1024),
 
     /*
      * This queue connection will be used to generate derived and responsive images.
