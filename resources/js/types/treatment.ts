@@ -1,8 +1,10 @@
 import type { InertiaForm } from '@inertiajs/vue3';
+import type { Anamnesis } from '@/types/anamnesis';
 import type { AppointmentTypeOption, WorkingHours } from '@/types/appointment';
 import type { TransactionItem } from '@/types/balance';
 import type { PaymentMethod, TreatmentStatus } from '@/types/enums';
 import type { MediaItem } from '@/types/media';
+import type { PatientGender } from '@/types/patient';
 import type { InstallmentPlanForm } from '@/types/payment-plan';
 
 /** Active appointment type for the follow-up booking (duration resolves server-side). */
@@ -56,6 +58,8 @@ export type ProcessTreatment = {
         full_name: string;
         phone: string | null;
         notes: string | null;
+        /** Drives the women-only pregnancy field in the anamnesis section. */
+        gender: PatientGender | null;
     };
     doctor: { id: number; display_name: string };
     details: {
@@ -78,6 +82,8 @@ export type TreatmentProcessProps = {
     appointmentTypes: FollowUpAppointmentTypeOption[];
     defaultSlotDuration: number;
     workingHours: WorkingHours;
+    /** The patient's structured health-intake record; null until first saved. */
+    anamnesis: Anamnesis | null;
 };
 
 /** A service line in the Process form (`unit_price` prefilled from catalog, freely editable). */

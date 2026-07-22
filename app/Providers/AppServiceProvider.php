@@ -13,6 +13,7 @@ use App\Models\Patient;
 use App\Models\PatientSegment;
 use App\Models\PaymentPlan;
 use App\Models\PaymentPlanInstallment;
+use App\Models\PodiatryAnamnesis;
 use App\Models\PodiatryTreatmentDetail;
 use App\Models\Product;
 use App\Models\ScheduleException;
@@ -112,6 +113,7 @@ class AppServiceProvider extends ServiceProvider
             'patient' => Patient::class,
             'user' => User::class,
             'podiatry' => PodiatryTreatmentDetail::class,
+            'podiatry_anamnesis' => PodiatryAnamnesis::class,
             'payment_plan' => PaymentPlan::class,
             'payment_plan_installment' => PaymentPlanInstallment::class,
         ]);

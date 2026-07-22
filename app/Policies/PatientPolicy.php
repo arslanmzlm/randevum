@@ -40,4 +40,9 @@ class PatientPolicy
     {
         return $user->can('patients.note.update');
     }
+
+    public function updateAnamnesis(User $user, Patient $patient): bool
+    {
+        return $user->can('anamnesis.update');
+    }
 }

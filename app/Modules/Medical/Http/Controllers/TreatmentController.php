@@ -11,8 +11,10 @@ use App\Modules\Billing\Contracts\BalanceReaderContract;
 use App\Modules\Catalog\Contracts\ServiceLookupContract;
 use App\Modules\Core\Support\Toast;
 use App\Modules\Medical\Http\Requests\CompleteTreatmentRequest;
+use App\Modules\Medical\Http\Resources\AnamnesisResource;
 use App\Modules\Medical\Http\Resources\TreatmentProcessResource;
 use App\Modules\Medical\Http\Resources\TreatmentShowResource;
+use App\Modules\Medical\Services\AnamnesisService;
 use App\Modules\Medical\Services\CaseService;
 use App\Modules\Medical\Services\TreatmentService;
 use App\Modules\Medical\Support\MediaItemMapper;
@@ -30,6 +32,7 @@ class TreatmentController extends Controller
         private ServiceLookupContract $serviceLookup,
         private ClinicContext $clinicContext,
         private BalanceReaderContract $balanceReader,
+        private AnamnesisService $anamnesisService,
     ) {}
 
     /**
@@ -101,6 +104,8 @@ class TreatmentController extends Controller
                 ->all();
         }
 
+        $anamnesis = $this->anamnesisService->read($treatment->patient);
+
         return Inertia::render('treatments/Process', [
             'treatment' => $treatmentData,
             'services' => $services,
@@ -109,6 +114,7 @@ class TreatmentController extends Controller
             'appointmentTypes' => $appointmentTypes,
             'defaultSlotDuration' => $clinic->default_slot_duration_minutes,
             'workingHours' => $clinic->working_hours,
+            'anamnesis' => $anamnesis !== null ? (new AnamnesisResource($anamnesis))->resolve() : null,
         ]);
     }
 

@@ -36,6 +36,7 @@ class TreatmentProcessResource extends JsonResource
                 'full_name' => trim($this->patient->first_name.' '.$this->patient->last_name),
                 'phone' => $this->patient->getRawOriginal('phone'),
                 'notes' => $this->patient->notes,
+                'gender' => $this->patient->gender?->value,
             ],
             'doctor' => [
                 'id' => $this->doctor->id,

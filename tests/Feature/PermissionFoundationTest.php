@@ -186,6 +186,7 @@ it('grants the doctor role read access to catalog and full patient management', 
             'cases.update',
             'expenses.create',
             'paymentPlans.create',
+            'anamnesis.update',
         ]);
 });
 
@@ -222,6 +223,7 @@ it('grants receptionist full patient management and doctor list access', functio
             'paymentPlans.viewAny',
             'paymentPlans.create',
             'paymentPlans.sendReminder',
+            'anamnesis.update',
         ]);
 });
 
@@ -245,6 +247,7 @@ it('grants assistant read-only access to doctors, patients, availability, and ca
             'cases.viewAny',
             'cases.viewAll',
             'expenses.create',
+            'anamnesis.update',
         ]);
 });
 

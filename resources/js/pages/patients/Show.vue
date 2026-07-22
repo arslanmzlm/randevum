@@ -9,6 +9,7 @@ import {
 import { useConfirm } from 'primevue/useconfirm';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import AnamnesisSection from '@/components/anamnesis/AnamnesisSection.vue';
 import ButtonLink from '@/components/ButtonLink.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PatientAppointmentsSection from '@/components/patients/PatientAppointmentsSection.vue';
@@ -119,6 +120,8 @@ function removePatient(): void {
         </div>
 
         <PatientTagsSection :patient="patient" :all-tags="allTags" />
+
+        <AnamnesisSection :patient="patient" :anamnesis="anamnesis" />
 
         <PatientAppointmentsSection :appointments="appointments" />
 

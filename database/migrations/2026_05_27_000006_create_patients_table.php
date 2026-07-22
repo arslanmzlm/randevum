@@ -25,6 +25,10 @@ return new class extends Migration
             $table->boolean('notification_enabled')->default(true);
             $table->boolean('is_legacy')->default(false); // sistem öncesi / migrate edilmiş kayıt
             $table->text('notes')->nullable(); // klinik-seviyesi gözlem
+            // Anamnesis morph target (per-vertical detail, mirrors treatments.details_type/_id).
+            // Standalone — no FK; reached only through the patient.
+            $table->string('anamnesis_type')->nullable();
+            $table->unsignedBigInteger('anamnesis_id')->nullable();
             $table->timestampsTz();
             $table->softDeletesTz();
 

@@ -13,6 +13,7 @@ import {
 import { useConfirm } from 'primevue/useconfirm';
 import { watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import AnamnesisSection from '@/components/anamnesis/AnamnesisSection.vue';
 import ButtonLink from '@/components/ButtonLink.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import SectionCard from '@/components/SectionCard.vue';
@@ -352,6 +353,9 @@ function submit(): void {
         >
             {{ treatment.patient.notes }}
         </p>
+
+        <!-- Self-contained: owns its own useForm/context, independent of the treatment form below. -->
+        <AnamnesisSection :patient="treatment.patient" :anamnesis="anamnesis" />
 
         <form
             novalidate

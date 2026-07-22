@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Propaganistas\LaravelPhone\Casts\E164PhoneNumberCast;
 
@@ -51,6 +52,7 @@ class Patient extends Model
             'gender' => Gender::class,
             'notification_enabled' => 'boolean',
             'is_legacy' => 'boolean',
+            'anamnesis_id' => 'integer',
         ];
     }
 
@@ -92,5 +94,13 @@ class Patient extends Model
     public function treatments(): HasMany
     {
         return $this->hasMany(Treatment::class);
+    }
+
+    /**
+     * @return MorphTo<Model, $this>
+     */
+    public function anamnesis(): MorphTo
+    {
+        return $this->morphTo();
     }
 }

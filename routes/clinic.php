@@ -4,6 +4,7 @@ use App\Modules\Catalog\Http\Controllers\ProductController;
 use App\Modules\Catalog\Http\Controllers\ServiceController;
 use App\Modules\Core\Http\Controllers\ClinicController;
 use App\Modules\Core\Http\Controllers\DoctorController;
+use App\Modules\Medical\Http\Controllers\AnamnesisController;
 use App\Modules\Medical\Http\Controllers\CaseController;
 use App\Modules\Medical\Http\Controllers\PatientController;
 use App\Modules\Medical\Http\Controllers\SegmentController;
@@ -56,6 +57,8 @@ Route::middleware('auth')->group(function () {
     Route::put('/patients/{patient}', [PatientController::class, 'update'])->name('patients.update');
     Route::delete('/patients/{patient}', [PatientController::class, 'destroy'])->name('patients.destroy');
     Route::patch('/patients/{patient}/notes', [PatientController::class, 'updateNotes'])->name('patients.notes.update');
+    Route::put('/patients/{patient}/anamnesis', [AnamnesisController::class, 'update'])->name('patients.anamnesis.update');
+    Route::get('/patients/{patient}/anamnesis/pdf', [AnamnesisController::class, 'pdf'])->name('patients.anamnesis.pdf');
     Route::post('/patients/{patient}/restore', [PatientController::class, 'restore'])->name('patients.restore');
     Route::put('/patients/{patient}/tags', [PatientController::class, 'syncTags'])->name('patients.tags.sync');
 });

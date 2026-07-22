@@ -14,8 +14,10 @@ use App\Modules\Medical\Http\Requests\StorePatientRequest;
 use App\Modules\Medical\Http\Requests\SyncPatientTagsRequest;
 use App\Modules\Medical\Http\Requests\UpdatePatientNotesRequest;
 use App\Modules\Medical\Http\Requests\UpdatePatientRequest;
+use App\Modules\Medical\Http\Resources\AnamnesisResource;
 use App\Modules\Medical\Http\Resources\PatientResource;
 use App\Modules\Medical\Http\Resources\PatientSearchResource;
+use App\Modules\Medical\Services\AnamnesisService;
 use App\Modules\Medical\Services\CaseService;
 use App\Modules\Medical\Services\PatientService;
 use App\Modules\Medical\Services\SegmentService;
@@ -42,6 +44,7 @@ class PatientController extends Controller
         private ClinicContext $clinicContext,
         private TagService $tagService,
         private SegmentService $segmentService,
+        private AnamnesisService $anamnesisService,
     ) {}
 
     public function index(Request $request): Response
@@ -178,6 +181,9 @@ class PatientController extends Controller
             'smsLogs' => $smsLogs,
             'ownDoctorId' => $user->doctor?->id,
             'allTags' => $this->tagService->listOptionsForActiveClinic(),
+            'anamnesis' => ($anamnesis = $this->anamnesisService->read($patient)) !== null
+                ? (new AnamnesisResource($anamnesis))->resolve()
+                : null,
         ];
 
         if ($user->can('transactions.viewAny')) {
