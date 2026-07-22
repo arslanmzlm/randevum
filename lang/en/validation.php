@@ -317,6 +317,8 @@ return [
         'payment_method' => 'payment method',
         'note' => 'note',
         'paid_at' => 'payment date',
+        // expenses
+        'expense_date' => 'expense date',
         // treatment media
         'file' => 'file',
         'caption' => 'caption',

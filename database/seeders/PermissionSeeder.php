@@ -87,8 +87,15 @@ class PermissionSeeder extends Seeder
         'transactions.viewAny' => ['owner', 'manager', 'doctor', 'receptionist'],
         // Refund a payment — owner only per data-model decision (sadece owner iade başlatabilir).
         'transactions.refund' => ['owner'],
-        // Revenue report — clinic financial overview, management-only.
+        // Revenue report — clinic financial overview, management-only. Now also gates
+        // the merged finance page (revenue + expense + net); route renamed to
+        // reports.finance but the permission name is unchanged.
         'reports.revenue' => ['owner', 'manager'],
+        // Expenses — recording is every clinic role's own-record ("Giderlerim");
+        // viewAny is the all-clinic list (finance page) and also the ownership
+        // policy's "manage ANY expense" branch (no dedicated expenses.manage).
+        'expenses.create' => ['owner', 'manager', 'doctor', 'receptionist', 'assistant'],
+        'expenses.viewAny' => ['owner', 'manager'],
         // Cases
         // Open the case list.
         'cases.viewAny' => ['owner', 'manager', 'doctor', 'assistant'],

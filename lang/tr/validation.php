@@ -188,6 +188,8 @@ return [
         'payment_method' => 'Ödeme yöntemi',
         'note' => 'Not',
         'paid_at' => 'Ödeme tarihi',
+        // expenses
+        'expense_date' => 'Gider tarihi',
         // treatment media
         'file' => 'Dosya',
         'caption' => 'Not',

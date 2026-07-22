@@ -1,4 +1,6 @@
 import type { PaymentMethod } from '@/types/enums';
+import type { Expense, ExpenseFilters, ExpenseQuery } from '@/types/expense';
+import type { Paginated } from '@/types/table';
 
 export interface RevenueMethodTotal {
     method: PaymentMethod;
@@ -11,27 +13,47 @@ export interface RevenuePeriodTotal {
     total: string;
 }
 
-export interface RevenueFilters {
-    /** Clinic-local Y-m-d, or null when all-time. */
-    start: string | null;
-    end: string | null;
+export interface RevenueRange {
+    start: string;
+    end: string;
     entire: boolean;
+    /** Daily for spans up to ~3 months, monthly beyond — keeps the breakdown bounded. */
+    granularity: 'day' | 'month';
+    total: string;
+    by_method: RevenueMethodTotal[];
+    by_period: RevenuePeriodTotal[];
 }
 
-export interface RevenueReportProps {
+/** RevenueReportService output, nested under the finance page's `revenue` prop. */
+export interface RevenueReport {
     summary: {
         today: string;
         this_month: string;
     };
-    range: {
-        start: string;
-        end: string;
-        entire: boolean;
-        /** Daily for spans up to ~3 months, monthly beyond — keeps the breakdown bounded. */
-        granularity: 'day' | 'month';
-        total: string;
-        by_method: RevenueMethodTotal[];
-        by_period: RevenuePeriodTotal[];
-    };
-    filters: RevenueFilters;
+    range: RevenueRange;
+}
+
+export interface ExpenseCategoryTotal {
+    category: string | null;
+    total: string;
+}
+
+/** ExpenseReportService window output. */
+export interface ExpenseReport {
+    total: string;
+    by_category: ExpenseCategoryTotal[];
+}
+
+/** Unified finance page (revenue + expense + net) — owner/manager. */
+export interface FinanceReportProps {
+    revenue: RevenueReport;
+    expense: ExpenseReport;
+    /** revenue.range.total − expense.total (bcmath); may be negative. */
+    net: string;
+    /** ALL clinic expenses for the window, category + date filtered. */
+    expenses: Paginated<Expense>;
+    categories: string[];
+    filters: ExpenseFilters;
+    query: ExpenseQuery;
+    currency: string;
 }

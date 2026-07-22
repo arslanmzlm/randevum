@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { router } from '@inertiajs/vue3';
-import { IconChevronDown, IconRefresh } from '@tabler/icons-vue';
+import { IconChevronDown } from '@tabler/icons-vue';
 import {
     endOfDay,
     endOfMonth,
@@ -14,16 +13,23 @@ import {
 } from 'date-fns';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { clearCache } from '@/actions/App/Modules/Billing/Http/Controllers/RevenueController';
-import { revenue } from '@/routes/reports';
-import type { RevenueFilters } from '@/types/revenue';
 import {
     formatDateOnly,
     parseDateString,
     toDateString,
 } from '@/utils/datetime';
 
-const props = defineProps<{ filters: RevenueFilters }>();
+// Presentational clinic-local date-range picker with quick presets and an all-time
+// toggle. Emits the resolved window (Y-m-d strings, or nulls when all-time); the parent
+// owns navigation, so this is reusable across the finance overview and Giderlerim.
+const props = defineProps<{
+    filters: { start: string | null; end: string | null; entire: boolean };
+    loading?: boolean;
+}>();
+
+const emit = defineEmits<{
+    change: [{ entire: boolean; start: string | null; end: string | null }];
+}>();
 
 const { t, locale } = useI18n();
 
@@ -33,18 +39,17 @@ const dateRange = ref<(Date | null)[]>([
     props.filters.end ? parseDateString(props.filters.end) : null,
 ]);
 
-const loading = ref(false);
 const presetMenu = ref();
 
 const title = computed(() => {
     if (entire.value) {
-        return t('revenue.all_time');
+        return t('date_filter.all_time');
     }
 
     const [start, end] = dateRange.value;
 
     if (!start) {
-        return t('revenue.range_title');
+        return t('date_filter.range_title');
     }
 
     const startLabel = formatDateOnly(start, locale.value);
@@ -54,33 +59,26 @@ const title = computed(() => {
         : startLabel;
 });
 
-function visit(query: Record<string, string | boolean>): void {
-    router.get(revenue().url, query, {
-        only: ['summary', 'range', 'filters', 'flash'],
-        preserveState: true,
-        preserveScroll: true,
-        onStart: () => {
-            loading.value = true;
-        },
-        onFinish: () => {
-            loading.value = false;
-        },
-    });
-}
-
 // One watcher drives every change: presets and the custom picker only mutate state.
 // A half-finished custom selection ([start, null]) is held until both ends are set.
 watch(dateRange, () => {
-    if (entire.value) {
-        visit({ entire: true });
+    const [start, end] = dateRange.value ?? [];
+
+    // A concrete range from the picker overrides all-time — the DatePicker's
+    // v-model change doesn't touch `entire`, so reset it here.
+    if (start && end) {
+        entire.value = false;
+        emit('change', {
+            entire: false,
+            start: toDateString(start),
+            end: toDateString(end),
+        });
 
         return;
     }
 
-    const [start, end] = dateRange.value;
-
-    if (start && end) {
-        visit({ start: toDateString(start), end: toDateString(end) });
+    if (entire.value) {
+        emit('change', { entire: true, start: null, end: null });
     }
 });
 
@@ -88,14 +86,14 @@ const now = (): Date => new Date();
 
 const presetItems = computed(() => [
     {
-        label: t('revenue.presets.title'),
+        label: t('date_filter.presets_title'),
         items: [
             {
-                label: t('revenue.presets.today'),
+                label: t('date_filter.today'),
                 command: () => setRange(startOfDay(now()), endOfDay(now())),
             },
             {
-                label: t('revenue.presets.this_week'),
+                label: t('date_filter.this_week'),
                 command: () =>
                     setRange(
                         startOfWeek(now(), { weekStartsOn: 1 }),
@@ -103,22 +101,22 @@ const presetItems = computed(() => [
                     ),
             },
             {
-                label: t('revenue.presets.this_month'),
+                label: t('date_filter.this_month'),
                 command: () => setRange(startOfMonth(now()), endOfMonth(now())),
             },
             {
-                label: t('revenue.presets.last_month'),
+                label: t('date_filter.last_month'),
                 command: () => {
                     const month = subMonths(now(), 1);
                     setRange(startOfMonth(month), endOfMonth(month));
                 },
             },
             {
-                label: t('revenue.presets.this_year'),
+                label: t('date_filter.this_year'),
                 command: () => setRange(startOfYear(now()), endOfYear(now())),
             },
             {
-                label: t('revenue.presets.all_time'),
+                label: t('date_filter.all_time'),
                 command: () => setEntire(),
             },
         ],
@@ -138,14 +136,6 @@ function setEntire(): void {
 function togglePresets(event: Event): void {
     presetMenu.value.toggle(event);
 }
-
-function clearReportCache(): void {
-    router.post(
-        clearCache().url,
-        {},
-        { preserveScroll: true, preserveState: false },
-    );
-}
 </script>
 
 <template>
@@ -154,7 +144,7 @@ function clearReportCache(): void {
     >
         <div class="flex flex-col gap-1">
             <h2 class="text-lg font-semibold text-surface-900">
-                {{ t('revenue.range_title') }}
+                {{ t('date_filter.range_title') }}
             </h2>
             <p class="text-sm text-surface-500">{{ title }}</p>
         </div>
@@ -167,7 +157,7 @@ function clearReportCache(): void {
                 :manual-input="false"
                 date-format="dd.mm.yy"
                 show-button-bar
-                :placeholder="t('revenue.filter_date_range')"
+                :placeholder="t('date_filter.range_placeholder')"
                 class="w-full sm:w-64"
                 :pt="{ panel: { class: 'daterange-panel-centered' } }"
             />
@@ -177,7 +167,7 @@ function clearReportCache(): void {
                 severity="secondary"
                 outlined
                 :loading="loading"
-                :aria-label="t('revenue.presets.title')"
+                :aria-label="t('date_filter.presets_title')"
                 @click="togglePresets"
             >
                 <template #icon>
@@ -185,19 +175,6 @@ function clearReportCache(): void {
                 </template>
             </Button>
             <Menu ref="presetMenu" :model="presetItems" :popup="true" />
-
-            <Button
-                type="button"
-                severity="secondary"
-                outlined
-                :aria-label="t('revenue.refresh')"
-                v-tooltip.bottom="t('revenue.refresh')"
-                @click="clearReportCache"
-            >
-                <template #icon>
-                    <IconRefresh class="size-4" />
-                </template>
-            </Button>
         </div>
     </div>
 </template>
