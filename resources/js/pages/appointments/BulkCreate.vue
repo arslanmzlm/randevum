@@ -1,16 +1,22 @@
 <script setup lang="ts">
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, useForm, useHttp } from '@inertiajs/vue3';
 import {
     IconAlertTriangle,
     IconCircleCheck,
     IconClipboardList,
 } from '@tabler/icons-vue';
+import { useConfirm } from 'primevue/useconfirm';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { bulkStore } from '@/actions/App/Modules/Scheduling/Http/Controllers/AppointmentController';
+import {
+    bulkPrecheck,
+    bulkStore,
+} from '@/actions/App/Modules/Scheduling/Http/Controllers/AppointmentController';
+import AppointmentTopCard from '@/components/appointments/AppointmentTopCard.vue';
 import BulkOccurrenceGenerator from '@/components/appointments/bulk/BulkOccurrenceGenerator.vue';
-import BulkPatientPicker from '@/components/appointments/bulk/BulkPatientPicker.vue';
 import { provideBulkAppointmentForm } from '@/components/appointments/bulk/formContext';
+import { providePatientForm } from '@/components/appointments/patientFormContext';
+import PatientPicker from '@/components/appointments/PatientPicker.vue';
 import FormField from '@/components/FormField.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import SectionCard from '@/components/SectionCard.vue';
@@ -20,6 +26,8 @@ import { index } from '@/routes/appointments';
 import type {
     BulkAppointmentFormData,
     BulkCreateProps,
+    BulkPrecheckPayload,
+    BulkPrecheckResponse,
 } from '@/types/appointment';
 import { combineDateTime } from '@/utils/appointmentTime';
 
@@ -29,6 +37,7 @@ const props = defineProps<BulkCreateProps>();
 
 const { t } = useI18n();
 const { can } = useCan();
+const confirm = useConfirm();
 
 const doctorOptions = computed(() =>
     props.doctors.map((doctor) => ({
@@ -69,6 +78,8 @@ const form = useForm<BulkAppointmentFormData>({
 });
 
 provideBulkAppointmentForm(form);
+// Narrow patient slice shared with the PatientPicker (same component the create page uses).
+providePatientForm(form);
 
 // Without permission to book for others, the doctor select is locked to the user's own profile.
 const doctorLocked = computed(() => !can('appointments.assignDoctor'));
@@ -87,8 +98,58 @@ form.transform((data) => ({
     })),
 }));
 
-function submit(): void {
+// Same starts_at derivation the submit transform uses, so the pre-check probes the exact slots.
+const precheck = useHttp<BulkPrecheckPayload, BulkPrecheckResponse>(() => ({
+    doctor_id: form.doctor_id,
+    service_id: form.service_id,
+    occurrences: form.occurrences.map((occurrence) => ({
+        starts_at: combineDateTime(occurrence.date, occurrence.time),
+        duration_minutes: occurrence.duration_minutes,
+        appointment_type_id: occurrence.appointment_type_id,
+    })),
+}));
+
+function post(): void {
     form.post(bulkStore().url);
+}
+
+// Warn before submitting when slots would be skipped as conflicts — the server still silently
+// skips them, but the receptionist gets to confirm rather than discover it in the result panel.
+async function submit(): Promise<void> {
+    let conflicts: string[] = [];
+
+    try {
+        const response = await precheck.post(bulkPrecheck().url);
+        conflicts = response?.conflicts ?? [];
+    } catch {
+        // Pre-check failed (validation / network / abort) — fall through to the real submit,
+        // which is the authoritative gate and surfaces validation errors + the skip report.
+        post();
+
+        return;
+    }
+
+    if (conflicts.length) {
+        confirm.require({
+            header: t('common.confirm_title'),
+            message: t(
+                'appointment_bulk.conflict_confirm',
+                { count: conflicts.length },
+                conflicts.length,
+            ),
+            rejectProps: {
+                label: t('common.cancel'),
+                severity: 'secondary',
+                outlined: true,
+            },
+            acceptProps: { label: t('appointment_bulk.conflict_continue') },
+            accept: post,
+        });
+
+        return;
+    }
+
+    post();
 }
 </script>
 
@@ -149,46 +210,55 @@ function submit(): void {
         </div>
 
         <form novalidate class="flex flex-col gap-6" @submit.prevent="submit">
-            <SectionCard>
-                <BulkPatientPicker :preselected-patient="preselectedPatient" />
-            </SectionCard>
+            <!-- Same single-card, side-by-side, divided layout as the create page's top card. The
+                 date/time section is bulk-specific (the occurrence generator below), so this card
+                 carries two columns — patient + appointment details — instead of three. -->
+            <AppointmentTopCard :columns="2">
+                <PatientPicker :preselected-patient="preselectedPatient" />
 
-            <SectionCard
-                :icon="IconClipboardList"
-                :title="t('appointment.sections.details')"
-            >
-                <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                    <FormField
-                        :label="t('appointment.fields.doctor')"
-                        :error="form.errors.doctor_id"
-                        required
-                    >
-                        <Select
-                            v-model="form.doctor_id"
-                            :options="doctorOptions"
-                            option-label="label"
-                            option-value="value"
-                            :disabled="doctorLocked"
-                            fluid
-                        />
-                    </FormField>
+                <div
+                    class="py-6 first:pt-0 last:pb-0 lg:px-6 lg:py-0 lg:first:pl-0 lg:last:pr-0"
+                >
+                    <header class="mb-6 flex items-center gap-2">
+                        <IconClipboardList class="size-5 text-surface-500" />
+                        <h2 class="text-lg font-semibold text-surface-900">
+                            {{ t('appointment.sections.details') }}
+                        </h2>
+                    </header>
 
-                    <FormField
-                        :label="t('appointment.fields.service')"
-                        :error="form.errors.service_id"
-                        :hint="t('appointment.hints.service')"
-                    >
-                        <Select
-                            v-model="form.service_id"
-                            :options="serviceOptions"
-                            option-label="label"
-                            option-value="value"
-                            show-clear
-                            fluid
-                        />
-                    </FormField>
+                    <div class="flex flex-col gap-5">
+                        <FormField
+                            :label="t('appointment.fields.doctor')"
+                            :error="form.errors.doctor_id"
+                            required
+                        >
+                            <Select
+                                v-model="form.doctor_id"
+                                :options="doctorOptions"
+                                option-label="label"
+                                option-value="value"
+                                :disabled="doctorLocked"
+                                fluid
+                            />
+                        </FormField>
+
+                        <FormField
+                            :label="t('appointment.fields.service')"
+                            :error="form.errors.service_id"
+                            :hint="t('appointment.hints.service')"
+                        >
+                            <Select
+                                v-model="form.service_id"
+                                :options="serviceOptions"
+                                option-label="label"
+                                option-value="value"
+                                show-clear
+                                fluid
+                            />
+                        </FormField>
+                    </div>
                 </div>
-            </SectionCard>
+            </AppointmentTopCard>
 
             <SectionCard>
                 <BulkOccurrenceGenerator
@@ -202,7 +272,7 @@ function submit(): void {
                 <Button
                     type="submit"
                     :label="t('appointment_bulk.submit')"
-                    :loading="form.processing"
+                    :loading="form.processing || precheck.processing"
                     :disabled="!form.occurrences.length"
                 >
                     <template #icon>

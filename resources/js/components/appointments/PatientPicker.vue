@@ -8,7 +8,7 @@ import PatientSearchSelect from '@/components/PatientSearchSelect.vue';
 import PhoneInput from '@/components/PhoneInput.vue';
 import { create as patientCreate } from '@/routes/patients';
 import type { PatientSearchResult } from '@/types/patient';
-import { useAppointmentForm } from './formContext';
+import { usePatientForm } from './patientFormContext';
 
 const props = defineProps<{
     preselectedPatient: PatientSearchResult | null;
@@ -16,7 +16,7 @@ const props = defineProps<{
 
 const { t } = useI18n();
 
-const form = useAppointmentForm();
+const form = usePatientForm();
 
 const selectedPatient = ref<PatientSearchResult | null>(
     props.preselectedPatient,

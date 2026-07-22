@@ -117,6 +117,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/appointments/bulk-cancel/preview', [AppointmentController::class, 'bulkCancelPreview'])->middleware('throttle:60,1')->name('appointments.bulk-cancel.preview');
     Route::post('/appointments/bulk-cancel', [AppointmentController::class, 'bulkCancel'])->name('appointments.bulk-cancel.store');
     Route::get('/appointments/bulk-create', [AppointmentController::class, 'bulkCreatePage'])->name('appointments.bulk-create');
+    Route::post('/appointments/bulk-create/precheck', [AppointmentController::class, 'bulkPrecheck'])->middleware('throttle:60,1')->name('appointments.bulk-create.precheck');
     Route::post('/appointments/bulk-create', [AppointmentController::class, 'bulkStore'])->name('appointments.bulk-create.store');
     Route::post('/appointments', [AppointmentController::class, 'store'])->name('appointments.store');
     Route::get('/appointments/{appointment}/edit', [AppointmentController::class, 'edit'])->name('appointments.edit');

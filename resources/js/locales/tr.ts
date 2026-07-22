@@ -826,6 +826,9 @@ export const tr = {
         add_row: 'Satır ekle',
         remove_row: 'Satırı kaldır',
         submit: 'Randevuları Oluştur',
+        conflict_confirm:
+            'Çakışan randevular var; bu randevular atlanacak. Devam etmek istiyor musunuz?',
+        conflict_continue: 'Devam et',
         result: {
             created: '{count} randevu oluşturuldu.',
             skipped: 'Çakışma nedeniyle {count} slot atlandı:',

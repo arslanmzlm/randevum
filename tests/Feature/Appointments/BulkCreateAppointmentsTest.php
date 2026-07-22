@@ -430,6 +430,130 @@ it('rejects a cross-clinic doctor_id', function (): void {
 });
 
 // ---------------------------------------------------------------------------
+// POST /appointments/bulk-create/precheck — conflict pre-check probe
+// ---------------------------------------------------------------------------
+
+it('pre-check reports the slot that would be skipped as a conflict', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    bcRole($owner, 'owner', $clinic->id);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+
+    // Block the second slot with an existing Confirmed appointment.
+    $secondSlotUtc = Carbon::parse(bcSlot(1), 'Europe/Istanbul')->utc();
+    Appointment::factory()->withStatus(AppointmentStatus::Confirmed)->create([
+        'clinic_id' => $clinic->id,
+        'doctor_id' => $doctor->id,
+        'patient_id' => $patient->id,
+        'starts_at' => $secondSlotUtc,
+        'ends_at' => $secondSlotUtc->copy()->addMinutes(30),
+    ]);
+
+    $response = $this->actingAs($owner)->postJson(route('appointments.bulk-create.precheck'), [
+        'doctor_id' => $doctor->id,
+        'service_id' => null,
+        'occurrences' => bcOccurrences([bcSlot(0), bcSlot(1), bcSlot(2)]),
+    ]);
+
+    $response->assertOk();
+
+    expect($response->json('conflicts'))
+        ->toBe([Carbon::parse(bcSlot(1), 'Europe/Istanbul')->format('d.m.Y H:i')]);
+});
+
+it('pre-check returns no conflicts when every slot is free', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    bcRole($owner, 'owner', $clinic->id);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+
+    $this->actingAs($owner)->postJson(route('appointments.bulk-create.precheck'), [
+        'doctor_id' => $doctor->id,
+        'service_id' => null,
+        'occurrences' => bcOccurrences([bcSlot(0), bcSlot(1), bcSlot(2)]),
+    ])
+        ->assertOk()
+        ->assertExactJson(['conflicts' => []]);
+});
+
+it('assistant gets 403 on the bulk pre-check (no appointments.create)', function (): void {
+    $clinic = Clinic::factory()->create();
+    $assistant = User::factory()->create();
+    bcRole($assistant, 'assistant', $clinic->id);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+
+    $this->actingAs($assistant)->postJson(route('appointments.bulk-create.precheck'), [
+        'doctor_id' => $doctor->id,
+        'occurrences' => bcOccurrences([bcSlot(0)]),
+    ])->assertForbidden();
+});
+
+it('pre-checking another doctor without appointments.assignDoctor is forbidden', function (): void {
+    $clinic = Clinic::factory()->create();
+    $doctorUser = User::factory()->create();
+    bcRole($doctorUser, 'doctor', $clinic->id);
+    Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+
+    $otherDoctorUser = User::factory()->create();
+    $otherDoctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $otherDoctorUser->id]);
+
+    $this->actingAs($doctorUser)->postJson(route('appointments.bulk-create.precheck'), [
+        'doctor_id' => $otherDoctor->id,
+        'occurrences' => bcOccurrences([bcSlot(0)]),
+    ])->assertForbidden();
+});
+
+it('pre-check rejects a cross-clinic doctor_id (multi-tenant isolation)', function (): void {
+    $clinicA = Clinic::factory()->create();
+    $ownerA = User::factory()->create();
+    bcRole($ownerA, 'owner', $clinicA->id);
+
+    $clinicB = Clinic::factory()->create();
+    $doctorUserB = User::factory()->create();
+    $doctorB = Doctor::factory()->create(['clinic_id' => $clinicB->id, 'user_id' => $doctorUserB->id]);
+
+    $this->actingAs($ownerA)->postJson(route('appointments.bulk-create.precheck'), [
+        'doctor_id' => $doctorB->id,
+        'occurrences' => bcOccurrences([bcSlot(0)]),
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors('doctor_id');
+});
+
+it('pre-check never surfaces another clinic\'s appointment as a conflict', function (): void {
+    $clinicA = Clinic::factory()->create();
+    $ownerA = User::factory()->create();
+    bcRole($ownerA, 'owner', $clinicA->id);
+    $doctorUserA = User::factory()->create();
+    $doctorA = Doctor::factory()->create(['clinic_id' => $clinicA->id, 'user_id' => $doctorUserA->id]);
+
+    // Clinic B books the same wall-clock slot against its own doctor.
+    $clinicB = Clinic::factory()->create();
+    $doctorUserB = User::factory()->create();
+    $doctorB = Doctor::factory()->create(['clinic_id' => $clinicB->id, 'user_id' => $doctorUserB->id]);
+    $patientB = Patient::factory()->create(['clinic_id' => $clinicB->id]);
+    $slotUtc = Carbon::parse(bcSlot(0), 'Europe/Istanbul')->utc();
+    Appointment::factory()->withStatus(AppointmentStatus::Confirmed)->create([
+        'clinic_id' => $clinicB->id,
+        'doctor_id' => $doctorB->id,
+        'patient_id' => $patientB->id,
+        'starts_at' => $slotUtc,
+        'ends_at' => $slotUtc->copy()->addMinutes(30),
+    ]);
+
+    // Clinic A's pre-check for the same slot on its own doctor sees no conflict.
+    $this->actingAs($ownerA)->postJson(route('appointments.bulk-create.precheck'), [
+        'doctor_id' => $doctorA->id,
+        'occurrences' => bcOccurrences([bcSlot(0)]),
+    ])
+        ->assertOk()
+        ->assertExactJson(['conflicts' => []]);
+});
+
+// ---------------------------------------------------------------------------
 // Multi-tenant isolation (MANDATORY)
 // ---------------------------------------------------------------------------
 

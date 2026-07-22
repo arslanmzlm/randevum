@@ -224,13 +224,28 @@ export type BulkCreateProps = {
     services: AppointmentServiceOption[];
     appointmentTypes: AppointmentTypeOption[];
     defaultSlotDuration: number;
-    workingHours: WorkingHours;
     timezone: string;
     preselectedPatient: PatientSearchResult | null;
     /** The user's own doctors.id (auto-selected); null when they have no doctor profile. */
     ownDoctorId: number | null;
     /** Post-book report; null on a fresh GET, populated on the redirect-back render. */
     result: BulkAppointmentResult | null;
+};
+
+/** POST body of the bulk-booking conflict pre-check (`appointments.bulk-create.precheck`). */
+export type BulkPrecheckPayload = {
+    doctor_id: number | null;
+    service_id: number | null;
+    occurrences: Array<{
+        starts_at: string | null;
+        duration_minutes: number | null;
+        appointment_type_id: number | null;
+    }>;
+};
+
+/** Response of the bulk pre-check: clinic-local 'd.m.Y H:i' strings for the slots that would be skipped. */
+export type BulkPrecheckResponse = {
+    conflicts: string[];
 };
 
 /** One row of the selected-day panel (`appointments.day-schedule`). */

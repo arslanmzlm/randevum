@@ -3,12 +3,13 @@ import { Head, useForm } from '@inertiajs/vue3';
 import { computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import AppointmentDetailsFields from '@/components/appointments/AppointmentDetailsFields.vue';
+import AppointmentTopCard from '@/components/appointments/AppointmentTopCard.vue';
 import DateTimeFields from '@/components/appointments/DateTimeFields.vue';
 import DaySchedulePanel from '@/components/appointments/DaySchedulePanel.vue';
 import { provideAppointmentForm } from '@/components/appointments/formContext';
+import { providePatientForm } from '@/components/appointments/patientFormContext';
 import PatientPicker from '@/components/appointments/PatientPicker.vue';
 import PageHeader from '@/components/PageHeader.vue';
-import SectionCard from '@/components/SectionCard.vue';
 import { useCan } from '@/composables/useCan';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { store } from '@/routes/appointments';
@@ -71,8 +72,10 @@ const form = useForm<AppointmentFormData>({
     is_walk_in: false,
 });
 
-// Shared with the field partials (PatientPicker / DateTimeFields / AppointmentDetailsFields).
+// Shared with the field partials (DateTimeFields / AppointmentDetailsFields).
 provideAppointmentForm(form);
+// Narrow patient slice shared with the PatientPicker (same component the bulk page uses).
+providePatientForm(form);
 
 // Mirrors the backend resolveDuration priority: service duration → appointment-type
 // default → clinic default. Editing the duration field afterward is the explicit override.
@@ -122,20 +125,16 @@ function submit(): void {
         />
 
         <form novalidate class="flex flex-col gap-6" @submit.prevent="submit">
-            <SectionCard>
-                <div
-                    class="grid grid-cols-1 divide-y divide-surface-200 lg:grid-cols-3 lg:divide-x lg:divide-y-0"
-                >
-                    <PatientPicker :preselected-patient="preselectedPatient" />
-                    <DateTimeFields />
-                    <AppointmentDetailsFields
-                        :doctor-options="doctorOptions"
-                        :service-options="serviceOptions"
-                        :appointment-type-options="appointmentTypeOptions"
-                        :doctor-locked="doctorLocked"
-                    />
-                </div>
-            </SectionCard>
+            <AppointmentTopCard :columns="3">
+                <PatientPicker :preselected-patient="preselectedPatient" />
+                <DateTimeFields />
+                <AppointmentDetailsFields
+                    :doctor-options="doctorOptions"
+                    :service-options="serviceOptions"
+                    :appointment-type-options="appointmentTypeOptions"
+                    :doctor-locked="doctorLocked"
+                />
+            </AppointmentTopCard>
 
             <DaySchedulePanel :doctor-id="form.doctor_id" :date="form.date" />
         </form>

@@ -767,6 +767,46 @@ class AppointmentService implements AppointmentCancellationContract, Appointment
     }
 
     /**
+     * Dry-run the bulk booking's availability check and return the clinic-local slot strings
+     * (same 'd.m.Y H:i' format as the post-book skip report) that WOULD be skipped, so the UI
+     * can warn before submitting. Read-only — reuses the exact 3-layer check scheduleFollowUps
+     * applies per occurrence (no walk-in bypass). Advisory: conflicts arising within the same
+     * batch (a later slot overlapping an earlier just-booked one) surface only at booking time,
+     * where the server remains the real gate.
+     *
+     * @param  array{doctor_id: int, service_id?: int|null, occurrences: list<array{starts_at: string, duration_minutes?: int|null, appointment_type_id?: int|null}>}  $data
+     * @return list<string>
+     */
+    public function precheckBulkConflicts(array $data): array
+    {
+        $clinic = Clinic::findOrFail($this->clinicContext->id());
+
+        $doctorId = (int) $data['doctor_id'];
+        $serviceId = ! empty($data['service_id']) ? (int) $data['service_id'] : null;
+
+        $conflicts = [];
+
+        foreach (array_slice($data['occurrences'], 0, 12) as $occurrence) {
+            $localDt = Carbon::parse($occurrence['starts_at'], $clinic->timezone);
+            $duration = $this->availabilityService->resolveDuration(
+                isset($occurrence['duration_minutes']) ? (int) $occurrence['duration_minutes'] : null,
+                $serviceId,
+                isset($occurrence['appointment_type_id']) ? (int) $occurrence['appointment_type_id'] : null,
+                $clinic,
+            );
+
+            $startsAt = $localDt->copy()->utc();
+            $endsAt = $startsAt->copy()->addMinutes($duration);
+
+            if ($this->availabilityService->unavailableReason($doctorId, $startsAt, $endsAt, false, $clinic) !== null) {
+                $conflicts[] = $localDt->format('d.m.Y H:i');
+            }
+        }
+
+        return $conflicts;
+    }
+
+    /**
      * Standalone "N appointments for one patient" booking (reception bulk-create), reusing the
      * scheduleFollowUps engine with case_id = null. Wraps patient resolution + booking in one
      * transaction — scheduleFollowUps assumes an enclosing transaction (its SMS dispatch is

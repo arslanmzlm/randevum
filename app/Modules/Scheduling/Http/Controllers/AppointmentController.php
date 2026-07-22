@@ -11,6 +11,7 @@ use App\Modules\Core\Support\Toast;
 use App\Modules\Messaging\Contracts\SmsQuotaContract;
 use App\Modules\Scheduling\Http\Requests\BulkCancelAppointmentsRequest;
 use App\Modules\Scheduling\Http\Requests\BulkCancelPreviewRequest;
+use App\Modules\Scheduling\Http\Requests\BulkPrecheckAppointmentsRequest;
 use App\Modules\Scheduling\Http\Requests\BulkStoreAppointmentsRequest;
 use App\Modules\Scheduling\Http\Requests\CancelAppointmentRequest;
 use App\Modules\Scheduling\Http\Requests\CheckAvailabilityRequest;
@@ -173,7 +174,6 @@ class AppointmentController extends Controller
             'services' => $services,
             'appointmentTypes' => $appointmentTypes,
             'defaultSlotDuration' => $clinic->default_slot_duration_minutes,
-            'workingHours' => $clinic->working_hours,
             'timezone' => $clinic->timezone,
             'preselectedPatient' => $preselectedPatient,
             'ownDoctorId' => $user->doctor?->id,
@@ -209,6 +209,27 @@ class AppointmentController extends Controller
         }
 
         return to_route('appointments.bulk-create');
+    }
+
+    /**
+     * Read-only pre-check for the bulk-booking form: given the occurrence list, return the
+     * clinic-local slots that would be skipped as conflicts, so the UI can warn before the
+     * server silently skips them. Same authorization as bulkStore; mutates nothing.
+     */
+    public function bulkPrecheck(BulkPrecheckAppointmentsRequest $request): JsonResponse
+    {
+        $this->authorize('create', Appointment::class);
+
+        $validated = $request->validated();
+
+        // Booking for another doctor's calendar needs the assign-doctor ability (mirrors bulkStore).
+        if ((int) $validated['doctor_id'] !== $request->user()->doctor?->id) {
+            $this->authorize('appointments.assignDoctor');
+        }
+
+        return response()->json([
+            'conflicts' => $this->service->precheckBulkConflicts($validated),
+        ]);
     }
 
     public function edit(Request $request, Appointment $appointment): Response
