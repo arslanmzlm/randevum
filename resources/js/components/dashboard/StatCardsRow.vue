@@ -2,6 +2,7 @@
 import {
     IconCalendarClock,
     IconCalendarWeek,
+    IconCalendarX,
     IconCash,
     IconClockHour4,
 } from '@tabler/icons-vue';
@@ -45,6 +46,20 @@ const { formatMoney } = useMoney();
                 :value="props.stats.appointments.this_week"
                 :icon="IconCalendarWeek"
                 accent="sky"
+            />
+            <StatCard
+                v-if="props.stats.appointments.no_show_rate"
+                :label="t('dashboard.stats.no_show_rate')"
+                :value="`${props.stats.appointments.no_show_rate.percent}%`"
+                :icon="IconCalendarX"
+                :sublabel="
+                    t('dashboard.stats.no_show_rate_count', {
+                        noShow: props.stats.appointments.no_show_rate.no_show,
+                        expected:
+                            props.stats.appointments.no_show_rate.expected,
+                    })
+                "
+                accent="rose"
             />
         </template>
 

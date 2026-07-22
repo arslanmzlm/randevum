@@ -33,6 +33,8 @@ export type Clinic = {
     address: string | null;
     postal_code: string | null;
     default_slot_duration_minutes: number;
+    auto_no_show_enabled: boolean;
+    auto_no_show_grace_hours: number;
     working_hours: WorkingHours;
     logo_url: string | null;
     cover_url: string | null;
@@ -53,6 +55,8 @@ export type ClinicFormData = {
     address: string;
     postal_code: string;
     default_slot_duration_minutes: number;
+    auto_no_show_enabled: boolean;
+    auto_no_show_grace_hours: number;
     working_hours: WorkingHours;
 };
 

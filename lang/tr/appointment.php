@@ -34,12 +34,15 @@ return [
         'not_cancellable' => 'Bu randevu iptal edilemez.',
         'not_arrivable' => 'Bu randevu geldi olarak işaretlenemiyor. Randevunun durumu Onaylandı veya Yeniden Planlandı olmalıdır.',
         'not_completable' => 'Bu randevu tamamlandı olarak işaretlenemiyor. Randevunun durumu Geldi olmalıdır.',
+        'not_no_showable' => 'Bu randevu gelmedi olarak işaretlenemiyor. Randevunun durumu Onaylandı veya Yeniden Planlandı olmalıdır.',
         'delete_not_allowed' => 'Bu randevu silinemez. Lütfen iptal seçeneğini kullanın.',
     ],
 
     'rescheduled' => 'Randevu yeniden planlandı.',
     'cancelled' => 'Randevu iptal edildi.',
     'deleted' => 'Randevu silindi.',
+    'checked_in' => 'Hasta geldi olarak işaretlendi.',
+    'marked_no_show' => 'Randevu gelmedi olarak işaretlendi.',
     'reminder_sent' => 'Hatırlatma SMS\'i gönderildi.',
     'quota_full' => 'Aylık SMS kotası dolu. Hatırlatma gönderilemedi.',
 

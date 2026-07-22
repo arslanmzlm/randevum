@@ -29,7 +29,21 @@ export type TodayScheduleRow = {
 /** At-a-glance KPI counts for the active clinic; `null` ⇒ viewer lacks the gating permission. */
 export type DashboardStats = {
     /** null ⇒ no `appointments.viewAny`; counts are doctor-scoped to the viewer. */
-    appointments: { today: number; pending: number; this_week: number } | null;
+    appointments: {
+        today: number;
+        pending: number;
+        this_week: number;
+        /**
+         * This-month no-show rate (doctor-scoped, current `status` column).
+         * `percent` is one-decimal 0–100; the whole object is null when the
+         * resolved-appointment denominator (`expected`) is 0.
+         */
+        no_show_rate: {
+            percent: number;
+            no_show: number;
+            expected: number;
+        } | null;
+    } | null;
     /** null ⇒ no `transactions.viewAny`; `today_collected` is a 2-dp decimal string, always clinic-wide. */
     revenue: { today_collected: string; currency: string } | null;
     /**

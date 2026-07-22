@@ -46,6 +46,8 @@ function clinicIsoPayload(Clinic $clinic, string $name = 'Updated Name'): array
         'address' => null,
         'postal_code' => null,
         'default_slot_duration_minutes' => 30,
+        'auto_no_show_enabled' => true,
+        'auto_no_show_grace_hours' => 2,
         'working_hours' => Clinic::defaultWorkingHours(),
     ];
 }

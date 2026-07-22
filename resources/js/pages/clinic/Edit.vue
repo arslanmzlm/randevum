@@ -2,6 +2,7 @@
 import { Head, useForm } from '@inertiajs/vue3';
 import {
     IconBuildingHospital,
+    IconCalendarX,
     IconClock,
     IconMapPin,
     IconPhone,
@@ -9,6 +10,7 @@ import {
 } from '@tabler/icons-vue';
 import { useI18n } from 'vue-i18n';
 import ClinicAddressFields from '@/components/clinic/ClinicAddressFields.vue';
+import ClinicAppointmentSettingsFields from '@/components/clinic/ClinicAppointmentSettingsFields.vue';
 import ClinicContactFields from '@/components/clinic/ClinicContactFields.vue';
 import ClinicHoursFields from '@/components/clinic/ClinicHoursFields.vue';
 import ClinicInfoFields from '@/components/clinic/ClinicInfoFields.vue';
@@ -54,6 +56,8 @@ const form = useForm({
     address: props.clinic.address ?? '',
     postal_code: props.clinic.postal_code ?? '',
     default_slot_duration_minutes: props.clinic.default_slot_duration_minutes,
+    auto_no_show_enabled: props.clinic.auto_no_show_enabled,
+    auto_no_show_grace_hours: props.clinic.auto_no_show_grace_hours,
     // structuredClone throws DataCloneError on Inertia's reactive proxy; JSON clone
     // gives the form its own deep copy so edits don't mutate the prop.
     working_hours: JSON.parse(
@@ -116,6 +120,13 @@ function submit(): void {
                         :title="t('clinic.sections.hours')"
                     >
                         <ClinicHoursFields />
+                    </SectionCard>
+
+                    <SectionCard
+                        :icon="IconCalendarX"
+                        :title="t('clinic.sections.appointment_settings')"
+                    >
+                        <ClinicAppointmentSettingsFields />
                     </SectionCard>
 
                     <SectionCard

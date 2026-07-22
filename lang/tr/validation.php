@@ -98,6 +98,8 @@ return [
         'address' => 'Adres',
         'postal_code' => 'Posta kodu',
         'default_slot_duration_minutes' => 'Varsayılan randevu süresi',
+        'auto_no_show_enabled' => 'Otomatik gelmedi işaretleme',
+        'auto_no_show_grace_hours' => 'Gelmedi işaretleme süresi',
         'working_hours' => 'Çalışma saatleri',
         'image' => 'Görsel',
         // service catalog

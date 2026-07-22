@@ -10,6 +10,8 @@ import {
     IconSearch,
     IconStethoscope,
     IconTrash,
+    IconUserCheck,
+    IconUserX,
 } from '@tabler/icons-vue';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -45,12 +47,16 @@ const { formatDate, formatTime } = useDateTime();
 const {
     canViewAll,
     cancelReason,
+    canCheckIn,
+    canMarkNoShow,
     canReschedule,
     canCancel,
     canDelete,
     canSendReminder,
     hasActions,
     goToEdit,
+    checkIn,
+    confirmMarkNoShow,
     confirmCancel,
     confirmDelete,
     confirmSendReminder,
@@ -96,6 +102,16 @@ const menuItems = computed<RowMenuItem[]>(() => {
         });
     }
 
+    if (canCheckIn(row)) {
+        items.push({
+            key: 'check-in',
+            label: t('appointment_actions.menu.check_in'),
+            tablerIcon: IconUserCheck,
+            colorClass: 'text-primary-600',
+            command: () => checkIn(row),
+        });
+    }
+
     if (canReschedule(row)) {
         items.push({
             key: 'edit',
@@ -113,6 +129,16 @@ const menuItems = computed<RowMenuItem[]>(() => {
             tablerIcon: IconBell,
             colorClass: 'text-primary-600',
             command: () => confirmSendReminder(row),
+        });
+    }
+
+    if (canMarkNoShow(row)) {
+        items.push({
+            key: 'no-show',
+            label: t('appointment_actions.menu.no_show'),
+            tablerIcon: IconUserX,
+            colorClass: 'text-orange-600',
+            command: () => confirmMarkNoShow(row),
         });
     }
 

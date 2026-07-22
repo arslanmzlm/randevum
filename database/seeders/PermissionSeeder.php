@@ -62,6 +62,10 @@ class PermissionSeeder extends Seeder
         'appointments.bulkCancel' => ['owner', 'manager'],
         // Manually send a reminder SMS for a specific appointment.
         'appointments.sendReminder' => ['owner', 'manager', 'receptionist'],
+        // Check-in (mark Arrived) / manual no-show. Fixed role set per owner brief — all
+        // clinic roles handle the front desk, no narrower restriction.
+        'appointments.checkIn' => ['owner', 'manager', 'doctor', 'receptionist', 'assistant'],
+        'appointments.noShow' => ['owner', 'manager', 'doctor', 'receptionist', 'assistant'],
         // appointment types (settings / CRUD)
         'appointmentTypes.viewAny' => ['owner', 'manager', 'doctor'],
         'appointmentTypes.create' => ['owner', 'manager'],

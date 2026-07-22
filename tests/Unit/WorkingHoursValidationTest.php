@@ -51,6 +51,8 @@ function submitWorkingHours(Clinic $clinic, User $owner, array $workingHours): T
         'address' => null,
         'postal_code' => null,
         'default_slot_duration_minutes' => 30,
+        'auto_no_show_enabled' => false,
+        'auto_no_show_grace_hours' => 24,
         'working_hours' => $workingHours,
     ]);
 }

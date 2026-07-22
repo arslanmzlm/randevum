@@ -45,6 +45,11 @@ return new class extends Migration
             // SMS quota: null = use config('platform.sms.monthly_quota') default
             $table->unsignedInteger('sms_monthly_quota')->nullable();
 
+            // auto no-show sweep (1.37): grace hours after ends_at before an untouched
+            // Confirmed/Rescheduled appointment is auto-transitioned to NoShow
+            $table->boolean('auto_no_show_enabled')->default(true);
+            $table->unsignedSmallInteger('auto_no_show_grace_hours')->default(2);
+
             // status
             $table->boolean('is_active')->default(true);
             $table->timestampTz('onboarded_at')->nullable();

@@ -14,6 +14,7 @@ use App\Modules\Scheduling\Http\Requests\BulkCancelPreviewRequest;
 use App\Modules\Scheduling\Http\Requests\CancelAppointmentRequest;
 use App\Modules\Scheduling\Http\Requests\CheckAvailabilityRequest;
 use App\Modules\Scheduling\Http\Requests\DayScheduleRequest;
+use App\Modules\Scheduling\Http\Requests\NoShowAppointmentRequest;
 use App\Modules\Scheduling\Http\Requests\RescheduleAppointmentRequest;
 use App\Modules\Scheduling\Http\Requests\StoreAppointmentRequest;
 use App\Modules\Scheduling\Http\Requests\UpcomingAppointmentsRequest;
@@ -205,6 +206,36 @@ class AppointmentController extends Controller
         Toast::success(__('appointment.cancelled'));
 
         return to_route('appointments.index');
+    }
+
+    /**
+     * Standalone check-in: mark a Confirmed/Rescheduled appointment Arrived without
+     * starting treatment (reuses the same primitive the treatment flow uses).
+     */
+    public function arrive(Request $request, Appointment $appointment): RedirectResponse
+    {
+        $this->authorize('checkIn', $appointment);
+
+        $this->service->checkIn($appointment, $request->user());
+
+        Toast::success(__('appointment.checked_in'));
+
+        return back();
+    }
+
+    /**
+     * Manually mark a Confirmed/Rescheduled appointment as NoShow.
+     */
+    public function noShow(NoShowAppointmentRequest $request, Appointment $appointment): RedirectResponse
+    {
+        $this->authorize('noShow', $appointment);
+
+        $validated = $request->validated();
+        $this->service->markNoShow($appointment, $request->user(), $validated['reason'] ?? null);
+
+        Toast::success(__('appointment.marked_no_show'));
+
+        return back();
     }
 
     public function destroy(Request $request, Appointment $appointment): RedirectResponse

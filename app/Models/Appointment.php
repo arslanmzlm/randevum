@@ -187,6 +187,20 @@ class Appointment extends Model
     }
 
     /**
+     * Confirmed/Rescheduled non-walk-in appointments eligible for the no-show sweep.
+     * Arrived/Completed/Cancelled/NoShow and walk-ins are never swept.
+     *
+     * @param  Builder<Appointment>  $query
+     */
+    public function scopeNoShowable(Builder $query): void
+    {
+        $query->whereIn('status', [
+            AppointmentStatus::Confirmed->value,
+            AppointmentStatus::Rescheduled->value,
+        ])->where('is_walk_in', false);
+    }
+
+    /**
      * Appointments whose starts_at falls in [fromUtc, toUtc) — exclusive end.
      *
      * "Günü kapat" semantics: only appointments that START within the selected days

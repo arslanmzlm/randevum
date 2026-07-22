@@ -40,7 +40,7 @@ export function appointmentStatusColor(status: AppointmentStatus): string {
 }
 
 /**
- * Statuses selectable in MVP filters — Pending/NoShow are Faz 2, so excluded.
+ * Statuses selectable in MVP filters — `pending` is Faz 2, so excluded.
  * Order drives the filter MultiSelect option order.
  */
 export const MVP_APPOINTMENT_STATUSES: AppointmentStatus[] = [
@@ -49,8 +49,14 @@ export const MVP_APPOINTMENT_STATUSES: AppointmentStatus[] = [
     'arrived',
     'completed',
     'cancelled',
+    'no_show',
 ];
 
-/** Default calendar visibility — all MVP statuses except `cancelled` (opt-in via the filter). */
+/**
+ * Default calendar visibility — all MVP statuses except `cancelled` and `no_show`
+ * (both opt-in via the filter, keeping the grid focused on active appointments).
+ */
 export const DEFAULT_CALENDAR_STATUSES: AppointmentStatus[] =
-    MVP_APPOINTMENT_STATUSES.filter((status) => status !== 'cancelled');
+    MVP_APPOINTMENT_STATUSES.filter(
+        (status) => status !== 'cancelled' && status !== 'no_show',
+    );

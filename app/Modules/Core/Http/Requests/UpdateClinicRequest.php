@@ -44,6 +44,8 @@ class UpdateClinicRequest extends FormRequest
             'address' => ['nullable', 'string'],
             'postal_code' => ['nullable', 'string', 'max:20'],
             'default_slot_duration_minutes' => ['required', 'integer', 'min:5', 'max:480'],
+            'auto_no_show_enabled' => ['required', 'boolean'],
+            'auto_no_show_grace_hours' => ['required', 'integer', 'min:0', 'max:168'],
             'working_hours' => ['required', 'array', 'size:7'],
             'working_hours.monday' => ['required'],
             'working_hours.tuesday' => ['required'],

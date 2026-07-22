@@ -22,6 +22,7 @@ import {
     IconTags,
     IconUserCircle,
     IconUsers,
+    IconUserX,
 } from '@tabler/icons-vue';
 import {
     computed,
@@ -129,6 +130,17 @@ const navItems = computed<NavItem[]>(() => [
                   label: t('nav.appointments'),
                   href: appointmentsIndex().url,
                   icon: IconListDetails,
+              },
+          ]
+        : []),
+    ...(can('appointments.viewAny')
+        ? [
+              {
+                  label: t('nav.no_shows'),
+                  href: appointmentsIndex({
+                      query: { filter: { status: 'no_show' } },
+                  }).url,
+                  icon: IconUserX,
               },
           ]
         : []),

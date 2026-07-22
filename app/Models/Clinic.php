@@ -47,6 +47,8 @@ class Clinic extends Model implements HasMedia
         'is_active',
         'onboarded_at',
         'sms_monthly_quota',
+        'auto_no_show_enabled',
+        'auto_no_show_grace_hours',
     ];
 
     /**
@@ -67,6 +69,8 @@ class Clinic extends Model implements HasMedia
             'is_active' => 'boolean',
             'onboarded_at' => 'datetime',
             'sms_monthly_quota' => 'integer',
+            'auto_no_show_enabled' => 'boolean',
+            'auto_no_show_grace_hours' => 'integer',
         ];
     }
 

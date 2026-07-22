@@ -227,6 +227,8 @@ return [
         'address' => 'address',
         'postal_code' => 'postal code',
         'default_slot_duration_minutes' => 'default appointment duration',
+        'auto_no_show_enabled' => 'automatic no-show marking',
+        'auto_no_show_grace_hours' => 'no-show grace period',
         'working_hours' => 'working hours',
         'image' => 'image',
         // service catalog

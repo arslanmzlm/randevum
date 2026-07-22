@@ -5,7 +5,7 @@ import type { Component } from 'vue';
 // Prop-driven so StatCardsRow owns the data/permission gating. The card surface uses surface-*
 // tokens (dark-ready); the accent badge uses a fixed palette tint, matching the existing badge
 // convention (AvailabilityBadge, treatments/Process) — dark-mode variants come in the deferred sweep.
-type Accent = 'primary' | 'emerald' | 'amber' | 'sky';
+type Accent = 'primary' | 'emerald' | 'amber' | 'sky' | 'rose';
 
 withDefaults(
     defineProps<{
@@ -23,6 +23,7 @@ const ACCENT_CLASS: Record<Accent, string> = {
     emerald: 'bg-emerald-50 text-emerald-600',
     amber: 'bg-amber-50 text-amber-600',
     sky: 'bg-sky-50 text-sky-600',
+    rose: 'bg-rose-50 text-rose-600',
 };
 </script>
 

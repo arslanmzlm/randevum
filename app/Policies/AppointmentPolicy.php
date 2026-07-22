@@ -50,6 +50,16 @@ class AppointmentPolicy
         return $user->can('appointments.sendReminder') && $this->actsOnAccessible($user, $appointment);
     }
 
+    public function checkIn(User $user, Appointment $appointment): bool
+    {
+        return $user->can('appointments.checkIn') && $this->actsOnAccessible($user, $appointment);
+    }
+
+    public function noShow(User $user, Appointment $appointment): bool
+    {
+        return $user->can('appointments.noShow') && $this->actsOnAccessible($user, $appointment);
+    }
+
     /**
      * A user "acts on" an appointment when they can see all doctors' appointments,
      * or when the appointment belongs to their own doctor profile.

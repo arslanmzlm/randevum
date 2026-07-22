@@ -76,9 +76,9 @@ class DashboardStatsService implements DashboardStatsContract
     }
 
     /**
-     * Returns the three appointment count tiles, or null when the user lacks the gate.
+     * Returns the appointment count tiles, or null when the user lacks the gate.
      *
-     * @return array{today: int, pending: int, this_week: int}|null
+     * @return array{today: int, pending: int, this_week: int, no_show_rate: array{percent: float, no_show: int, expected: int}|null}|null
      */
     private function appointmentStats(User $user, string $timezone): ?array
     {
@@ -92,6 +92,31 @@ class DashboardStatsService implements DashboardStatsContract
             'today' => $this->repository->countTodayForDoctors($doctorIds, $timezone),
             'pending' => $this->repository->countPendingForDoctors($doctorIds),
             'this_week' => $this->repository->countThisWeekForDoctors($doctorIds, $timezone),
+            'no_show_rate' => $this->noShowRate($doctorIds, $timezone),
+        ];
+    }
+
+    /**
+     * This-month no-show rate: NoShow / (NoShow + Completed + Arrived), doctor-scoped
+     * exactly like the other appointment tiles. Null when the denominator is 0 —
+     * there is nothing resolved yet this month to compute a rate from.
+     *
+     * @param  list<int>|null  $doctorIds
+     * @return array{percent: float, no_show: int, expected: int}|null
+     */
+    private function noShowRate(?array $doctorIds, string $timezone): ?array
+    {
+        $noShow = $this->repository->countNoShowThisMonth($doctorIds, $timezone);
+        $expected = $this->repository->countExpectedThisMonth($doctorIds, $timezone);
+
+        if ($expected === 0) {
+            return null;
+        }
+
+        return [
+            'percent' => round($noShow / $expected * 100, 1),
+            'no_show' => $noShow,
+            'expected' => $expected,
         ];
     }
 

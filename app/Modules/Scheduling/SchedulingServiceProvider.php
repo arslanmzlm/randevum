@@ -8,6 +8,7 @@ use App\Modules\Core\Contracts\DashboardStatsContract;
 use App\Modules\Core\Contracts\PatientAppointmentsContract;
 use App\Modules\Core\Contracts\UpcomingAppointmentsContract;
 use App\Modules\Identity\Events\ClinicRegistered;
+use App\Modules\Scheduling\Console\Commands\AutoNoShowCommand;
 use App\Modules\Scheduling\Console\Commands\SendRemindersCommand;
 use App\Modules\Scheduling\Listeners\ProvisionDefaultAppointmentTypes;
 use App\Modules\Scheduling\Services\AppointmentService;
@@ -30,6 +31,6 @@ class SchedulingServiceProvider extends ServiceProvider
     {
         Event::listen(ClinicRegistered::class, ProvisionDefaultAppointmentTypes::class);
 
-        $this->commands([SendRemindersCommand::class]);
+        $this->commands([SendRemindersCommand::class, AutoNoShowCommand::class]);
     }
 }

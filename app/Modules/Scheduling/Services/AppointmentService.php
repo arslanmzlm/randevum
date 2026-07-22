@@ -18,6 +18,7 @@ use App\Modules\Medical\Exceptions\TrashedPhoneConflictException;
 use App\Modules\Scheduling\Repositories\AppointmentRepository;
 use App\Support\ClinicContext;
 use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -519,6 +520,94 @@ class AppointmentService implements AppointmentCancellationContract, Appointment
         }
 
         $this->scheduleExceptionService->store($exceptionData, $actor);
+    }
+
+    /**
+     * Standalone check-in: mark a Confirmed/Rescheduled appointment Arrived without
+     * starting treatment. Thin wrapper around markArrived() — same rules, own transaction.
+     *
+     * @throws ValidationException When the appointment is not in an arrivable status
+     * @throws \Throwable
+     */
+    public function checkIn(Appointment $appointment, User $actor): void
+    {
+        DB::transaction(function () use ($appointment, $actor): void {
+            $this->markArrived($appointment, $actor);
+        });
+    }
+
+    /**
+     * Manually mark a Confirmed/Rescheduled appointment as NoShow.
+     * Logged with the actor id, distinguishing it from the auto sweep (by_user_id = null).
+     *
+     * @throws ValidationException When the appointment is not in a no-showable status
+     * @throws \Throwable
+     */
+    public function markNoShow(Appointment $appointment, User $actor, ?string $reason = null): void
+    {
+        $allowedStatuses = [AppointmentStatus::Confirmed, AppointmentStatus::Rescheduled];
+
+        if (! in_array($appointment->status, $allowedStatuses, true)) {
+            throw ValidationException::withMessages([
+                'status' => [__('appointment.errors.not_no_showable')],
+            ]);
+        }
+
+        DB::transaction(function () use ($appointment, $reason, $actor): void {
+            $previous = $appointment->status;
+
+            $this->repository->update($appointment, ['status' => AppointmentStatus::NoShow->value]);
+
+            $this->statusLogService->record(
+                $appointment,
+                $previous->value,
+                AppointmentStatus::NoShow->value,
+                $actor,
+                $reason,
+            );
+        });
+    }
+
+    /**
+     * Sweep every clinic with the auto-no-show toggle on and transition their past,
+     * untouched Confirmed/Rescheduled non-walk-in appointments to NoShow. Logged with
+     * by_user_id = null, reason = 'auto' so the manual/auto split is readable off
+     * status_logs without a second status. One DB::transaction per clinic — a failure
+     * in one clinic's batch never rolls back another's. Returns the total swept.
+     */
+    public function autoMarkNoShows(CarbonInterface $now): int
+    {
+        $total = 0;
+
+        foreach (Clinic::where('auto_no_show_enabled', true)->get() as $clinic) {
+            $cutoff = $now->copy()->subHours($clinic->auto_no_show_grace_hours);
+
+            $appointments = $this->repository->noShowableForClinic($clinic->id, $cutoff);
+
+            if ($appointments->isEmpty()) {
+                continue;
+            }
+
+            DB::transaction(function () use ($appointments): void {
+                foreach ($appointments as $appointment) {
+                    $previous = $appointment->status;
+
+                    $this->repository->update($appointment, ['status' => AppointmentStatus::NoShow->value]);
+
+                    $this->statusLogService->record(
+                        $appointment,
+                        $previous->value,
+                        AppointmentStatus::NoShow->value,
+                        null,
+                        'auto',
+                    );
+                }
+            });
+
+            $total += $appointments->count();
+        }
+
+        return $total;
     }
 
     /**

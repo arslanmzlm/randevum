@@ -109,6 +109,8 @@ class ClinicController extends Controller
             'address' => $clinic->address,
             'postal_code' => $clinic->postal_code,
             'default_slot_duration_minutes' => $clinic->default_slot_duration_minutes,
+            'auto_no_show_enabled' => $clinic->auto_no_show_enabled,
+            'auto_no_show_grace_hours' => $clinic->auto_no_show_grace_hours,
             'working_hours' => $clinic->working_hours,
             'logo_url' => $clinic->imageUrl('logo'),
             'cover_url' => $clinic->imageUrl('cover'),

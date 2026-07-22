@@ -4,6 +4,7 @@ namespace App\Modules\Scheduling\Repositories;
 
 use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
+use App\Scopes\ClinicScope;
 use App\Support\FilterHelper;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Collection;
@@ -291,6 +292,87 @@ class AppointmentRepository
             ->with(['patient', 'doctor.user', 'service', 'appointmentType'])
             ->orderBy('starts_at')
             ->get();
+    }
+
+    /**
+     * No-showable appointments (Confirmed/Rescheduled, non-walk-in) for one clinic whose
+     * ends_at is before the given cutoff. Bypasses ClinicScope — the auto sweep runs
+     * outside a request, so there is no active ClinicContext to scope against; the
+     * clinic_id filter is applied explicitly instead.
+     *
+     * @return Collection<int, Appointment>
+     */
+    public function noShowableForClinic(int $clinicId, CarbonInterface $cutoffUtc): Collection
+    {
+        return Appointment::withoutGlobalScope(ClinicScope::class)
+            ->where('clinic_id', $clinicId)
+            ->noShowable()
+            ->where('ends_at', '<', $cutoffUtc)
+            ->get();
+    }
+
+    /**
+     * Count of NoShow appointments whose starts_at falls within the current clinic-local
+     * month. Numerator of the dashboard no-show rate tile.
+     *
+     * $doctorIds = null  → all clinic doctors
+     * $doctorIds = []    → no doctors in scope → returns 0
+     *
+     * @param  list<int>|null  $doctorIds
+     */
+    public function countNoShowThisMonth(?array $doctorIds, string $timezone): int
+    {
+        if ($doctorIds !== null && count($doctorIds) === 0) {
+            return 0;
+        }
+
+        [$monthStart, $monthEnd] = $this->currentMonthRangeUtc($timezone);
+
+        return Appointment::query()
+            ->whereBetween('starts_at', [$monthStart, $monthEnd])
+            ->where('status', AppointmentStatus::NoShow->value)
+            ->when($doctorIds !== null, fn ($q) => $q->whereIn('doctor_id', $doctorIds))
+            ->count();
+    }
+
+    /**
+     * Count of resolved appointments (NoShow + Completed + Arrived) whose starts_at falls
+     * within the current clinic-local month. Denominator of the dashboard no-show rate tile
+     * — Cancelled and still-pending (Confirmed/Rescheduled) appointments are excluded.
+     *
+     * $doctorIds = null  → all clinic doctors
+     * $doctorIds = []    → no doctors in scope → returns 0
+     *
+     * @param  list<int>|null  $doctorIds
+     */
+    public function countExpectedThisMonth(?array $doctorIds, string $timezone): int
+    {
+        if ($doctorIds !== null && count($doctorIds) === 0) {
+            return 0;
+        }
+
+        [$monthStart, $monthEnd] = $this->currentMonthRangeUtc($timezone);
+
+        return Appointment::query()
+            ->whereBetween('starts_at', [$monthStart, $monthEnd])
+            ->whereIn('status', [
+                AppointmentStatus::NoShow->value,
+                AppointmentStatus::Completed->value,
+                AppointmentStatus::Arrived->value,
+            ])
+            ->when($doctorIds !== null, fn ($q) => $q->whereIn('doctor_id', $doctorIds))
+            ->count();
+    }
+
+    /**
+     * @return array{0: CarbonInterface, 1: CarbonInterface}
+     */
+    private function currentMonthRangeUtc(string $timezone): array
+    {
+        return [
+            now($timezone)->startOfMonth()->utc(),
+            now($timezone)->endOfMonth()->utc(),
+        ];
     }
 
     /**

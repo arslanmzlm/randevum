@@ -34,12 +34,15 @@ return [
         'not_cancellable' => 'This appointment cannot be cancelled.',
         'not_arrivable' => 'This appointment cannot be marked as arrived. Status must be Confirmed or Rescheduled.',
         'not_completable' => 'This appointment cannot be marked as completed. Status must be Arrived.',
+        'not_no_showable' => 'This appointment cannot be marked as no-show. Status must be Confirmed or Rescheduled.',
         'delete_not_allowed' => 'This appointment cannot be deleted. Please cancel it instead.',
     ],
 
     'rescheduled' => 'Appointment rescheduled successfully.',
     'cancelled' => 'Appointment cancelled.',
     'deleted' => 'Appointment deleted.',
+    'checked_in' => 'Patient checked in.',
+    'marked_no_show' => 'Appointment marked as no-show.',
     'reminder_sent' => 'Reminder SMS sent.',
     'quota_full' => 'Monthly SMS quota is full. Reminder could not be sent.',
 

@@ -13,3 +13,4 @@ Schedule::command('backup:run')->daily()->at('03:00');
 Schedule::command('backup:monitor')->daily()->at('04:00');
 
 Schedule::command('sms:send-reminders')->everyFiveMinutes()->withoutOverlapping();
+Schedule::command('appointments:auto-no-show')->hourly()->withoutOverlapping();

@@ -27,7 +27,7 @@ interface DashboardStatsContract
      * `currency` comes from the active clinic's `currency` column (never hardcoded).
      *
      * @return array{
-     *   appointments: array{today: int, pending: int, this_week: int}|null,
+     *   appointments: array{today: int, pending: int, this_week: int, no_show_rate: array{percent: float, no_show: int, expected: int}|null}|null,
      *   revenue: array{today_collected: string, currency: string}|null,
      *   today_schedule: list<array{
      *     id: int, patient_id: int, patient_name: string, doctor_id: int,

@@ -4,7 +4,14 @@ import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useCan } from '@/composables/useCan';
 import { useDateTime } from '@/composables/useDateTime';
-import { cancel, destroy, edit, sendReminder } from '@/routes/appointments';
+import {
+    arrive,
+    cancel,
+    destroy,
+    edit,
+    noShow,
+    sendReminder,
+} from '@/routes/appointments';
 import type { AppointmentStatus } from '@/types/enums';
 
 /** Minimal shape the lifecycle gates need — satisfied by both a list row and a calendar event. */
@@ -63,6 +70,22 @@ export function useAppointmentActions(
         );
     }
 
+    function canCheckIn(row: ActionableAppointment): boolean {
+        return (
+            can('appointments.checkIn') &&
+            canAct(row) &&
+            (row.status === 'confirmed' || row.status === 'rescheduled')
+        );
+    }
+
+    function canMarkNoShow(row: ActionableAppointment): boolean {
+        return (
+            can('appointments.noShow') &&
+            canAct(row) &&
+            (row.status === 'confirmed' || row.status === 'rescheduled')
+        );
+    }
+
     function canDelete(row: ActionableAppointment): boolean {
         // Future-only is server-authoritative; hide for past rows as a UX hint.
         return (
@@ -86,6 +109,8 @@ export function useAppointmentActions(
 
     function hasActions(row: ActionableAppointment): boolean {
         return (
+            canCheckIn(row) ||
+            canMarkNoShow(row) ||
             canReschedule(row) ||
             canCancel(row) ||
             canDelete(row) ||
@@ -95,6 +120,37 @@ export function useAppointmentActions(
 
     function goToEdit(row: ActionableAppointment): void {
         router.visit(edit(row.id).url);
+    }
+
+    function checkIn(row: ActionableAppointment): void {
+        // Forward, reversible transition (Confirmed/Rescheduled → Arrived) → no confirm dialog.
+        router.patch(
+            arrive(row.id).url,
+            {},
+            { preserveScroll: true, onSuccess: options.onSuccess },
+        );
+    }
+
+    function confirmMarkNoShow(row: ActionableAppointment): void {
+        confirm.require({
+            header: t('appointment_actions.no_show_confirm_title'),
+            message: t('appointment_actions.no_show_confirm_message'),
+            rejectProps: {
+                label: t('common.cancel'),
+                severity: 'secondary',
+                outlined: true,
+            },
+            acceptProps: {
+                label: t('appointment_actions.confirm_no_show'),
+                severity: 'warn',
+            },
+            accept: () =>
+                router.patch(
+                    noShow(row.id).url,
+                    { reason: null },
+                    { preserveScroll: true, onSuccess: options.onSuccess },
+                ),
+        });
     }
 
     function confirmCancel(row: ActionableAppointment): void {
@@ -165,12 +221,16 @@ export function useAppointmentActions(
         canViewAll,
         cancelReason,
         canAct,
+        canCheckIn,
+        canMarkNoShow,
         canReschedule,
         canCancel,
         canDelete,
         canSendReminder,
         hasActions,
         goToEdit,
+        checkIn,
+        confirmMarkNoShow,
         confirmCancel,
         confirmDelete,
         confirmSendReminder,

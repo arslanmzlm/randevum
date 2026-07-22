@@ -10,6 +10,8 @@ import {
     IconTag,
     IconTrash,
     IconUser,
+    IconUserCheck,
+    IconUserX,
     IconWalk,
 } from '@tabler/icons-vue';
 import { computed, nextTick, ref } from 'vue';
@@ -92,6 +94,20 @@ function onTreatment(): void {
     if (treatable.value) {
         hide();
         props.treatmentActions.startTreatment(treatable.value);
+    }
+}
+
+function onCheckIn(): void {
+    if (actionable.value) {
+        hide();
+        props.actions.checkIn(actionable.value);
+    }
+}
+
+function onMarkNoShow(): void {
+    if (actionable.value) {
+        hide();
+        props.actions.confirmMarkNoShow(actionable.value);
     }
 }
 
@@ -229,6 +245,16 @@ const rows = computed(() => {
                     /></template>
                 </Button>
                 <Button
+                    v-if="actionable && actions.canCheckIn(actionable)"
+                    type="button"
+                    size="small"
+                    severity="primary"
+                    :label="t('appointment_actions.menu.check_in')"
+                    @click="onCheckIn"
+                >
+                    <template #icon><IconUserCheck class="size-4" /></template>
+                </Button>
+                <Button
                     v-if="actionable && actions.canReschedule(actionable)"
                     type="button"
                     size="small"
@@ -249,6 +275,17 @@ const rows = computed(() => {
                     @click="onSendReminder"
                 >
                     <template #icon><IconBell class="size-4" /></template>
+                </Button>
+                <Button
+                    v-if="actionable && actions.canMarkNoShow(actionable)"
+                    type="button"
+                    size="small"
+                    severity="warn"
+                    outlined
+                    :label="t('appointment_actions.menu.no_show')"
+                    @click="onMarkNoShow"
+                >
+                    <template #icon><IconUserX class="size-4" /></template>
                 </Button>
                 <Button
                     v-if="actionable && actions.canCancel(actionable)"

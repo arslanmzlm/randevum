@@ -400,6 +400,138 @@ it('this_week count excludes an appointment from last week', function (): void {
 });
 
 // ---------------------------------------------------------------------------
+// Appointments tile — no_show_rate (this month)
+// ---------------------------------------------------------------------------
+
+it('no_show_rate is null when there are no resolved appointments this month', function (): void {
+    ['owner' => $owner] = dsSetup();
+
+    $this->actingAs($owner)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('stats.appointments.no_show_rate', null)
+        );
+});
+
+it('no_show_rate computes percent/counts from this-month NoShow/Completed/Arrived appointments', function (): void {
+    ['clinic' => $clinic, 'owner' => $owner, 'doctor' => $doctor, 'patient' => $patient] = dsSetup();
+
+    $thisMonth = Carbon::now('Europe/Istanbul')->startOfMonth()->addDays(2)->addHours(10)->utc();
+
+    // 1 NoShow + 3 Completed this month → 25.0% (1/4).
+    Appointment::factory()->create([
+        'clinic_id' => $clinic->id, 'doctor_id' => $doctor->id, 'patient_id' => $patient->id,
+        'starts_at' => $thisMonth, 'ends_at' => $thisMonth->copy()->addMinutes(30),
+        'status' => AppointmentStatus::NoShow,
+    ]);
+    Appointment::factory()->count(3)->create([
+        'clinic_id' => $clinic->id, 'doctor_id' => $doctor->id, 'patient_id' => $patient->id,
+        'starts_at' => $thisMonth, 'ends_at' => $thisMonth->copy()->addMinutes(30),
+        'status' => AppointmentStatus::Completed,
+    ]);
+
+    // Confirmed/Rescheduled/Cancelled must NOT be counted in either numerator or denominator.
+    Appointment::factory()->create([
+        'clinic_id' => $clinic->id, 'doctor_id' => $doctor->id, 'patient_id' => $patient->id,
+        'starts_at' => $thisMonth, 'ends_at' => $thisMonth->copy()->addMinutes(30),
+        'status' => AppointmentStatus::Cancelled,
+    ]);
+
+    $this->actingAs($owner)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('stats.appointments.no_show_rate.percent', 25)
+            ->where('stats.appointments.no_show_rate.no_show', 1)
+            ->where('stats.appointments.no_show_rate.expected', 4)
+        );
+});
+
+it('no_show_rate excludes an Arrived-counted appointment from last month', function (): void {
+    ['clinic' => $clinic, 'owner' => $owner, 'doctor' => $doctor, 'patient' => $patient] = dsSetup();
+
+    $lastMonth = Carbon::now('Europe/Istanbul')->subMonth()->startOfMonth()->addHours(10)->utc();
+
+    Appointment::factory()->create([
+        'clinic_id' => $clinic->id, 'doctor_id' => $doctor->id, 'patient_id' => $patient->id,
+        'starts_at' => $lastMonth, 'ends_at' => $lastMonth->copy()->addMinutes(30),
+        'status' => AppointmentStatus::NoShow,
+    ]);
+
+    $this->actingAs($owner)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('stats.appointments.no_show_rate', null)
+        );
+});
+
+it('no_show_rate is doctor-scoped for a doctor without appointments.viewAll', function (): void {
+    ['clinic' => $clinic, 'doctorUser' => $doctorUser, 'doctor' => $doctor, 'patient' => $patient] = dsSetup();
+    dashRole($doctorUser, 'doctor', $clinic->id);
+
+    $thisMonth = Carbon::now('Europe/Istanbul')->startOfMonth()->addDays(2)->addHours(10)->utc();
+
+    // Acting doctor's own NoShow — counted.
+    Appointment::factory()->create([
+        'clinic_id' => $clinic->id, 'doctor_id' => $doctor->id, 'patient_id' => $patient->id,
+        'starts_at' => $thisMonth, 'ends_at' => $thisMonth->copy()->addMinutes(30),
+        'status' => AppointmentStatus::NoShow,
+    ]);
+
+    // Another doctor's Completed appointments — must NOT count toward this doctor's rate.
+    $otherDoctorUser = User::factory()->create();
+    $otherDoctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $otherDoctorUser->id]);
+    Appointment::factory()->count(9)->create([
+        'clinic_id' => $clinic->id, 'doctor_id' => $otherDoctor->id, 'patient_id' => $patient->id,
+        'starts_at' => $thisMonth, 'ends_at' => $thisMonth->copy()->addMinutes(30),
+        'status' => AppointmentStatus::Completed,
+    ]);
+
+    $this->actingAs($doctorUser)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('stats.appointments.no_show_rate.percent', 100)
+            ->where('stats.appointments.no_show_rate.no_show', 1)
+            ->where('stats.appointments.no_show_rate.expected', 1)
+        );
+});
+
+it('no_show_rate does not leak another clinic\'s resolved appointments (multi-tenant isolation)', function (): void {
+    ['clinic' => $clinicA, 'owner' => $ownerA, 'doctor' => $doctorA, 'patient' => $patientA] = dsSetup();
+
+    $clinicB = Clinic::factory()->create(['timezone' => 'Europe/Istanbul', 'currency' => 'TRY']);
+    $doctorB = Doctor::factory()->create(['clinic_id' => $clinicB->id]);
+    $patientB = Patient::factory()->create(['clinic_id' => $clinicB->id]);
+
+    $thisMonth = Carbon::now('Europe/Istanbul')->startOfMonth()->addDays(2)->addHours(10)->utc();
+
+    Appointment::factory()->create([
+        'clinic_id' => $clinicA->id, 'doctor_id' => $doctorA->id, 'patient_id' => $patientA->id,
+        'starts_at' => $thisMonth, 'ends_at' => $thisMonth->copy()->addMinutes(30),
+        'status' => AppointmentStatus::NoShow,
+    ]);
+
+    // Clinic B: a large, unrelated NoShow batch that must never bleed into A's rate.
+    Appointment::factory()->count(5)->create([
+        'clinic_id' => $clinicB->id, 'doctor_id' => $doctorB->id, 'patient_id' => $patientB->id,
+        'starts_at' => $thisMonth, 'ends_at' => $thisMonth->copy()->addMinutes(30),
+        'status' => AppointmentStatus::NoShow,
+    ]);
+
+    $this->actingAs($ownerA)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('stats.appointments.no_show_rate.percent', 100)
+            ->where('stats.appointments.no_show_rate.no_show', 1)
+            ->where('stats.appointments.no_show_rate.expected', 1)
+        );
+});
+
+// ---------------------------------------------------------------------------
 // Doctor-scoping — own-only vs clinic-wide
 // ---------------------------------------------------------------------------
 

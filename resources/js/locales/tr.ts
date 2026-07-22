@@ -20,6 +20,7 @@ export const tr = {
         dashboard: 'Ana sayfa',
         calendar: 'Takvim',
         appointments: 'Randevular',
+        no_shows: 'Gelmeyenler',
         appointments_create: 'Randevu Oluştur',
         clinic: 'Klinik profili',
         doctors: 'Doktorlar',
@@ -98,6 +99,8 @@ export const tr = {
             pending_confirmation: 'Onay bekleyen',
             this_week: 'Bu hafta',
             today_revenue: 'Bugünkü tahsilat',
+            no_show_rate: 'No-show oranı (bu ay)',
+            no_show_rate_count: '{noShow} / {expected} randevu',
         },
         today_schedule: {
             title: 'Bugünün programı',
@@ -149,6 +152,7 @@ export const tr = {
             address: 'Adres',
             hours: 'Çalışma Saatleri',
             media: 'Görseller',
+            appointment_settings: 'Randevu Ayarları',
         },
         fields: {
             name: 'Klinik adı',
@@ -164,11 +168,17 @@ export const tr = {
             address: 'Açık adres',
             postal_code: 'Posta kodu',
             slot_duration: 'Varsayılan randevu süresi',
+            auto_no_show_enabled: 'Otomatik no-show',
+            auto_no_show_grace_hours: 'No-show bekleme süresi',
         },
         hints: {
             slug: 'Yalnızca küçük harf, rakam ve tire kullanılabilir.',
             slot_duration:
                 'Randevu takviminde kullanılacak varsayılan slot süresi (dakika).',
+            auto_no_show_enabled:
+                'Geçmiş ve işlem yapılmamış randevuları otomatik olarak "Gelmedi" işaretler. Randevusuz (walk-in) ve gelişi işaretlenmiş randevular etkilenmez.',
+            auto_no_show_grace_hours:
+                'Randevu bitiş saatinden bu kadar süre geçtikten sonra randevu otomatik "Gelmedi" olarak işaretlenir.',
         },
         days: {
             monday: 'Pazartesi',
@@ -690,10 +700,16 @@ export const tr = {
             'Hasta ve doktor bu ekrandan değiştirilemez. Yalnızca tarih ve randevu detayları güncellenir.',
         row_actions: 'Randevu işlemleri',
         menu: {
+            check_in: 'Geldi olarak işaretle',
             edit: 'Düzenle',
+            no_show: 'Gelmedi olarak işaretle',
             cancel: 'İptal et',
             delete: 'Sil',
         },
+        no_show_confirm_title: 'Gelmedi olarak işaretle',
+        no_show_confirm_message:
+            'Bu randevu "Gelmedi" olarak işaretlensin mi? Hastanın randevusuna gelmediği kaydedilir ve raporlara yansır.',
+        confirm_no_show: 'Gelmedi olarak işaretle',
         cancel_confirm_title: 'Randevuyu iptal et',
         cancel_confirm_message:
             'Bu randevuyu iptal etmek istediğinize emin misiniz? Kayıt "İptal" olarak işaretlenecek ve raporlarda kalacak.',
@@ -1176,6 +1192,9 @@ export const tr = {
         delete: 'Sil',
         cancel: 'Vazgeç',
         back: 'Geri',
+        units: {
+            hour: 'saat',
+        },
         media: {
             empty: 'Görsel yok',
             uploading: 'Yükleniyor…',
