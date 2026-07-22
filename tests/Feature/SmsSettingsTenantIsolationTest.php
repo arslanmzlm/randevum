@@ -4,6 +4,7 @@ use App\Enums\SmsType;
 use App\Models\Clinic;
 use App\Models\ClinicSmsSetting;
 use App\Models\User;
+use App\Modules\Messaging\Contracts\SmsTemplateRendererContract;
 use App\Support\ClinicContext;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
@@ -167,6 +168,93 @@ it('owner B PUT cannot overwrite owner A rows even indirectly', function (): voi
         ->where('sms_type', SmsType::BalanceReminder->value)
         ->first();
     expect($rowA->enabled)->toBeFalse();
+});
+
+// ---------------------------------------------------------------------------
+// Templates — GET isolation
+// ---------------------------------------------------------------------------
+
+it("owner A's GET templates prop never exposes clinic B's custom template", function (): void {
+    $clinicA = Clinic::factory()->create();
+    $clinicB = Clinic::factory()->create();
+
+    $ownerA = User::factory()->create();
+    smsIsoRole($ownerA, 'owner', $clinicA->id);
+
+    ClinicSmsSetting::factory()
+        ->forType(SmsType::AppointmentCreated)
+        ->withTemplate('Clinic B özel metni')
+        ->create(['clinic_id' => $clinicB->id]);
+
+    $this->actingAs($ownerA)
+        ->get(route('clinic.sms-settings.edit'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('templates.appointment_created', null) // clinic A has no row — null, not B's text
+        );
+});
+
+// ---------------------------------------------------------------------------
+// Templates — PUT isolation
+// ---------------------------------------------------------------------------
+
+it("owner A's PUT template writes to clinic A's row only; clinic B's template row is untouched", function (): void {
+    $clinicA = Clinic::factory()->create();
+    $clinicB = Clinic::factory()->create();
+
+    $ownerA = User::factory()->create();
+    $ownerB = User::factory()->create();
+    smsIsoRole($ownerA, 'owner', $clinicA->id);
+    smsIsoRole($ownerB, 'owner', $clinicB->id);
+
+    ClinicSmsSetting::factory()
+        ->forType(SmsType::AppointmentCreated)
+        ->withTemplate('Clinic B orijinal metni')
+        ->create(['clinic_id' => $clinicB->id]);
+
+    $this->actingAs($ownerA)
+        ->put(route('clinic.sms-settings.update'), [
+            'settings' => smsIsoAllEnabled(),
+            'templates' => [SmsType::AppointmentCreated->value => 'Clinic A özel metni'],
+        ])
+        ->assertRedirect();
+
+    $rowA = ClinicSmsSetting::withoutGlobalScopes()
+        ->where('clinic_id', $clinicA->id)
+        ->where('sms_type', SmsType::AppointmentCreated->value)
+        ->first();
+    expect($rowA->template)->toBe('Clinic A özel metni');
+
+    // Clinic B's template must remain untouched — clinic A cannot mutate it.
+    $rowB = ClinicSmsSetting::withoutGlobalScopes()
+        ->where('clinic_id', $clinicB->id)
+        ->where('sms_type', SmsType::AppointmentCreated->value)
+        ->first();
+    expect($rowB->template)->toBe('Clinic B orijinal metni');
+});
+
+it('a render for clinic A uses A\'s template, never clinic B\'s, even when both have custom text for the same type', function (): void {
+    $clinicA = Clinic::factory()->create(['locale' => 'tr_TR']);
+    $clinicB = Clinic::factory()->create(['locale' => 'tr_TR']);
+
+    ClinicSmsSetting::factory()
+        ->forType(SmsType::AppointmentCreated)
+        ->withTemplate('Clinic A özel metni')
+        ->create(['clinic_id' => $clinicA->id]);
+
+    ClinicSmsSetting::factory()
+        ->forType(SmsType::AppointmentCreated)
+        ->withTemplate('Clinic B özel metni')
+        ->create(['clinic_id' => $clinicB->id]);
+
+    $renderer = app(SmsTemplateRendererContract::class);
+
+    $bodyA = $renderer->resolve($clinicA, SmsType::AppointmentCreated, []);
+    $bodyB = $renderer->resolve($clinicB, SmsType::AppointmentCreated, []);
+
+    expect($bodyA)->toBe('Clinic A özel metni')
+        ->and($bodyB)->toBe('Clinic B özel metni')
+        ->and($bodyA)->not->toBe($bodyB);
 });
 
 // ---------------------------------------------------------------------------

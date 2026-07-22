@@ -8,9 +8,16 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\PermissionRegistrar;
 
 /**
- * Browser smoke — Feature 1.40a (SMS gönderim gate + klinik SMS tercihleri).
- * Real Chromium via pest-plugin-browser: the SMS settings page must mount,
- * render page-body content (not just the app shell), and produce no JS errors.
+ * Browser smoke — Feature 1.33 (SMS şablon özelleştirme). Real Chromium via
+ * pest-plugin-browser: the SMS settings page must mount, render the two
+ * split cards ("Randevu bildirimleri" / "Sistem bildirimleri"), and produce
+ * no JS errors.
+ *
+ * Goes beyond a plain smoke to exercise genuine client-side JS logic: the
+ * per-editor live preview is a purely client-computed value (substitutes the
+ * allowlisted :clinic/:date/:time tokens from the lang default body using the
+ * server-sent sample map, entirely in Vue — no round trip). Asserting the
+ * exact substituted preview string proves that computation actually ran.
  *
  * Hardened against Vue setup-error false greens: assertNoJavascriptErrors()
  * only catches *uncaught* window errors. Vue swallows component setup/render
@@ -24,8 +31,8 @@ beforeEach(function (): void {
     app(PermissionRegistrar::class)->setPermissionsTeamId(null);
 });
 
-it('renders the SMS settings page with toggle rows and no JS errors', function (): void {
-    $clinic = Clinic::factory()->create();
+it('renders the SMS settings page with both cards and a computed template preview, with no JS errors', function (): void {
+    $clinic = Clinic::factory()->create(['name' => 'Yıldız Diş Kliniği']);
     $owner = User::factory()->create();
 
     // Assign clinic-scoped owner role (Spatie Teams).
@@ -36,14 +43,21 @@ it('renders the SMS settings page with toggle rows and no JS errors', function (
     $this->actingAs($owner);
 
     visit('/clinic/sms-settings')
+        ->waitForEvent('networkidle')
         ->assertNoJavascriptErrors()
         // Page title rendered by PageHeader — in-body, not the shared shell.
         ->assertSee('SMS Bildirimleri')
-        // Section heading rendered inside the settings card body.
-        ->assertSee('Bildirim türleri')
-        // A toggle label for one of the 6 clinic-scoped SMS types.
+        // The two split SectionCard titles (UX revision: balance moved to its own card).
+        ->assertSee('Randevu bildirimleri')
+        ->assertSee('Sistem bildirimleri')
+        // A customizable type's label, rendered inside SmsTemplateField.
         ->assertSee('Randevu oluşturuldu')
-        // Guard against silent-blank-body false green: <main> must be non-empty.
+        // Genuine client-side logic: the live preview computed prop substitutes
+        // :clinic/:date/:time from the lang default body using the server-sent
+        // sample map — no template set yet, so this proves the client-side
+        // token-replacement + default-body fallback both ran correctly.
+        ->assertSee('Yıldız Diş Kliniği: 15 Ağustos 2026 14:30 için randevunuz oluşturuldu.')
+        // Guard against the silent-blank-body false green: <main> must be non-empty.
         ->assertScript(
             '() => (document.querySelector("main")?.innerText.trim().length ?? 0) > 0',
         )

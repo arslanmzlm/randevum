@@ -21,6 +21,7 @@ class ClinicSmsSettingFactory extends Factory
             'clinic_id' => Clinic::factory(),
             'sms_type' => $this->faker->randomElement(SmsType::clinicScopedCases()),
             'enabled' => true,
+            'template' => null,
         ];
     }
 
@@ -32,5 +33,10 @@ class ClinicSmsSettingFactory extends Factory
     public function forType(SmsType $type): static
     {
         return $this->state(['sms_type' => $type]);
+    }
+
+    public function withTemplate(string $template): static
+    {
+        return $this->state(['template' => $template]);
     }
 }

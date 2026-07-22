@@ -80,16 +80,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | SMS quota
+    | SMS quota & templates
     |--------------------------------------------------------------------------
     |
     | Monthly clinic-scoped SMS allowance when a clinic sets no per-clinic
     | override (clinics.sms_monthly_quota is null). OTP sends are never counted.
+    | max_segments caps a custom template's encoding-aware segment count
+    | (GSM-7 vs UCS-2) at save time — protects SMS cost/quota.
     |
     */
 
     'sms' => [
         'monthly_quota' => (int) env('PLATFORM_SMS_MONTHLY_QUOTA', 1000),
+        'max_segments' => (int) env('PLATFORM_SMS_MAX_SEGMENTS', 3),
     ],
 
     'otp' => [

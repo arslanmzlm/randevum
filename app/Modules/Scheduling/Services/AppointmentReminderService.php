@@ -5,6 +5,7 @@ namespace App\Modules\Scheduling\Services;
 use App\Enums\SmsType;
 use App\Models\Appointment;
 use App\Modules\Messaging\Contracts\SmsDispatcherContract;
+use App\Modules\Messaging\Contracts\SmsTemplateRendererContract;
 use App\Modules\Messaging\Data\SmsMessage;
 use App\Modules\Scheduling\Repositories\AppointmentReminderRepository;
 use Carbon\Carbon;
@@ -17,6 +18,7 @@ class AppointmentReminderService
     public function __construct(
         private AppointmentReminderRepository $repository,
         private SmsDispatcherContract $dispatcher,
+        private SmsTemplateRendererContract $renderer,
     ) {}
 
     /**
@@ -52,7 +54,7 @@ class AppointmentReminderService
      */
     public function sendManual(Appointment $appointment): void
     {
-        $appointment->loadMissing('patient', 'clinic');
+        $appointment->loadMissing('patient', 'clinic', 'doctor.user');
 
         $message = $this->buildMessage($appointment, SmsType::Reminder24h);
 
@@ -101,14 +103,13 @@ class AppointmentReminderService
         // Normalize 'tr_TR' → 'tr' so Laravel lang/ dirs and Carbon both resolve correctly.
         $lang = strtolower(explode('_', $clinic->locale)[0]);
 
-        $date = $localTime->locale($lang)->translatedFormat('d F Y');
-        $time = $localTime->format('H:i');
-
-        $body = __('sms.reminder.body', [
+        $body = $this->renderer->resolve($clinic, $type, [
             'clinic' => $clinic->name,
-            'date' => $date,
-            'time' => $time,
-        ], $lang);
+            'date' => $localTime->locale($lang)->translatedFormat('d F Y'),
+            'time' => $localTime->format('H:i'),
+            'patient' => trim("{$patient->first_name} {$patient->last_name}"),
+            'doctor' => $appointment->doctor?->displayName ?? '',
+        ]);
 
         return new SmsMessage(
             phone: $patient->getRawOriginal('phone'),

@@ -635,6 +635,103 @@ it('manual send-reminder does not set reminder_24h_sent flag', function (): void
     Queue::assertPushed(SendSmsJob::class);
 });
 
+// ---------------------------------------------------------------------------
+// Custom SMS template (1.33) — AppointmentReminderService integrates the renderer
+// ---------------------------------------------------------------------------
+
+it('a due 24h reminder with a custom Reminder24h template sends the custom body with :patient substituted', function (): void {
+    config(['services.sms.provider' => 'null', 'queue.default' => 'sync']);
+    $now = Carbon::parse('2026-06-20 10:00:00', 'UTC');
+    Carbon::setTestNow($now);
+
+    $clinic = Clinic::factory()->create(['locale' => 'tr_TR']);
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id, 'first_name' => 'Ayşe', 'last_name' => 'Yılmaz', 'phone' => '+905321112233']);
+    $doctor = Doctor::factory()->for($clinic)->create();
+
+    ClinicSmsSetting::factory()
+        ->forType(SmsType::Reminder24h)
+        ->withTemplate('Sayın :patient, yarınki randevunuzu hatırlatırız.')
+        ->create(['clinic_id' => $clinic->id]);
+
+    $appointment = appointmentDueIn24h($now, [
+        'clinic_id' => $clinic->id,
+        'patient_id' => $patient->id,
+        'doctor_id' => $doctor->id,
+    ]);
+
+    $this->artisan('sms:send-reminders')->assertSuccessful();
+
+    $log = SmsLog::withoutGlobalScopes()
+        ->where('loggable_type', 'appointment')
+        ->where('loggable_id', $appointment->id)
+        ->sole();
+
+    expect($log->body)->toBe('Sayın Ayşe Yılmaz, yarınki randevunuzu hatırlatırız.');
+
+    Carbon::setTestNow();
+});
+
+it('a due 24h reminder without a custom template falls back to the shared sms.reminder.body lang default', function (): void {
+    config(['services.sms.provider' => 'null', 'queue.default' => 'sync']);
+    $now = Carbon::parse('2026-06-20 10:00:00', 'UTC');
+    Carbon::setTestNow($now);
+
+    $clinic = Clinic::factory()->create(['locale' => 'tr_TR']);
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id, 'phone' => '+905321112233']);
+    $doctor = Doctor::factory()->for($clinic)->create();
+
+    $appointment = appointmentDueIn24h($now, [
+        'clinic_id' => $clinic->id,
+        'patient_id' => $patient->id,
+        'doctor_id' => $doctor->id,
+    ]);
+
+    $this->artisan('sms:send-reminders')->assertSuccessful();
+
+    $log = SmsLog::withoutGlobalScopes()
+        ->where('loggable_type', 'appointment')
+        ->where('loggable_id', $appointment->id)
+        ->sole();
+
+    expect($log->body)->toContain('randevunuzu hatırlatırız'); // lang/tr/sms.php reminder default phrasing
+
+    Carbon::setTestNow();
+});
+
+it('the manual send-reminder path (Reminder24h) also renders the custom template', function (): void {
+    config(['services.sms.provider' => 'null', 'queue.default' => 'sync']);
+
+    $clinic = Clinic::factory()->create(['locale' => 'tr_TR']);
+    $owner = User::factory()->create();
+    srTestRole($owner, 'owner', $clinic->id);
+
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id, 'first_name' => 'Ayşe', 'last_name' => 'Yılmaz', 'phone' => '+905321234567']);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+    $appointment = Appointment::factory()->create([
+        'clinic_id' => $clinic->id,
+        'patient_id' => $patient->id,
+        'doctor_id' => $doctor->id,
+        'status' => AppointmentStatus::Confirmed,
+    ]);
+
+    ClinicSmsSetting::factory()
+        ->forType(SmsType::Reminder24h)
+        ->withTemplate('Elden yazılmış hatırlatma, sayın :patient.')
+        ->create(['clinic_id' => $clinic->id]);
+
+    $this->actingAs($owner)
+        ->post(route('appointments.send-reminder', $appointment))
+        ->assertRedirect();
+
+    $log = SmsLog::withoutGlobalScopes()
+        ->where('loggable_type', 'appointment')
+        ->where('loggable_id', $appointment->id)
+        ->sole();
+
+    expect($log->body)->toBe('Elden yazılmış hatırlatma, sayın Ayşe Yılmaz.');
+});
+
 it('manual send-reminder can resend even when reminder_24h_sent is already true', function (): void {
     Queue::fake();
 

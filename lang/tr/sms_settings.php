@@ -34,4 +34,13 @@ return [
 
     'nav' => 'SMS Bildirimleri',
 
+    // Static illustrative values for the template editor's live preview —
+    // never a real patient/appointment lookup.
+    'preview_sample' => [
+        'date' => '15 Ağustos 2026',
+        'time' => '14:30',
+        'patient' => 'Ayşe Yılmaz',
+        'doctor' => 'Dr. Mehmet Demir',
+    ],
+
 ];

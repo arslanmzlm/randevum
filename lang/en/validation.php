@@ -322,4 +322,8 @@ return [
         'caption' => 'caption',
     ],
 
+    'sms_template_unknown_type' => ':attribute is not a valid customizable SMS type.',
+    'sms_template_unknown_variable' => ':attribute contains a variable that is not allowed: :variable',
+    'sms_template_segment_limit' => ':attribute allows at most :max SMS segments (the entered text is :segments segments).',
+
 ];

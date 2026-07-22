@@ -201,5 +201,9 @@ return [
     'working_hours_break_end_after_start' => ':attribute mola bitiş saati başlangıçtan sonra olmalıdır.',
     'working_hours_break_within_hours' => ':attribute mola saatleri çalışma saatleri içinde olmalıdır.',
 
+    'sms_template_unknown_type' => ':attribute geçerli bir özelleştirilebilir SMS türü değil.',
+    'sms_template_unknown_variable' => ':attribute içinde izin verilmeyen bir değişken var: :variable',
+    'sms_template_segment_limit' => ':attribute en fazla :max SMS segmentine izin verir (girilen metin :segments segment).',
+
     'custom' => [],
 ];

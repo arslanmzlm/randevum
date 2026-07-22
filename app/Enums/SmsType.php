@@ -30,4 +30,42 @@ enum SmsType: string
     {
         return array_values(array_filter(self::cases(), fn (self $t) => $t->isClinicScoped()));
     }
+
+    /**
+     * Returns true for the 5 types a clinic may override with a custom template.
+     * BalanceReminder stays a fixed built-in message; OTP is platform-level.
+     */
+    public function isCustomizable(): bool
+    {
+        return match ($this) {
+            self::AppointmentCreated, self::AppointmentCancelled, self::AppointmentRescheduled,
+            self::Reminder24h, self::Reminder1h => true,
+            self::BalanceReminder, self::Otp => false,
+        };
+    }
+
+    /**
+     * The 5 customizable types — the set the template editor operates on.
+     *
+     * @return list<self>
+     */
+    public static function customizableCases(): array
+    {
+        return array_values(array_filter(self::cases(), fn (self $t) => $t->isCustomizable()));
+    }
+
+    /**
+     * The lang key holding this type's default body. Both reminder types share
+     * `sms.reminder.body`; customizable types only (throws otherwise).
+     */
+    public function defaultBodyKey(): string
+    {
+        return match ($this) {
+            self::AppointmentCreated => 'sms.appointment.created.body',
+            self::AppointmentCancelled => 'sms.appointment.cancelled.body',
+            self::AppointmentRescheduled => 'sms.appointment.rescheduled.body',
+            self::Reminder24h, self::Reminder1h => 'sms.reminder.body',
+            self::BalanceReminder, self::Otp => throw new \LogicException("SmsType {$this->value} has no default body key."),
+        };
+    }
 }

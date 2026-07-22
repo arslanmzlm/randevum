@@ -13,6 +13,7 @@ return new class extends Migration
             $table->foreignId('clinic_id')->constrained()->cascadeOnDelete();
             $table->string('sms_type');   // SmsType value, clinic-scoped SMS types only (OTP excluded)
             $table->boolean('enabled')->default(true);
+            $table->text('template')->nullable(); // custom body; null = lang default (customizable types only)
             $table->timestampsTz();
 
             $table->unique(['clinic_id', 'sms_type']);

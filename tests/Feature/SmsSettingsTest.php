@@ -181,6 +181,104 @@ it('types prop contains all 6 clinic-scoped SmsType values', function (): void {
 });
 
 // ---------------------------------------------------------------------------
+// GET /clinic/sms-settings — templates / defaults / variables / sample props
+// ---------------------------------------------------------------------------
+
+it('templates prop contains all 5 customizable SmsType keys, null (no custom template) by default', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    smsRole($owner, 'owner', $clinic->id);
+
+    $this->actingAs($owner)
+        ->get(route('clinic.sms-settings.edit'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('templates', 5)
+            ->where('templates.appointment_created', null)
+            ->where('templates.appointment_cancelled', null)
+            ->where('templates.appointment_rescheduled', null)
+            ->where('templates.reminder_24h', null)
+            ->where('templates.reminder_1h', null)
+        );
+});
+
+it('templates prop does NOT include balance_reminder (not customizable)', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    smsRole($owner, 'owner', $clinic->id);
+
+    $this->actingAs($owner)
+        ->get(route('clinic.sms-settings.edit'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->missing('templates.balance_reminder')
+        );
+});
+
+it('templates prop reflects a persisted custom template', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    smsRole($owner, 'owner', $clinic->id);
+
+    ClinicSmsSetting::factory()
+        ->forType(SmsType::AppointmentCreated)
+        ->withTemplate('Merhaba :patient, randevunuz oluşturuldu.')
+        ->create(['clinic_id' => $clinic->id]);
+
+    $this->actingAs($owner)
+        ->get(route('clinic.sms-settings.edit'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('templates.appointment_created', 'Merhaba :patient, randevunuz oluşturuldu.')
+        );
+});
+
+it('defaults prop contains the lang default body for all 5 customizable types', function (): void {
+    $clinic = Clinic::factory()->create(['locale' => 'tr_TR']);
+    $owner = User::factory()->create();
+    smsRole($owner, 'owner', $clinic->id);
+
+    $this->actingAs($owner)
+        ->get(route('clinic.sms-settings.edit'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('defaults.appointment_created', __('sms.appointment.created.body', [], 'tr'))
+            ->where('defaults.reminder_24h', __('sms.reminder.body', [], 'tr'))
+            ->where('defaults.reminder_1h', __('sms.reminder.body', [], 'tr'))
+        );
+});
+
+it('variables prop is exactly the allowlist [clinic, date, time, patient, doctor]', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    smsRole($owner, 'owner', $clinic->id);
+
+    $this->actingAs($owner)
+        ->get(route('clinic.sms-settings.edit'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('variables', ['clinic', 'date', 'time', 'patient', 'doctor'])
+        );
+});
+
+it('sample prop carries the clinic own name for :clinic', function (): void {
+    $clinic = Clinic::factory()->create(['name' => 'Clinic Alpha']);
+    $owner = User::factory()->create();
+    smsRole($owner, 'owner', $clinic->id);
+
+    $this->actingAs($owner)
+        ->get(route('clinic.sms-settings.edit'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('sample.clinic', 'Clinic Alpha')
+            ->has('sample.date')
+            ->has('sample.time')
+            ->has('sample.patient')
+            ->has('sample.doctor')
+        );
+});
+
+// ---------------------------------------------------------------------------
 // PUT /clinic/sms-settings — access control
 // ---------------------------------------------------------------------------
 
@@ -303,4 +401,233 @@ it('PUT rejects when settings is missing', function (): void {
     $this->actingAs($owner)
         ->put(route('clinic.sms-settings.update'), [])
         ->assertSessionHasErrors('settings');
+});
+
+// ---------------------------------------------------------------------------
+// PUT /clinic/sms-settings — templates persistence
+// ---------------------------------------------------------------------------
+
+it('PUT persists a custom template for a customizable type', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    smsRole($owner, 'owner', $clinic->id);
+
+    $this->actingAs($owner)
+        ->put(route('clinic.sms-settings.update'), [
+            'settings' => allEnabledSettings(),
+            'templates' => [
+                SmsType::AppointmentCreated->value => 'Merhaba :patient, :clinic randevunuz :date :time.',
+            ],
+        ])
+        ->assertRedirect();
+
+    $row = ClinicSmsSetting::withoutGlobalScopes()
+        ->where('clinic_id', $clinic->id)
+        ->where('sms_type', SmsType::AppointmentCreated->value)
+        ->first();
+
+    expect($row->template)->toBe('Merhaba :patient, :clinic randevunuz :date :time.');
+});
+
+it('PUT with a templates map that omits a type leaves that type stored template unchanged', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    smsRole($owner, 'owner', $clinic->id);
+
+    ClinicSmsSetting::factory()
+        ->forType(SmsType::AppointmentCancelled)
+        ->withTemplate('Korunması gereken özel metin')
+        ->create(['clinic_id' => $clinic->id]);
+
+    // A PUT that carries only AppointmentCreated in the templates map must NOT wipe
+    // the stored AppointmentCancelled template — an absent key means "leave unchanged".
+    $this->actingAs($owner)
+        ->put(route('clinic.sms-settings.update'), [
+            'settings' => allEnabledSettings(),
+            'templates' => [SmsType::AppointmentCreated->value => 'Yeni :patient metni'],
+        ])
+        ->assertRedirect();
+
+    $cancelled = ClinicSmsSetting::withoutGlobalScopes()
+        ->where('clinic_id', $clinic->id)
+        ->where('sms_type', SmsType::AppointmentCancelled->value)
+        ->first();
+
+    expect($cancelled->template)->toBe('Korunması gereken özel metin');
+});
+
+it('PUT with an empty-string template resets the type to default (row template = null)', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    smsRole($owner, 'owner', $clinic->id);
+
+    ClinicSmsSetting::factory()
+        ->forType(SmsType::AppointmentCancelled)
+        ->withTemplate('Eski özel metin')
+        ->create(['clinic_id' => $clinic->id]);
+
+    $this->actingAs($owner)
+        ->put(route('clinic.sms-settings.update'), [
+            'settings' => allEnabledSettings(),
+            'templates' => [SmsType::AppointmentCancelled->value => ''],
+        ])
+        ->assertRedirect();
+
+    $row = ClinicSmsSetting::withoutGlobalScopes()
+        ->where('clinic_id', $clinic->id)
+        ->where('sms_type', SmsType::AppointmentCancelled->value)
+        ->first();
+
+    expect($row->template)->toBeNull();
+});
+
+it('PUT with a whitespace-only template resets the type to default (row template = null)', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    smsRole($owner, 'owner', $clinic->id);
+
+    ClinicSmsSetting::factory()
+        ->forType(SmsType::AppointmentCancelled)
+        ->withTemplate('Eski özel metin')
+        ->create(['clinic_id' => $clinic->id]);
+
+    $this->actingAs($owner)
+        ->put(route('clinic.sms-settings.update'), [
+            'settings' => allEnabledSettings(),
+            'templates' => [SmsType::AppointmentCancelled->value => '   '],
+        ])
+        ->assertRedirect();
+
+    $row = ClinicSmsSetting::withoutGlobalScopes()
+        ->where('clinic_id', $clinic->id)
+        ->where('sms_type', SmsType::AppointmentCancelled->value)
+        ->first();
+
+    expect($row->template)->toBeNull();
+});
+
+it('PUT rejects a template containing a non-allowlisted :token', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    smsRole($owner, 'owner', $clinic->id);
+
+    $this->actingAs($owner)
+        ->put(route('clinic.sms-settings.update'), [
+            'settings' => allEnabledSettings(),
+            'templates' => [
+                SmsType::AppointmentCreated->value => 'Randevunuz :service için :date.',
+            ],
+        ])
+        ->assertSessionHasErrors('templates.appointment_created');
+
+    expect(ClinicSmsSetting::withoutGlobalScopes()
+        ->where('clinic_id', $clinic->id)
+        ->where('sms_type', SmsType::AppointmentCreated->value)
+        ->exists()
+    )->toBeFalse();
+});
+
+it('PUT rejects a templates key that is not a customizable SmsType (balance_reminder)', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    smsRole($owner, 'owner', $clinic->id);
+
+    $this->actingAs($owner)
+        ->put(route('clinic.sms-settings.update'), [
+            'settings' => allEnabledSettings(),
+            'templates' => [SmsType::BalanceReminder->value => 'Özel bakiye mesajı'],
+        ])
+        ->assertSessionHasErrors('templates.balance_reminder');
+});
+
+it('PUT rejects a template whose encoding-aware segment count exceeds the configured max_segments cap', function (): void {
+    config(['platform.sms.max_segments' => 3]);
+
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    smsRole($owner, 'owner', $clinic->id);
+
+    // 460 plain ASCII (GSM-7) chars → ceil(460/153) = 4 segments, over the cap of 3.
+    $overCapTemplate = str_repeat('a', 460);
+
+    $this->actingAs($owner)
+        ->put(route('clinic.sms-settings.update'), [
+            'settings' => allEnabledSettings(),
+            'templates' => [SmsType::Reminder24h->value => $overCapTemplate],
+        ])
+        ->assertSessionHasErrors('templates.reminder_24h');
+
+    expect(ClinicSmsSetting::withoutGlobalScopes()
+        ->where('clinic_id', $clinic->id)
+        ->where('sms_type', SmsType::Reminder24h->value)
+        ->exists()
+    )->toBeFalse();
+});
+
+it('PUT accepts a template at exactly the max_segments cap', function (): void {
+    config(['platform.sms.max_segments' => 3]);
+
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    smsRole($owner, 'owner', $clinic->id);
+
+    // 459 plain ASCII (GSM-7) chars → ceil(459/153) = 3 segments, exactly at the cap.
+    $atCapTemplate = str_repeat('a', 459);
+
+    $this->actingAs($owner)
+        ->put(route('clinic.sms-settings.update'), [
+            'settings' => allEnabledSettings(),
+            'templates' => [SmsType::Reminder24h->value => $atCapTemplate],
+        ])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect();
+
+    $row = ClinicSmsSetting::withoutGlobalScopes()
+        ->where('clinic_id', $clinic->id)
+        ->where('sms_type', SmsType::Reminder24h->value)
+        ->first();
+
+    expect($row->template)->toBe($atCapTemplate);
+});
+
+it('the two reminder types persist independently even though they share the same lang default', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    smsRole($owner, 'owner', $clinic->id);
+
+    $this->actingAs($owner)
+        ->put(route('clinic.sms-settings.update'), [
+            'settings' => allEnabledSettings(),
+            'templates' => [
+                SmsType::Reminder24h->value => '24 saatlik özel metin',
+                SmsType::Reminder1h->value => '1 saatlik özel metin',
+            ],
+        ])
+        ->assertRedirect();
+
+    $row24h = ClinicSmsSetting::withoutGlobalScopes()
+        ->where('clinic_id', $clinic->id)->where('sms_type', SmsType::Reminder24h->value)->first();
+    $row1h = ClinicSmsSetting::withoutGlobalScopes()
+        ->where('clinic_id', $clinic->id)->where('sms_type', SmsType::Reminder1h->value)->first();
+
+    expect($row24h->template)->toBe('24 saatlik özel metin')
+        ->and($row1h->template)->toBe('1 saatlik özel metin');
+});
+
+it('balance_reminder has no template path — PUT with only settings (no templates key) succeeds', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    smsRole($owner, 'owner', $clinic->id);
+
+    $this->actingAs($owner)
+        ->put(route('clinic.sms-settings.update'), ['settings' => allEnabledSettings()])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect();
+
+    $row = ClinicSmsSetting::withoutGlobalScopes()
+        ->where('clinic_id', $clinic->id)
+        ->where('sms_type', SmsType::BalanceReminder->value)
+        ->first();
+
+    expect($row->template)->toBeNull();
 });

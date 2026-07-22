@@ -21,6 +21,7 @@ class ClinicSmsSetting extends Model
         'clinic_id',
         'sms_type',
         'enabled',
+        'template',
     ];
 
     /**

@@ -1068,6 +1068,38 @@ export const tr = {
             'Kliniğinizin müşterilerine hangi SMS bildirimlerini göndereceğini yönetin.',
         section: 'Bildirim türleri',
         save: 'Kaydet',
+        card: {
+            appointments: {
+                title: 'Randevu bildirimleri',
+                description:
+                    'Randevu SMS metinlerini özelleştirin. Metni boş bırakırsanız varsayılan mesaj gönderilir.',
+            },
+            system: {
+                title: 'Sistem bildirimleri',
+                description:
+                    'Klinik tarafından yönetilen, metni sabit otomatik bildirimler.',
+            },
+        },
+        template: {
+            label: 'Mesaj metni',
+            variables_label: 'Değişken ekle:',
+            variable: {
+                clinic: 'Klinik',
+                date: 'Tarih',
+                time: 'Saat',
+                patient: 'Hasta',
+                doctor: 'Doktor',
+            },
+            counter: '{chars} karakter · {segments} segment',
+            segment_warning:
+                'Bu mesaj {segments} SMS segmentine bölünür; her segment ayrı ücretlendirilir.',
+            segment_limit:
+                'Mesaj en fazla {max} SMS segmenti olabilir. Lütfen kısaltın.',
+            recommended_warning:
+                'Şu değişkenleri eklemeniz önerilir: {variables}',
+            preview: 'Önizleme',
+            reset: 'Varsayılana sıfırla',
+        },
         quota: {
             title: 'Aylık SMS Kotası',
             used: '{used} / {allowance} SMS kullanıldı',
@@ -1099,7 +1131,7 @@ export const tr = {
             },
             balance_reminder: {
                 label: 'Bakiye hatırlatma',
-                hint: 'Hastanın bekleyen bakiyesi olduğunda SMS gönderilir.',
+                hint: 'Ödenmemiş bakiyesi olan hastalara, kalan tutarı hatırlatan otomatik bir SMS gönderilir. Bu mesajın metni özelleştirilemez.',
             },
         },
     },

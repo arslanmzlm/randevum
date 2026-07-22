@@ -34,4 +34,13 @@ return [
 
     'nav' => 'SMS Notifications',
 
+    // Static illustrative values for the template editor's live preview —
+    // never a real patient/appointment lookup.
+    'preview_sample' => [
+        'date' => 'August 15, 2026',
+        'time' => '2:30 PM',
+        'patient' => 'Jane Smith',
+        'doctor' => 'Dr. John Carter',
+    ],
+
 ];

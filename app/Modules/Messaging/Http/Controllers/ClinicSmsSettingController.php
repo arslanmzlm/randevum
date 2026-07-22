@@ -9,6 +9,7 @@ use App\Modules\Core\Support\Toast;
 use App\Modules\Messaging\Http\Requests\UpdateClinicSmsSettingsRequest;
 use App\Modules\Messaging\Services\ClinicSmsSettingService;
 use App\Modules\Messaging\Services\SmsQuotaService;
+use App\Modules\Messaging\Support\SmsTemplateVariables;
 use App\Support\ClinicContext;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -29,12 +30,18 @@ class ClinicSmsSettingController extends Controller
         $clinicId = $this->clinicContext->id();
         abort_unless($clinicId !== null, 404);
 
+        $clinic = $this->clinicContext->clinicOrFail();
+
         return Inertia::render('clinic/SmsSettings', [
             'settings' => $this->service->current($clinicId),
+            'templates' => $this->service->templates($clinicId),
+            'defaults' => $this->service->defaults($clinic->locale),
             'types' => array_map(
                 fn (SmsType $t) => ['value' => $t->value],
                 SmsType::clinicScopedCases(),
             ),
+            'variables' => SmsTemplateVariables::ALLOWED,
+            'sample' => $this->service->sample($clinic),
             'quota' => $this->quotaService->usage($clinicId),
         ]);
     }
@@ -46,7 +53,7 @@ class ClinicSmsSettingController extends Controller
         $clinicId = $this->clinicContext->id();
         abort_unless($clinicId !== null, 404);
 
-        $this->service->update($clinicId, $request->settings());
+        $this->service->update($clinicId, $request->settings(), $request->templates());
 
         Toast::success(__('messages.sms_settings.updated'));
 

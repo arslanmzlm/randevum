@@ -661,6 +661,92 @@ it('sms_logs for clinic A booking carry clinic A id and clinic A name in body, n
         ->and($logA->body)->not->toContain('Clinic Beta');
 });
 
+// ---------------------------------------------------------------------------
+// Custom SMS template (1.33) — AppointmentStatusSmsService integrates the renderer
+// ---------------------------------------------------------------------------
+
+it('booking with a custom AppointmentCreated template sends the custom body with :patient/:doctor substituted', function (): void {
+    config(['services.sms.provider' => 'null', 'queue.default' => 'sync']);
+
+    $clinic = Clinic::factory()->create(['name' => 'Clinic Alpha', 'timezone' => 'Europe/Istanbul', 'locale' => 'tr_TR']);
+    $owner = User::factory()->create();
+    statusSmsAssignRole($owner, 'owner', $clinic->id);
+    $doctorUser = User::factory()->create(['first_name' => 'Mehmet', 'last_name' => 'Demir']);
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id, 'title' => null]);
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id, 'first_name' => 'Ayşe', 'last_name' => 'Yılmaz', 'phone' => '+905321234567']);
+
+    ClinicSmsSetting::factory()
+        ->forType(SmsType::AppointmentCreated)
+        ->withTemplate('Sayın :patient, Dr. :doctor ile :clinic randevunuz :date :time.')
+        ->create(['clinic_id' => $clinic->id]);
+
+    $this->actingAs($owner)
+        ->post(route('appointments.store'), statusSmsCreatePayload($patient->id, $doctor->id))
+        ->assertRedirect();
+
+    $log = SmsLog::withoutGlobalScopes()
+        ->where('type', SmsType::AppointmentCreated)
+        ->where('patient_id', $patient->id)
+        ->sole();
+
+    expect($log->body)->toStartWith('Sayın Ayşe Yılmaz, Dr.')
+        ->and($log->body)->toContain('Clinic Alpha')
+        ->and($log->body)->not->toContain(':patient')
+        ->and($log->body)->not->toContain(':doctor')
+        ->and($log->body)->not->toContain(':clinic');
+});
+
+it('booking without a custom template falls back to the lang default body', function (): void {
+    config(['services.sms.provider' => 'null', 'queue.default' => 'sync']);
+
+    $clinic = Clinic::factory()->create(['name' => 'Clinic Alpha', 'timezone' => 'Europe/Istanbul', 'locale' => 'tr_TR']);
+    $owner = User::factory()->create();
+    statusSmsAssignRole($owner, 'owner', $clinic->id);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id, 'phone' => '+905321234567']);
+
+    $this->actingAs($owner)
+        ->post(route('appointments.store'), statusSmsCreatePayload($patient->id, $doctor->id))
+        ->assertRedirect();
+
+    $log = SmsLog::withoutGlobalScopes()
+        ->where('type', SmsType::AppointmentCreated)
+        ->where('patient_id', $patient->id)
+        ->sole();
+
+    expect($log->body)->toContain('için randevunuz oluşturuldu'); // lang/tr/sms.php default phrasing
+});
+
+it('cancelling with a custom AppointmentCancelled template sends the custom body', function (): void {
+    config(['services.sms.provider' => 'null', 'queue.default' => 'sync']);
+
+    $clinic = Clinic::factory()->create(['name' => 'Clinic Alpha', 'timezone' => 'Europe/Istanbul', 'locale' => 'tr_TR']);
+    $owner = User::factory()->create();
+    statusSmsAssignRole($owner, 'owner', $clinic->id);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id, 'phone' => '+905321234567']);
+    $appointment = statusSmsAppointment($clinic, $doctor, $patient);
+
+    ClinicSmsSetting::factory()
+        ->forType(SmsType::AppointmentCancelled)
+        ->withTemplate('Üzgünüz :patient, randevunuz iptal edildi.')
+        ->create(['clinic_id' => $clinic->id]);
+
+    $this->actingAs($owner)
+        ->patch(route('appointments.cancel', $appointment), [])
+        ->assertRedirect();
+
+    $log = SmsLog::withoutGlobalScopes()
+        ->where('type', SmsType::AppointmentCancelled)
+        ->where('patient_id', $patient->id)
+        ->sole();
+
+    expect($log->body)->toContain('Üzgünüz')
+        ->and($log->body)->toContain($patient->first_name);
+});
+
 it('clinic A cancel SMS is attributed to clinic A only, never clinic B', function (): void {
     config(['services.sms.provider' => 'null', 'queue.default' => 'sync']);
 

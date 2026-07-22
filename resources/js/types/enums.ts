@@ -48,5 +48,17 @@ export type SmsType =
     | 'balance_reminder'
     | 'otp';
 
+/**
+ * The 5 SMS types a clinic may override with a custom template (mirrors
+ * `App\Enums\SmsType::customizableCases()` — every case except `balance_reminder`
+ * and `otp`). Keys the `templates`/`defaults` maps on the SMS-settings page.
+ */
+export type CustomizableSmsType =
+    | 'appointment_created'
+    | 'appointment_cancelled'
+    | 'appointment_rescheduled'
+    | 'reminder_24h'
+    | 'reminder_1h';
+
 /** Mirrors `App\Enums\SmsStatus`; the SMS-log surfaces branch on it (status→severity/label). */
 export type SmsStatus = 'queued' | 'sent' | 'failed' | 'skipped';
