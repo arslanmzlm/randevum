@@ -105,8 +105,8 @@ Route::middleware('auth')->group(function () {
 });
 
 // Appointments — manual/walk-in creation + pre-check probes + lifecycle actions.
-// Literal segments (index, create, availability, day-schedule, bulk-cancel) are declared BEFORE
-// {appointment} so they are not captured as route-model-bound ids.
+// Literal segments (index, create, availability, day-schedule, bulk-cancel, bulk-create) are
+// declared BEFORE {appointment} so they are not captured as route-model-bound ids.
 Route::middleware('auth')->group(function () {
     Route::get('/appointments', [AppointmentController::class, 'index'])->name('appointments.index');
     Route::get('/appointments/create', [AppointmentController::class, 'create'])->name('appointments.create');
@@ -116,6 +116,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/appointments/bulk-cancel', [AppointmentController::class, 'bulkCancelPage'])->name('appointments.bulk-cancel');
     Route::get('/appointments/bulk-cancel/preview', [AppointmentController::class, 'bulkCancelPreview'])->middleware('throttle:60,1')->name('appointments.bulk-cancel.preview');
     Route::post('/appointments/bulk-cancel', [AppointmentController::class, 'bulkCancel'])->name('appointments.bulk-cancel.store');
+    Route::get('/appointments/bulk-create', [AppointmentController::class, 'bulkCreatePage'])->name('appointments.bulk-create');
+    Route::post('/appointments/bulk-create', [AppointmentController::class, 'bulkStore'])->name('appointments.bulk-create.store');
     Route::post('/appointments', [AppointmentController::class, 'store'])->name('appointments.store');
     Route::get('/appointments/{appointment}/edit', [AppointmentController::class, 'edit'])->name('appointments.edit');
     Route::put('/appointments/{appointment}', [AppointmentController::class, 'update'])->name('appointments.update');

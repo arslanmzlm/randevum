@@ -22,6 +22,7 @@ export const tr = {
         appointments: 'Randevular',
         no_shows: 'Gelmeyenler',
         appointments_create: 'Randevu Oluştur',
+        appointments_bulk: 'Toplu Randevu',
         clinic: 'Klinik profili',
         doctors: 'Doktorlar',
         patients: 'Hastalar',
@@ -804,6 +805,32 @@ export const tr = {
         confirm_title: 'Günü kapat',
         confirm_message:
             '{count} randevu "İptal" olarak işaretlenecek. Bu işlem geri alınamaz. Devam etmek istiyor musunuz?',
+    },
+    appointment_bulk: {
+        title: 'Toplu Randevu',
+        subtitle:
+            'Tek hastaya paket seans gibi birden fazla randevuyu tek akışta oluşturun.',
+        generator: {
+            title: 'Randevu Üreteci',
+            hint: 'Başlangıç tarih/saat, adet ve aralık seçin; randevu satırları otomatik oluşturulur. Her satırı ayrıca düzenleyebilirsiniz.',
+            count: 'Randevu sayısı',
+            count_hint: '1 ile 12 arasında.',
+            interval: 'Aralık',
+            seed_hint:
+                'Tüm satırlara uygulanır; satırlarda ayrıca değiştirebilirsiniz.',
+            regenerated_hint:
+                'Üreteç ayarı değişince liste yeniden oluşturulur ve elle düzenlemeler sıfırlanır. Dolu olan slotlar sunucuda atlanır ve sonuçta bildirilir.',
+        },
+        occurrences_title: 'Randevu tarihleri',
+        occurrence_label: '{n}. randevu',
+        add_row: 'Satır ekle',
+        remove_row: 'Satırı kaldır',
+        submit: 'Randevuları Oluştur',
+        result: {
+            created: '{count} randevu oluşturuldu.',
+            skipped: 'Çakışma nedeniyle {count} slot atlandı:',
+            skipped_none: 'Atlanan slot yok.',
+        },
     },
     calendar: {
         title: 'Takvim',

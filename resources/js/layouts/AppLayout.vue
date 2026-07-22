@@ -4,6 +4,7 @@ import {
     IconArrowsMaximize,
     IconArrowsMinimize,
     IconBuildingHospital,
+    IconCalendarEvent,
     IconCalendarOff,
     IconCalendarPlus,
     IconCalendarWeek,
@@ -48,6 +49,7 @@ import { useSidebar } from '@/composables/useSidebar';
 import { account, dashboard, logout } from '@/routes';
 import { index as appointmentTypesIndex } from '@/routes/appointment-types';
 import {
+    bulkCreate as appointmentBulkCreate,
     create as appointmentCreate,
     index as appointmentsIndex,
 } from '@/routes/appointments';
@@ -154,6 +156,15 @@ const navItems = computed<NavItem[]>(() => [
                   label: t('nav.appointments_create'),
                   href: appointmentCreate().url,
                   icon: IconCalendarPlus,
+              },
+          ]
+        : []),
+    ...(can('appointments.create')
+        ? [
+              {
+                  label: t('nav.appointments_bulk'),
+                  href: appointmentBulkCreate().url,
+                  icon: IconCalendarEvent,
               },
           ]
         : []),

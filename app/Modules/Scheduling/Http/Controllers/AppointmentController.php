@@ -11,6 +11,7 @@ use App\Modules\Core\Support\Toast;
 use App\Modules\Messaging\Contracts\SmsQuotaContract;
 use App\Modules\Scheduling\Http\Requests\BulkCancelAppointmentsRequest;
 use App\Modules\Scheduling\Http\Requests\BulkCancelPreviewRequest;
+use App\Modules\Scheduling\Http\Requests\BulkStoreAppointmentsRequest;
 use App\Modules\Scheduling\Http\Requests\CancelAppointmentRequest;
 use App\Modules\Scheduling\Http\Requests\CheckAvailabilityRequest;
 use App\Modules\Scheduling\Http\Requests\DayScheduleRequest;
@@ -134,6 +135,80 @@ class AppointmentController extends Controller
         Toast::success(__('appointment.created', ['patient' => $patientName, 'time' => $slot]));
 
         return to_route('appointments.create');
+    }
+
+    /**
+     * Standalone bulk-booking page: same prop bundle as create(), plus the result of the last
+     * booking (read from the post-store session flash) so the redirect-back re-render can show it.
+     */
+    public function bulkCreatePage(Request $request): Response
+    {
+        $this->authorize('create', Appointment::class);
+
+        $clinic = $this->clinicContext->clinicOrFail();
+
+        $doctors = $this->doctorDirectory->activeForClinic()
+            ->map(fn ($d) => ['id' => $d->id, 'display_name' => $d->display_name]);
+
+        $services = $this->serviceLookup->activeForBooking();
+
+        $appointmentTypes = $this->appointmentTypeService->listActiveForBooking();
+
+        $preselectedPatient = null;
+        if ($patientId = $request->integer('patient_id')) {
+            $patient = Patient::find($patientId);
+            if ($patient) {
+                $preselectedPatient = [
+                    'id' => $patient->id,
+                    'full_name' => trim($patient->first_name.' '.$patient->last_name),
+                    'phone' => $patient->getRawOriginal('phone'),
+                ];
+            }
+        }
+
+        $user = $request->user();
+
+        return Inertia::render('appointments/BulkCreate', [
+            'doctors' => $doctors,
+            'services' => $services,
+            'appointmentTypes' => $appointmentTypes,
+            'defaultSlotDuration' => $clinic->default_slot_duration_minutes,
+            'workingHours' => $clinic->working_hours,
+            'timezone' => $clinic->timezone,
+            'preselectedPatient' => $preselectedPatient,
+            'ownDoctorId' => $user->doctor?->id,
+            'result' => $request->session()->get('bulk_appointment_result'),
+        ]);
+    }
+
+    public function bulkStore(BulkStoreAppointmentsRequest $request): RedirectResponse
+    {
+        $this->authorize('create', Appointment::class);
+
+        $validated = $request->validated();
+
+        // Booking for another doctor's calendar needs the assign-doctor ability.
+        if ((int) $validated['doctor_id'] !== $request->user()->doctor?->id) {
+            $this->authorize('appointments.assignDoctor');
+        }
+
+        $result = $this->service->bulkBook($validated, $request->user());
+
+        $createdCount = count($result['created']);
+        $skipped = $result['skipped'];
+
+        $request->session()->flash('bulk_appointment_result', [
+            'created' => $createdCount,
+            'skipped' => $skipped,
+        ]);
+
+        Toast::success(__('appointment_bulk.done', ['count' => $createdCount]));
+
+        if (! empty($skipped)) {
+            Toast::warning(__('appointment_bulk.skipped_toast', ['count' => count($skipped)]));
+        }
+
+        return to_route('appointments.bulk-create');
     }
 
     public function edit(Request $request, Appointment $appointment): Response

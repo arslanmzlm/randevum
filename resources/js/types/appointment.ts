@@ -2,6 +2,7 @@ import type { InertiaForm } from '@inertiajs/vue3';
 import type { AppointmentStatus, AvailabilityReason } from '@/types/enums';
 import type { PatientSearchResult } from '@/types/patient';
 import type { Paginated, TableState } from '@/types/table';
+import type { OccurrenceDraft } from '@/utils/followUpOccurrences';
 
 // Re-export so existing imports from '@/types/appointment' keep working.
 export type { AppointmentStatus, AvailabilityReason };
@@ -189,6 +190,47 @@ export type BulkCancelPreviewRow = {
     status: AppointmentStatus;
     /** Patient has a phone → will receive the cancellation SMS once 1.16/1.17 lands. */
     has_phone: boolean;
+};
+
+/** One editable occurrence in the bulk-booking flow (same draft shape the generator emits). */
+export type BulkOccurrenceForm = OccurrenceDraft;
+
+/**
+ * The bulk-appointment form: one patient (existing or new) + doctor + optional service, plus the
+ * generated/editable occurrence list. Generator params (start/count/interval/seed) live in the
+ * generator component, not here — only what is submitted is on the form.
+ */
+export type BulkAppointmentFormData = {
+    patient_id: number | null;
+    new_patient: NewPatientFormData;
+    doctor_id: number | null;
+    service_id: number | null;
+    occurrences: BulkOccurrenceForm[];
+};
+
+/** The bulk-appointment Inertia form, shared with the field partials via provide/inject. */
+export type BulkAppointmentForm = InertiaForm<BulkAppointmentFormData>;
+
+/** The post-book report (session-flashed) — created count + skipped clinic-local slot strings. */
+export type BulkAppointmentResult = {
+    created: number;
+    /** 'd.m.Y H:i' clinic-local strings for the slots that conflicted and were skipped. */
+    skipped: string[];
+};
+
+/** Props for the `appointments/BulkCreate` page (AppointmentController@bulkCreatePage). */
+export type BulkCreateProps = {
+    doctors: AppointmentDoctorOption[];
+    services: AppointmentServiceOption[];
+    appointmentTypes: AppointmentTypeOption[];
+    defaultSlotDuration: number;
+    workingHours: WorkingHours;
+    timezone: string;
+    preselectedPatient: PatientSearchResult | null;
+    /** The user's own doctors.id (auto-selected); null when they have no doctor profile. */
+    ownDoctorId: number | null;
+    /** Post-book report; null on a fresh GET, populated on the redirect-back render. */
+    result: BulkAppointmentResult | null;
 };
 
 /** One row of the selected-day panel (`appointments.day-schedule`). */

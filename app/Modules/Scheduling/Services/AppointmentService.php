@@ -767,6 +767,32 @@ class AppointmentService implements AppointmentCancellationContract, Appointment
     }
 
     /**
+     * Standalone "N appointments for one patient" booking (reception bulk-create), reusing the
+     * scheduleFollowUps engine with case_id = null. Wraps patient resolution + booking in one
+     * transaction — scheduleFollowUps assumes an enclosing transaction (its SMS dispatch is
+     * DB::afterCommit) and normally runs inside TreatmentService::complete's own transaction.
+     *
+     * @param  array<string, mixed>  $data  Validated data (patient block + doctor_id + service_id + occurrences)
+     * @return array{created: list<Appointment>, skipped: list<string>}
+     *
+     * @throws \Throwable
+     */
+    public function bulkBook(array $data, User $actor): array
+    {
+        return DB::transaction(function () use ($data, $actor): array {
+            $patientId = $this->resolvePatientId($data);
+
+            return $this->scheduleFollowUps([
+                'doctor_id' => (int) $data['doctor_id'],
+                'patient_id' => $patientId,
+                'case_id' => null,
+                'service_id' => ! empty($data['service_id']) ? (int) $data['service_id'] : null,
+                'occurrences' => $data['occurrences'],
+            ], $actor);
+        });
+    }
+
+    /**
      * Run each availability layer in order and throw a typed ValidationException
      * per layer so the frontend can display a meaningful inline error on starts_at.
      */

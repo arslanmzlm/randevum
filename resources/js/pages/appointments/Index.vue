@@ -3,6 +3,7 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import {
     IconBan,
     IconBell,
+    IconCalendarEvent,
     IconCalendarOff,
     IconCalendarWeek,
     IconDotsVertical,
@@ -15,7 +16,10 @@ import {
 } from '@tabler/icons-vue';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { bulkCancelPage } from '@/actions/App/Modules/Scheduling/Http/Controllers/AppointmentController';
+import {
+    bulkCancelPage,
+    bulkCreatePage,
+} from '@/actions/App/Modules/Scheduling/Http/Controllers/AppointmentController';
 import AppointmentCancelDialog from '@/components/appointments/AppointmentCancelDialog.vue';
 import AppointmentStatusTag from '@/components/AppointmentStatusTag.vue';
 import DataTableWrapper from '@/components/DataTableWrapper.vue';
@@ -254,6 +258,17 @@ const dateRange = computed<(Date | null)[] | null>({
             :breadcrumbs="[{ label: t('nav.appointments') }]"
         >
             <template #actions>
+                <Button
+                    v-if="can('appointments.create')"
+                    type="button"
+                    outlined
+                    :label="t('appointment_bulk.title')"
+                    @click="router.visit(bulkCreatePage().url)"
+                >
+                    <template #icon>
+                        <IconCalendarEvent class="size-4" />
+                    </template>
+                </Button>
                 <Button
                     v-if="can('appointments.bulkCancel')"
                     type="button"

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { IconCalendarPlus } from '@tabler/icons-vue';
-import { addMonths, addWeeks } from 'date-fns';
 import { computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import AppointmentTypeSelect from '@/components/AppointmentTypeSelect.vue';
@@ -17,6 +16,7 @@ import type {
     TreatmentServiceOption,
 } from '@/types/treatment';
 import { clampTime, combineDateTime } from '@/utils/appointmentTime';
+import { offsetDate } from '@/utils/followUpOccurrences';
 import FollowUpOccurrenceRow from './FollowUpOccurrenceRow.vue';
 import { useTreatmentForm } from './formContext';
 
@@ -88,22 +88,6 @@ const singleTimeError = computed<string | undefined>(() =>
 
 function onTimeBlur(): void {
     form.follow_up.time = clampTime(form.follow_up.time);
-}
-
-/** date-fns end-of-month clamping mirrors the server's Carbon addMonthNoOverflow. */
-function offsetDate(
-    base: Date,
-    interval: FollowUpInterval,
-    step: number,
-): Date {
-    switch (interval) {
-        case 'weekly':
-            return addWeeks(base, step);
-        case 'biweekly':
-            return addWeeks(base, step * 2);
-        case 'monthly':
-            return addMonths(base, step);
-    }
 }
 
 // Any generator-param change rebuilds the whole package list from the pattern — manual row edits
