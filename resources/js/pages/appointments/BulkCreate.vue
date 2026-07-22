@@ -1,10 +1,6 @@
 <script setup lang="ts">
 import { Head, useForm, useHttp } from '@inertiajs/vue3';
-import {
-    IconAlertTriangle,
-    IconCircleCheck,
-    IconClipboardList,
-} from '@tabler/icons-vue';
+import { IconCircleCheck, IconClipboardList } from '@tabler/icons-vue';
 import { useConfirm } from 'primevue/useconfirm';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -171,10 +167,7 @@ async function submit(): Promise<void> {
             v-if="props.result"
             class="flex flex-col gap-4 rounded-xl border border-surface-200 bg-surface-0 p-6"
         >
-            <p
-                class="flex items-center gap-2 text-sm font-medium text-green-600"
-            >
-                <IconCircleCheck class="size-5 shrink-0" />
+            <Message severity="success" :closable="false">
                 {{
                     t(
                         'appointment_bulk.result.created',
@@ -182,13 +175,10 @@ async function submit(): Promise<void> {
                         props.result.created,
                     )
                 }}
-            </p>
+            </Message>
 
             <div v-if="props.result.skipped.length" class="flex flex-col gap-2">
-                <p
-                    class="flex items-center gap-2 text-sm font-medium text-amber-600"
-                >
-                    <IconAlertTriangle class="size-5 shrink-0" />
+                <Message severity="warn" :closable="false">
                     {{
                         t(
                             'appointment_bulk.result.skipped',
@@ -196,14 +186,10 @@ async function submit(): Promise<void> {
                             props.result.skipped.length,
                         )
                     }}
-                </p>
-                <ul class="flex flex-wrap gap-2 pl-7 text-sm text-surface-600">
-                    <li
-                        v-for="slot in props.result.skipped"
-                        :key="slot"
-                        class="rounded-md bg-amber-50 px-2 py-1 text-amber-700"
-                    >
-                        {{ slot }}
+                </Message>
+                <ul class="flex flex-wrap gap-2">
+                    <li v-for="slot in props.result.skipped" :key="slot">
+                        <Tag severity="warn" :value="slot" />
                     </li>
                 </ul>
             </div>

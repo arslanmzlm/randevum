@@ -20,6 +20,15 @@ const form = useTreatmentForm();
 const fieldError = (key: string): string | undefined =>
     (form.errors as Record<string, string | undefined>)[key];
 
+// Request-level validation lands on `installment_plan.*`; the service's balance/sequence
+// sum-check throws under the bare `installments` key — surface whichever is present.
+const installmentError = computed(
+    () =>
+        fieldError('installment_plan.installments') ??
+        fieldError('installment_plan') ??
+        fieldError('installments'),
+);
+
 const modes: PaymentEntryMode[] = ['received', 'none', 'installment'];
 
 const modeOptions = computed(() =>
@@ -108,17 +117,8 @@ function removeRow(index: number): void {
                     :method-options="methodOptions"
                 />
 
-                <small
-                    v-if="
-                        fieldError('installment_plan.installments') ||
-                        fieldError('installment_plan')
-                    "
-                    class="text-xs text-red-500"
-                >
-                    {{
-                        fieldError('installment_plan.installments') ??
-                        fieldError('installment_plan')
-                    }}
+                <small v-if="installmentError" class="text-xs text-red-500">
+                    {{ installmentError }}
                 </small>
             </template>
 

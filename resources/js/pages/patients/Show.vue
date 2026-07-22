@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, router } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import {
     IconArrowLeft,
     IconCash,
@@ -35,8 +35,15 @@ const { t } = useI18n();
 const confirm = useConfirm();
 const { can } = useCan();
 
+const page = usePage();
+
 const canManage = computed(() => can('patients.update'));
 const canRecordPayment = computed(() => can('transactions.create'));
+
+// Anamnesis fields are podiatry-specific; other verticals would 422 on submit.
+const isPodiatry = computed(
+    () => page.props.activeClinic?.vertical.slug === 'podiatry',
+);
 
 const showPaymentDialog = ref(false);
 
@@ -121,7 +128,11 @@ function removePatient(): void {
 
         <PatientTagsSection :patient="patient" :all-tags="allTags" />
 
-        <AnamnesisSection :patient="patient" :anamnesis="anamnesis" />
+        <AnamnesisSection
+            v-if="isPodiatry"
+            :patient="patient"
+            :anamnesis="anamnesis"
+        />
 
         <PatientAppointmentsSection :appointments="appointments" />
 

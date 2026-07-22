@@ -1,11 +1,19 @@
 <?php
 
+use App\Enums\AppointmentStatus;
+use App\Enums\TreatmentStatus;
+use App\Models\Appointment;
 use App\Models\Clinic;
+use App\Models\Doctor;
 use App\Models\Patient;
 use App\Models\PodiatryAnamnesis;
+use App\Models\PodiatryTreatmentDetail;
+use App\Models\Treatment;
 use App\Models\User;
 use App\Models\Vertical;
+use App\Modules\Medical\Services\AnamnesisReportService;
 use App\Support\ClinicContext;
+use Carbon\Carbon;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -46,22 +54,63 @@ function uaSetup(): array
     return compact('clinic', 'patient');
 }
 
+/**
+ * A draft treatment (+ arrived appointment + doctor) whose Process screen exposes `anamnesis`.
+ *
+ * @return array{clinic: Clinic, owner: User, patient: Patient, treatment: Treatment}
+ */
+function uaProcessSetup(): array
+{
+    $vertical = Vertical::factory()->podiatry()->create();
+    $clinic = Clinic::factory()->create(['vertical_id' => $vertical->id]);
+    $owner = User::factory()->create();
+    anamAssignRole($owner, 'owner', $clinic->id);
+
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id, 'gender' => 'female']);
+
+    $startsAt = Carbon::now()->addDay();
+    $appointment = Appointment::factory()->withStatus(AppointmentStatus::Arrived)->create([
+        'clinic_id' => $clinic->id,
+        'doctor_id' => $doctor->id,
+        'patient_id' => $patient->id,
+        'starts_at' => $startsAt,
+        'ends_at' => $startsAt->copy()->addMinutes(30),
+    ]);
+
+    $detail = PodiatryTreatmentDetail::create([]);
+    $treatment = Treatment::create([
+        'clinic_id' => $clinic->id,
+        'appointment_id' => $appointment->id,
+        'patient_id' => $patient->id,
+        'doctor_id' => $doctor->id,
+        'details_type' => 'podiatry',
+        'details_id' => $detail->id,
+        'subtotal_amount' => 0,
+        'discount_amount' => 0,
+        'total_amount' => 0,
+        'status' => TreatmentStatus::Draft,
+        'created_by' => $owner->id,
+    ]);
+
+    return compact('clinic', 'owner', 'patient', 'treatment');
+}
+
 // ---------------------------------------------------------------------------
 // Permission seeding
 // ---------------------------------------------------------------------------
 
-it('anamnesis.update is seeded onto doctor, assistant, receptionist', function (): void {
-    foreach (['doctor', 'assistant', 'receptionist'] as $roleName) {
+it('anamnesis.update is seeded onto owner, manager, doctor, assistant, receptionist', function (): void {
+    foreach (['owner', 'manager', 'doctor', 'assistant', 'receptionist'] as $roleName) {
         $role = Role::findByName($roleName, 'web');
         expect($role->permissions->pluck('name'))->toContain('anamnesis.update');
     }
 });
 
-it('anamnesis.update is NOT seeded onto owner or manager (brief-literal role set)', function (): void {
-    foreach (['owner', 'manager'] as $roleName) {
-        $role = Role::findByName($roleName, 'web');
-        expect($role->permissions->pluck('name'))->not->toContain('anamnesis.update');
-    }
+it('anamnesis.update is NOT seeded onto the patient role', function (): void {
+    $role = Role::findByName('patient', 'web');
+    expect($role->permissions->pluck('name'))->not->toContain('anamnesis.update');
 });
 
 // ---------------------------------------------------------------------------
@@ -151,16 +200,24 @@ it('receptionist can PUT the anamnesis', function (): void {
         ->assertRedirect();
 });
 
-it('owner (lacks anamnesis.update) gets 403 on PUT', function (): void {
+it('owner can PUT the anamnesis', function (): void {
     $setup = uaSetup();
     $owner = User::factory()->create();
     anamAssignRole($owner, 'owner', $setup['clinic']->id);
 
     $this->actingAs($owner)
         ->put(route('patients.anamnesis.update', $setup['patient']), ['blood_type' => 'A+'])
-        ->assertForbidden();
+        ->assertRedirect();
+});
 
-    expect($setup['patient']->fresh()->anamnesis_id)->toBeNull();
+it('manager can PUT the anamnesis', function (): void {
+    $setup = uaSetup();
+    $manager = User::factory()->create();
+    anamAssignRole($manager, 'manager', $setup['clinic']->id);
+
+    $this->actingAs($manager)
+        ->put(route('patients.anamnesis.update', $setup['patient']), ['blood_type' => 'A+'])
+        ->assertRedirect();
 });
 
 it('guest is redirected to login on PUT', function (): void {
@@ -203,6 +260,44 @@ it('an empty payload (all-null form) is accepted — every field is nullable', f
         ->put(route('patients.anamnesis.update', $setup['patient']), [])
         ->assertSessionHasNoErrors()
         ->assertRedirect();
+});
+
+// ---------------------------------------------------------------------------
+// Blank text normalization — '' (or whitespace) is stored as null so the PDF's
+// "omit unfilled" logic (formatFieldValue → null) triggers regardless of client.
+// ---------------------------------------------------------------------------
+
+it('stores blank text fields as null (trim + empty → null)', function (): void {
+    $setup = uaSetup();
+    $doctor = User::factory()->create();
+    anamAssignRole($doctor, 'doctor', $setup['clinic']->id);
+
+    $this->actingAs($doctor)
+        ->put(route('patients.anamnesis.update', $setup['patient']), [
+            'regular_medications' => '',
+            'other_chronic' => '   ',
+            'allergies' => '',
+            'foot_surgery_history' => '',
+            'current_foot_complaint' => 'Sol ayak ağrısı',
+        ])
+        ->assertRedirect();
+
+    $detail = $setup['patient']->fresh()->anamnesis;
+
+    expect($detail->regular_medications)->toBeNull()
+        ->and($detail->other_chronic)->toBeNull()
+        ->and($detail->allergies)->toBeNull()
+        ->and($detail->foot_surgery_history)->toBeNull()
+        // A real value is trimmed but kept.
+        ->and($detail->current_foot_complaint)->toBe('Sol ayak ağrısı');
+
+    // The blank-normalized fields are omitted from the PDF; the filled one is rendered.
+    $html = app(AnamnesisReportService::class)
+        ->build($setup['patient']->fresh())
+        ->getHtml();
+
+    expect($html)->toContain('Sol ayak ağrısı')
+        ->not->toContain(__('health.fields.regular_medications'));
 });
 
 // ---------------------------------------------------------------------------
@@ -255,7 +350,7 @@ it('patients.show exposes the filled anamnesis fields after a save', function ()
             ->where('anamnesis.blood_type', 'AB-'));
 });
 
-it('patients.show emits auth.permissions containing anamnesis.update for assistant, not for owner', function (): void {
+it('patients.show emits auth.permissions containing anamnesis.update for assistant and owner', function (): void {
     $setup = uaSetup();
     $assistant = User::factory()->create();
     anamAssignRole($assistant, 'assistant', $setup['clinic']->id);
@@ -269,5 +364,33 @@ it('patients.show emits auth.permissions containing anamnesis.update for assista
 
     $this->actingAs($owner)
         ->get(route('patients.show', $setup['patient']))
-        ->assertInertia(fn ($page) => $page->where('auth.permissions', fn ($p) => ! $p->contains('anamnesis.update')));
+        ->assertInertia(fn ($page) => $page->where('auth.permissions', fn ($p) => $p->contains('anamnesis.update')));
+});
+
+it('treatments.process exposes anamnesis=null and patient.gender before any save', function (): void {
+    $setup = uaProcessSetup();
+
+    $this->actingAs($setup['owner'])
+        ->get(route('treatments.process', $setup['treatment']))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('treatments/Process')
+            ->where('anamnesis', null)
+            ->where('treatment.patient.gender', 'female'));
+});
+
+it('treatments.process exposes the filled anamnesis after a save', function (): void {
+    $setup = uaProcessSetup();
+
+    $anamnesis = PodiatryAnamnesis::create(['blood_type' => 'B+']);
+    $setup['patient']->anamnesis()->associate($anamnesis);
+    $setup['patient']->save();
+
+    $this->actingAs($setup['owner'])
+        ->get(route('treatments.process', $setup['treatment']))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('treatments/Process')
+            ->where('anamnesis.blood_type', 'B+')
+            ->where('treatment.patient.gender', 'female'));
 });

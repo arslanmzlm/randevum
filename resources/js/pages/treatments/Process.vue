@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, useForm, usePage } from '@inertiajs/vue3';
 import {
     IconArrowLeft,
     IconCalendarEvent,
@@ -11,7 +11,7 @@ import {
     IconWalk,
 } from '@tabler/icons-vue';
 import { useConfirm } from 'primevue/useconfirm';
-import { watch } from 'vue';
+import { computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import AnamnesisSection from '@/components/anamnesis/AnamnesisSection.vue';
 import ButtonLink from '@/components/ButtonLink.vue';
@@ -38,6 +38,7 @@ import type {
 import { combineDateTime } from '@/utils/appointmentTime';
 import { toDateString } from '@/utils/datetime';
 import { defaultInstallmentStart } from '@/utils/installmentOccurrences';
+import { treatmentTotal } from '@/utils/treatmentTotals';
 
 defineOptions({ layout: AppLayout });
 
@@ -88,8 +89,39 @@ const form = useForm<TreatmentFormData>({
 
 provideTreatmentForm(form);
 
+const page = usePage();
+
 const canPay = can('transactions.create');
 const canScheduleFollowUp = can('appointments.create');
+
+// Anamnesis fields are podiatry-specific; other verticals would 422 on submit.
+const isPodiatry = computed(
+    () => page.props.activeClinic?.vertical.slug === 'podiatry',
+);
+
+// Client-side balance guard mirroring PaymentPlanCreateDialog's `canSubmit`: an unbalanced
+// installment plan can't be submitted (the server sum-check would only surface a toast otherwise).
+const installmentBalanced = computed(() => {
+    if (form.payment.mode !== 'installment') {
+        return true;
+    }
+
+    const plan = form.payment.installment;
+    const total = treatmentTotal(
+        form.services,
+        form.products,
+        form.discount_amount,
+    );
+    const grandSum =
+        plan.installments.reduce((sum, row) => sum + (row.amount ?? 0), 0) +
+        (plan.down_payment ?? 0);
+
+    return (
+        plan.installments.length > 0 &&
+        total > 0 &&
+        Math.abs(total - grandSum) < 0.005
+    );
+});
 
 function serviceById(id: number | null): TreatmentServiceOption | undefined {
     return id === null ? undefined : props.services.find((s) => s.id === id);
@@ -355,7 +387,11 @@ function submit(): void {
         </p>
 
         <!-- Self-contained: owns its own useForm/context, independent of the treatment form below. -->
-        <AnamnesisSection :patient="treatment.patient" :anamnesis="anamnesis" />
+        <AnamnesisSection
+            v-if="isPodiatry"
+            :patient="treatment.patient"
+            :anamnesis="anamnesis"
+        />
 
         <form
             novalidate
@@ -397,6 +433,7 @@ function submit(): void {
                     type="submit"
                     :label="t('treatment.submit')"
                     :loading="form.processing"
+                    :disabled="!installmentBalanced"
                     class="w-full sm:w-auto"
                 >
                     <template #icon>

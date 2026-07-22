@@ -80,7 +80,7 @@ class HandleInertiaRequests extends Middleware
     /**
      * Active clinic identity for the app shell (sidebar logo + name); null for guests.
      *
-     * @return array{id: int, name: string, logo_url: string|null, timezone: string, currency: string}|null
+     * @return array{id: int, name: string, logo_url: string|null, timezone: string, currency: string, vertical: array{slug: string|null}}|null
      */
     private function sharedClinic(): ?array
     {
@@ -90,7 +90,7 @@ class HandleInertiaRequests extends Middleware
             return null;
         }
 
-        $clinic = Clinic::find($clinicId);
+        $clinic = Clinic::with('vertical')->find($clinicId);
 
         if ($clinic === null) {
             return null;
@@ -104,6 +104,10 @@ class HandleInertiaRequests extends Middleware
             'timezone' => $clinic->timezone,
             // ISO 4217 code — single source for client-side money formatting (useMoney()).
             'currency' => $clinic->currency,
+            // Vertical slug — gates vertical-specific UI (e.g. podiatry anamnesis section).
+            'vertical' => [
+                'slug' => $clinic->vertical?->slug,
+            ],
         ];
     }
 }

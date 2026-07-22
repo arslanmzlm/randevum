@@ -51,7 +51,6 @@ const booleanFlags = [
 
 <template>
     <div class="flex flex-col gap-8">
-        <!-- Genel -->
         <div class="flex flex-col gap-5">
             <h3 class="text-sm font-semibold text-surface-500">
                 {{ t('health.groups.general') }}
@@ -130,7 +129,6 @@ const booleanFlags = [
             </div>
         </div>
 
-        <!-- Sistemik / Kronik -->
         <div class="flex flex-col gap-5">
             <h3 class="text-sm font-semibold text-surface-500">
                 {{ t('health.groups.systemic') }}
@@ -186,7 +184,6 @@ const booleanFlags = [
             </FormField>
         </div>
 
-        <!-- Alerji -->
         <div class="flex flex-col gap-5">
             <h3 class="text-sm font-semibold text-surface-500">
                 {{ t('health.groups.allergy') }}
@@ -226,7 +223,6 @@ const booleanFlags = [
             </FormField>
         </div>
 
-        <!-- Podoloji -->
         <div class="flex flex-col gap-5">
             <h3 class="text-sm font-semibold text-surface-500">
                 {{ t('health.groups.podiatry') }}

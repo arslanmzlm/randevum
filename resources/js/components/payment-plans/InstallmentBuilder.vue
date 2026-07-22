@@ -178,38 +178,39 @@ const exceedsTotal = computed(() => difference.value < -0.005);
                 </div>
             </div>
 
-            <div
-                class="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium"
-                :class="
-                    isBalanced
-                        ? 'bg-emerald-50 text-emerald-700'
-                        : 'bg-amber-50 text-amber-700'
-                "
+            <Message
+                :severity="isBalanced ? 'success' : 'warn'"
+                :closable="false"
+                :pt="{ text: { class: 'flex-1' } }"
             >
-                <span>
-                    <IconCalendarDollar class="mr-1 inline size-4" />
-                    {{
-                        t('payment_plan.builder.sum_label', {
-                            amount: formatMoney(grandSum),
-                        })
-                    }}
-                </span>
-                <span>
-                    <template v-if="isBalanced">
-                        {{ t('payment_plan.builder.balanced') }}
-                    </template>
-                    <template v-else-if="exceedsTotal">
-                        {{ t('payment_plan.builder.exceeds') }}
-                    </template>
-                    <template v-else>
+                <div
+                    class="flex items-center justify-between gap-2 text-sm font-medium"
+                >
+                    <span>
+                        <IconCalendarDollar class="mr-1 inline size-4" />
                         {{
-                            t('payment_plan.builder.remaining', {
-                                amount: formatMoney(difference),
+                            t('payment_plan.builder.sum_label', {
+                                amount: formatMoney(grandSum),
                             })
                         }}
-                    </template>
-                </span>
-            </div>
+                    </span>
+                    <span>
+                        <template v-if="isBalanced">
+                            {{ t('payment_plan.builder.balanced') }}
+                        </template>
+                        <template v-else-if="exceedsTotal">
+                            {{ t('payment_plan.builder.exceeds') }}
+                        </template>
+                        <template v-else>
+                            {{
+                                t('payment_plan.builder.remaining', {
+                                    amount: formatMoney(difference),
+                                })
+                            }}
+                        </template>
+                    </span>
+                </div>
+            </Message>
         </div>
     </div>
 </template>

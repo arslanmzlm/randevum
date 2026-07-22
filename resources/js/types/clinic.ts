@@ -76,4 +76,6 @@ export type SharedClinic = {
     timezone: string;
     /** ISO 4217 currency code — single source for useMoney() money formatting. */
     currency: string;
+    /** Active clinic's vertical — gates vertical-specific UI (e.g. podiatry anamnesis). */
+    vertical: { slug: string | null };
 };

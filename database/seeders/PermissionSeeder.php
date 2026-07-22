@@ -39,9 +39,9 @@ class PermissionSeeder extends Seeder
         'patients.update' => ['owner', 'manager', 'doctor', 'receptionist'],
         'patients.delete' => ['owner', 'manager', 'doctor', 'receptionist'],
         'patients.note.update' => ['owner', 'manager', 'doctor', 'receptionist'],
-        // Anamnesis (health-intake) fill/edit — brief's literal front-line filler set
-        // (first-visit reception fills it; excludes owner/manager per GATE-1 resolution).
-        'anamnesis.update' => ['doctor', 'assistant', 'receptionist'],
+        // Anamnesis (health-intake) fill/edit — front-line fillers plus owner/manager,
+        // who hold every clinic-scoped edit ability per the codebase norm.
+        'anamnesis.update' => ['owner', 'manager', 'doctor', 'assistant', 'receptionist'],
         // schedule exceptions — doctor manages own via policy ownership branch (not a permission)
         'scheduleExceptions.viewAny' => ['owner', 'manager', 'doctor', 'receptionist', 'assistant'],
         'scheduleExceptions.manage' => ['owner', 'manager', 'receptionist'],

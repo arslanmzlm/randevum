@@ -901,7 +901,6 @@ export const tr = {
         result: {
             created: '{count} randevu oluşturuldu.',
             skipped: 'Çakışma nedeniyle {count} slot atlandı:',
-            skipped_none: 'Atlanan slot yok.',
         },
     },
     calendar: {
