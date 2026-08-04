@@ -83,6 +83,7 @@ it('grants the owner role the full clinic + doctor + service + product + patient
             'paymentPlans.create',
             'paymentPlans.cancel',
             'paymentPlans.sendReminder',
+            'anamnesis.update',
         ]);
 });
 
@@ -151,6 +152,7 @@ it('grants the manager role full management except clinic and self-create', func
             'paymentPlans.create',
             'paymentPlans.cancel',
             'paymentPlans.sendReminder',
+            'anamnesis.update',
         ]);
 });
 

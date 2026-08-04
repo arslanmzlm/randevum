@@ -3,19 +3,15 @@ name: linter
 on:
   push:
     branches:
-      - develop
       - main
-      - master
-      - workos
+      - develop
   pull_request:
     branches:
-      - develop
       - main
-      - master
-      - workos
+      - develop
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   quality:
@@ -29,6 +25,10 @@ jobs:
         uses: shivammathur/setup-php@7c071dfe9dc99bdf297fa79cb49ea005b9fcadbc # v2
         with:
           php-version: '8.4'
+          coverage: none
+
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Setup Node
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
@@ -38,19 +38,13 @@ jobs:
       - name: Install Dependencies
         run: |
           composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
-          npm install
+          pnpm install --frozen-lockfile
 
       - name: Run Pint
-        run: composer lint
+        run: composer lint:check
 
-      - name: Format Frontend
-        run: npm run format
+      - name: Check Frontend Formatting
+        run: pnpm run format:check
 
       - name: Lint Frontend
-        run: npm run lint
-
-      # - name: Commit Changes
-      #   uses: stefanzweifel/git-auto-commit-action@v7
-      #   with:
-      #     commit_message: fix code style
-      #     commit_options: '--no-verify'
+        run: pnpm run lint:check

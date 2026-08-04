@@ -3,23 +3,16 @@ name: tests
 on:
   push:
     branches:
-      - develop
       - main
-      - master
-      - workos
+      - develop
   pull_request:
     branches:
-      - develop
       - main
-      - master
-      - workos
+      - develop
 
 jobs:
   ci:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        php-version: ['8.4', '8.5']
 
     steps:
       - name: Checkout code
@@ -30,9 +23,12 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@7c071dfe9dc99bdf297fa79cb49ea005b9fcadbc # v2
         with:
-          php-version: ${{ matrix.php-version }}
+          php-version: '8.4'
           tools: composer:v2
-          coverage: xdebug
+          coverage: none
+
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Setup Node
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
@@ -40,7 +36,7 @@ jobs:
           node-version: '24'
 
       - name: Install Node Dependencies
-        run: npm i
+        run: pnpm install --frozen-lockfile
 
       - name: Install Dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
@@ -52,7 +48,15 @@ jobs:
         run: php artisan key:generate
 
       - name: Build Assets
-        run: npm run build
+        run: pnpm run build
+
+      - name: Type Check
+        run: pnpm run types:check
+
+      # tests/Browser drives real Chromium through pest-plugin-browser; the browser revision must
+      # match the playwright pin in package.json (same pin as .ddev/web-build/Dockerfile).
+      - name: Install Playwright Browser
+        run: pnpm exec playwright install --with-deps chromium
 
       - name: Tests
-        run: ./vendor/bin/pest
+        run: php artisan test
