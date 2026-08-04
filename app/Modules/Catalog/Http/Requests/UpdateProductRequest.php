@@ -24,4 +24,12 @@ class UpdateProductRequest extends FormRequest
     {
         return $this->productRules();
     }
+
+    /**
+     * @return array<string, string>
+     */
+    public function attributes(): array
+    {
+        return $this->nameAttribute('product_name');
+    }
 }

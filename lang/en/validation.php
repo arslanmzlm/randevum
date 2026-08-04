@@ -217,7 +217,14 @@ return [
         'terms' => 'terms of service and privacy policy',
         'dpa' => 'data processing agreement',
         // clinic profile
-        'name' => 'clinic name',
+        // Fallback for the `name` column, shared by every entity form. A form that wants a
+        // specific label maps it in its FormRequest's attributes() to one of the keys below.
+        'name' => 'name',
+        'service_name' => 'service name',
+        'product_name' => 'product name',
+        'tag_name' => 'tag name',
+        'appointment_type_name' => 'appointment type name',
+        'segment_name' => 'segment name',
         'slug' => 'URL address',
         'description' => 'description',
         'website' => 'website',

@@ -24,4 +24,12 @@ class StoreServiceRequest extends FormRequest
     {
         return $this->serviceRules();
     }
+
+    /**
+     * @return array<string, string>
+     */
+    public function attributes(): array
+    {
+        return $this->nameAttribute('service_name');
+    }
 }

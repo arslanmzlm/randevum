@@ -65,4 +65,15 @@ class UpdateTagRequest extends FormRequest
             },
         ];
     }
+
+    /**
+     * validation.attributes.name is the generic fallback shared by every entity form; this form
+     * wants its own label, still sourced from the lang file.
+     *
+     * @return array<string, string>
+     */
+    public function attributes(): array
+    {
+        return ['name' => __('validation.attributes.tag_name')];
+    }
 }

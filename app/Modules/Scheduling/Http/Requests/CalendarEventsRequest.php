@@ -18,6 +18,7 @@ class CalendarEventsRequest extends FormRequest
         AppointmentStatus::Arrived->value,
         AppointmentStatus::Completed->value,
         AppointmentStatus::Cancelled->value,
+        AppointmentStatus::NoShow->value,
     ];
 
     /** Statuses returned when the caller omits the filter (Cancelled hidden by default). */

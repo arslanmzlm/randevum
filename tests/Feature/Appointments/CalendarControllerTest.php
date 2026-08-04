@@ -302,15 +302,31 @@ it('returns 422 when statuses contains a Faz-2 status (pending)', function (): v
         ->assertJsonValidationErrors('statuses.0');
 });
 
-it('returns 422 when statuses contains a Faz-2 status (no_show)', function (): void {
+it('hides no-show by default but returns it when the filter asks for it', function (): void {
     $clinic = Clinic::factory()->create(['timezone' => 'Europe/Istanbul']);
     $owner = User::factory()->create();
     calRole($owner, 'owner', $clinic->id);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
 
-    $this->actingAs($owner)
+    calMakeAppointment($clinic, $doctor, $patient, 10, 11, AppointmentStatus::Confirmed);
+    calMakeAppointment($clinic, $doctor, $patient, 14, 15, AppointmentStatus::NoShow);
+
+    $default = $this->actingAs($owner)
+        ->getJson(calEventsUrl())
+        ->assertOk()
+        ->json('data');
+
+    expect(array_column($default, 'status'))->not->toContain('no_show');
+
+    $filtered = $this->actingAs($owner)
         ->getJson(calEventsUrl(['statuses' => ['no_show']]))
-        ->assertUnprocessable()
-        ->assertJsonValidationErrors('statuses.0');
+        ->assertOk()
+        ->json('data');
+
+    expect(count($filtered))->toBe(1)
+        ->and($filtered[0]['status'])->toBe('no_show');
 });
 
 it('returns 422 when statuses contains an unrecognised value', function (): void {

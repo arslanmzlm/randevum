@@ -892,8 +892,8 @@ export const tr = {
         },
         occurrences_title: 'Randevu tarihleri',
         occurrence_label: '{n}. randevu',
-        add_row: 'Satır ekle',
-        remove_row: 'Satırı kaldır',
+        add_row: 'Seans ekle',
+        remove_row: 'Seansı kaldır',
         submit: 'Randevuları Oluştur',
         conflict_confirm:
             'Çakışan randevular var; bu randevular atlanacak. Devam etmek istiyor musunuz?',

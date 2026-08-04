@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
-import { IconPlus, IconSearch, IconTrash, IconUsers } from '@tabler/icons-vue';
-import { useConfirm } from 'primevue/useconfirm';
+import { Head, Link } from '@inertiajs/vue3';
+import { IconPlus, IconSearch, IconUsers } from '@tabler/icons-vue';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import ButtonLink from '@/components/ButtonLink.vue';
@@ -15,7 +14,7 @@ import { useDateTime } from '@/composables/useDateTime';
 import { useMoney } from '@/composables/useMoney';
 import { useTableFilters } from '@/composables/useTableFilters';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { create, destroy, edit, index, show } from '@/routes/patients';
+import { create, index, show } from '@/routes/patients';
 import type {
     Patient,
     PatientIndexProps,
@@ -28,12 +27,10 @@ defineOptions({ layout: AppLayout });
 const props = defineProps<PatientIndexProps>();
 
 const { t } = useI18n();
-const confirm = useConfirm();
 const { can } = useCan();
 const { formatDate } = useDateTime();
 const { formatMoney } = useMoney();
 const canManage = computed(() => can('patients.create'));
-const canDelete = computed(() => can('patients.delete'));
 const canViewBalance = computed(() => can('transactions.viewAny'));
 const canManageSegments = computed(() => can('segments.manage'));
 
@@ -165,21 +162,6 @@ const legacyOptions = computed(() => [
 
 function genderLabel(gender: Patient['gender']): string {
     return gender ? t(`patient.gender.${gender}`) : t('patient.not_specified');
-}
-
-function removePatient(patient: Patient): void {
-    confirm.require({
-        header: t('common.confirm_title'),
-        message: t('patient.remove_confirm', { name: patient.full_name }),
-        rejectProps: {
-            label: t('common.cancel'),
-            severity: 'secondary',
-            outlined: true,
-        },
-        acceptProps: { label: t('common.delete'), severity: 'danger' },
-        accept: () =>
-            router.delete(destroy(patient.id).url, { preserveScroll: true }),
-    });
 }
 </script>
 
@@ -420,31 +402,18 @@ function removePatient(patient: Patient): void {
                 </template>
             </Column>
 
-            <Column
-                v-if="canManage"
-                :header="t('patient.columns.actions')"
-                class="w-32"
-            >
+            <!-- Edit/delete live on the detail page: the list row only routes there, so the
+                 destructive action is never one stray click away from a scanning eye. -->
+            <Column :header="t('patient.columns.actions')" class="w-32">
                 <template #body="{ data }">
-                    <div class="flex items-center justify-end gap-1">
+                    <div class="flex items-center justify-end">
                         <ButtonLink
-                            :href="edit(data.id).url"
-                            :label="t('patient.edit')"
+                            :href="show(data.id).url"
+                            :label="t('patient.view')"
                             severity="secondary"
                             outlined
                             size="small"
                         />
-                        <Button
-                            v-if="canDelete"
-                            type="button"
-                            severity="danger"
-                            text
-                            size="small"
-                            :aria-label="t('patient.remove')"
-                            @click="removePatient(data)"
-                        >
-                            <IconTrash />
-                        </Button>
                     </div>
                 </template>
             </Column>

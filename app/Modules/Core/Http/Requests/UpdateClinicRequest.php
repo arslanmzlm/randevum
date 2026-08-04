@@ -168,4 +168,15 @@ class UpdateClinicRequest extends FormRequest
 
         return (bool) preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $value);
     }
+
+    /**
+     * validation.attributes.name is the generic fallback shared by every entity form; the clinic
+     * form wants its own label, still sourced from the lang file.
+     *
+     * @return array<string, string>
+     */
+    public function attributes(): array
+    {
+        return ['name' => __('validation.attributes.clinic_name')];
+    }
 }

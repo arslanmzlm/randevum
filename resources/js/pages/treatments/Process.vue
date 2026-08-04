@@ -428,7 +428,8 @@ function submit(): void {
                 <PaymentSection v-if="canPay" />
             </div>
 
-            <div class="lg:col-span-5">
+            <!-- Right-aligned like every other Create/Edit form's submit row. -->
+            <div class="flex justify-end lg:col-span-5">
                 <Button
                     type="submit"
                     :label="t('treatment.submit')"

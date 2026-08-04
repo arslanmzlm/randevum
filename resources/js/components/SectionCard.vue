@@ -50,7 +50,7 @@ withDefaults(
             </div>
         </header>
 
-        <div class="border-t border-surface-200">
+        <div class="section-card-body border-t border-surface-200">
             <slot />
         </div>
 
@@ -95,3 +95,11 @@ withDefaults(
         </footer>
     </section>
 </template>
+
+<style scoped>
+/* A DataTable's last row draws its own bottom border, which lands directly on the card border (or
+   the footer's border-t) and reads as a double line. The card owns the dividing lines here. */
+.section-card-body :deep(.p-datatable-tbody > tr:last-child > td) {
+    border-bottom-width: 0;
+}
+</style>

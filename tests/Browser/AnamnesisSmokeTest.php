@@ -3,6 +3,7 @@
 use App\Models\Clinic;
 use App\Models\Doctor;
 use App\Models\Patient;
+use App\Models\PodiatryAnamnesis;
 use App\Models\User;
 use App\Models\Vertical;
 use Database\Seeders\PermissionSeeder;
@@ -41,6 +42,14 @@ it('renders the patient show page with the Anamnesis section and no JS errors', 
 
     Doctor::factory()->create(['clinic_id' => $clinic->id]);
     $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+
+    // The PDF action only renders once the form holds data (an empty anamnesis PDF is noise),
+    // so the patient needs a filled record for the action assertions below.
+    $anamnesis = PodiatryAnamnesis::create(['blood_type' => 'A+', 'height_cm' => 172]);
+    $patient->forceFill([
+        'anamnesis_type' => 'podiatry_anamnesis',
+        'anamnesis_id' => $anamnesis->id,
+    ])->save();
 
     $this->actingAs($ownerUser);
 

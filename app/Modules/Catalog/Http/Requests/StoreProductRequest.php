@@ -27,4 +27,12 @@ class StoreProductRequest extends FormRequest
             'current_stock' => ['nullable', 'integer'],
         ];
     }
+
+    /**
+     * @return array<string, string>
+     */
+    public function attributes(): array
+    {
+        return $this->nameAttribute('product_name');
+    }
 }

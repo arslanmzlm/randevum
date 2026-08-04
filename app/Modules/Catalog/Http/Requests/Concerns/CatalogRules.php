@@ -11,6 +11,18 @@ use App\Support\ValidationRules;
 trait CatalogRules
 {
     /**
+     * The `name` column is shared by every entity form, so validation.attributes.name has to stay
+     * generic ("Ad"). A form that wants its own label maps it here — the text itself still lives
+     * in the lang file, never inline.
+     *
+     * @return array<string, string>
+     */
+    protected function nameAttribute(string $key): array
+    {
+        return ['name' => __("validation.attributes.{$key}")];
+    }
+
+    /**
      * @return array<string, mixed>
      */
     protected function serviceRules(): array

@@ -19,6 +19,9 @@ defineProps<{
                 description
             }}</span>
         </div>
-        <slot />
+        <!-- shrink-0: a label wrapping to two lines was squeezing the control out of shape. -->
+        <div class="shrink-0">
+            <slot />
+        </div>
     </div>
 </template>

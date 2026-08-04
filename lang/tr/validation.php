@@ -87,8 +87,15 @@ return [
         'vertical_id' => 'Klinik türü',
         'terms' => 'Kullanım Koşulları ve Gizlilik Politikası',
         'dpa' => 'Veri İşleme Sözleşmesi',
+        // Fallback for the `name` column, shared by every entity form. A form that wants a
+        // specific label maps it in its FormRequest's attributes() to one of the keys below.
+        'name' => 'Ad',
+        'service_name' => 'Hizmet adı',
+        'product_name' => 'Ürün adı',
+        'tag_name' => 'Etiket adı',
+        'appointment_type_name' => 'Randevu türü adı',
+        'segment_name' => 'Segment adı',
         // clinic profile
-        'name' => 'Klinik adı',
         'slug' => 'URL adresi',
         'description' => 'Açıklama',
         'website' => 'Web sitesi',

@@ -35,16 +35,18 @@ const { can } = useCan();
                     "
                     :appointments="props.stats.today_schedule"
                 />
-
-                <FollowUpWidget
-                    v-if="can('followUps.view')"
-                    :follow-ups="props.followUps"
-                />
             </div>
 
             <aside class="flex flex-col gap-6">
                 <UpcomingAppointmentsWidget />
             </aside>
         </div>
+
+        <!-- Full width: the call list is a wide table (patient, phone, doctor, date, note, action)
+             and was cramped inside the two-thirds column. -->
+        <FollowUpWidget
+            v-if="can('followUps.view')"
+            :follow-ups="props.followUps"
+        />
     </div>
 </template>

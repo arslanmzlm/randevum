@@ -65,8 +65,10 @@ function save(): void {
 <template>
     <SectionCard :icon="IconHeartbeat" :title="t('health.clinic_form_title')">
         <template #actions>
-            <!-- Binary PDF stream: plain anchor to a new tab, never an Inertia visit. -->
+            <!-- Binary PDF stream: plain anchor to a new tab, never an Inertia visit.
+                 Hidden until the form has been filled — an empty anamnesis PDF is noise. -->
             <Button
+                v-if="hasData"
                 as="a"
                 :href="pdf(patient.id).url"
                 target="_blank"
