@@ -72,6 +72,8 @@ it('renders the patient show page with the status and actions columns and opens 
 
     visit("/patients/{$patient->id}")
         ->assertNoJavascriptErrors()
+        // The balance lives on the Finans tab since the page was split into tabs.
+        ->click('#patient-tab-finance')
         // Page-body section headings — rendered inside the Bakiye section.
         ->assertSee('Bakiye')
         ->assertSee('Ödenen')

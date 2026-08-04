@@ -243,6 +243,8 @@ it('renders the patient show treatment history with a completed treatment and no
     visit("/patients/{$patient->id}")
         ->assertNoJavascriptErrors()
         // Treatment history section heading + the completed item's status tag.
+        // Treatment history sits on the Klinik tab since the page was split into tabs.
+        ->click('#patient-tab-clinical')
         ->assertSee('Tedavi Geçmişi')
         ->assertSee('Tamamlandı')
         ->assertScript(

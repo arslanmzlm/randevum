@@ -59,7 +59,8 @@ it('renders the patient show page with the record-payment button and no JS error
         ->assertNoJavascriptErrors()
         // Profile section heading — inside the page body, not the app shell nav.
         ->assertSee('Hasta Bilgileri')
-        // Treatment history section — also in the page body.
+        // Treatment history sits on the Klinik tab since the page was split into tabs.
+        ->click('#patient-tab-clinical')
         ->assertSee('Tedavi Geçmişi')
         // "Tahsilat Al" button — rendered by the new 1.22 feature when useCan returns true.
         ->assertSee('Tahsilat Al')

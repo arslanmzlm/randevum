@@ -113,6 +113,8 @@ it('renders the patient show page with balance summary and transaction list and 
 
     visit("/patients/{$patient->id}")
         ->assertNoJavascriptErrors()
+        // The balance lives on the Finans tab since the page was split into tabs.
+        ->click('#patient-tab-finance')
         // Page-body section heading — "Bakiye" (balance.section_title).
         ->assertSee('Bakiye')
         // Summary stat labels inside the Bakiye section.

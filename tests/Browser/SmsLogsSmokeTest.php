@@ -105,7 +105,8 @@ it('renders the patient detail page with the communication history section', fun
         ->assertNoJavascriptErrors()
         // Patient profile section heading — in-body, not the shell.
         ->assertSee('Hasta Bilgileri')
-        // SMS communication-history section heading — rendered by the patient show page body.
+        // The SMS history sits on the İletişim tab since the page was split into tabs.
+        ->click('#patient-tab-messages')
         ->assertSee('İletişim geçmişi')
         // SMS type label for the seeded row.
         ->assertSee('24 saat hatırlatma')

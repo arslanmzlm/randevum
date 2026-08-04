@@ -8,7 +8,15 @@ import { useDateTime } from '@/composables/useDateTime';
 import type { PatientAppointmentItem as PatientAppointment } from '@/types/patient';
 import PatientAppointmentItem from './PatientAppointmentItem.vue';
 
-const props = defineProps<{ appointments: PatientAppointment[] }>();
+// `only` lets the patient tabs place the two halves apart: what is coming up belongs to the
+// summary, the history belongs to the clinical tab. Unset keeps the original side-by-side card.
+const props = withDefaults(
+    defineProps<{
+        appointments: PatientAppointment[];
+        only?: 'upcoming' | 'past' | null;
+    }>(),
+    { only: null },
+);
 
 const { t } = useI18n();
 const { can } = useCan();
@@ -22,17 +30,38 @@ const upcomingAppointments = computed<PatientAppointment[]>(() =>
 const pastAppointments = computed<PatientAppointment[]>(() =>
     props.appointments.filter((a) => isPast(a.ends_at)),
 );
+
+const showUpcoming = computed(() => props.only !== 'past');
+const showPast = computed(() => props.only !== 'upcoming');
+
+const title = computed(() => {
+    if (props.only === 'upcoming') {
+        return t('patient.appointments.upcoming');
+    }
+
+    if (props.only === 'past') {
+        return t('patient.appointments.past');
+    }
+
+    return t('patient.sections.appointments');
+});
 </script>
 
 <template>
     <SectionCard
         v-if="can('appointments.viewAny')"
         :icon="IconCalendarEvent"
-        :title="t('patient.sections.appointments')"
+        :title="title"
     >
-        <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <div class="flex flex-col gap-2">
-                <h3 class="text-sm font-semibold text-surface-700">
+        <div
+            class="grid grid-cols-1 gap-6"
+            :class="only === null ? 'lg:grid-cols-2' : ''"
+        >
+            <div v-if="showUpcoming" class="flex flex-col gap-2">
+                <h3
+                    v-if="only === null"
+                    class="text-sm font-semibold text-surface-700"
+                >
                     {{ t('patient.appointments.upcoming') }}
                 </h3>
                 <ul
@@ -48,8 +77,11 @@ const pastAppointments = computed<PatientAppointment[]>(() =>
                 </p>
             </div>
 
-            <div class="flex flex-col gap-2">
-                <h3 class="text-sm font-semibold text-surface-700">
+            <div v-if="showPast" class="flex flex-col gap-2">
+                <h3
+                    v-if="only === null"
+                    class="text-sm font-semibold text-surface-700"
+                >
                     {{ t('patient.appointments.past') }}
                 </h3>
                 <ul v-if="pastAppointments.length" class="flex flex-col gap-2">

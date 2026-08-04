@@ -121,43 +121,96 @@ function removePatient(): void {
             </template>
         </PageHeader>
 
-        <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
-            <PatientProfileCard class="lg:col-span-2" :patient="patient" />
-            <PatientTreatmentsList :treatments="treatments" />
-        </div>
+        <!-- Four tabs instead of one long stack: the page carried nine sections and the reader
+             had to scroll past the clinical history to reach the balance. -->
+        <Tabs value="summary">
+            <TabList>
+                <!-- Stable ids: the tab labels collide with sidebar group names, so tests (and
+                     anything else scripting the page) need an unambiguous handle. -->
+                <Tab id="patient-tab-summary" value="summary">
+                    {{ t('patient.tabs.summary') }}
+                </Tab>
+                <Tab id="patient-tab-clinical" value="clinical">
+                    {{ t('patient.tabs.clinical') }}
+                </Tab>
+                <Tab id="patient-tab-finance" value="finance">
+                    {{ t('patient.tabs.finance') }}
+                </Tab>
+                <Tab id="patient-tab-messages" value="messages">
+                    {{ t('patient.tabs.messages') }}
+                </Tab>
+            </TabList>
 
-        <PatientTagsSection :patient="patient" :all-tags="allTags" />
+            <TabPanels>
+                <TabPanel value="summary">
+                    <div class="flex flex-col gap-6">
+                        <div
+                            class="grid grid-cols-1 items-start gap-6 lg:grid-cols-3"
+                        >
+                            <PatientProfileCard
+                                class="lg:col-span-2"
+                                :patient="patient"
+                            />
+                            <PatientAppointmentsSection
+                                :appointments="appointments"
+                                only="upcoming"
+                            />
+                        </div>
 
-        <AnamnesisSection
-            v-if="isPodiatry"
-            :patient="patient"
-            :anamnesis="anamnesis"
-        />
+                        <PatientTagsSection
+                            :patient="patient"
+                            :all-tags="allTags"
+                        />
 
-        <PatientAppointmentsSection :appointments="appointments" />
+                        <AnamnesisSection
+                            v-if="isPodiatry"
+                            :patient="patient"
+                            :anamnesis="anamnesis"
+                        />
+                    </div>
+                </TabPanel>
 
-        <PatientSmsLogList :logs="smsLogs" />
+                <TabPanel value="clinical">
+                    <div class="flex flex-col gap-6">
+                        <PatientTreatmentsList :treatments="treatments" />
 
-        <PatientCasesSection :cases="cases" />
+                        <PatientCasesSection :cases="cases" />
 
-        <UngroupedTreatmentsSection
-            :treatments="treatments"
-            :cases="cases"
-            :patient-id="patient.id"
-            :own-doctor-id="ownDoctorId"
-        />
+                        <UngroupedTreatmentsSection
+                            :treatments="treatments"
+                            :cases="cases"
+                            :patient-id="patient.id"
+                            :own-doctor-id="ownDoctorId"
+                        />
 
-        <PatientBalanceSection
-            :balance="balance"
-            :transactions="transactions"
-        />
+                        <PatientAppointmentsSection
+                            :appointments="appointments"
+                            only="past"
+                        />
+                    </div>
+                </TabPanel>
 
-        <PatientPaymentPlansSection
-            v-if="paymentPlans"
-            :patient-id="patient.id"
-            :plans="paymentPlans"
-            :treatments="treatments"
-        />
+                <TabPanel value="finance">
+                    <div class="flex flex-col gap-6">
+                        <PatientBalanceSection
+                            :balance="balance"
+                            :transactions="transactions"
+                        />
+
+                        <PatientPaymentPlansSection
+                            v-if="paymentPlans"
+                            :patient-id="patient.id"
+                            :plans="paymentPlans"
+                            :treatments="treatments"
+                        />
+                    </div>
+                </TabPanel>
+
+                <TabPanel value="messages">
+                    <PatientSmsLogList :logs="smsLogs" />
+                </TabPanel>
+            </TabPanels>
+        </Tabs>
 
         <RecordPaymentDialog
             v-if="canRecordPayment"

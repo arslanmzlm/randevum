@@ -79,7 +79,8 @@ it('renders the patient show page with profile sections and no JS errors', funct
         ->assertNoJavascriptErrors()
         // Profile section heading — rendered in the page body, not the shell.
         ->assertSee('Hasta Bilgileri')
-        // Treatment history section heading — also in the page body.
+        // Treatment history sits on the Klinik tab since the page was split into tabs.
+        ->click('#patient-tab-clinical')
         ->assertSee('Tedavi Geçmişi')
         // Patient's full name rendered by the PageHeader component.
         ->assertSee('Mehmet Kaya')

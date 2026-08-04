@@ -599,6 +599,12 @@ export const tr = {
         save: 'Kaydet',
     },
     patient: {
+        tabs: {
+            summary: 'Özet',
+            clinical: 'Klinik',
+            finance: 'Finans',
+            messages: 'İletişim',
+        },
         title: 'Hastalar',
         subtitle: 'Kliniğinizin hasta kayıtlarını yönetin.',
         add: 'Hasta Ekle',
