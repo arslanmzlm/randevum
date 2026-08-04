@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import DateRangeFilter from '@/components/DateRangeFilter.vue';
 import ExpenseFormDialog from '@/components/expenses/ExpenseFormDialog.vue';
@@ -25,7 +25,15 @@ const list = useExpenseList({
     filters: props.filters,
     query: props.query,
     currentPage: props.expenses.meta.current_page,
+    scope: props.canViewAll ? props.scope : null,
 });
+
+// Owner/manager land on the whole clinic (the finance report links here for exactly that) and
+// can narrow to their own rows; everyone else only ever sees their own and gets no switch.
+const scopeOptions = computed(() => [
+    { label: t('expense.scope.all'), value: 'all' },
+    { label: t('expense.scope.own'), value: 'own' },
+]);
 
 const dialogVisible = ref(false);
 const editTarget = ref<Expense | null>(null);
@@ -49,7 +57,18 @@ function openEdit(expense: Expense): void {
             :title="t('expense.title')"
             :description="t('expense.subtitle')"
             :breadcrumbs="[{ label: t('nav.expenses') }]"
-        />
+        >
+            <template v-if="canViewAll" #actions>
+                <SelectButton
+                    :model-value="list.state.scope"
+                    :options="scopeOptions"
+                    option-label="label"
+                    option-value="value"
+                    :allow-empty="false"
+                    @update:model-value="list.setScope"
+                />
+            </template>
+        </PageHeader>
 
         <SectionCard class="flex flex-col gap-5" padding="p-5">
             <DateRangeFilter
@@ -68,7 +87,7 @@ function openEdit(expense: Expense): void {
             :per-page="list.state.per_page"
             :sort-field="list.sortField.value"
             :sort-order="list.sortOrder.value"
-            :show-creator="false"
+            :show-creator="list.state.scope === 'all'"
             :can-manage-any="can('expenses.viewAny')"
             @page="list.onPage"
             @sort="list.onSort"

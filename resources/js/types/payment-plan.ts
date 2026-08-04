@@ -12,6 +12,8 @@ export type PendingInstallment = {
     patient_name: string;
     treatment_id: number | null;
     sequence: number;
+    /** Total installments in the plan — the row renders "sequence / installment_count". */
+    installment_count: number;
     /** Y-m-d (tz-less calendar date). */
     due_date: string;
     /** Decimal string. */

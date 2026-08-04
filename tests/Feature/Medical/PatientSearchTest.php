@@ -202,6 +202,47 @@ it('matches by full name "first last" spanning both columns', function (): void 
 });
 
 // ---------------------------------------------------------------------------
+// Turkish case folding — dotted/dotless i and the other diacritics
+// ---------------------------------------------------------------------------
+
+it('finds a name spelled with I when the query uses ı (and the other way round)', function (string $query): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    pstRole($owner, 'owner', $clinic->id);
+
+    Patient::factory()->create([
+        'clinic_id' => $clinic->id,
+        'first_name' => 'Irmak',
+        'last_name' => 'Dicle',
+        'phone' => '05311111111',
+    ]);
+
+    $this->actingAs($owner)
+        ->getJson(route('patients.search', ['q' => $query]))
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.full_name', 'Irmak Dicle');
+})->with(['ırmak', 'irmak', 'Irmak', 'IRMAK', 'İrmak']);
+
+it('folds the remaining Turkish letters in both the term and the stored name', function (string $query): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    pstRole($owner, 'owner', $clinic->id);
+
+    Patient::factory()->create([
+        'clinic_id' => $clinic->id,
+        'first_name' => 'Gülşah',
+        'last_name' => 'Öztürk',
+        'phone' => '05322222222',
+    ]);
+
+    $this->actingAs($owner)
+        ->getJson(route('patients.search', ['q' => $query]))
+        ->assertOk()
+        ->assertJsonCount(1, 'data');
+})->with(['gülşah', 'GÜLŞAH', 'gulsah', 'oztürk', 'ozturk']);
+
+// ---------------------------------------------------------------------------
 // Phone matching — stored E.164 (+90…) found by local-format queries
 // ---------------------------------------------------------------------------
 

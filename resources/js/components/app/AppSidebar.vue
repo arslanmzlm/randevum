@@ -3,12 +3,13 @@ import { IconLogout } from '@tabler/icons-vue';
 import { useI18n } from 'vue-i18n';
 import SidebarNav from '@/components/app/SidebarNav.vue';
 import type { SharedClinic } from '@/types/clinic';
-import type { NavItem } from '@/types/nav';
+import type { NavGroup, NavItem } from '@/types/nav';
 
 const props = defineProps<{
     collapsed: boolean;
     clinic: SharedClinic | null;
     navItems: NavItem[];
+    navGroups: NavGroup[];
     bottomNavItems: NavItem[];
 }>();
 
@@ -44,6 +45,7 @@ const { t } = useI18n();
         <div class="flex-1 overflow-y-auto px-3 py-4">
             <SidebarNav
                 :items="navItems"
+                :groups="navGroups"
                 :collapsed="props.collapsed"
                 @navigate="emit('navigate')"
             />

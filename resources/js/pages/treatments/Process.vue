@@ -386,11 +386,14 @@ function submit(): void {
             {{ treatment.patient.notes }}
         </p>
 
-        <!-- Self-contained: owns its own useForm/context, independent of the treatment form below. -->
+        <!-- Self-contained: owns its own useForm/context, independent of the treatment form below.
+             Collapsed here: the anamnesis is context for the treatment, not the task, and its risk
+             fields stay visible in the header summary. -->
         <AnamnesisSection
             v-if="isPodiatry"
             :patient="treatment.patient"
             :anamnesis="anamnesis"
+            collapsible
         />
 
         <form

@@ -1198,3 +1198,54 @@ it('GET /appointments/create exposes active appointment types in appointmentType
             ->has('appointmentTypes', 1)
         );
 });
+
+// ---------------------------------------------------------------------------
+// Post-booking result card — the create page re-renders with what was just booked
+// ---------------------------------------------------------------------------
+
+it('flashes the booking summary so the create page can show a result card', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    caRole($owner, 'owner', $clinic->id);
+    $doctorUser = User::factory()->create(['first_name' => 'Ayla', 'last_name' => 'Demir']);
+    $doctor = Doctor::factory()->create([
+        'clinic_id' => $clinic->id,
+        'user_id' => $doctorUser->id,
+        'title' => 'Dr.',
+    ]);
+    $patient = Patient::factory()->create([
+        'clinic_id' => $clinic->id,
+        'first_name' => 'Irmak',
+        'last_name' => 'Dicle',
+    ]);
+    $service = Service::factory()->create(['clinic_id' => $clinic->id, 'vertical_id' => $clinic->vertical_id]);
+
+    $this->actingAs($owner)
+        ->post(route('appointments.store'), caPayload($patient->id, $doctor->id, [
+            'service_id' => $service->id,
+        ]))
+        ->assertRedirect(route('appointments.create'));
+
+    $this->actingAs($owner)
+        ->get(route('appointments.create'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('lastCreated.patient_id', $patient->id)
+            ->where('lastCreated.patient_name', 'Irmak Dicle')
+            ->where('lastCreated.service_name', $service->name)
+            ->has('lastCreated.doctor_name')
+            ->has('lastCreated.date')
+            ->has('lastCreated.starts_at')
+        );
+});
+
+it('does not send a result card when the page is opened without booking', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    caRole($owner, 'owner', $clinic->id);
+
+    $this->actingAs($owner)
+        ->get(route('appointments.create'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('lastCreated', null));
+});

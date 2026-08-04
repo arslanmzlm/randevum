@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { useForm } from '@inertiajs/vue3';
 import {
+    IconChevronDown,
+    IconChevronUp,
     IconDeviceFloppy,
     IconFileText,
     IconHeartbeat,
 } from '@tabler/icons-vue';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import SectionCard from '@/components/SectionCard.vue';
 import { useCan } from '@/composables/useCan';
@@ -18,16 +20,60 @@ import type {
 import { provideAnamnesisForm } from './formContext';
 import PodiatryAnamnesisFields from './PodiatryAnamnesisFields.vue';
 
-const props = defineProps<{
-    patient: AnamnesisPatient;
-    anamnesis: Anamnesis | null;
-}>();
+// `collapsible` is for screens where the anamnesis is context rather than the task at hand (the
+// treatment Process page): the section starts closed and the header carries a one-line summary of
+// the risk-bearing fields, so nothing clinically important hides behind a closed panel.
+const props = withDefaults(
+    defineProps<{
+        patient: AnamnesisPatient;
+        anamnesis: Anamnesis | null;
+        collapsible?: boolean;
+    }>(),
+    { collapsible: false },
+);
 
 const { t } = useI18n();
 const { can } = useCan();
 
 const canManage = computed(() => can('anamnesis.update'));
 const hasData = computed(() => props.anamnesis !== null);
+
+const open = ref(!props.collapsible);
+
+/** The fields a clinician must not miss before starting a treatment. */
+const riskSummary = computed<string[]>(() => {
+    const a = props.anamnesis;
+
+    if (!a) {
+        return [];
+    }
+
+    const parts: string[] = [];
+
+    if (a.diabetes) {
+        parts.push(
+            `${t('health.fields.diabetes')} ${t(`health.options.diabetes.${a.diabetes}`)}`,
+        );
+    }
+
+    if (a.allergies) {
+        parts.push(`${t('health.fields.allergies')}: ${a.allergies}`);
+    }
+
+    if (a.blood_thinners) {
+        parts.push(t('health.fields.blood_thinners'));
+    }
+
+    if (a.cardiovascular) {
+        parts.push(t('health.fields.cardiovascular'));
+    }
+
+    if (a.pregnancy) {
+        parts.push(t(`health.options.pregnancy.${a.pregnancy}`));
+    }
+
+    return parts;
+});
 
 function seed(a: Anamnesis | null): AnamnesisFormData {
     return {
@@ -64,7 +110,42 @@ function save(): void {
 
 <template>
     <SectionCard :icon="IconHeartbeat" :title="t('health.clinic_form_title')">
+        <template v-if="collapsible" #title>
+            <IconHeartbeat class="size-5 shrink-0 text-surface-500" />
+            <div class="flex min-w-0 flex-col">
+                <h2 class="text-lg font-semibold text-surface-900">
+                    {{ t('health.clinic_form_title') }}
+                </h2>
+                <p
+                    v-if="riskSummary.length"
+                    class="truncate text-xs text-surface-500"
+                >
+                    {{ riskSummary.join(' · ') }}
+                </p>
+                <p
+                    v-else-if="!hasData"
+                    class="truncate text-xs text-surface-400"
+                >
+                    {{ t('health.not_filled') }}
+                </p>
+            </div>
+        </template>
+
         <template #actions>
+            <Button
+                v-if="collapsible"
+                type="button"
+                severity="secondary"
+                text
+                :aria-label="open ? t('health.collapse') : t('health.expand')"
+                @click="open = !open"
+            >
+                <template #icon>
+                    <IconChevronDown v-if="!open" />
+                    <IconChevronUp v-else />
+                </template>
+            </Button>
+
             <!-- Binary PDF stream: plain anchor to a new tab, never an Inertia visit.
                  Hidden until the form has been filled — an empty anamnesis PDF is noise. -->
             <Button
@@ -83,7 +164,7 @@ function save(): void {
             </Button>
         </template>
 
-        <div class="flex flex-col gap-6">
+        <div v-show="open" class="flex flex-col gap-6">
             <PodiatryAnamnesisFields
                 v-if="canManage || hasData"
                 :patient="patient"

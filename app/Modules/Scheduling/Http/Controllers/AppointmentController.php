@@ -108,6 +108,9 @@ class AppointmentController extends Controller
             'timezone' => $clinic->timezone,
             'preselectedPatient' => $preselectedPatient,
             'ownDoctorId' => $user->doctor?->id,
+            // Set by store() right before it redirects back here, so the fresh render can show
+            // what was just booked instead of leaving the reception staring at a stale form.
+            'lastCreated' => $request->session()->get('appointment_created'),
         ]);
     }
 
@@ -124,16 +127,26 @@ class AppointmentController extends Controller
 
         $appointment = $this->service->create($validated, $request->user());
 
-        $appointment->loadMissing('patient');
+        $appointment->loadMissing(['patient', 'doctor.user', 'service']);
 
         $patientName = trim(
             $appointment->patient->first_name.' '.$appointment->patient->last_name
         );
-        $slot = $appointment->starts_at
-            ->setTimezone($this->clinicContext->timezone())
-            ->format('d.m.Y H:i');
+        $localStart = $appointment->starts_at->setTimezone($this->clinicContext->timezone());
+        $slot = $localStart->format('d.m.Y H:i');
 
         Toast::success(__('appointment.created', ['patient' => $patientName, 'time' => $slot]));
+
+        // The form resets on the way back, so the page needs the booking summary to show what was
+        // just created (and where to go next) in place of the day panel.
+        $request->session()->flash('appointment_created', [
+            'patient_id' => $appointment->patient_id,
+            'patient_name' => $patientName,
+            'doctor_name' => $appointment->doctor?->display_name,
+            'service_name' => $appointment->service?->name,
+            'date' => $localStart->format('Y-m-d'),
+            'starts_at' => $slot,
+        ]);
 
         return to_route('appointments.create');
     }

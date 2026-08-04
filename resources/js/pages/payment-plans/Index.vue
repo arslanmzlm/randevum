@@ -41,11 +41,21 @@ const props = defineProps<PaymentPlanIndexProps>();
 const { t } = useI18n();
 const { can } = useCan();
 const confirm = useConfirm();
-const { formatDateOnly } = useDateTime();
+const { formatDateOnly, formatRange } = useDateTime();
 const { formatMoney } = useMoney();
 
 const canCollect = computed(() => can('transactions.create'));
 const canRemind = computed(() => can('paymentPlans.sendReminder'));
+
+// The "due soon" cards cover a rolling 7-day window; spelling out the dates keeps the figure from
+// reading as an all-time total.
+const dueSoonRange = computed(() => {
+    const today = new Date();
+    const end = new Date(today);
+    end.setDate(end.getDate() + 7);
+
+    return formatRange(today, end, { allDay: true });
+});
 
 // Status + date-range filters round-trip to the server (the repository defaults to pending-only and
 // broadens on filter[status]); patient-name search filters the loaded rows client-side.
@@ -231,6 +241,7 @@ function remind(row: PendingInstallment): void {
                 accent="amber"
                 :label="t('payment_plan.stats.due_soon_total')"
                 :value="formatMoney(stats.due_soon_total)"
+                :sublabel="dueSoonRange"
             />
         </div>
 
@@ -332,7 +343,11 @@ function remind(row: PendingInstallment): void {
                 >
                     <template #body="{ data }">
                         <span class="text-surface-500">
-                            {{ data.sequence }}
+                            {{
+                                data.installment_count
+                                    ? `${data.sequence} / ${data.installment_count}`
+                                    : data.sequence
+                            }}
                         </span>
                     </template>
                 </Column>
@@ -385,6 +400,7 @@ function remind(row: PendingInstallment): void {
                             </Button>
                             <Button
                                 v-if="canRemind"
+                                v-tooltip.top="t('payment_plan.remind_action')"
                                 type="button"
                                 severity="secondary"
                                 outlined
@@ -392,7 +408,9 @@ function remind(row: PendingInstallment): void {
                                 :aria-label="t('payment_plan.remind_action')"
                                 @click="remind(data)"
                             >
-                                <IconBell class="size-4" />
+                                <template #icon>
+                                    <IconBell class="size-4" />
+                                </template>
                             </Button>
                         </div>
                     </template>

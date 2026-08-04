@@ -99,17 +99,18 @@ const { state: availabilityState, reason: availabilityReason } =
             <span class="text-sm font-medium text-surface-700">
                 {{ t('appointment_bulk.occurrence_label', { n: index + 1 }) }}
             </span>
+            <!-- Full-size hit area: at `size="small"` with a 16px glyph this was easy to miss. -->
             <Button
                 v-if="removable"
+                v-tooltip.top="t('appointment_bulk.remove_row')"
                 text
                 rounded
                 severity="danger"
-                size="small"
                 :aria-label="t('appointment_bulk.remove_row')"
                 @click="emit('remove')"
             >
                 <template #icon>
-                    <IconTrash class="size-4" />
+                    <IconTrash class="size-5" />
                 </template>
             </Button>
         </div>

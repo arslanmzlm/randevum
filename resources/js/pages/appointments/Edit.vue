@@ -142,7 +142,7 @@ function submit(): void {
                         >
                             <Link
                                 :href="patientShow(appointment.patient.id).url"
-                                class="font-medium text-primary-600 transition-colors hover:text-primary-700"
+                                class="font-medium text-primary-600 transition-colors hover:text-primary-700 hover:underline"
                             >
                                 {{ appointment.patient.full_name }}
                             </Link>

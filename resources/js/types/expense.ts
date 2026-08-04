@@ -43,4 +43,8 @@ export type ExpenseIndexProps = {
     filters: ExpenseFilters;
     query: ExpenseQuery;
     currency: string;
+    /** Whether the viewer may see the whole clinic's expenses (owner/manager). */
+    canViewAll: boolean;
+    /** Which list the server actually returned. */
+    scope: 'own' | 'all';
 };

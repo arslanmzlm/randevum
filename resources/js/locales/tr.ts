@@ -17,6 +17,12 @@ export const tr = {
         },
     },
     nav: {
+        groups: {
+            scheduling: 'Randevu işlemleri',
+            clinic: 'Klinik',
+            finance: 'Finans',
+            sms: 'SMS',
+        },
         dashboard: 'Ana sayfa',
         calendar: 'Takvim',
         appointments: 'Randevular',
@@ -32,7 +38,7 @@ export const tr = {
         appointment_types: 'Randevu Türleri',
         tags: 'Etiketler',
         finance: 'Finans',
-        expenses: 'Giderlerim',
+        expenses: 'Giderler',
         payment_plans: 'Taksitler',
         availability: 'İzin ve Kapalı Günler',
         sms_settings: 'SMS Bildirimleri',
@@ -391,6 +397,9 @@ export const tr = {
     health: {
         clinic_form_title: 'Anamnez',
         download_pdf: 'Anamnez (PDF)',
+        not_filled: 'Henüz doldurulmadı',
+        expand: 'Anamnezi aç',
+        collapse: 'Anamnezi kapat',
         save: 'Kaydet',
         saved: 'Anamnez kaydedildi.',
         empty: 'Bu hasta için henüz anamnez bilgisi girilmemiş.',
@@ -710,6 +719,11 @@ export const tr = {
         },
     },
     appointment: {
+        created_card: {
+            title: 'Randevu oluşturuldu',
+            patient_profile: 'Hasta profili',
+            day_list: 'O günün randevuları',
+        },
         title: 'Randevu Oluştur',
         subtitle:
             'Telefonla veya randevusuz gelen hastalar için manuel randevu oluşturun.',
@@ -1156,10 +1170,15 @@ export const tr = {
         revenue_breakdown: 'Gelir kırılımı',
         expense_breakdown: 'Gider kırılımı (kategori)',
         expense_breakdown_empty: 'Bu dönemde gider yok.',
+        go_to_expenses: 'Giderler sayfasına git',
         uncategorized: 'Kategorisiz',
     },
     expense: {
-        title: 'Giderlerim',
+        scope: {
+            all: 'Tüm giderler',
+            own: 'Benim giderlerim',
+        },
+        title: 'Giderler',
         subtitle: 'Eklediğiniz giderleri görüntüleyin ve yönetin.',
         add: 'Gider Ekle',
         create_title: 'Gider Ekle',
@@ -1264,7 +1283,7 @@ export const tr = {
             overdue_count: 'Vadesi geçen',
             overdue_total: 'Vadesi geçen tutar',
             due_soon_count: 'Yaklaşan (7 gün)',
-            due_soon_total: 'Yaklaşan tutar',
+            due_soon_total: 'Yaklaşan tutar (7 gün)',
         },
         columns: {
             patient: 'Hasta',
@@ -1514,6 +1533,7 @@ export const tr = {
         delete: 'Sil',
         cancel: 'Vazgeç',
         back: 'Geri',
+        close: 'Kapat',
         units: {
             hour: 'saat',
         },

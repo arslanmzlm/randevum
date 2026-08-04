@@ -96,8 +96,6 @@ it('renders the finance report for an owner', function (): void {
             ->has('expense.total')
             ->has('expense.by_category')
             ->has('net')
-            ->has('expenses')
-            ->has('categories')
             ->has('filters')
         );
 });
@@ -373,19 +371,23 @@ it('breaks the expense window down by category, largest first', function (): voi
         );
 });
 
-it('lists every clinic expense for the window on the finance page', function (): void {
+it('reports the expense total for the window without repeating the list', function (): void {
     ['clinic' => $clinic, 'owner' => $owner] = frSetup();
 
     frExpense($clinic, '10.00', '2026-06-10');
     frExpense($clinic, '20.00', '2026-06-11');
-    frExpense($clinic, '30.00', '2025-01-01'); // outside the default window
+    frExpense($clinic, '30.00', '2025-01-01'); // outside the window
 
+    // The rows themselves live on /expenses; this page only carries the totals + breakdown.
     $this->actingAs($owner)
         ->get(route('reports.finance', ['start' => '2026-06-01', 'end' => '2026-06-30']))
-        ->assertInertia(fn ($page) => $page->has('expenses.data', 2));
+        ->assertInertia(fn ($page) => $page
+            ->where('expense.total', '30.00')
+            ->missing('expenses')
+        );
 });
 
-it('narrows the finance expense list by category without affecting revenue or net', function (): void {
+it('keeps revenue, expense total and net whole regardless of the category filter', function (): void {
     ['clinic' => $clinic, 'owner' => $owner, 'patient' => $patient] = frSetup();
 
     frPayment($clinic, $patient, '500.00', PaymentMethod::Cash, '2026-06-10 09:00:00');
@@ -395,27 +397,23 @@ it('narrows the finance expense list by category without affecting revenue or ne
     $this->actingAs($owner)
         ->get(route('reports.finance', ['start' => '2026-06-10', 'end' => '2026-06-10', 'category' => 'Kira']))
         ->assertInertia(fn ($page) => $page
-            ->has('expenses.data', 1)
-            ->where('expenses.data.0.category', 'Kira')
             ->where('expense.total', '150.00')
             ->where('net', '350.00')
         );
 });
 
-it("never lists another clinic's expenses or counts them toward the total", function (): void {
+it("never counts another clinic's expenses toward the total", function (): void {
     ['clinic' => $clinic, 'owner' => $owner] = frSetup();
     frExpense($clinic, '40.00', '2026-06-10', 'Kira');
 
     $otherClinic = Clinic::factory()->create();
     frExpense($otherClinic, '9999.00', '2026-06-10', 'Fatura');
 
-    // Clinic B's expense must be absent from BOTH the window total and the list data.
+    // Clinic B's expense must not reach the window total.
     $this->actingAs($owner)
         ->get(route('reports.finance', ['start' => '2026-06-10', 'end' => '2026-06-10']))
         ->assertInertia(fn ($page) => $page
             ->where('expense.total', '40.00')
-            ->has('expenses.data', 1)
-            ->where('expenses.data.0.amount', '40.00')
-            ->where('expenses.data.0.category', 'Kira')
+            ->where('expense.by_category.0.total', '40.00')
         );
 });

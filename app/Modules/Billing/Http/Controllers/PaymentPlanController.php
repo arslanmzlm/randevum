@@ -52,6 +52,9 @@ class PaymentPlanController extends Controller
                     'patient_name' => trim("{$plan->patient->first_name} {$plan->patient->last_name}"),
                     'treatment_id' => $plan->treatment_id,
                     'sequence' => $installment->sequence,
+                    // Row shows "3 / 6": a bare sequence number says nothing about how far along
+                    // the plan is.
+                    'installment_count' => $plan->installment_count,
                     'due_date' => $installment->due_date->toDateString(),
                     'amount' => (string) $installment->amount,
                     'status' => $installment->status->value,

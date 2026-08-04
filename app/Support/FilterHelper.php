@@ -42,9 +42,14 @@ class FilterHelper
     /**
      * Apply a LIKE search across the given fields when `filter[search]` is non-empty.
      *
+     * A field given as an array is matched as those columns joined by a space, so a full-name
+     * query hits a first_name/last_name pair. Matching is Turkish case/diacritic insensitive
+     * (see SearchTerm).
+     *
+     * @param  string|list<string>  ...$fields
      * @return self<TModel>
      */
-    public function search(string ...$fields): self
+    public function search(string|array ...$fields): self
     {
         $term = request()->input('filter.search');
 
@@ -52,13 +57,7 @@ class FilterHelper
             return $this;
         }
 
-        $this->query->where(function (Builder $query) use ($fields, $term): void {
-            foreach ($fields as $index => $field) {
-                $index === 0
-                    ? $query->whereLike($field, "%{$term}%")
-                    : $query->orWhereLike($field, "%{$term}%");
-            }
-        });
+        $this->query->where(fn (Builder $query) => $this->applyLike($query, $fields, $term));
 
         return $this;
     }
@@ -68,9 +67,10 @@ class FilterHelper
      * Mirrors search() but constrains a relation — use when the searchable fields live on a
      * related row (e.g. patient name/phone on the `patients` relation, not the owning table).
      *
+     * @param  string|list<string>  ...$fields
      * @return self<TModel>
      */
-    public function searchRelation(string $relation, string ...$fields): self
+    public function searchRelation(string $relation, string|array ...$fields): self
     {
         $term = request()->input('filter.search');
 
@@ -78,15 +78,27 @@ class FilterHelper
             return $this;
         }
 
-        $this->query->whereHas($relation, function (Builder $query) use ($fields, $term): void {
-            foreach ($fields as $index => $field) {
-                $index === 0
-                    ? $query->whereLike($field, "%{$term}%")
-                    : $query->orWhereLike($field, "%{$term}%");
-            }
-        });
+        $this->query->whereHas(
+            $relation,
+            fn (Builder $query) => $this->applyLike($query, $fields, $term),
+        );
 
         return $this;
+    }
+
+    /**
+     * @param  Builder<covariant Model>  $query
+     * @param  list<string|list<string>>  $fields
+     */
+    private function applyLike(Builder $query, array $fields, string $term): void
+    {
+        $needle = '%'.SearchTerm::normalize($term).'%';
+
+        foreach ($fields as $index => $field) {
+            $index === 0
+                ? $query->whereLike(SearchTerm::column($field), $needle)
+                : $query->orWhereLike(SearchTerm::column($field), $needle);
+        }
     }
 
     /**

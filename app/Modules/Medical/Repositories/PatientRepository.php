@@ -7,10 +7,10 @@ use App\Enums\TreatmentStatus;
 use App\Models\Patient;
 use App\Models\Treatment;
 use App\Support\FilterHelper;
+use App\Support\SearchTerm;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\DB;
 
 class PatientRepository
 {
@@ -38,7 +38,7 @@ class PatientRepository
         $this->applyLastVisitFilter($query, $timezone);
 
         return FilterHelper::for($query)
-            ->search('first_name', 'last_name', 'phone')
+            ->search(['first_name', 'last_name'], 'first_name', 'last_name', 'phone')
             ->sort('first_name', 'last_name', 'created_at', 'last_visit_at')
             ->enum(['gender' => Gender::class])
             ->boolean('is_legacy')
@@ -158,15 +158,16 @@ class PatientRepository
         $digits = preg_replace('/\D/', '', $term) ?? '';
         $nationalDigits = $digits !== '' ? ltrim($digits, '0') : '';
 
+        $needle = '%'.SearchTerm::normalize($term).'%';
+
         return Patient::query()
-            ->where(function ($q) use ($term, $nationalDigits): void {
-                // Match the fragment against either name part AND the joined
-                // "first last" so a full-name query ("Mehmet Yılmaz") still hits.
-                // whereLike on a raw concat keeps the driver-correct LIKE/ILIKE
-                // mapping (raw ILIKE would break the sqlite test connection).
-                $q->whereLike('first_name', "%{$term}%")
-                    ->orWhereLike('last_name', "%{$term}%")
-                    ->orWhereLike(DB::raw("first_name || ' ' || last_name"), "%{$term}%");
+            ->where(function ($q) use ($needle, $nationalDigits): void {
+                // Match the fragment against either name part AND the joined "first last" so a
+                // full-name query ("Mehmet Yılmaz") still hits. Both sides are folded to ASCII
+                // so "ırmak"/"Irmak"/"irmak" find the same patient (see SearchTerm).
+                $q->whereLike(SearchTerm::column('first_name'), $needle)
+                    ->orWhereLike(SearchTerm::column('last_name'), $needle)
+                    ->orWhereLike(SearchTerm::column(['first_name', 'last_name']), $needle);
 
                 if ($nationalDigits !== '') {
                     $q->orWhereLike('phone', "%{$nationalDigits}%");

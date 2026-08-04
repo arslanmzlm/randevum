@@ -54,6 +54,18 @@ export type AppointmentListQuery = TableState<{
     end_date: string;
 }>;
 
+/** Summary of the booking that was just created, flashed back onto the create page. */
+export type CreatedAppointment = {
+    patient_id: number;
+    patient_name: string;
+    doctor_name: string | null;
+    service_name: string | null;
+    /** Y-m-d, clinic timezone — links the day list filter. */
+    date: string;
+    /** Clinic-local wall clock, already formatted for display. */
+    starts_at: string;
+};
+
 export type AppointmentIndexProps = {
     appointments: Paginated<AppointmentListItem>;
     doctors: AppointmentDoctorOption[];
@@ -105,6 +117,8 @@ export type AppointmentCreateProps = {
     preselectedPatient: PatientSearchResult | null;
     /** The user's own doctors.id (auto-selected); null when they have no doctor profile. */
     ownDoctorId: number | null;
+    /** Present on the render that follows a successful booking; drives the result card. */
+    lastCreated: CreatedAppointment | null;
 };
 
 /** The fixed (read-only) patient + current slot of the appointment being rescheduled. */

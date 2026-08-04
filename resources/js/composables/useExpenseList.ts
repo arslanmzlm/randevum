@@ -8,7 +8,7 @@ import type { ExpenseFilters, ExpenseQuery } from '@/types/expense';
 import type { SortOrderString } from '@/types/table';
 
 /**
- * Shared list-state driver for the two expense surfaces (finance overview + Giderlerim).
+ * Shared list-state driver for the expense list, including the own/clinic scope switch.
  *
  * Unlike `useTableFilters`, the expense/finance backend reads its window (start/end/entire)
  * and category as FLAT query params (not `filter[...]`), so this serializes flat and never
@@ -22,6 +22,8 @@ interface UseExpenseListOptions {
     query: ExpenseQuery;
     /** `current_page` echoed by the paginator meta. */
     currentPage: number;
+    /** 'own' or 'all' — only meaningful for viewers holding expenses.viewAny. */
+    scope?: 'own' | 'all' | null;
 }
 
 export interface DateWindow {
@@ -48,6 +50,7 @@ export function useExpenseList(options: UseExpenseListOptions) {
             : '') as SortOrderString,
         per_page: query.per_page,
         page: currentPage,
+        scope: options.scope ?? null,
     });
 
     const loading = ref(false);
@@ -79,6 +82,10 @@ export function useExpenseList(options: UseExpenseListOptions) {
             params.category = state.category;
         }
 
+        if (state.scope) {
+            params.scope = state.scope;
+        }
+
         if (state.sort_field) {
             params.sort =
                 (state.sort_order === '-1' ? '-' : '') + state.sort_field;
@@ -105,6 +112,12 @@ export function useExpenseList(options: UseExpenseListOptions) {
         state.entire = window.entire;
         state.start = window.start;
         state.end = window.end;
+        state.page = 1;
+        reload();
+    }
+
+    function setScope(scope: 'own' | 'all'): void {
+        state.scope = scope;
         state.page = 1;
         reload();
     }
@@ -138,6 +151,7 @@ export function useExpenseList(options: UseExpenseListOptions) {
         sortField,
         sortOrder,
         setDateWindow,
+        setScope,
         setCategory,
         onPage,
         onSort,

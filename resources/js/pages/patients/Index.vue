@@ -302,7 +302,7 @@ function genderLabel(gender: Patient['gender']): string {
                     <div class="flex min-w-0 items-center gap-2">
                         <Link
                             :href="show(data.id).url"
-                            class="truncate font-medium text-primary-600 transition-colors hover:text-primary-700"
+                            class="truncate font-medium text-primary-600 transition-colors hover:text-primary-700 hover:underline"
                         >
                             {{ data.full_name }}
                         </Link>

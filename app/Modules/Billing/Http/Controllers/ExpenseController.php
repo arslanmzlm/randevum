@@ -25,8 +25,10 @@ class ExpenseController extends Controller
     ) {}
 
     /**
-     * Giderlerim — own expenses only. Reachable via the create permission alone
-     * (no dedicated expenses.viewOwn permission; see ExpensePolicy::create).
+     * The clinic's expense list. Everyone with the create permission sees their own rows
+     * (no dedicated expenses.viewOwn permission; see ExpensePolicy::create); owner/manager
+     * hold expenses.viewAny and default to the whole clinic, with `scope=own` narrowing it
+     * back down. The finance report links here instead of repeating the table.
      */
     public function index(Request $request): Response
     {
@@ -35,12 +37,21 @@ class ExpenseController extends Controller
         [$entire, $start, $end] = DateRangeFilter::resolve($request, $this->clinicContext->timezone());
         $category = DateRangeFilter::category($request);
 
-        $paginator = $this->service->paginateOwn(
-            $request->user()->id,
-            $entire ? null : $start,
-            $entire ? null : $end,
-            $category,
-        );
+        $canViewAll = $request->user()->can('expenses.viewAny');
+        $ownOnly = ! $canViewAll || $request->string('scope')->value() === 'own';
+
+        $paginator = $ownOnly
+            ? $this->service->paginateOwn(
+                $request->user()->id,
+                $entire ? null : $start,
+                $entire ? null : $end,
+                $category,
+            )
+            : $this->service->paginateClinic(
+                $entire ? null : $start,
+                $entire ? null : $end,
+                $category,
+            );
 
         return Inertia::render('expenses/Index', [
             'expenses' => ExpenseResource::collection($paginator),
@@ -48,6 +59,8 @@ class ExpenseController extends Controller
             'filters' => ['start' => $start, 'end' => $end, 'entire' => $entire, 'category' => $category],
             'query' => FilterHelper::requestState(),
             'currency' => $this->clinicContext->currency(),
+            'canViewAll' => $canViewAll,
+            'scope' => $ownOnly ? 'own' : 'all',
         ]);
     }
 

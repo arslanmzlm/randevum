@@ -40,6 +40,40 @@ it('search filters records that match a field', function (): void {
         ->and($result->items()[0]->first_name)->toBe('Ahmet');
 });
 
+it('search matches a joined "first last" when a field is given as an array', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'first_name' => 'Mehmet', 'last_name' => 'Yılmaz', 'phone' => '05311111111']);
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'first_name' => 'Mehmet', 'last_name' => 'Demir', 'phone' => '05322222222']);
+
+    request()->replace(['filter' => ['search' => 'Mehmet Yılmaz']]);
+
+    $result = FilterHelper::for(Patient::class)
+        ->search(['first_name', 'last_name'], 'first_name', 'last_name', 'phone')
+        ->paginate();
+
+    expect($result->total())->toBe(1)
+        ->and($result->items()[0]->last_name)->toBe('Yılmaz');
+});
+
+it('search folds Turkish case so ı and I find the same record', function (string $term): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'first_name' => 'Irmak', 'phone' => '05311111111']);
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'first_name' => 'Fatma', 'phone' => '05322222222']);
+
+    request()->replace(['filter' => ['search' => $term]]);
+
+    $result = FilterHelper::for(Patient::class)
+        ->search('first_name', 'last_name', 'phone')
+        ->paginate();
+
+    expect($result->total())->toBe(1)
+        ->and($result->items()[0]->first_name)->toBe('Irmak');
+})->with(['ırmak', 'irmak', 'IRMAK']);
+
 it('search matches across multiple fields (OR logic)', function (): void {
     $clinic = Clinic::factory()->create();
     app(ClinicContext::class)->set($clinic->id);

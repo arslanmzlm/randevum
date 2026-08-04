@@ -88,7 +88,7 @@ function markCalled(row: FollowUpReminder): void {
                     <template #body="{ data }">
                         <Link
                             :href="patientShow(data.patient.id).url"
-                            class="font-medium text-primary-600 transition-colors hover:text-primary-700"
+                            class="font-medium text-primary-600 transition-colors hover:text-primary-700 hover:underline"
                         >
                             {{ data.patient.full_name }}
                         </Link>

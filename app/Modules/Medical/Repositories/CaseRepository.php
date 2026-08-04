@@ -5,6 +5,7 @@ namespace App\Modules\Medical\Repositories;
 use App\Enums\CaseStatus;
 use App\Models\CaseRecord;
 use App\Support\FilterHelper;
+use App\Support\SearchTerm;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -62,14 +63,19 @@ class CaseRepository
             ->withCount('treatments')
             ->orderByDesc('opened_at');
 
-        // Title + patient name are OR'd together so either field satisfies the search.
+        // Title + patient name are OR'd together so either field satisfies the search. Folded to
+        // ASCII on both sides (SearchTerm) and matched against the joined name too, so "Ad Soyad"
+        // and Turkish ı/i spellings both hit.
         $term = request()->input('filter.search');
         if (! blank($term) && is_string($term)) {
-            $query->where(function (Builder $q) use ($term): void {
-                $q->whereLike('title', "%{$term}%")
+            $needle = '%'.SearchTerm::normalize($term).'%';
+
+            $query->where(function (Builder $q) use ($needle): void {
+                $q->whereLike(SearchTerm::column('title'), $needle)
                     ->orWhereHas('patient', fn (Builder $p) => $p
-                        ->whereLike('first_name', "%{$term}%")
-                        ->orWhereLike('last_name', "%{$term}%")
+                        ->whereLike(SearchTerm::column('first_name'), $needle)
+                        ->orWhereLike(SearchTerm::column('last_name'), $needle)
+                        ->orWhereLike(SearchTerm::column(['first_name', 'last_name']), $needle)
                     );
             });
         }

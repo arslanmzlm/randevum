@@ -5,13 +5,11 @@ namespace App\Modules\Billing\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\Clinic;
 use App\Models\Expense;
-use App\Modules\Billing\Http\Resources\ExpenseResource;
 use App\Modules\Billing\Services\ExpenseService;
 use App\Modules\Billing\Services\FinanceReportService;
 use App\Modules\Core\Support\Toast;
 use App\Support\ClinicContext;
 use App\Support\DateRangeFilter;
-use App\Support\FilterHelper;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -38,16 +36,14 @@ class FinanceController extends Controller
         $windowEnd = $entire ? null : $end;
 
         $report = $this->reportService->build($clinic->id, $clinic->timezone, $windowStart, $windowEnd);
-        $expenses = $this->expenseService->paginateClinic($windowStart, $windowEnd, $category);
 
+        // Report only: the expense rows themselves live on /expenses, so this page ships the
+        // breakdowns and the date window, not a second paginated list of the same data.
         return Inertia::render('reports/Finance', [
             'revenue' => $report['revenue'],
             'expense' => $report['expense'],
             'net' => $report['net'],
-            'expenses' => ExpenseResource::collection($expenses),
-            'categories' => $this->expenseService->suggestions()['categories'],
-            'filters' => ['start' => $start, 'end' => $end, 'entire' => $entire, 'category' => $category],
-            'query' => FilterHelper::requestState(),
+            'filters' => ['start' => $start, 'end' => $end, 'entire' => $entire],
             'currency' => $this->clinicContext->currency(),
         ]);
     }

@@ -137,7 +137,7 @@ const statusOptions = computed(() =>
                 <template #body="{ data }">
                     <Link
                         :href="show(data.id).url"
-                        class="font-medium text-primary-600 transition-colors hover:text-primary-700"
+                        class="font-medium text-primary-600 transition-colors hover:text-primary-700 hover:underline"
                     >
                         {{ data.title }}
                     </Link>

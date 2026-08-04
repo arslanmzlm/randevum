@@ -133,7 +133,7 @@ const metaRows = computed(() => {
                     <dd>
                         <Link
                             :href="patientShow(caseRecord.patient.id).url"
-                            class="text-sm font-medium text-primary-600 transition-colors hover:text-primary-700"
+                            class="text-sm font-medium text-primary-600 transition-colors hover:text-primary-700 hover:underline"
                         >
                             {{ caseRecord.patient.full_name }}
                         </Link>

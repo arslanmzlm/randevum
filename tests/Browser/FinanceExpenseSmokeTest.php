@@ -11,9 +11,9 @@ use Spatie\Permission\PermissionRegistrar;
 /**
  * Browser smoke — Feature 1.35 (Gider takibi / birleşik finans sayfası). Real Chromium via
  * pest-plugin-browser: the manager-only finance overview (/reports/finance — revenue + expense
- * + net) and the all-staff Giderlerim self-service page (/expenses) must both mount, render
+ * + net) and the all-staff expense page (/expenses) must both mount, render
  * page-body content (not just the app shell), and produce no JavaScript errors. Also exercises
- * the add-expense dialog (genuine client-side interaction) on Giderlerim.
+ * the add-expense dialog (genuine client-side interaction) on the expense page.
  *
  * Hardened against Vue setup-error false greens: assertNoJavascriptErrors() only catches
  * *uncaught* window errors. Vue swallows component setup/render errors and leaves <main> as an
@@ -55,11 +55,13 @@ it('renders the finance overview for an owner with revenue, expense and net, and
         ->assertNoJavascriptErrors()
         // PageHeader title — finance.title, in the page body.
         ->assertSee('Finans')
-        // Stat card + breakdown section headings — management-only figures.
-        ->assertSee('Gelir kırılımı')
+        // Breakdown card headings — management-only figures. The expense ROWS are not here:
+        // they live on /expenses, which this page links to.
+        ->assertSee('Ödeme yöntemine göre')
         ->assertSee('Gider kırılımı (kategori)')
-        // Seeded expense's category rendered inside the all-clinic expense list.
+        // The seeded expense's category still shows in the category breakdown.
         ->assertSee('Kira')
+        ->assertSee('Giderler sayfasına git')
         // Guard against the silent-blank-body false green: <main> must be non-empty.
         ->assertScript(
             '() => (document.querySelector("main")?.innerText.trim().length ?? 0) > 0',
@@ -67,7 +69,7 @@ it('renders the finance overview for an owner with revenue, expense and net, and
         ->screenshot();
 });
 
-it('renders Giderlerim for a receptionist and opens the add-expense dialog, with no JS errors', function (): void {
+it('renders the expense page for a receptionist and opens the add-expense dialog, with no JS errors', function (): void {
     $clinic = Clinic::factory()->create();
     $receptionist = User::factory()->create();
     feRole($receptionist, 'receptionist', $clinic->id);
@@ -86,7 +88,7 @@ it('renders Giderlerim for a receptionist and opens the add-expense dialog, with
 
     $page->assertNoJavascriptErrors()
         // PageHeader title — expense.title, in the page body.
-        ->assertSee('Giderlerim')
+        ->assertSee('Giderler')
         // Own expense's category rendered inside the list.
         ->assertSee('Malzeme')
         // Guard against the silent-blank-body false green: <main> must be non-empty.

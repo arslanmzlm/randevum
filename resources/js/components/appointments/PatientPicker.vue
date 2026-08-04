@@ -72,7 +72,7 @@ function clearPatient(): void {
                 <button
                     v-if="hasSelectedPatient"
                     type="button"
-                    class="mt-1 self-start text-xs font-medium text-primary-600 hover:text-primary-700"
+                    class="mt-1 cursor-pointer self-start text-xs font-medium text-primary-600 hover:text-primary-700 hover:underline"
                     @click="clearPatient"
                 >
                     {{ t('appointment.clear_patient') }}

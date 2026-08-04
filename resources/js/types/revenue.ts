@@ -1,6 +1,5 @@
 import type { PaymentMethod } from '@/types/enums';
-import type { Expense, ExpenseFilters, ExpenseQuery } from '@/types/expense';
-import type { Paginated } from '@/types/table';
+import type { ExpenseFilters } from '@/types/expense';
 
 export interface RevenueMethodTotal {
     method: PaymentMethod;
@@ -50,10 +49,6 @@ export interface FinanceReportProps {
     expense: ExpenseReport;
     /** revenue.range.total − expense.total (bcmath); may be negative. */
     net: string;
-    /** ALL clinic expenses for the window, category + date filtered. */
-    expenses: Paginated<Expense>;
-    categories: string[];
     filters: ExpenseFilters;
-    query: ExpenseQuery;
     currency: string;
 }

@@ -33,7 +33,7 @@ defineProps<{
         <template #actions>
             <Link
                 :href="calendarIndex().url"
-                class="inline-flex items-center gap-1 text-sm font-medium text-primary-600 transition-colors hover:text-primary-700"
+                class="inline-flex items-center gap-1 text-sm font-medium text-primary-600 transition-colors hover:text-primary-700 hover:underline"
             >
                 {{ t('dashboard.today_schedule.view_calendar') }}
                 <IconChevronRight class="size-4" />

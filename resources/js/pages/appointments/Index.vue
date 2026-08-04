@@ -370,7 +370,7 @@ const dateRange = computed<(Date | null)[] | null>({
                     <div class="flex min-w-0 items-center gap-2">
                         <Link
                             :href="show(data.patient_id).url"
-                            class="truncate font-medium text-primary-600 transition-colors hover:text-primary-700"
+                            class="truncate font-medium text-primary-600 transition-colors hover:text-primary-700 hover:underline"
                         >
                             {{ data.patient_name }}
                         </Link>

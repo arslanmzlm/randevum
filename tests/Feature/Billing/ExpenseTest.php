@@ -261,6 +261,85 @@ it('Giderlerim filters the own list by category and date range', function (): vo
 });
 
 // ---------------------------------------------------------------------------
+// Scope switch — own vs whole clinic (the finance report links here for the latter)
+// ---------------------------------------------------------------------------
+
+it('shows the whole clinic to a viewer holding expenses.viewAny by default', function (string $role): void {
+    ['clinic' => $clinic] = exClinic();
+    $viewer = User::factory()->create();
+    exRole($viewer, $role, $clinic->id);
+    $otherStaff = User::factory()->create();
+    exRole($otherStaff, 'receptionist', $clinic->id);
+
+    Expense::factory()->create(['clinic_id' => $clinic->id, 'created_by' => $viewer->id]);
+    Expense::factory()->create(['clinic_id' => $clinic->id, 'created_by' => $otherStaff->id]);
+
+    $this->actingAs($viewer)
+        ->get(route('expenses.index', ['entire' => 1]))
+        ->assertInertia(fn ($page) => $page
+            ->has('expenses.data', 2)
+            ->where('canViewAll', true)
+            ->where('scope', 'all')
+        );
+})->with(['owner', 'manager']);
+
+it('narrows back to own rows when scope=own', function (): void {
+    ['clinic' => $clinic] = exClinic();
+    $owner = User::factory()->create();
+    exRole($owner, 'owner', $clinic->id);
+    $otherStaff = User::factory()->create();
+    exRole($otherStaff, 'receptionist', $clinic->id);
+
+    Expense::factory()->create(['clinic_id' => $clinic->id, 'created_by' => $owner->id]);
+    Expense::factory()->create(['clinic_id' => $clinic->id, 'created_by' => $otherStaff->id]);
+
+    $this->actingAs($owner)
+        ->get(route('expenses.index', ['entire' => 1, 'scope' => 'own']))
+        ->assertInertia(fn ($page) => $page
+            ->has('expenses.data', 1)
+            ->where('expenses.data.0.created_by', $owner->id)
+            ->where('scope', 'own')
+        );
+});
+
+it('ignores scope=all for a role without expenses.viewAny', function (string $role): void {
+    ['clinic' => $clinic] = exClinic();
+    $staff = User::factory()->create();
+    exRole($staff, $role, $clinic->id);
+    $otherStaff = User::factory()->create();
+    exRole($otherStaff, 'manager', $clinic->id);
+
+    Expense::factory()->create(['clinic_id' => $clinic->id, 'created_by' => $staff->id]);
+    Expense::factory()->create(['clinic_id' => $clinic->id, 'created_by' => $otherStaff->id]);
+
+    $this->actingAs($staff)
+        ->get(route('expenses.index', ['entire' => 1, 'scope' => 'all']))
+        ->assertInertia(fn ($page) => $page
+            ->has('expenses.data', 1)
+            ->where('expenses.data.0.created_by', $staff->id)
+            ->where('canViewAll', false)
+            ->where('scope', 'own')
+        );
+})->with(['doctor', 'receptionist', 'assistant']);
+
+it("never lists another clinic's expenses in the clinic-wide scope", function (): void {
+    ['clinic' => $clinic] = exClinic();
+    $owner = User::factory()->create();
+    exRole($owner, 'owner', $clinic->id);
+
+    Expense::factory()->create(['clinic_id' => $clinic->id, 'created_by' => $owner->id]);
+
+    $otherClinic = Clinic::factory()->create();
+    $otherOwner = User::factory()->create();
+    exRole($otherOwner, 'owner', $otherClinic->id);
+    Expense::factory()->create(['clinic_id' => $otherClinic->id, 'created_by' => $otherOwner->id]);
+
+    $this->actingAs($owner)
+        ->get(route('expenses.index', ['entire' => 1]))
+        ->assertInertia(fn ($page) => $page->has('expenses.data', 1));
+});
+
+// ---------------------------------------------------------------------------
 // PUT / DELETE /expenses/{expense} — ownership
 // ---------------------------------------------------------------------------
 

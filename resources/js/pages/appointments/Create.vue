@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
-import { computed, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import AppointmentDetailsFields from '@/components/appointments/AppointmentDetailsFields.vue';
 import AppointmentTopCard from '@/components/appointments/AppointmentTopCard.vue';
+import CreatedAppointmentCard from '@/components/appointments/CreatedAppointmentCard.vue';
 import DateTimeFields from '@/components/appointments/DateTimeFields.vue';
 import DaySchedulePanel from '@/components/appointments/DaySchedulePanel.vue';
 import { provideAppointmentForm } from '@/components/appointments/formContext';
@@ -109,8 +110,25 @@ form.transform((data) => ({
     is_walk_in: data.is_walk_in,
 }));
 
+// After a booking the page re-renders with `lastCreated`; the form starts clean so the next
+// patient can be entered straight away, and the result card takes the day panel's place until the
+// receptionist starts typing again (or dismisses it).
+const showCreated = ref(props.lastCreated != null);
+
+watch(
+    () => props.lastCreated,
+    (created) => {
+        showCreated.value = created != null;
+    },
+);
+
 function submit(): void {
-    form.post(store().url);
+    form.post(store().url, {
+        onSuccess: () => {
+            form.reset();
+            form.clearErrors();
+        },
+    });
 }
 </script>
 
@@ -136,7 +154,16 @@ function submit(): void {
                 />
             </AppointmentTopCard>
 
-            <DaySchedulePanel :doctor-id="form.doctor_id" :date="form.date" />
+            <CreatedAppointmentCard
+                v-if="showCreated && props.lastCreated"
+                :appointment="props.lastCreated"
+                @dismiss="showCreated = false"
+            />
+            <DaySchedulePanel
+                v-else
+                :doctor-id="form.doctor_id"
+                :date="form.date"
+            />
         </form>
     </div>
 </template>

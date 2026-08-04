@@ -68,7 +68,7 @@ import { index as availabilityIndex } from '@/routes/schedule-exceptions';
 import { index as servicesIndex } from '@/routes/services';
 import { index as smsLogsIndex } from '@/routes/sms-logs';
 import { index as tagsIndex } from '@/routes/tags';
-import type { NavItem } from '@/types/nav';
+import type { NavGroup, NavItem } from '@/types/nav';
 import type { PatientSearchResult } from '@/types/patient';
 
 // Per-page desktop sidebar intent, set by pages via `setLayoutProps({ sidebar })`.
@@ -121,6 +121,9 @@ const userName = computed(() => {
 
 // Only routes that already exist, gated by capability (a doctor sees neither the
 // clinic profile nor the doctors management entry). Features add their own as they land.
+//
+// The daily loop stays at the top level; everything else lives in a collapsible group, otherwise
+// the list runs past twenty entries and nothing stands out.
 const navItems = computed<NavItem[]>(() => [
     { label: t('nav.dashboard'), href: dashboard().url, icon: IconHome },
     ...(can('appointments.viewAny')
@@ -130,25 +133,10 @@ const navItems = computed<NavItem[]>(() => [
                   href: calendarIndex().url,
                   icon: IconCalendarWeek,
               },
-          ]
-        : []),
-    ...(can('appointments.viewAny')
-        ? [
               {
                   label: t('nav.appointments'),
                   href: appointmentsIndex().url,
                   icon: IconListDetails,
-              },
-          ]
-        : []),
-    ...(can('appointments.viewAny')
-        ? [
-              {
-                  label: t('nav.no_shows'),
-                  href: appointmentsIndex({
-                      query: { filter: { status: 'no_show' } },
-                  }).url,
-                  icon: IconUserX,
               },
           ]
         : []),
@@ -161,33 +149,6 @@ const navItems = computed<NavItem[]>(() => [
               },
           ]
         : []),
-    ...(can('appointments.create')
-        ? [
-              {
-                  label: t('nav.appointments_bulk'),
-                  href: appointmentBulkCreate().url,
-                  icon: IconCalendarEvent,
-              },
-          ]
-        : []),
-    ...(can('clinic.update')
-        ? [
-              {
-                  label: t('nav.clinic'),
-                  href: clinicEdit().url,
-                  icon: IconBuildingHospital,
-              },
-          ]
-        : []),
-    ...(can('doctors.create')
-        ? [
-              {
-                  label: t('nav.doctors'),
-                  href: doctorsIndex().url,
-                  icon: IconStethoscope,
-              },
-          ]
-        : []),
     ...(canViewPatients.value
         ? [
               {
@@ -197,106 +158,177 @@ const navItems = computed<NavItem[]>(() => [
               },
           ]
         : []),
-    ...(can('cases.viewAny')
-        ? [
-              {
-                  label: t('nav.cases'),
-                  href: casesIndex().url,
-                  icon: IconFolders,
-              },
-          ]
-        : []),
-    ...(can('services.viewAny')
-        ? [
-              {
-                  label: t('nav.services'),
-                  href: servicesIndex().url,
-                  icon: IconClipboardList,
-              },
-          ]
-        : []),
-    ...(can('products.viewAny')
-        ? [
-              {
-                  label: t('nav.products'),
-                  href: productsIndex().url,
-                  icon: IconPackage,
-              },
-          ]
-        : []),
-    ...(can('appointmentTypes.create')
-        ? [
-              {
-                  label: t('nav.appointment_types'),
-                  href: appointmentTypesIndex().url,
-                  icon: IconTags,
-              },
-          ]
-        : []),
-    ...(can('tags.manage')
-        ? [
-              {
-                  label: t('nav.tags'),
-                  href: tagsIndex().url,
-                  icon: IconTag,
-              },
-          ]
-        : []),
-    ...(can('reports.revenue')
-        ? [
-              {
-                  label: t('nav.finance'),
-                  href: financeReport().url,
-                  icon: IconReportMoney,
-              },
-          ]
-        : []),
-    ...(can('expenses.create')
-        ? [
-              {
-                  label: t('nav.expenses'),
-                  href: expensesIndex().url,
-                  icon: IconReceipt,
-              },
-          ]
-        : []),
-    ...(can('paymentPlans.viewAny')
-        ? [
-              {
-                  label: t('nav.payment_plans'),
-                  href: paymentPlansIndex().url,
-                  icon: IconCalendarDollar,
-              },
-          ]
-        : []),
-    ...(can('scheduleExceptions.viewAny')
-        ? [
-              {
-                  label: t('nav.availability'),
-                  href: availabilityIndex().url,
-                  icon: IconCalendarOff,
-              },
-          ]
-        : []),
-    ...(can('smsSettings.view')
-        ? [
-              {
-                  label: t('nav.sms_settings'),
-                  href: smsSettingsEdit().url,
-                  icon: IconMessage,
-              },
-          ]
-        : []),
-    ...(can('smsLogs.viewAny')
-        ? [
-              {
-                  label: t('nav.sms_logs'),
-                  href: smsLogsIndex().url,
-                  icon: IconMessage2,
-              },
-          ]
-        : []),
 ]);
+
+const navGroups = computed<NavGroup[]>(() =>
+    [
+        {
+            key: 'scheduling',
+            label: t('nav.groups.scheduling'),
+            icon: IconCalendarEvent,
+            items: [
+                ...(can('appointments.create')
+                    ? [
+                          {
+                              label: t('nav.appointments_bulk'),
+                              href: appointmentBulkCreate().url,
+                              icon: IconCalendarEvent,
+                          },
+                      ]
+                    : []),
+                ...(can('appointments.viewAny')
+                    ? [
+                          {
+                              label: t('nav.no_shows'),
+                              href: appointmentsIndex({
+                                  query: { filter: { status: 'no_show' } },
+                              }).url,
+                              icon: IconUserX,
+                          },
+                      ]
+                    : []),
+                ...(can('scheduleExceptions.viewAny')
+                    ? [
+                          {
+                              label: t('nav.availability'),
+                              href: availabilityIndex().url,
+                              icon: IconCalendarOff,
+                          },
+                      ]
+                    : []),
+            ],
+        },
+        {
+            key: 'clinic',
+            label: t('nav.groups.clinic'),
+            icon: IconBuildingHospital,
+            items: [
+                ...(can('clinic.update')
+                    ? [
+                          {
+                              label: t('nav.clinic'),
+                              href: clinicEdit().url,
+                              icon: IconBuildingHospital,
+                          },
+                      ]
+                    : []),
+                ...(can('doctors.create')
+                    ? [
+                          {
+                              label: t('nav.doctors'),
+                              href: doctorsIndex().url,
+                              icon: IconStethoscope,
+                          },
+                      ]
+                    : []),
+                ...(can('cases.viewAny')
+                    ? [
+                          {
+                              label: t('nav.cases'),
+                              href: casesIndex().url,
+                              icon: IconFolders,
+                          },
+                      ]
+                    : []),
+                ...(can('services.viewAny')
+                    ? [
+                          {
+                              label: t('nav.services'),
+                              href: servicesIndex().url,
+                              icon: IconClipboardList,
+                          },
+                      ]
+                    : []),
+                ...(can('products.viewAny')
+                    ? [
+                          {
+                              label: t('nav.products'),
+                              href: productsIndex().url,
+                              icon: IconPackage,
+                          },
+                      ]
+                    : []),
+                ...(can('appointmentTypes.create')
+                    ? [
+                          {
+                              label: t('nav.appointment_types'),
+                              href: appointmentTypesIndex().url,
+                              icon: IconTags,
+                          },
+                      ]
+                    : []),
+                ...(can('tags.manage')
+                    ? [
+                          {
+                              label: t('nav.tags'),
+                              href: tagsIndex().url,
+                              icon: IconTag,
+                          },
+                      ]
+                    : []),
+            ],
+        },
+        {
+            key: 'finance',
+            label: t('nav.groups.finance'),
+            icon: IconReportMoney,
+            items: [
+                ...(can('reports.revenue')
+                    ? [
+                          {
+                              label: t('nav.finance'),
+                              href: financeReport().url,
+                              icon: IconReportMoney,
+                          },
+                      ]
+                    : []),
+                ...(can('expenses.create')
+                    ? [
+                          {
+                              label: t('nav.expenses'),
+                              href: expensesIndex().url,
+                              icon: IconReceipt,
+                          },
+                      ]
+                    : []),
+                ...(can('paymentPlans.viewAny')
+                    ? [
+                          {
+                              label: t('nav.payment_plans'),
+                              href: paymentPlansIndex().url,
+                              icon: IconCalendarDollar,
+                          },
+                      ]
+                    : []),
+            ],
+        },
+        {
+            key: 'sms',
+            label: t('nav.groups.sms'),
+            icon: IconMessage,
+            items: [
+                ...(can('smsSettings.view')
+                    ? [
+                          {
+                              label: t('nav.sms_settings'),
+                              href: smsSettingsEdit().url,
+                              icon: IconMessage,
+                          },
+                      ]
+                    : []),
+                ...(can('smsLogs.viewAny')
+                    ? [
+                          {
+                              label: t('nav.sms_logs'),
+                              href: smsLogsIndex().url,
+                              icon: IconMessage2,
+                          },
+                      ]
+                    : []),
+            ],
+        },
+    ].filter((group) => group.items.length > 0),
+);
 
 // Account/secondary items pinned to the bottom, above logout.
 const bottomNavItems = computed<NavItem[]>(() => [
@@ -458,6 +490,7 @@ function goToPasswordChange(): void {
                 :collapsed="false"
                 :clinic="clinic"
                 :nav-items="navItems"
+                :nav-groups="navGroups"
                 :bottom-nav-items="bottomNavItems"
                 @navigate="closeMobile"
                 @logout="doLogout"
@@ -488,6 +521,7 @@ function goToPasswordChange(): void {
                 :collapsed="railCollapsed"
                 :clinic="clinic"
                 :nav-items="navItems"
+                :nav-groups="navGroups"
                 :bottom-nav-items="bottomNavItems"
                 @logout="doLogout"
             />
