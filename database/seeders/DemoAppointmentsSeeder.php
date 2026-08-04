@@ -13,10 +13,10 @@ use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 
 /**
- * A small, realistic booking load for the demo clinic's doctors so the create-appointment
- * day panel / availability check (and the upcoming calendar) have something to show: a tight
- * near-date window, in-hours non-overlapping slots, 2–5 per doctor per day, drawn from the
- * existing 100 patients (no new ones) and the clinic's real services.
+ * A realistic booking load for the demo clinic's doctors so the create-appointment day panel /
+ * availability check and every calendar view have something to show: three weeks either side of
+ * today (month view included), in-hours non-overlapping slots, 2–5 per doctor per day, drawn from
+ * the existing 100 patients (no new ones) and the clinic's real services.
  *
  * Runs AFTER DemoSeeder (clinic/doctors/patients) AND the vertical service seeders, so
  * appointments can reference real services — hence its own seeder, last in DatabaseSeeder.
@@ -32,12 +32,6 @@ class DemoAppointmentsSeeder extends Seeder
             return;
         }
 
-        // Idempotent top-up: skip once a realistic set exists, so re-seeds don't pile up and
-        // any appointments booked by hand while testing survive.
-        if (Appointment::withoutGlobalScopes()->where('clinic_id', $clinic->id)->count() >= 10) {
-            return;
-        }
-
         $doctorIds = Doctor::withoutGlobalScopes()->where('clinic_id', $clinic->id)->pluck('id')->all();
         $patientIds = Patient::withoutGlobalScopes()->where('clinic_id', $clinic->id)->pluck('id')->all();
         $serviceIds = Service::withoutGlobalScopes()->where('clinic_id', $clinic->id)->where('is_active', true)->pluck('id')->all();
@@ -49,11 +43,26 @@ class DemoAppointmentsSeeder extends Seeder
         $hours = $clinic->working_hours;
         $today = Carbon::today($clinic->timezone);
 
-        for ($offset = -2; $offset <= 10; $offset++) {
+        for ($offset = -21; $offset <= 21; $offset++) {
             $day = $today->copy()->addDays($offset);
             $cfg = $hours[strtolower($day->englishDayOfWeek)] ?? null;
 
             if (! $cfg || ($cfg['closed'] ?? false)) {
+                continue;
+            }
+
+            // Per-day idempotency: a day that already has bookings is left alone (hand-made test
+            // bookings survive), but a re-seed still fills the days the window has moved onto —
+            // otherwise "today" goes empty as soon as the seeded window ages out.
+            $dayStartUtc = $day->copy()->startOfDay()->utc();
+            $dayEndUtc = $day->copy()->endOfDay()->utc();
+
+            $alreadyBooked = Appointment::withoutGlobalScopes()
+                ->where('clinic_id', $clinic->id)
+                ->whereBetween('starts_at', [$dayStartUtc, $dayEndUtc])
+                ->exists();
+
+            if ($alreadyBooked) {
                 continue;
             }
 

@@ -2,15 +2,18 @@
 
 namespace Database\Seeders;
 
-use App\Modules\Verticals\Podiatry\Database\Seeders\PodiatryAppointmentTypesSeeder;
-use App\Modules\Verticals\Podiatry\Database\Seeders\PodiatryProductsSeeder;
-use App\Modules\Verticals\Podiatry\Database\Seeders\PodiatryServicesSeeder;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
     /**
-     * Seed the application's database.
+     * Data every environment needs: roles, permissions, reference tables, verticals and the
+     * platform legal documents. All of it is idempotent — re-running heals drift and never
+     * duplicates a row.
+     *
+     * Demo/dev fixtures deliberately live outside this chain, in DemoDatabaseSeeder:
+     *
+     *     ddev php artisan db:seed --class=DemoDatabaseSeeder
      */
     public function run(): void
     {
@@ -20,16 +23,9 @@ class DatabaseSeeder extends Seeder
             CountrySeeder::class,
             CitySeeder::class,
             VerticalSeeder::class,
-            DemoSeeder::class,
-            // Requires superadmin user from DemoSeeder.
+            // Skips silently while no platform superadmin exists to author the documents;
+            // DemoDatabaseSeeder calls it again once it has created one.
             LegalDocumentSeeder::class,
-            PodiatryServicesSeeder::class,
-            PodiatryProductsSeeder::class,
-            PodiatryAppointmentTypesSeeder::class,
-            // Last: need the demo clinic/doctors/patients AND the vertical's services to exist.
-            DemoAppointmentsSeeder::class,
-            DemoCasesSeeder::class,
-            DemoSmsLogsSeeder::class,
         ]);
     }
 }

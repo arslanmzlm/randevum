@@ -112,6 +112,10 @@ class DemoSeeder extends Seeder
             Patient::factory()->count(100 - $existing)->create(['clinic_id' => $clinic->id]);
         }
 
+        // The first-login password reminder fires while last_login_at is null and would greet every
+        // reviewer on a freshly seeded database. Not fillable, so stamp it in one pass.
+        User::whereNull('last_login_at')->update(['last_login_at' => now()]);
+
         // Appointments are seeded by DemoAppointmentsSeeder (runs last) so they can reference the
         // vertical's services, which are seeded after this seeder.
     }

@@ -16,6 +16,10 @@ class LegalDocumentSeeder extends Seeder
      * reading each document's text from resources/legal/<type>/<version>.md. Idempotent:
      * firstOrCreate keyed on (clinic_id null, type, is_active) so re-running never duplicates
      * an active doc. Publishing a new version = a new config version + a new .md file.
+     *
+     * Documents are authored by the platform superadmin (created_by is NOT NULL), so this seeder
+     * no-ops while no superadmin exists — which is the case on a first run against an empty user
+     * table. Re-run it once the superadmin has been created; DemoDatabaseSeeder does exactly that.
      */
     public function run(): void
     {

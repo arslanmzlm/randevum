@@ -47,11 +47,6 @@ class DemoCasesSeeder extends Seeder
             return;
         }
 
-        // Idempotent: skip once the demo set exists so re-seeds don't pile up.
-        if (CaseRecord::withoutGlobalScopes()->where('clinic_id', $clinic->id)->count() >= 10) {
-            return;
-        }
-
         $this->clinic = $clinic;
         $this->owner = $owner;
         $this->serviceIds = Service::withoutGlobalScopes()
@@ -59,6 +54,14 @@ class DemoCasesSeeder extends Seeder
             ->where('is_active', true)
             ->pluck('id')
             ->all();
+
+        // The case set is built once; drafts are day-relative and topped up on every re-seed, so
+        // "today" always has a treatment in progress however old the database is.
+        if (CaseRecord::withoutGlobalScopes()->where('clinic_id', $clinic->id)->count() >= 10) {
+            $this->makeTodaysDrafts();
+
+            return;
+        }
 
         $doctors = Doctor::withoutGlobalScopes()
             ->where('clinic_id', $clinic->id)
@@ -182,6 +185,75 @@ class DemoCasesSeeder extends Seeder
         $patient = $patients[$p++];
         $this->makeTreatment($secondDoctor, $patient, daysAgo: 6);
         $this->makeTreatment($secondDoctor, $patient, daysAgo: 20);
+
+        $this->makeTodaysDrafts();
+    }
+
+    /**
+     * Draft treatments on today's bookings — the Process ("İşle") screen's working state, which
+     * the completed set above never shows. One is still empty (fresh form), one already carries a
+     * service line (part-filled form with a running total).
+     */
+    private function makeTodaysDrafts(): void
+    {
+        $today = Carbon::today($this->clinic->timezone);
+
+        $draftExists = Treatment::withoutGlobalScopes()
+            ->where('clinic_id', $this->clinic->id)
+            ->where('status', TreatmentStatus::Draft)
+            ->whereHas('appointment', fn ($query) => $query->withoutGlobalScopes()->whereBetween(
+                'starts_at',
+                [$today->copy()->startOfDay()->utc(), $today->copy()->endOfDay()->utc()],
+            ))
+            ->exists();
+
+        if ($draftExists) {
+            return;
+        }
+
+        $appointments = Appointment::withoutGlobalScopes()
+            ->where('clinic_id', $this->clinic->id)
+            ->whereBetween('starts_at', [$today->copy()->startOfDay()->utc(), $today->copy()->endOfDay()->utc()])
+            ->whereDoesntHave('treatment')
+            ->orderBy('starts_at')
+            ->take(2)
+            ->get();
+
+        foreach ($appointments as $index => $appointment) {
+            $detail = PodiatryTreatmentDetail::create([]);
+
+            $treatment = Treatment::create([
+                'clinic_id' => $this->clinic->id,
+                'appointment_id' => $appointment->id,
+                'patient_id' => $appointment->patient_id,
+                'doctor_id' => $appointment->doctor_id,
+                'details_type' => 'podiatry',
+                'details_id' => $detail->id,
+                'status' => TreatmentStatus::Draft,
+                'created_by' => $this->owner->id,
+            ]);
+
+            if ($index === 0 || $this->serviceIds === []) {
+                continue; // leave the first one empty
+            }
+
+            $service = Service::withoutGlobalScopes()->find($this->serviceIds[0]);
+
+            TreatmentServiceLine::create([
+                'treatment_id' => $treatment->id,
+                'service_id' => $service->id,
+                'quantity' => 1,
+                'unit_price' => $service->price,
+                'discount_amount' => 0,
+                'subtotal' => $service->price,
+                'sort_order' => 0,
+            ]);
+
+            $treatment->update([
+                'subtotal_amount' => $service->price,
+                'total_amount' => $service->price,
+            ]);
+        }
     }
 
     private function makeCase(Doctor $doctor, Patient $patient, string $title, CaseStatus $status, int $daysAgo, ?string $notes = null): CaseRecord
