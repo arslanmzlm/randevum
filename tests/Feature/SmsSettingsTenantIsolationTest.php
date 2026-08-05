@@ -64,10 +64,10 @@ it("owner A's GET sees only clinic A settings, not clinic B's", function (): voi
 
     // Clinic A has no preference rows — should default ON.
     $this->actingAs($ownerA)
-        ->get(route('clinic.sms-settings.edit'))
+        ->get(route('clinic.edit'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->where('settings.reminder_24h', true) // clinic A default ON, not B's disabled
+            ->where('sms.settings.reminder_24h', true) // clinic A default ON, not B's disabled
         );
 });
 
@@ -92,10 +92,10 @@ it("owner A's settings page never exposes clinic B preference rows in the respon
     ]);
 
     $this->actingAs($ownerA)
-        ->get(route('clinic.sms-settings.edit'))
+        ->get(route('clinic.edit'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->where('settings.appointment_created', true)
+            ->where('sms.settings.appointment_created', true)
         );
 });
 
@@ -187,10 +187,10 @@ it("owner A's GET templates prop never exposes clinic B's custom template", func
         ->create(['clinic_id' => $clinicB->id]);
 
     $this->actingAs($ownerA)
-        ->get(route('clinic.sms-settings.edit'))
+        ->get(route('clinic.edit'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->where('templates.appointment_created', null) // clinic A has no row — null, not B's text
+            ->where('sms.templates.appointment_created', null) // clinic A has no row — null, not B's text
         );
 });
 

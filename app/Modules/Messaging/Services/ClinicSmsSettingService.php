@@ -4,12 +4,17 @@ namespace App\Modules\Messaging\Services;
 
 use App\Enums\SmsType;
 use App\Models\Clinic;
+use App\Models\ClinicSmsSetting;
+use App\Modules\Core\Contracts\ClinicSmsPanelContract;
 use App\Modules\Messaging\Repositories\ClinicSmsSettingRepository;
+use App\Modules\Messaging\Support\SmsTemplateVariables;
+use Illuminate\Support\Facades\Gate;
 
-class ClinicSmsSettingService
+class ClinicSmsSettingService implements ClinicSmsPanelContract
 {
     public function __construct(
         private ClinicSmsSettingRepository $repository,
+        private SmsQuotaService $quotaService,
     ) {}
 
     /**
@@ -84,5 +89,34 @@ class ClinicSmsSettingService
     public function update(int $clinicId, array $enabledByType, array $templatesByType): void
     {
         $this->repository->upsertForClinic($clinicId, $enabledByType, $templatesByType);
+    }
+
+    /**
+     * The whole SMS preferences panel as page data, or null when the viewer may not see it.
+     * The clinic profile hosts this as a tab (SmsSettingsPanelContract).
+     *
+     * @return array{
+     *     settings: array<string, bool>,
+     *     templates: array<string, string|null>,
+     *     defaults: array<string, string>,
+     *     variables: list<string>,
+     *     sample: array<string, string>,
+     *     quota: array{used: int, allowance: int, remaining: int, resets_at: string},
+     * }|null
+     */
+    public function panelData(Clinic $clinic): ?array
+    {
+        if (Gate::denies('view', ClinicSmsSetting::class)) {
+            return null;
+        }
+
+        return [
+            'settings' => $this->current($clinic->id),
+            'templates' => $this->templates($clinic->id),
+            'defaults' => $this->defaults($clinic->locale),
+            'variables' => SmsTemplateVariables::ALLOWED,
+            'sample' => $this->sample($clinic),
+            'quota' => $this->quotaService->usage($clinic->id),
+        ];
     }
 }

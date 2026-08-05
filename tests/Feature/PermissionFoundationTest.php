@@ -87,11 +87,12 @@ it('grants the owner role the full clinic + doctor + service + product + patient
         ]);
 });
 
-it('grants the manager role full management except clinic and self-create', function (): void {
+it('grants the manager role full management except self-create', function (): void {
     $manager = Role::findByName('manager', 'web');
 
     expect($manager->permissions->pluck('name')->all())
         ->toEqualCanonicalizing([
+            'clinic.update',
             'doctors.viewAny',
             'doctors.create',
             'doctors.update',

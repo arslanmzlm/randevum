@@ -126,14 +126,15 @@ it('a doctor of the same clinic gets 403 on GET /clinic', function (): void {
         ->assertForbidden();
 });
 
-it('a manager gets 403 on GET /clinic (clinic edit is owner-only)', function (): void {
+it('a manager can GET /clinic and edit the profile', function (): void {
     $clinic = Clinic::factory()->create();
     $manager = User::factory()->create();
     clinicRole($manager, 'manager', $clinic->id);
 
     $this->actingAs($manager)
         ->get(route('clinic.edit'))
-        ->assertForbidden();
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('canEditClinic', true));
 });
 
 // ---------------------------------------------------------------------------
@@ -313,16 +314,16 @@ it('a doctor of the same clinic gets 403 on PUT /clinic', function (): void {
     expect($clinic->fresh()->name)->toBe('Original Name');
 });
 
-it('a manager gets 403 on PUT /clinic and the DB is unchanged', function (): void {
+it('a manager can PUT /clinic and the change is persisted', function (): void {
     $clinic = Clinic::factory()->create(['name' => 'Original Name']);
     $manager = User::factory()->create();
     clinicRole($manager, 'manager', $clinic->id);
 
     $this->actingAs($manager)
-        ->put(route('clinic.update'), clinicUpdatePayload($clinic))
-        ->assertForbidden();
+        ->put(route('clinic.update'), [...clinicUpdatePayload($clinic), 'name' => 'Manager Edited'])
+        ->assertRedirect();
 
-    expect($clinic->fresh()->name)->toBe('Original Name');
+    expect($clinic->fresh()->name)->toBe('Manager Edited');
 });
 
 // ---------------------------------------------------------------------------

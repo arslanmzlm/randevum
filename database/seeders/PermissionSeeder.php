@@ -17,7 +17,7 @@ class PermissionSeeder extends Seeder
      * @var array<string, list<string>>
      */
     private const PERMISSIONS = [
-        'clinic.update' => ['owner'],
+        'clinic.update' => ['owner', 'manager'],
         'doctors.viewAny' => ['owner', 'manager', 'doctor', 'receptionist', 'assistant'],
         'doctors.create' => ['owner', 'manager'],
         'doctors.update' => ['owner', 'manager'],

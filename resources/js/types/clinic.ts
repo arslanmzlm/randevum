@@ -1,4 +1,5 @@
 import type { InertiaForm } from '@inertiajs/vue3';
+import type { CustomizableSmsType, SmsType } from '@/types/enums';
 
 export const WEEK_DAYS = [
     'monday',
@@ -78,4 +79,19 @@ export type SharedClinic = {
     currency: string;
     /** Active clinic's vertical — gates vertical-specific UI (e.g. podiatry anamnesis). */
     vertical: { slug: string | null };
+};
+
+/** The SMS preferences tab payload on the clinic profile page (null when not permitted). */
+export type ClinicSmsPanel = {
+    settings: Record<SmsType, boolean>;
+    templates: Record<CustomizableSmsType, string | null>;
+    defaults: Record<CustomizableSmsType, string>;
+    variables: string[];
+    sample: Record<string, string>;
+    quota: {
+        used: number;
+        allowance: number;
+        remaining: number;
+        resets_at: string;
+    };
 };

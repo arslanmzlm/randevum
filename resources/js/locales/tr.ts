@@ -153,6 +153,12 @@ export const tr = {
         },
     },
     clinic: {
+        tabs: {
+            clinic: 'Klinik',
+            contact: 'İletişim',
+            appointments: 'Randevu',
+            sms: 'SMS',
+        },
         title: 'Klinik Profili',
         subtitle: 'Kliniğinizin bilgilerini ve çalışma saatlerini yönetin.',
         save: 'Kaydet',

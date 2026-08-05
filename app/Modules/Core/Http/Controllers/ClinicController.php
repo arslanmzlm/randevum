@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\City;
 use App\Models\Clinic;
 use App\Models\Country;
+use App\Modules\Core\Contracts\ClinicSmsPanelContract;
 use App\Modules\Core\Contracts\MediaServiceContract;
 use App\Modules\Core\Http\Requests\UpdateClinicMediaRequest;
 use App\Modules\Core\Http\Requests\UpdateClinicRequest;
@@ -25,11 +26,23 @@ class ClinicController extends Controller
         private MediaServiceContract $mediaService,
     ) {}
 
-    public function edit(): Response
+    /**
+     * Clinic settings. Each tab carries its own gate: the profile fields need clinic.update
+     * (owner), the SMS tab needs smsSettings.view (owner/manager/receptionist). A viewer holding
+     * either one gets the page with only their tabs — SMS preferences used to be a separate page,
+     * and merging it in must not lock out the roles that manage it.
+     */
+    public function edit(Request $request): Response
     {
         $clinic = Clinic::with('vertical')->findOrFail($this->clinicContext->id());
 
-        $this->authorize('update', $clinic);
+        $canEditClinic = $request->user()->can('update', $clinic);
+        // Bound by the Messaging module; absent means no SMS tab, not an error.
+        $sms = app()->bound(ClinicSmsPanelContract::class)
+            ? app(ClinicSmsPanelContract::class)->panelData($clinic)
+            : null;
+
+        abort_unless($canEditClinic || $sms !== null, 403);
 
         return Inertia::render('clinic/Edit', [
             'clinic' => $this->clinicData($clinic),
@@ -44,6 +57,10 @@ class ClinicController extends Controller
                 ->where('is_active', true)
                 ->orderBy('name')
                 ->get(['id', 'name']),
+            // SMS preferences are a tab on this page rather than a separate screen. Null when the
+            // viewer lacks smsSettings.view — the tab is then not rendered at all.
+            'sms' => $sms,
+            'canEditClinic' => $canEditClinic,
         ]);
     }
 

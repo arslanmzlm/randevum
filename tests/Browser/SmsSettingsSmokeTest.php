@@ -42,7 +42,7 @@ it('renders the SMS settings page with both cards and a computed template previe
 
     $this->actingAs($owner);
 
-    visit('/clinic/sms-settings')
+    visit('/clinic?tab=sms')
         ->waitForEvent('networkidle')
         ->assertNoJavascriptErrors()
         // Page title rendered by PageHeader — in-body, not the shared shell.

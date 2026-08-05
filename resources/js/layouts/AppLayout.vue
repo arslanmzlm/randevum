@@ -57,7 +57,6 @@ import {
 import { index as calendarIndex } from '@/routes/calendar';
 import { index as casesIndex } from '@/routes/cases';
 import { edit as clinicEdit } from '@/routes/clinic';
-import { edit as smsSettingsEdit } from '@/routes/clinic/sms-settings';
 import { index as doctorsIndex, mine as doctorsMine } from '@/routes/doctors';
 import { index as expensesIndex } from '@/routes/expenses';
 import { index as patientsIndex, show as patientShow } from '@/routes/patients';
@@ -310,8 +309,10 @@ const navGroups = computed<NavGroup[]>(() =>
                 ...(can('smsSettings.view')
                     ? [
                           {
+                              // SMS preferences live on the clinic profile as a tab now; the nav
+                              // still points straight at it.
                               label: t('nav.sms_settings'),
-                              href: smsSettingsEdit().url,
+                              href: clinicEdit({ query: { tab: 'sms' } }).url,
                               icon: IconMessage,
                           },
                       ]

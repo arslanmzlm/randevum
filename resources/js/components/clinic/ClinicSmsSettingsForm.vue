@@ -1,21 +1,20 @@
 <script setup lang="ts">
-import { Head, useForm } from '@inertiajs/vue3';
+import { useForm } from '@inertiajs/vue3';
 import { IconBell, IconCalendarDollar, IconMessage } from '@tabler/icons-vue';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import PageHeader from '@/components/PageHeader.vue';
 import SectionCard from '@/components/SectionCard.vue';
 import SmsQuotaPanel from '@/components/sms-settings/SmsQuotaPanel.vue';
 import SmsTemplateField from '@/components/sms-settings/SmsTemplateField.vue';
 import SmsTypeToggleRow from '@/components/sms-settings/SmsTypeToggleRow.vue';
 import { useCan } from '@/composables/useCan';
-import AppLayout from '@/layouts/AppLayout.vue';
 import { update } from '@/routes/clinic/sms-settings';
 import type { CustomizableSmsType, SmsType } from '@/types/enums';
 import { countSegments, MAX_SEGMENTS } from '@/utils/smsSegments';
 
-defineOptions({ layout: AppLayout });
-
+// The SMS preferences tab of the clinic profile. Owns its own form and endpoint: the toggles and
+// templates save separately from the clinic fields, which is why it is a sibling form rather than
+// part of the clinic form.
 const props = defineProps<{
     settings: Record<SmsType, boolean>;
     templates: Record<CustomizableSmsType, string | null>;
@@ -82,14 +81,6 @@ function submit(): void {
 
 <template>
     <div class="flex flex-col gap-6">
-        <Head :title="t('sms_settings.title')" />
-
-        <PageHeader
-            :title="t('sms_settings.title')"
-            :description="t('sms_settings.description')"
-            :breadcrumbs="[{ label: t('nav.sms_settings') }]"
-        />
-
         <SmsQuotaPanel :quota="props.quota" />
 
         <form novalidate class="flex flex-col gap-6" @submit.prevent="submit">

@@ -58,7 +58,7 @@ it('renders the SMS quota panel with usage bar and no JS errors', function (): v
 
     $this->actingAs($owner);
 
-    visit('/clinic/sms-settings')
+    visit('/clinic?tab=sms')
         ->assertNoJavascriptErrors()
         // Panel section heading — rendered by SmsQuotaPanel, inside page body.
         ->assertSee('Aylık SMS Kotası')

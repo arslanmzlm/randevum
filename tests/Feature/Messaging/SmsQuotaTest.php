@@ -354,16 +354,16 @@ it('GET /clinic/sms-settings includes a quota prop with the correct shape', func
     makeConsumedLog($clinic, ['phone' => '+905309999999']);
 
     $this->actingAs($owner)
-        ->get(route('clinic.sms-settings.edit'))
+        ->get(route('clinic.edit'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->has('quota.used')
-            ->has('quota.allowance')
-            ->has('quota.remaining')
-            ->has('quota.resets_at')
-            ->where('quota.used', 2)
-            ->where('quota.allowance', 100)
-            ->where('quota.remaining', 98)
+            ->has('sms.quota.used')
+            ->has('sms.quota.allowance')
+            ->has('sms.quota.remaining')
+            ->has('sms.quota.resets_at')
+            ->where('sms.quota.used', 2)
+            ->where('sms.quota.allowance', 100)
+            ->where('sms.quota.remaining', 98)
         );
 });
 
@@ -375,9 +375,9 @@ it('GET /clinic/sms-settings quota.remaining is 0 when clinic is at quota', func
     makeConsumedLog($clinic);
 
     $this->actingAs($owner)
-        ->get(route('clinic.sms-settings.edit'))
+        ->get(route('clinic.edit'))
         ->assertOk()
-        ->assertInertia(fn ($page) => $page->where('quota.remaining', 0));
+        ->assertInertia(fn ($page) => $page->where('sms.quota.remaining', 0));
 });
 
 it('GET /clinic/sms-settings quota.allowance uses config default when clinic has no override', function (): void {
@@ -388,9 +388,9 @@ it('GET /clinic/sms-settings quota.allowance uses config default when clinic has
     quotaRole($owner, 'owner', $clinic->id);
 
     $this->actingAs($owner)
-        ->get(route('clinic.sms-settings.edit'))
+        ->get(route('clinic.edit'))
         ->assertOk()
-        ->assertInertia(fn ($page) => $page->where('quota.allowance', 750));
+        ->assertInertia(fn ($page) => $page->where('sms.quota.allowance', 750));
 });
 
 // ---------------------------------------------------------------------------
@@ -503,12 +503,12 @@ it('SMS settings page quota prop shows only clinic A usage, not clinic B usage',
     }
 
     $this->actingAs($ownerA)
-        ->get(route('clinic.sms-settings.edit'))
+        ->get(route('clinic.edit'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->where('quota.used', 3)
-            ->where('quota.allowance', 100)
-            ->where('quota.remaining', 97)
+            ->where('sms.quota.used', 3)
+            ->where('sms.quota.allowance', 100)
+            ->where('sms.quota.remaining', 97)
         );
 });
 
@@ -523,8 +523,10 @@ it('AppointmentController uses the SmsQuotaContract interface, not the concrete 
         ->and($source)->not->toContain('SmsQuotaService');
 });
 
-it('ClinicSmsSettingController uses the concrete SmsQuotaService (same-module, no contract needed)', function (): void {
-    $source = file_get_contents(app_path('Modules/Messaging/Http/Controllers/ClinicSmsSettingController.php'));
+it('ClinicSmsSettingService uses the concrete SmsQuotaService (same-module, no contract needed)', function (): void {
+    // The quota figure moved with the settings panel when SMS preferences became a clinic tab;
+    // both classes live in Messaging, so the concrete service stays a direct dependency.
+    $source = file_get_contents(app_path('Modules/Messaging/Services/ClinicSmsSettingService.php'));
 
     expect($source)->toContain('SmsQuotaService');
 });

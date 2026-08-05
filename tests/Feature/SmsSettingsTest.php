@@ -54,18 +54,19 @@ it('guest is redirected to login from GET /clinic/sms-settings', function (): vo
         ->assertRedirect(route('login'));
 });
 
-it('owner can GET /clinic/sms-settings and sees the clinic/SmsSettings Inertia component', function (): void {
+it('owner can GET the clinic page and sees the SMS tab payload', function (): void {
     $clinic = Clinic::factory()->create();
     $owner = User::factory()->create();
     smsRole($owner, 'owner', $clinic->id);
 
     $this->actingAs($owner)
-        ->get(route('clinic.sms-settings.edit'))
+        ->get(route('clinic.edit'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->component('clinic/SmsSettings')
-            ->has('settings')
-            ->has('types')
+            ->component('clinic/Edit')
+            ->has('sms.settings')
+            ->has('sms.templates')
+            ->has('sms.quota')
         );
 });
 
@@ -75,7 +76,7 @@ it('manager can GET /clinic/sms-settings', function (): void {
     smsRole($manager, 'manager', $clinic->id);
 
     $this->actingAs($manager)
-        ->get(route('clinic.sms-settings.edit'))
+        ->get(route('clinic.edit'))
         ->assertOk();
 });
 
@@ -85,7 +86,7 @@ it('receptionist can GET /clinic/sms-settings', function (): void {
     smsRole($receptionist, 'receptionist', $clinic->id);
 
     $this->actingAs($receptionist)
-        ->get(route('clinic.sms-settings.edit'))
+        ->get(route('clinic.edit'))
         ->assertOk();
 });
 
@@ -119,15 +120,15 @@ it('settings prop contains all 6 clinic-scoped SmsType keys', function (): void 
     smsRole($owner, 'owner', $clinic->id);
 
     $this->actingAs($owner)
-        ->get(route('clinic.sms-settings.edit'))
+        ->get(route('clinic.edit'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->has('settings.appointment_created')
-            ->has('settings.appointment_cancelled')
-            ->has('settings.appointment_rescheduled')
-            ->has('settings.reminder_24h')
-            ->has('settings.reminder_1h')
-            ->has('settings.balance_reminder')
+            ->has('sms.settings.appointment_created')
+            ->has('sms.settings.appointment_cancelled')
+            ->has('sms.settings.appointment_rescheduled')
+            ->has('sms.settings.reminder_24h')
+            ->has('sms.settings.reminder_1h')
+            ->has('sms.settings.balance_reminder')
         );
 });
 
@@ -137,15 +138,15 @@ it('settings prop defaults all types to true when no preference rows exist', fun
     smsRole($owner, 'owner', $clinic->id);
 
     $this->actingAs($owner)
-        ->get(route('clinic.sms-settings.edit'))
+        ->get(route('clinic.edit'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->where('settings.appointment_created', true)
-            ->where('settings.appointment_cancelled', true)
-            ->where('settings.appointment_rescheduled', true)
-            ->where('settings.reminder_24h', true)
-            ->where('settings.reminder_1h', true)
-            ->where('settings.balance_reminder', true)
+            ->where('sms.settings.appointment_created', true)
+            ->where('sms.settings.appointment_cancelled', true)
+            ->where('sms.settings.appointment_rescheduled', true)
+            ->where('sms.settings.reminder_24h', true)
+            ->where('sms.settings.reminder_1h', true)
+            ->where('sms.settings.balance_reminder', true)
         );
 });
 
@@ -159,24 +160,24 @@ it('settings prop reflects a persisted disabled preference', function (): void {
     ]);
 
     $this->actingAs($owner)
-        ->get(route('clinic.sms-settings.edit'))
+        ->get(route('clinic.edit'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->where('settings.reminder_24h', false)
-            ->where('settings.appointment_created', true) // others still default ON
+            ->where('sms.settings.reminder_24h', false)
+            ->where('sms.settings.appointment_created', true) // others still default ON
         );
 });
 
-it('types prop contains all 8 clinic-scoped SmsType values', function (): void {
+it('settings prop carries every clinic-scoped SmsType', function (): void {
     $clinic = Clinic::factory()->create();
     $owner = User::factory()->create();
     smsRole($owner, 'owner', $clinic->id);
 
     $this->actingAs($owner)
-        ->get(route('clinic.sms-settings.edit'))
+        ->get(route('clinic.edit'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->has('types', 8)
+            ->has('sms.settings', count(SmsType::clinicScopedCases()))
         );
 });
 
@@ -190,17 +191,17 @@ it('templates prop contains all 7 customizable SmsType keys, null (no custom tem
     smsRole($owner, 'owner', $clinic->id);
 
     $this->actingAs($owner)
-        ->get(route('clinic.sms-settings.edit'))
+        ->get(route('clinic.edit'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->has('templates', 7)
-            ->where('templates.appointment_created', null)
-            ->where('templates.appointment_cancelled', null)
-            ->where('templates.appointment_rescheduled', null)
-            ->where('templates.reminder_24h', null)
-            ->where('templates.reminder_1h', null)
-            ->where('templates.installment_due_7d', null)
-            ->where('templates.installment_due_1d', null)
+            ->has('sms.templates', 7)
+            ->where('sms.templates.appointment_created', null)
+            ->where('sms.templates.appointment_cancelled', null)
+            ->where('sms.templates.appointment_rescheduled', null)
+            ->where('sms.templates.reminder_24h', null)
+            ->where('sms.templates.reminder_1h', null)
+            ->where('sms.templates.installment_due_7d', null)
+            ->where('sms.templates.installment_due_1d', null)
         );
 });
 
@@ -210,10 +211,10 @@ it('templates prop does NOT include balance_reminder (not customizable)', functi
     smsRole($owner, 'owner', $clinic->id);
 
     $this->actingAs($owner)
-        ->get(route('clinic.sms-settings.edit'))
+        ->get(route('clinic.edit'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->missing('templates.balance_reminder')
+            ->missing('sms.templates.balance_reminder')
         );
 });
 
@@ -228,10 +229,10 @@ it('templates prop reflects a persisted custom template', function (): void {
         ->create(['clinic_id' => $clinic->id]);
 
     $this->actingAs($owner)
-        ->get(route('clinic.sms-settings.edit'))
+        ->get(route('clinic.edit'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->where('templates.appointment_created', 'Merhaba :patient, randevunuz oluşturuldu.')
+            ->where('sms.templates.appointment_created', 'Merhaba :patient, randevunuz oluşturuldu.')
         );
 });
 
@@ -241,12 +242,12 @@ it('defaults prop contains the lang default body for all 5 customizable types', 
     smsRole($owner, 'owner', $clinic->id);
 
     $this->actingAs($owner)
-        ->get(route('clinic.sms-settings.edit'))
+        ->get(route('clinic.edit'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->where('defaults.appointment_created', __('sms.appointment.created.body', [], 'tr'))
-            ->where('defaults.reminder_24h', __('sms.reminder.body', [], 'tr'))
-            ->where('defaults.reminder_1h', __('sms.reminder.body', [], 'tr'))
+            ->where('sms.defaults.appointment_created', __('sms.appointment.created.body', [], 'tr'))
+            ->where('sms.defaults.reminder_24h', __('sms.reminder.body', [], 'tr'))
+            ->where('sms.defaults.reminder_1h', __('sms.reminder.body', [], 'tr'))
         );
 });
 
@@ -256,10 +257,10 @@ it('variables prop is exactly the allowlist [clinic, date, time, patient, doctor
     smsRole($owner, 'owner', $clinic->id);
 
     $this->actingAs($owner)
-        ->get(route('clinic.sms-settings.edit'))
+        ->get(route('clinic.edit'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->where('variables', ['clinic', 'date', 'time', 'patient', 'doctor'])
+            ->where('sms.variables', ['clinic', 'date', 'time', 'patient', 'doctor'])
         );
 });
 
@@ -269,14 +270,14 @@ it('sample prop carries the clinic own name for :clinic', function (): void {
     smsRole($owner, 'owner', $clinic->id);
 
     $this->actingAs($owner)
-        ->get(route('clinic.sms-settings.edit'))
+        ->get(route('clinic.edit'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->where('sample.clinic', 'Clinic Alpha')
-            ->has('sample.date')
-            ->has('sample.time')
-            ->has('sample.patient')
-            ->has('sample.doctor')
+            ->where('sms.sample.clinic', 'Clinic Alpha')
+            ->has('sms.sample.date')
+            ->has('sms.sample.time')
+            ->has('sms.sample.patient')
+            ->has('sms.sample.doctor')
         );
 });
 
