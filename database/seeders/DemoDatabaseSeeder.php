@@ -11,7 +11,8 @@ use Illuminate\Database\Seeder;
  * Local/dev demo dataset: one clinic with staff, catalog, patients and a full operational history,
  * sized so every screen has both a populated and an empty state to review.
  *
- * NOT part of DatabaseSeeder — run it explicitly:
+ * NOT part of DatabaseSeeder — run it explicitly. It calls the baseline seeder first, so either
+ * form works on an empty database:
  *
  *     ddev php artisan db:seed --class=DemoDatabaseSeeder
  *     ddev php artisan migrate:fresh --seed --seeder=DemoDatabaseSeeder   (re-centres dates on today)
@@ -25,6 +26,10 @@ class DemoDatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
+            // The demo data sits on top of the baseline (roles, permissions, reference tables,
+            // verticals) and `--seeder=DemoDatabaseSeeder` runs THIS class alone — so pull the
+            // baseline in rather than failing on a missing role. Everything below is idempotent.
+            DatabaseSeeder::class,
             DemoSeeder::class,
             DemoStaffSeeder::class,
             // Re-run after DemoSeeder: the platform superadmin it creates is the author the legal
