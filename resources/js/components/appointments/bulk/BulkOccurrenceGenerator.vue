@@ -132,7 +132,8 @@ function removeOccurrence(index: number): void {
             {{ t('appointment_bulk.generator.hint') }}
         </p>
 
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <!-- Four fields, one row on wide screens: at three columns the last one dropped alone. -->
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <FormField :label="t('appointment.fields.date')" required>
                 <DatePicker
                     v-model="gen.date"
