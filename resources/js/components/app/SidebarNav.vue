@@ -25,46 +25,63 @@ const allItems = computed<NavItem[]>(() => [
     ...props.groups.flatMap((group) => group.items),
 ]);
 
-const currentPath = computed(() => page.url.split('?')[0]);
-
-/**
- * The longest nav path the current page sits under. Without it, /appointments/create would light
- * up "Randevular" (and every other entry sharing that path) alongside "Randevu oluştur"; only the
- * most specific entry should read as active.
- */
-const deepestMatch = computed<string | null>(() => {
-    const paths = allItems.value
-        .map((item) => item.href.split('?')[0])
-        .filter(
-            (path) =>
-                currentPath.value === path ||
-                currentPath.value.startsWith(`${path}/`),
-        )
-        .sort((a, b) => b.length - a.length);
-
-    return paths[0] ?? null;
-});
-
-/** True while a filtered entry (…?filter[status]=no_show) owns the current URL exactly. */
-const filteredEntryActive = computed(() =>
-    allItems.value.some(
-        (item) => item.href.includes('?') && item.href === page.url,
-    ),
-);
-
-function isActive(href: string): boolean {
-    // A filtered entry means one specific view, not a section: it lights up on its own URL only.
-    if (href.includes('?')) {
-        return page.url === href;
+/** Inertia tells us which page component is on screen; that is the honest signal for "you are
+ * here". Matching URLs instead breaks the moment the page carries a filter, a page number or a
+ * tab param. */
+function rendersCurrentPage(item: NavItem): boolean {
+    if (item.component === undefined) {
+        return false;
     }
 
-    // Otherwise the section entry wins, unless a filtered sibling is the page being viewed
-    // (…/appointments vs …/appointments?filter[status]=no_show).
-    return href === deepestMatch.value && !filteredEntryActive.value;
+    const components = Array.isArray(item.component)
+        ? item.component
+        : [item.component];
+
+    return components.includes(page.component);
+}
+
+/** Every `match` param present in the current query (subset — extra params are fine). */
+function matchesQuery(item: NavItem): boolean {
+    if (!item.match) {
+        return true;
+    }
+
+    const query = new URLSearchParams(page.url.split('?')[1] ?? '');
+
+    return Object.entries(item.match).every(
+        ([key, value]) => query.get(key) === value,
+    );
+}
+
+/**
+ * Two entries can share a page component (the appointment list and its no-show view, the clinic
+ * profile and its SMS tab). When the narrower one owns the current query, the plain one steps
+ * aside instead of both lighting up.
+ */
+function narrowerSiblingWins(item: NavItem): boolean {
+    if (item.match) {
+        return false;
+    }
+
+    return allItems.value.some(
+        (other) =>
+            other !== item &&
+            other.match !== undefined &&
+            rendersCurrentPage(other) &&
+            matchesQuery(other),
+    );
+}
+
+function isActive(item: NavItem): boolean {
+    return (
+        rendersCurrentPage(item) &&
+        matchesQuery(item) &&
+        !narrowerSiblingWins(item)
+    );
 }
 
 function holdsActive(group: NavGroup): boolean {
-    return group.items.some((item) => isActive(item.href));
+    return group.items.some((item) => isActive(item));
 }
 
 // Groups start closed; the one holding the current page opens itself, and a manual toggle sticks
@@ -107,7 +124,7 @@ const railItems = computed<NavItem[]>(() => [
                 :key="item.href"
                 :item="item"
                 collapsed
-                :active="isActive(item.href)"
+                :active="isActive(item)"
                 @navigate="emit('navigate')"
             />
         </template>
@@ -118,7 +135,7 @@ const railItems = computed<NavItem[]>(() => [
                 :key="item.href"
                 :item="item"
                 :collapsed="false"
-                :active="isActive(item.href)"
+                :active="isActive(item)"
                 @navigate="emit('navigate')"
             />
 
@@ -147,7 +164,7 @@ const railItems = computed<NavItem[]>(() => [
                     :key="item.href"
                     :item="item"
                     :collapsed="false"
-                    :active="isActive(item.href)"
+                    :active="isActive(item)"
                     @navigate="emit('navigate')"
                 />
             </div>

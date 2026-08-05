@@ -124,17 +124,24 @@ const userName = computed(() => {
 // The daily loop stays at the top level; everything else lives in a collapsible group, otherwise
 // the list runs past twenty entries and nothing stands out.
 const navItems = computed<NavItem[]>(() => [
-    { label: t('nav.dashboard'), href: dashboard().url, icon: IconHome },
+    {
+        label: t('nav.dashboard'),
+        href: dashboard().url,
+        component: 'Dashboard',
+        icon: IconHome,
+    },
     ...(can('appointments.viewAny')
         ? [
               {
                   label: t('nav.calendar'),
                   href: calendarIndex().url,
+                  component: 'calendar/Index',
                   icon: IconCalendarWeek,
               },
               {
                   label: t('nav.appointments'),
                   href: appointmentsIndex().url,
+                  component: 'appointments/Index',
                   icon: IconListDetails,
               },
           ]
@@ -144,6 +151,7 @@ const navItems = computed<NavItem[]>(() => [
               {
                   label: t('nav.appointments_create'),
                   href: appointmentCreate().url,
+                  component: 'appointments/Create',
                   icon: IconCalendarPlus,
               },
           ]
@@ -153,6 +161,12 @@ const navItems = computed<NavItem[]>(() => [
               {
                   label: t('nav.patients'),
                   href: patientsIndex().url,
+                  component: [
+                      'patients/Index',
+                      'patients/Show',
+                      'patients/Create',
+                      'patients/Edit',
+                  ],
                   icon: IconUsers,
               },
           ]
@@ -171,6 +185,7 @@ const navGroups = computed<NavGroup[]>(() =>
                           {
                               label: t('nav.appointments_bulk'),
                               href: appointmentBulkCreate().url,
+                              component: 'appointments/BulkCreate',
                               icon: IconCalendarEvent,
                           },
                       ]
@@ -182,6 +197,8 @@ const navGroups = computed<NavGroup[]>(() =>
                               href: appointmentsIndex({
                                   query: { filter: { status: 'no_show' } },
                               }).url,
+                              component: 'appointments/Index',
+                              match: { 'filter[status]': 'no_show' },
                               icon: IconUserX,
                           },
                       ]
@@ -191,6 +208,7 @@ const navGroups = computed<NavGroup[]>(() =>
                           {
                               label: t('nav.availability'),
                               href: availabilityIndex().url,
+                              component: 'availability/Index',
                               icon: IconCalendarOff,
                           },
                       ]
@@ -207,6 +225,7 @@ const navGroups = computed<NavGroup[]>(() =>
                           {
                               label: t('nav.clinic'),
                               href: clinicEdit().url,
+                              component: 'clinic/Edit',
                               icon: IconBuildingHospital,
                           },
                       ]
@@ -216,6 +235,11 @@ const navGroups = computed<NavGroup[]>(() =>
                           {
                               label: t('nav.doctors'),
                               href: doctorsIndex().url,
+                              component: [
+                                  'doctors/Index',
+                                  'doctors/Create',
+                                  'doctors/Edit',
+                              ],
                               icon: IconStethoscope,
                           },
                       ]
@@ -225,6 +249,7 @@ const navGroups = computed<NavGroup[]>(() =>
                           {
                               label: t('nav.cases'),
                               href: casesIndex().url,
+                              component: ['cases/Index', 'cases/Show'],
                               icon: IconFolders,
                           },
                       ]
@@ -234,6 +259,11 @@ const navGroups = computed<NavGroup[]>(() =>
                           {
                               label: t('nav.services'),
                               href: servicesIndex().url,
+                              component: [
+                                  'services/Index',
+                                  'services/Create',
+                                  'services/Edit',
+                              ],
                               icon: IconClipboardList,
                           },
                       ]
@@ -243,6 +273,11 @@ const navGroups = computed<NavGroup[]>(() =>
                           {
                               label: t('nav.products'),
                               href: productsIndex().url,
+                              component: [
+                                  'products/Index',
+                                  'products/Create',
+                                  'products/Edit',
+                              ],
                               icon: IconPackage,
                           },
                       ]
@@ -252,6 +287,11 @@ const navGroups = computed<NavGroup[]>(() =>
                           {
                               label: t('nav.appointment_types'),
                               href: appointmentTypesIndex().url,
+                              component: [
+                                  'appointment-types/Index',
+                                  'appointment-types/Create',
+                                  'appointment-types/Edit',
+                              ],
                               icon: IconTags,
                           },
                       ]
@@ -261,6 +301,7 @@ const navGroups = computed<NavGroup[]>(() =>
                           {
                               label: t('nav.tags'),
                               href: tagsIndex().url,
+                              component: 'tags/Index',
                               icon: IconTag,
                           },
                       ]
@@ -277,6 +318,7 @@ const navGroups = computed<NavGroup[]>(() =>
                           {
                               label: t('nav.finance'),
                               href: financeReport().url,
+                              component: 'reports/Finance',
                               icon: IconReportMoney,
                           },
                       ]
@@ -286,6 +328,7 @@ const navGroups = computed<NavGroup[]>(() =>
                           {
                               label: t('nav.expenses'),
                               href: expensesIndex().url,
+                              component: 'expenses/Index',
                               icon: IconReceipt,
                           },
                       ]
@@ -295,6 +338,7 @@ const navGroups = computed<NavGroup[]>(() =>
                           {
                               label: t('nav.payment_plans'),
                               href: paymentPlansIndex().url,
+                              component: 'payment-plans/Index',
                               icon: IconCalendarDollar,
                           },
                       ]
@@ -313,6 +357,8 @@ const navGroups = computed<NavGroup[]>(() =>
                               // still points straight at it.
                               label: t('nav.sms_settings'),
                               href: clinicEdit({ query: { tab: 'sms' } }).url,
+                              component: 'clinic/Edit',
+                              match: { tab: 'sms' },
                               icon: IconMessage,
                           },
                       ]
@@ -322,6 +368,7 @@ const navGroups = computed<NavGroup[]>(() =>
                           {
                               label: t('nav.sms_logs'),
                               href: smsLogsIndex().url,
+                              component: 'sms-logs/Index',
                               icon: IconMessage2,
                           },
                       ]
@@ -333,7 +380,12 @@ const navGroups = computed<NavGroup[]>(() =>
 
 // Account/secondary items pinned to the bottom, above logout.
 const bottomNavItems = computed<NavItem[]>(() => [
-    { label: t('nav.account'), href: account().url, icon: IconUserCircle },
+    {
+        label: t('nav.account'),
+        href: account().url,
+        component: 'account/Index',
+        icon: IconUserCircle,
+    },
 ]);
 
 const userMenu = ref();
