@@ -20,10 +20,47 @@ const emit = defineEmits<{
 
 const page = usePage();
 
-function isActive(href: string): boolean {
-    const [path] = href.split('?');
+const allItems = computed<NavItem[]>(() => [
+    ...props.items,
+    ...props.groups.flatMap((group) => group.items),
+]);
 
-    return page.url === href || page.url.startsWith(`${path}/`);
+const currentPath = computed(() => page.url.split('?')[0]);
+
+/**
+ * The longest nav path the current page sits under. Without it, /appointments/create would light
+ * up "Randevular" (and every other entry sharing that path) alongside "Randevu oluştur"; only the
+ * most specific entry should read as active.
+ */
+const deepestMatch = computed<string | null>(() => {
+    const paths = allItems.value
+        .map((item) => item.href.split('?')[0])
+        .filter(
+            (path) =>
+                currentPath.value === path ||
+                currentPath.value.startsWith(`${path}/`),
+        )
+        .sort((a, b) => b.length - a.length);
+
+    return paths[0] ?? null;
+});
+
+/** True while a filtered entry (…?filter[status]=no_show) owns the current URL exactly. */
+const filteredEntryActive = computed(() =>
+    allItems.value.some(
+        (item) => item.href.includes('?') && item.href === page.url,
+    ),
+);
+
+function isActive(href: string): boolean {
+    // A filtered entry means one specific view, not a section: it lights up on its own URL only.
+    if (href.includes('?')) {
+        return page.url === href;
+    }
+
+    // Otherwise the section entry wins, unless a filtered sibling is the page being viewed
+    // (…/appointments vs …/appointments?filter[status]=no_show).
+    return href === deepestMatch.value && !filteredEntryActive.value;
 }
 
 function holdsActive(group: NavGroup): boolean {
