@@ -74,6 +74,8 @@ class CaseController extends Controller
             'treatments' => fn ($q) => $q->with([
                 'serviceLines' => fn ($sq) => $sq->orderBy('sort_order')->limit(1),
                 'serviceLines.service',
+                // Vertical detail row (complaint/diagnosis/process) shown on the case page.
+                'details',
                 'media',
             ])->orderByDesc('completed_at'),
         ]);

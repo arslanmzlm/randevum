@@ -483,6 +483,8 @@ export const tr = {
         remove_confirm:
             '{name} etiketini kaldırmak istediğinize emin misiniz? Tüm hastalardan kaldırılır.',
         empty: 'Henüz etiket eklenmemiş.',
+        empty_filtered: 'Aramayla eşleşen etiket yok.',
+        search_placeholder: 'Etiket adı ile ara...',
         create_title: 'Etiket Ekle',
         create_submit: 'Etiketi Ekle',
         edit_title: 'Etiketi Düzenle',
@@ -628,6 +630,8 @@ export const tr = {
         quick_find_placeholder: 'Hasta ara (ad veya telefon)…',
         quick_find_no_results: 'Eşleşen hasta yok',
         quick_find_min_chars: 'Aramak için en az {count} karakter yazın',
+        filters_button: 'Filtreler',
+        filters_clear: 'Filtreleri temizle',
         filter_gender: 'Cinsiyet',
         filter_legacy: 'Kayıt türü',
         filter_tags: 'Etiketler',
@@ -1559,6 +1563,10 @@ export const tr = {
         cancel: 'Vazgeç',
         back: 'Geri',
         close: 'Kapat',
+        color: {
+            pick: 'Özel renk seçmek için tıklayın',
+            hex: 'Renk kodu',
+        },
         units: {
             hour: 'saat',
         },

@@ -11,11 +11,8 @@ import {
 import AppointmentTopCard from '@/components/appointments/AppointmentTopCard.vue';
 import BulkOccurrenceGenerator from '@/components/appointments/bulk/BulkOccurrenceGenerator.vue';
 import { provideBulkAppointmentForm } from '@/components/appointments/bulk/formContext';
-import {
-    provideBulkGenerator
-    
-} from '@/components/appointments/bulk/generatorContext';
-import type {BulkGeneratorState} from '@/components/appointments/bulk/generatorContext';
+import { provideBulkGenerator } from '@/components/appointments/bulk/generatorContext';
+import type { BulkGeneratorState } from '@/components/appointments/bulk/generatorContext';
 import { providePatientForm } from '@/components/appointments/patientFormContext';
 import PatientPicker from '@/components/appointments/PatientPicker.vue';
 import FormField from '@/components/FormField.vue';

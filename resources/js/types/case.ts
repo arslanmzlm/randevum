@@ -46,6 +46,10 @@ export type CaseTreatmentItem = {
     status: TreatmentStatus;
     completed_at: string | null;
     total_amount: string;
+    /** Vertical detail fields — shown inline so the case reads without opening each treatment. */
+    complaint: string | null;
+    diagnosis: string | null;
+    treatment_process: string | null;
 };
 
 /** Full case detail (mirrors CaseShowResource). */

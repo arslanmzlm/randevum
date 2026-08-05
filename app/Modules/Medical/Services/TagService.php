@@ -5,6 +5,7 @@ namespace App\Modules\Medical\Services;
 use App\Models\Tag;
 use App\Modules\Medical\Repositories\TagRepository;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class TagService
 {
@@ -18,6 +19,14 @@ class TagService
     public function listForActiveClinic(): Collection
     {
         return $this->repository->allForActiveClinic();
+    }
+
+    /**
+     * @return LengthAwarePaginator<Tag>
+     */
+    public function paginateForActiveClinic(): LengthAwarePaginator
+    {
+        return $this->repository->paginateForActiveClinic();
     }
 
     /**

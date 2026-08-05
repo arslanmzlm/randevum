@@ -33,6 +33,7 @@ import type {
 import type { WeekDay } from '@/types/clinic';
 import type { AppointmentStatus } from '@/types/enums';
 import {
+    appointmentStatusColor,
     DEFAULT_CALENDAR_STATUSES,
     MVP_APPOINTMENT_STATUSES,
 } from '@/utils/appointmentStatus';
@@ -353,6 +354,8 @@ const statusOptions = computed(() =>
     MVP_APPOINTMENT_STATUSES.map((status) => ({
         label: t(`appointment.status.${status}`),
         value: status,
+        // Same hue the chips use on the grid, so filter and calendar read as one legend.
+        color: appointmentStatusColor(status),
     })),
 );
 const viewOptions = computed(() => [
@@ -491,7 +494,17 @@ function onSelectEvent(
                         :placeholder="t('calendar.filter_status')"
                         :max-selected-labels="MVP_APPOINTMENT_STATUSES.length"
                         class="w-full sm:w-56"
-                    />
+                    >
+                        <template #option="{ option }">
+                            <span class="flex items-center gap-2">
+                                <span
+                                    class="size-2.5 shrink-0 rounded-full"
+                                    :style="{ backgroundColor: option.color }"
+                                />
+                                {{ option.label }}
+                            </span>
+                        </template>
+                    </MultiSelect>
                     <SelectButton
                         v-model="activeView"
                         :options="viewOptions"

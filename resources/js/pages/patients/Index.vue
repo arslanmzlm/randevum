@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { IconPlus, IconSearch, IconUsers } from '@tabler/icons-vue';
-import { computed } from 'vue';
+import { IconFilter, IconPlus, IconSearch, IconUsers } from '@tabler/icons-vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import ButtonLink from '@/components/ButtonLink.vue';
 import DataTableWrapper from '@/components/DataTableWrapper.vue';
@@ -82,6 +82,28 @@ const { state, loading, first, sortField, sortOrder, onPage, onSort } =
     });
 
 // MultiSelect binds numeric tag ids; the filter state keeps string ids (URL/CSV canonical form).
+const filterPanel = ref();
+
+/** Filters hidden behind the panel — the badge tells the user something is narrowing the list. */
+const activeFilterCount = computed(
+    () =>
+        [
+            state.gender,
+            state.is_legacy,
+            state.tags.length ? state.tags : null,
+            state.last_visit_after,
+            state.last_visit_before,
+        ].filter((value) => value !== null && value !== undefined).length,
+);
+
+function clearFilters(): void {
+    state.gender = null;
+    state.is_legacy = null;
+    state.tags = [];
+    state.last_visit_after = null;
+    state.last_visit_before = null;
+}
+
 const selectedTagIds = computed<number[]>({
     get: () => state.tags.map(Number),
     set: (ids) => {
@@ -229,60 +251,109 @@ function genderLabel(gender: Patient['gender']): string {
                         class="w-full sm:w-72"
                     />
                 </IconField>
-                <Select
-                    v-model="state.gender"
-                    :options="genderOptions"
-                    option-label="label"
-                    option-value="value"
-                    :placeholder="t('patient.filter_gender')"
-                    show-clear
-                    class="w-full sm:w-44"
-                />
-                <Select
-                    v-model="state.is_legacy"
-                    :options="legacyOptions"
-                    option-label="label"
-                    option-value="value"
-                    :placeholder="t('patient.filter_legacy')"
-                    show-clear
-                    class="w-full sm:w-52"
-                />
-                <MultiSelect
-                    v-if="tags.length"
-                    v-model="selectedTagIds"
-                    :options="tags"
-                    option-label="name"
-                    option-value="id"
-                    :placeholder="t('patient.filter_tags')"
-                    :max-selected-labels="0"
-                    :selected-items-label="`{0} ${t('tag.selected_suffix')}`"
-                    show-clear
-                    filter
-                    class="w-full sm:w-52"
+                <!-- Six controls no longer fit one row: the narrowing filters live in a panel
+                     with an active count, leaving search and segments in the open. -->
+                <!-- Label lives in the slot: PrimeVue drops the `label` prop as soon as the
+                     default slot has content (the badge). -->
+                <Button
+                    type="button"
+                    severity="secondary"
+                    outlined
+                    @click="filterPanel?.toggle($event)"
                 >
-                    <template #option="{ option }">
-                        <TagChip :label="option.name" :color="option.color" />
+                    <template #icon>
+                        <IconFilter class="size-4" />
                     </template>
-                </MultiSelect>
-                <DatePicker
-                    v-model="state.last_visit_after"
-                    :placeholder="t('patient.filter_last_visit_after')"
-                    date-format="dd.mm.yy"
-                    show-icon
-                    show-button-bar
-                    icon-display="input"
-                    class="w-full sm:w-52"
-                />
-                <DatePicker
-                    v-model="state.last_visit_before"
-                    v-tooltip.top="t('patient.filter_last_visit_before_hint')"
-                    :placeholder="t('patient.filter_last_visit_before')"
-                    date-format="dd.mm.yy"
-                    show-icon
-                    show-button-bar
-                    icon-display="input"
-                    class="w-full sm:w-52"
-                />
+                    <span>{{ t('patient.filters_button') }}</span>
+                    <Badge
+                        v-if="activeFilterCount"
+                        :value="activeFilterCount"
+                        severity="contrast"
+                    />
+                </Button>
+
+                <Popover ref="filterPanel">
+                    <div class="flex w-72 flex-col gap-4 sm:w-[28rem]">
+                        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            <Select
+                                v-model="state.gender"
+                                :options="genderOptions"
+                                option-label="label"
+                                option-value="value"
+                                :placeholder="t('patient.filter_gender')"
+                                show-clear
+                                class="w-full"
+                            />
+                            <Select
+                                v-model="state.is_legacy"
+                                :options="legacyOptions"
+                                option-label="label"
+                                option-value="value"
+                                :placeholder="t('patient.filter_legacy')"
+                                show-clear
+                                class="w-full"
+                            />
+                            <MultiSelect
+                                v-if="tags.length"
+                                v-model="selectedTagIds"
+                                :options="tags"
+                                option-label="name"
+                                option-value="id"
+                                :placeholder="t('patient.filter_tags')"
+                                :max-selected-labels="0"
+                                :selected-items-label="`{0} ${t('tag.selected_suffix')}`"
+                                show-clear
+                                filter
+                                class="w-full"
+                            >
+                                <template #option="{ option }">
+                                    <TagChip
+                                        :label="option.name"
+                                        :color="option.color"
+                                    />
+                                </template>
+                            </MultiSelect>
+                            <DatePicker
+                                v-model="state.last_visit_after"
+                                :placeholder="
+                                    t('patient.filter_last_visit_after')
+                                "
+                                date-format="dd.mm.yy"
+                                show-icon
+                                show-button-bar
+                                icon-display="input"
+                                class="w-full"
+                            />
+                            <DatePicker
+                                v-model="state.last_visit_before"
+                                v-tooltip.top="
+                                    t('patient.filter_last_visit_before_hint')
+                                "
+                                :placeholder="
+                                    t('patient.filter_last_visit_before')
+                                "
+                                date-format="dd.mm.yy"
+                                show-icon
+                                show-button-bar
+                                icon-display="input"
+                                class="w-full"
+                            />
+                        </div>
+
+                        <div class="flex justify-end">
+                            <Button
+                                type="button"
+                                severity="secondary"
+                                text
+                                size="small"
+                                :label="t('patient.filters_clear')"
+                                :disabled="!activeFilterCount"
+                                @click="clearFilters"
+                            />
+                        </div>
+                    </div>
+                </Popover>
+
                 <SegmentPicker
                     :segments="segments"
                     :current-criteria="currentCriteria"

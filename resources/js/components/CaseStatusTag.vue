@@ -15,5 +15,5 @@ const label = computed(() => t(`case.status.${props.status}`));
 </script>
 
 <template>
-    <Tag :value="label" :severity="severity" />
+    <Tag :value="label" :severity="severity" class="whitespace-nowrap" />
 </template>

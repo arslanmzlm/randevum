@@ -19,6 +19,7 @@ const label = computed(() => t(`sms.status.${props.status}`));
     <Tag
         :value="label"
         :severity="severity"
+        class="whitespace-nowrap"
         :class="small ? 'p-tag-sm' : undefined"
     />
 </template>

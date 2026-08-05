@@ -36,12 +36,17 @@ class CaseShowResource extends JsonResource
                 'id' => (int) $this->doctor_id,
                 'display_name' => $this->doctor->display_name,
             ],
+            // The clinical trio rides along so the case page can show what was actually done
+            // without a round trip to each treatment.
             'treatments' => $this->treatments->map(fn ($t) => [
                 'id' => $t->id,
                 'title' => $t->serviceLines->first()?->service?->name,
                 'status' => $t->status->value,
                 'completed_at' => $t->completed_at?->toIso8601String(),
                 'total_amount' => (string) $t->total_amount,
+                'complaint' => $t->details?->complaint,
+                'diagnosis' => $t->details?->diagnosis,
+                'treatment_process' => $t->details?->treatment_process,
             ])->all(),
         ];
     }

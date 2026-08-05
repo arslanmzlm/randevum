@@ -220,7 +220,7 @@ class DemoCasesSeeder extends Seeder
             ->get();
 
         foreach ($appointments as $index => $appointment) {
-            $detail = PodiatryTreatmentDetail::create([]);
+            $detail = PodiatryTreatmentDetail::create($this->clinicalNotes($index));
 
             $treatment = Treatment::create([
                 'clinic_id' => $this->clinic->id,
@@ -254,6 +254,45 @@ class DemoCasesSeeder extends Seeder
                 'total_amount' => $service->price,
             ]);
         }
+    }
+
+    /**
+     * A plausible complaint / diagnosis / process trio. The case page shows these inline, so an
+     * empty detail row would leave that screen looking unimplemented.
+     *
+     * @return array<string, string>
+     */
+    private function clinicalNotes(int $index): array
+    {
+        $notes = [
+            [
+                'complaint' => 'Sağ ayak başparmak kenarında ağrı ve kızarıklık.',
+                'diagnosis' => 'Onikokriptoz (batık tırnak), evre 2.',
+                'treatment_process' => 'Kenar rezeksiyonu yapıldı, antiseptik pansuman uygulandı. Ortonixi teli önerildi.',
+            ],
+            [
+                'complaint' => 'Topuk bölgesinde çatlak ve yürürken batma hissi.',
+                'diagnosis' => 'Hiperkeratoz ve fissür.',
+                'treatment_process' => 'Kallus debridmanı yapıldı, nemlendirici bakım ve günlük pansuman önerildi.',
+            ],
+            [
+                'complaint' => 'Tırnaklarda sararma ve kalınlaşma, 6 aydır sürüyor.',
+                'diagnosis' => 'Onikomikoz şüphesi; örnek alındı.',
+                'treatment_process' => 'Tırnak inceltme uygulandı, topikal antifungal başlandı. 4 hafta sonra kontrol.',
+            ],
+            [
+                'complaint' => 'Ayak tabanında basınç noktasında ağrı.',
+                'diagnosis' => 'Plantar kallus, biyomekanik yüklenme.',
+                'treatment_process' => 'Kallus temizliği sonrası kişiye özel tabanlık ölçüsü alındı.',
+            ],
+            [
+                'complaint' => 'Diyabetik hasta, ayak kontrolü için başvurdu.',
+                'diagnosis' => 'Diyabetik ayak riski düşük-orta; cilt bütünlüğü korunmuş.',
+                'treatment_process' => 'Koruyucu ayak bakımı yapıldı, günlük kontrol ve uygun ayakkabı önerildi.',
+            ],
+        ];
+
+        return $notes[$index % count($notes)];
     }
 
     private function makeCase(Doctor $doctor, Patient $patient, string $title, CaseStatus $status, int $daysAgo, ?string $notes = null): CaseRecord
@@ -295,7 +334,9 @@ class DemoCasesSeeder extends Seeder
             'created_by' => $this->owner->id,
         ]);
 
-        $detail = PodiatryTreatmentDetail::create([]);
+        $detail = PodiatryTreatmentDetail::create(
+            $this->clinicalNotes($patient->id + $doctor->id),
+        );
 
         $treatment = Treatment::create([
             'clinic_id' => $this->clinic->id,

@@ -3,7 +3,9 @@
 namespace App\Modules\Medical\Repositories;
 
 use App\Models\Tag;
+use App\Support\FilterHelper;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class TagRepository
 {
@@ -16,6 +18,20 @@ class TagRepository
     public function allForActiveClinic(): Collection
     {
         return Tag::withCount('patients')->orderBy('name')->get();
+    }
+
+    /**
+     * Paginated list for the tags screen — same server-side search/sort contract the other
+     * catalog lists use, so the two screens behave identically.
+     *
+     * @return LengthAwarePaginator<Tag>
+     */
+    public function paginateForActiveClinic(): LengthAwarePaginator
+    {
+        return FilterHelper::for(Tag::withCount('patients'))
+            ->search('name')
+            ->sort('name', 'patients_count', 'created_at')
+            ->paginate();
     }
 
     /**

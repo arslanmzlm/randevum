@@ -71,8 +71,9 @@ it('renders the patients index page with tag column, filters and segment picker 
         // Segments dropdown placeholder — proves the SegmentPicker mounted (custom PrimeVue Select
         // renders its placeholder as label text, unlike a native input).
         ->assertSee('Segment seç')
-        // Last-visit "before" filter — the DatePicker renders its placeholder as a native `<input>`
-        // attribute, not innerText, so assert via the DOM rather than assertSee().
+        // The narrowing filters moved into a panel behind the "Filtreler" button; opening it must
+        // mount them (the DatePicker renders its placeholder as a native `<input>` attribute).
+        ->click('Filtreler')
         ->assertScript(
             '() => document.querySelector(\'input[placeholder="Şu tarihten beri gelmeyen"]\') !== null',
         )

@@ -1,3 +1,4 @@
+import type { Paginated, TableState } from '@/types/table';
 /** Canonical tag shape emitted by TagResource (list filter options + chip lookup). */
 export type Tag = {
     id: number;
@@ -12,12 +13,8 @@ export type TagWithCount = Tag & {
 };
 
 export type TagIndexProps = {
-    /**
-     * Wrapped in `data` because the controller emits `TagResource::collection(...)`
-     * (non-paginated) and Laravel resource wrapping is on — resolves to `{ data: [...] }`,
-     * not a bare array.
-     */
-    tags: { data: TagWithCount[] };
+    tags: Paginated<TagWithCount>;
+    query: TableState;
 };
 
 /** Editable fields for the create/edit tag dialog. */

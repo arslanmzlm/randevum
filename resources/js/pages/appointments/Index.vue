@@ -415,7 +415,7 @@ const dateRange = computed<(Date | null)[] | null>({
             <Column
                 field="status"
                 :header="t('appointment_list.columns.status')"
-                class="w-36"
+                class="w-44"
             >
                 <template #body="{ data }">
                     <AppointmentStatusTag :status="data.status" />

@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
-import { IconPlus, IconTag, IconTrash } from '@tabler/icons-vue';
+import { IconPlus, IconSearch, IconTag, IconTrash } from '@tabler/icons-vue';
 import { useConfirm } from 'primevue/useconfirm';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import DataTableWrapper from '@/components/DataTableWrapper.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import PageHeader from '@/components/PageHeader.vue';
-import SectionCard from '@/components/SectionCard.vue';
 import TagChip from '@/components/TagChip.vue';
 import TagFormDialog from '@/components/tags/TagFormDialog.vue';
+import { useTableFilters } from '@/composables/useTableFilters';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { destroy } from '@/routes/tags';
+import { destroy, index } from '@/routes/tags';
 import type { TagIndexProps, TagWithCount } from '@/types/tag';
 
 defineOptions({ layout: AppLayout });
@@ -20,7 +21,20 @@ const props = defineProps<TagIndexProps>();
 const { t } = useI18n();
 const confirm = useConfirm();
 
-const tagRows = computed<TagWithCount[]>(() => props.tags.data);
+// Same server-side list contract as the appointment types screen, so both behave alike.
+const { state, loading, first, sortField, sortOrder, onPage, onSort } =
+    useTableFilters({
+        url: index().url,
+        only: ['tags', 'query'],
+        currentPage: props.tags.meta.current_page,
+        search: props.query.filter.search,
+        sort: props.query.sort,
+        perPage: props.query.per_page,
+    });
+
+const showEmptyState = computed(
+    () => props.tags.data.length === 0 && !state.search,
+);
 
 const dialogVisible = ref(false);
 const editing = ref<TagWithCount | null>(null);
@@ -70,7 +84,7 @@ function removeTag(tag: TagWithCount): void {
         </PageHeader>
 
         <EmptyState
-            v-if="tagRows.length === 0"
+            v-if="showEmptyState"
             :icon="IconTag"
             :message="t('tag.empty')"
         >
@@ -88,56 +102,84 @@ function removeTag(tag: TagWithCount): void {
             </template>
         </EmptyState>
 
-        <SectionCard v-else padding="p-2 sm:p-3">
-            <DataTable :value="tagRows" data-key="id">
-                <Column :header="t('tag.columns.name')">
-                    <template #body="{ data }">
-                        <TagChip :label="data.name" :color="data.color" />
-                    </template>
-                </Column>
+        <DataTableWrapper
+            v-else
+            :value="tags.data"
+            :total-records="tags.meta.total"
+            :rows="state.per_page"
+            :first="first"
+            :loading="loading"
+            :sort-field="sortField"
+            :sort-order="sortOrder"
+            @page="onPage"
+            @sort="onSort"
+        >
+            <template #toolbar>
+                <IconField>
+                    <InputIcon>
+                        <IconSearch class="size-4 text-surface-400" />
+                    </InputIcon>
+                    <InputText
+                        v-model="state.search"
+                        :placeholder="t('tag.search_placeholder')"
+                        class="w-full sm:w-72"
+                    />
+                </IconField>
+            </template>
 
-                <Column
-                    field="patients_count"
-                    :header="t('tag.columns.patients_count')"
-                    class="w-40"
-                >
-                    <template #body="{ data }">
-                        <span class="text-surface-700">
-                            {{
-                                t('tag.patients_count', {
-                                    count: data.patients_count,
-                                })
-                            }}
-                        </span>
-                    </template>
-                </Column>
+            <Column field="name" :header="t('tag.columns.name')" sortable>
+                <template #body="{ data }">
+                    <TagChip :label="data.name" :color="data.color" />
+                </template>
+            </Column>
 
-                <Column :header="t('tag.columns.actions')" class="w-32">
-                    <template #body="{ data }">
-                        <div class="flex items-center justify-end gap-1">
-                            <Button
-                                type="button"
-                                severity="secondary"
-                                outlined
-                                size="small"
-                                :label="t('tag.edit')"
-                                @click="openEdit(data)"
-                            />
-                            <Button
-                                type="button"
-                                severity="danger"
-                                text
-                                size="small"
-                                :aria-label="t('tag.remove')"
-                                @click="removeTag(data)"
-                            >
-                                <IconTrash />
-                            </Button>
-                        </div>
-                    </template>
-                </Column>
-            </DataTable>
-        </SectionCard>
+            <Column
+                field="patients_count"
+                :header="t('tag.columns.patients_count')"
+                class="w-40"
+                sortable
+            >
+                <template #body="{ data }">
+                    <span class="text-surface-700">
+                        {{
+                            t('tag.patients_count', {
+                                count: data.patients_count,
+                            })
+                        }}
+                    </span>
+                </template>
+            </Column>
+
+            <Column :header="t('tag.columns.actions')" class="w-32">
+                <template #body="{ data }">
+                    <div class="flex items-center justify-end gap-1">
+                        <Button
+                            type="button"
+                            severity="secondary"
+                            outlined
+                            size="small"
+                            :label="t('tag.edit')"
+                            @click="openEdit(data)"
+                        />
+                        <Button
+                            type="button"
+                            severity="danger"
+                            text
+                            size="small"
+                            :aria-label="t('tag.remove')"
+                            @click="removeTag(data)"
+                        >
+                            <IconTrash />
+                        </Button>
+                    </div>
+                </template>
+            </Column>
+            <template #empty>
+                <div class="px-6 py-10 text-center text-sm text-surface-500">
+                    {{ t('tag.empty_filtered') }}
+                </div>
+            </template>
+        </DataTableWrapper>
 
         <TagFormDialog v-model:visible="dialogVisible" :tag="editing" />
     </div>

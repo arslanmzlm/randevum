@@ -9,6 +9,7 @@ use App\Modules\Medical\Http\Requests\StoreTagRequest;
 use App\Modules\Medical\Http\Requests\UpdateTagRequest;
 use App\Modules\Medical\Http\Resources\TagResource;
 use App\Modules\Medical\Services\TagService;
+use App\Support\FilterHelper;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -24,7 +25,8 @@ class TagController extends Controller
         $this->authorize('viewAny', Tag::class);
 
         return Inertia::render('tags/Index', [
-            'tags' => TagResource::collection($this->service->listForActiveClinic()),
+            'tags' => TagResource::collection($this->service->paginateForActiveClinic()),
+            'query' => FilterHelper::requestState(),
         ]);
     }
 

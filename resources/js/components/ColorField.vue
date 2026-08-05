@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { IconCheck } from '@tabler/icons-vue';
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 
 const props = defineProps<{
     modelValue: string;
@@ -12,6 +13,8 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>();
+
+const { t } = useI18n();
 
 // Coerce any input to a canonical '#RRGGBB' (uppercase) so the stored value and the
 // backend's `/^#[0-9A-Fa-f]{6}$/` rule always agree, regardless of paste/picker source.
@@ -71,13 +74,24 @@ function selectPreset(color: string): void {
             </button>
         </div>
 
+        <!-- The bare swatch read as decoration, so it now says what it is. The swatch itself stays
+             the trigger (PrimeVue opens the panel from its preview); the words are the signpost. -->
         <div class="flex items-center gap-2">
-            <ColorPicker v-model="pickerValue" format="hex" />
+            <ColorPicker
+                v-model="pickerValue"
+                format="hex"
+                :pt="{ preview: { class: 'cursor-pointer' } }"
+                :aria-label="t('common.color.pick')"
+            />
+            <span class="text-xs text-surface-500">
+                {{ t('common.color.pick') }}
+            </span>
             <InputText
                 v-model="hexValue"
                 :invalid="!!error"
                 class="w-32 font-mono uppercase"
                 maxlength="7"
+                :aria-label="t('common.color.hex')"
             />
         </div>
 

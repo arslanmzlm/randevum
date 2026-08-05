@@ -15,10 +15,13 @@ const label = computed(() => t(`appointment.status.${props.status}`));
 </script>
 
 <template>
-    <!-- Tag has no `size` prop; `p-tag-sm` (app.css) is the reusable small variant. -->
+    <!-- Tag has no `size` prop; `p-tag-sm` (app.css) is the reusable small variant.
+         nowrap: a two-word status ("Yeniden Planlandı") used to wrap inside the pill and leave
+         its right edge ragged; the column is sized for one line instead. -->
     <Tag
         :value="label"
         :severity="severity"
+        class="whitespace-nowrap"
         :class="small ? 'p-tag-sm' : undefined"
     />
 </template>
