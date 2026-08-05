@@ -94,8 +94,8 @@ it('renders the treatment media uploader on the process page with no JS errors',
         ->assertNoJavascriptErrors()
         // MediaSection's SectionCard title — in-body, only mounted for treatments.media.upload.
         ->assertSee('Dosyalar')
-        // MediaUploader's "add file" control — proves the uploader itself rendered.
-        ->assertSee('Dosya seç')
+        // MediaUploader's drop zone (also the picker) — proves the uploader itself rendered.
+        ->assertSee('Dosyaları buraya sürükleyin veya seçmek için tıklayın')
         // MediaGallery's empty state (no files yet on this fresh Draft treatment).
         ->assertSee('Henüz dosya eklenmedi.')
         // Guard against the silent-blank-body false green: <main> must be non-empty.

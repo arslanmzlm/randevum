@@ -5,6 +5,7 @@ import { useConfirm } from 'primevue/useconfirm';
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import MediaGallery from '@/components/media/MediaGallery.vue';
+import { useFileDrop } from '@/composables/useFileDrop';
 import type { MediaItem } from '@/types/media';
 import { formatBytes } from '@/utils/formatBytes';
 
@@ -52,9 +53,20 @@ function pickFiles(): void {
 
 function onFileChange(event: Event): void {
     const input = event.target as HTMLInputElement;
+
+    stage(Array.from(input.files ?? []));
+
+    // Allow re-selecting the same file after removing it from the staging list.
+    input.value = '';
+}
+
+const { isDragging, dropHandlers } = useFileDrop(stage);
+
+/** Files land in the staging list (never uploaded straight away) so captions can be typed first. */
+function stage(files: File[]): void {
     const maxBytes = props.maxSizeMb * 1024 * 1024;
 
-    for (const file of Array.from(input.files ?? [])) {
+    for (const file of files) {
         staged.value.push({
             key: `${file.name}-${file.size}-${crypto.randomUUID()}`,
             file,
@@ -65,9 +77,6 @@ function onFileChange(event: Event): void {
                     : null,
         });
     }
-
-    // Allow re-selecting the same file after removing it from the staging list.
-    input.value = '';
 }
 
 function removeStaged(key: string): void {
@@ -178,20 +187,34 @@ function requestDelete(item: MediaItem): void {
             </li>
         </ul>
 
-        <div class="flex flex-wrap items-center gap-2">
+        <!-- Drop zone doubles as the picker: clicking anywhere in it opens the file dialog. -->
+        <div
+            class="flex cursor-pointer flex-col items-center gap-3 rounded-xl border-2 border-dashed p-6 text-center transition-colors"
+            :class="
+                isDragging
+                    ? 'border-primary-400 bg-primary-50'
+                    : 'border-surface-200 bg-surface-50 hover:border-surface-300'
+            "
+            v-on="dropHandlers"
+            @click="pickFiles"
+        >
+            <IconUpload
+                class="size-6"
+                :class="isDragging ? 'text-primary-500' : 'text-surface-400'"
+            />
+            <p class="text-sm text-surface-600">
+                {{
+                    isDragging ? t('media.drop_hint') : t('media.drop_or_pick')
+                }}
+            </p>
+            <p class="text-xs text-surface-400">
+                {{ t('media.formats_hint') }} ·
+                {{ t('media.max_size_hint', { max: maxSizeMb }) }}
+            </p>
+        </div>
+
+        <div v-if="staged.some((entry) => !entry.error)" class="flex">
             <Button
-                type="button"
-                severity="secondary"
-                outlined
-                :label="t('media.add')"
-                @click="pickFiles"
-            >
-                <template #icon>
-                    <IconUpload class="size-4" />
-                </template>
-            </Button>
-            <Button
-                v-if="staged.some((entry) => !entry.error)"
                 type="button"
                 :label="t('media.upload')"
                 :loading="form.processing"
@@ -202,11 +225,6 @@ function requestDelete(item: MediaItem): void {
                 </template>
             </Button>
         </div>
-
-        <p class="text-xs text-surface-400">
-            {{ t('media.formats_hint') }} ·
-            {{ t('media.max_size_hint', { max: maxSizeMb }) }}
-        </p>
 
         <!-- Current files — deletable in place (parent-supplied DELETE endpoint). -->
         <MediaGallery

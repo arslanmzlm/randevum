@@ -1525,13 +1525,14 @@ export const tr = {
     },
     media: {
         title: 'Dosyalar',
-        add: 'Dosya seç',
         upload: 'Yükle',
         remove: 'Kaldır',
         download: 'İndir',
         preview: 'Önizle',
         document: 'Belge',
         caption_placeholder: 'Açıklama (opsiyonel)',
+        drop_hint: 'Bırakın',
+        drop_or_pick: 'Dosyaları buraya sürükleyin veya seçmek için tıklayın',
         formats_hint:
             'Görsel (JPG, PNG, WEBP, HEIC) veya belge (PDF, DOCX, XLSX)',
         max_size_hint: 'En fazla {max} MB',
@@ -1555,6 +1556,7 @@ export const tr = {
         },
         media: {
             empty: 'Görsel yok',
+            drop_hint: 'Bırakın',
             uploading: 'Yükleniyor…',
             upload: 'Görsel yükle',
             remove: 'Kaldır',

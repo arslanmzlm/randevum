@@ -4,6 +4,7 @@ import { IconPhoto, IconTrash, IconUpload } from '@tabler/icons-vue';
 import { useConfirm } from 'primevue/useconfirm';
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useFileDrop } from '@/composables/useFileDrop';
 
 const props = defineProps<{
     /** Current image URL, or null when none is set. */
@@ -39,6 +40,13 @@ function onFileChange(event: Event): void {
         return;
     }
 
+    upload(file);
+}
+
+// One image per field, so a multi-file drop takes the first.
+const { isDragging, dropHandlers } = useFileDrop((files) => upload(files[0]));
+
+function upload(file: File): void {
     uploadForm.image = file;
     uploadForm.post(props.uploadUrl, {
         preserveScroll: true,
@@ -76,9 +84,18 @@ function remove(): void {
     <div class="flex flex-col gap-2">
         <span class="text-sm font-medium text-surface-900">{{ label }}</span>
 
+        <!-- The preview tile is the drop zone and doubles as the picker, so the whole thing is
+             clickable rather than only the button below. -->
         <div
-            class="relative w-full max-w-xs overflow-hidden rounded-xl border border-surface-200 bg-surface-50"
-            :class="aspectClass"
+            class="relative w-full max-w-xs cursor-pointer overflow-hidden rounded-xl border bg-surface-50 transition-colors"
+            :class="[
+                aspectClass,
+                isDragging
+                    ? 'border-2 border-dashed border-primary-400 bg-primary-50'
+                    : 'border-surface-200',
+            ]"
+            v-on="dropHandlers"
+            @click="pickFile"
         >
             <img
                 v-if="url"
@@ -101,6 +118,15 @@ function remove(): void {
                 <span class="text-sm text-surface-600">{{
                     t('common.media.uploading')
                 }}</span>
+            </div>
+
+            <div
+                v-else-if="isDragging"
+                class="absolute inset-0 flex items-center justify-center bg-primary-50/80"
+            >
+                <span class="text-sm font-medium text-primary-700">
+                    {{ t('common.media.drop_hint') }}
+                </span>
             </div>
         </div>
 
