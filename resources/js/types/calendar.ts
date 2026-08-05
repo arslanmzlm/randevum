@@ -29,6 +29,8 @@ export type CalendarEventDto = {
     doctor_id: number;
     doctor_name: string;
     title: string;
+    /** Patient the popover title links to. */
+    patient_id: number;
     start: string;
     end: string;
     status: AppointmentStatus;

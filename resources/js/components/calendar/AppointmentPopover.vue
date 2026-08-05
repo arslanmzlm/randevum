@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Link } from '@inertiajs/vue3';
 import {
     IconBan,
     IconBell,
@@ -14,12 +15,14 @@ import {
     IconUserX,
     IconWalk,
 } from '@tabler/icons-vue';
-import { computed, nextTick, ref } from 'vue';
+import { computed, nextTick, ref  } from 'vue';
+import type {Component} from 'vue';
 import { useI18n } from 'vue-i18n';
 import AppointmentStatusTag from '@/components/AppointmentStatusTag.vue';
 import type { AppointmentActions } from '@/composables/useAppointmentActions';
 import { useDateTime } from '@/composables/useDateTime';
 import type { TreatmentActions } from '@/composables/useTreatmentActions';
+import { show as patientShow } from '@/routes/patients';
 import type { CalendarEventDto } from '@/types/calendar';
 
 // Summary of a clicked appointment, anchored to its chip. The lifecycle actions (edit / cancel /
@@ -138,6 +141,122 @@ function onDelete(): void {
     }
 }
 
+type PopoverAction = {
+    label: string;
+    icon: Component;
+    run: () => void;
+};
+
+/**
+ * The one action this state is really about: continue the treatment if there is one to work on,
+ * otherwise check the patient in, otherwise reschedule. Everything else is a menu row.
+ */
+const primaryAction = computed<PopoverAction | null>(() => {
+    if (
+        treatable.value &&
+        props.treatmentActions.canStartTreatment(treatable.value)
+    ) {
+        return {
+            label: props.treatmentActions.isResume(treatable.value)
+                ? t('treatment.actions.resume')
+                : t('treatment.actions.start'),
+            icon: IconClipboardPlus,
+            run: onTreatment,
+        };
+    }
+
+    if (actionable.value && props.actions.canCheckIn(actionable.value)) {
+        return {
+            label: t('appointment_actions.menu.check_in'),
+            icon: IconUserCheck,
+            run: onCheckIn,
+        };
+    }
+
+    if (actionable.value && props.actions.canReschedule(actionable.value)) {
+        return {
+            label: t('appointment_actions.menu.edit'),
+            icon: IconPencil,
+            run: onEdit,
+        };
+    }
+
+    return null;
+});
+
+const secondaryActions = computed<PopoverAction[]>(() => {
+    const a = actionable.value;
+
+    if (!a) {
+        return [];
+    }
+
+    const all: PopoverAction[] = [];
+
+    if (props.actions.canCheckIn(a)) {
+        all.push({
+            label: t('appointment_actions.menu.check_in'),
+            icon: IconUserCheck,
+            run: onCheckIn,
+        });
+    }
+
+    if (props.actions.canReschedule(a)) {
+        all.push({
+            label: t('appointment_actions.menu.edit'),
+            icon: IconPencil,
+            run: onEdit,
+        });
+    }
+
+    if (props.actions.canSendReminder(a)) {
+        all.push({
+            label: t('appointment_actions.send_reminder'),
+            icon: IconBell,
+            run: onSendReminder,
+        });
+    }
+
+    // Whatever was promoted to the primary slot must not repeat below it.
+    return all.filter((action) => action.label !== primaryAction.value?.label);
+});
+
+const destructiveActions = computed<PopoverAction[]>(() => {
+    const a = actionable.value;
+
+    if (!a) {
+        return [];
+    }
+
+    const all: PopoverAction[] = [];
+
+    if (props.actions.canMarkNoShow(a)) {
+        all.push({
+            label: t('appointment_actions.menu.no_show'),
+            icon: IconUserX,
+            run: onMarkNoShow,
+        });
+    }
+
+    if (props.actions.canCancel(a)) {
+        all.push({
+            label: t('appointment_actions.menu.cancel'),
+            icon: IconBan,
+            run: onCancel,
+        });
+    }
+
+    if (props.actions.canDelete(a)) {
+        all.push({
+            label: t('appointment_actions.menu.delete'),
+            icon: IconTrash,
+            run: onDelete,
+        });
+    }
+
+    return all;
+});
+
 const rows = computed(() => {
     const a = appointment.value;
 
@@ -177,9 +296,12 @@ const rows = computed(() => {
             <header class="flex flex-col gap-2">
                 <div class="flex min-w-0 items-center gap-2">
                     <IconUser class="size-5 shrink-0 text-surface-400" />
-                    <span class="truncate font-semibold text-surface-900">
+                    <Link
+                        :href="patientShow(appointment.patient_id).url"
+                        class="truncate font-semibold text-primary-600 transition-colors hover:text-primary-700 hover:underline"
+                    >
                         {{ appointment.title }}
-                    </span>
+                    </Link>
                 </div>
                 <!-- Status (+ walk-in) on their own row so a long label can't squeeze the name. -->
                 <div class="flex flex-wrap items-center gap-2">
@@ -218,97 +340,61 @@ const rows = computed(() => {
                 </div>
             </dl>
 
+            <!-- One primary action (what the receptionist reaches for in this state), the rest as
+                 menu rows — the same vocabulary as the appointment list's ⋮ menu. Five equal
+                 buttons wrapped into a ragged block before. -->
             <footer
                 v-if="
-                    (actionable && actions.hasActions(actionable)) ||
-                    (treatable && treatmentActions.canStartTreatment(treatable))
+                    primaryAction ||
+                    secondaryActions.length ||
+                    destructiveActions.length
                 "
-                class="flex flex-wrap gap-2 border-t border-surface-200 pt-3"
+                class="flex flex-col gap-2 border-t border-surface-200 pt-3"
             >
                 <Button
-                    v-if="
-                        treatable &&
-                        treatmentActions.canStartTreatment(treatable)
-                    "
+                    v-if="primaryAction"
                     type="button"
                     size="small"
-                    severity="primary"
-                    :label="
-                        treatmentActions.isResume(treatable)
-                            ? t('treatment.actions.resume')
-                            : t('treatment.actions.start')
-                    "
-                    @click="onTreatment"
+                    :label="primaryAction.label"
+                    class="w-full"
+                    @click="primaryAction.run()"
                 >
-                    <template #icon
-                        ><IconClipboardPlus class="size-4"
-                    /></template>
+                    <template #icon>
+                        <component :is="primaryAction.icon" class="size-4" />
+                    </template>
                 </Button>
-                <Button
-                    v-if="actionable && actions.canCheckIn(actionable)"
-                    type="button"
-                    size="small"
-                    severity="primary"
-                    :label="t('appointment_actions.menu.check_in')"
-                    @click="onCheckIn"
+
+                <div v-if="secondaryActions.length" class="flex flex-col">
+                    <button
+                        v-for="action in secondaryActions"
+                        :key="action.label"
+                        type="button"
+                        class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm text-surface-700 transition-colors hover:bg-surface-100"
+                        @click="action.run()"
+                    >
+                        <component
+                            :is="action.icon"
+                            class="size-4 shrink-0 text-surface-400"
+                        />
+                        {{ action.label }}
+                    </button>
+                </div>
+
+                <div
+                    v-if="destructiveActions.length"
+                    class="flex flex-col border-t border-surface-200 pt-2"
                 >
-                    <template #icon><IconUserCheck class="size-4" /></template>
-                </Button>
-                <Button
-                    v-if="actionable && actions.canReschedule(actionable)"
-                    type="button"
-                    size="small"
-                    severity="primary"
-                    outlined
-                    :label="t('appointment_actions.menu.edit')"
-                    @click="onEdit"
-                >
-                    <template #icon><IconPencil class="size-4" /></template>
-                </Button>
-                <Button
-                    v-if="actionable && actions.canSendReminder(actionable)"
-                    type="button"
-                    size="small"
-                    severity="primary"
-                    outlined
-                    :label="t('appointment_actions.send_reminder')"
-                    @click="onSendReminder"
-                >
-                    <template #icon><IconBell class="size-4" /></template>
-                </Button>
-                <Button
-                    v-if="actionable && actions.canMarkNoShow(actionable)"
-                    type="button"
-                    size="small"
-                    severity="warn"
-                    outlined
-                    :label="t('appointment_actions.menu.no_show')"
-                    @click="onMarkNoShow"
-                >
-                    <template #icon><IconUserX class="size-4" /></template>
-                </Button>
-                <Button
-                    v-if="actionable && actions.canCancel(actionable)"
-                    type="button"
-                    size="small"
-                    severity="warn"
-                    outlined
-                    :label="t('appointment_actions.menu.cancel')"
-                    @click="onCancel"
-                >
-                    <template #icon><IconBan class="size-4" /></template>
-                </Button>
-                <Button
-                    v-if="actionable && actions.canDelete(actionable)"
-                    type="button"
-                    size="small"
-                    severity="danger"
-                    outlined
-                    :label="t('appointment_actions.menu.delete')"
-                    @click="onDelete"
-                >
-                    <template #icon><IconTrash class="size-4" /></template>
-                </Button>
+                    <button
+                        v-for="action in destructiveActions"
+                        :key="action.label"
+                        type="button"
+                        class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm text-red-600 transition-colors hover:bg-red-50"
+                        @click="action.run()"
+                    >
+                        <component :is="action.icon" class="size-4 shrink-0" />
+                        {{ action.label }}
+                    </button>
+                </div>
             </footer>
         </div>
     </Popover>

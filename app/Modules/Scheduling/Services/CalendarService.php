@@ -63,6 +63,8 @@ class CalendarService
                 'doctor_id' => $a->doctor_id,
                 'doctor_name' => $a->doctor->display_name,
                 'title' => trim($a->patient->first_name.' '.$a->patient->last_name),
+                // The popover links the name straight to the patient record.
+                'patient_id' => $a->patient_id,
                 'start' => $a->starts_at->setTimezone($tz)->format('Y-m-d H:i'),
                 'end' => $a->ends_at->setTimezone($tz)->format('Y-m-d H:i'),
                 'status' => $a->status->value,
