@@ -65,6 +65,7 @@ return [
         'reminder_sent' => 'Reminder SMS sent.',
         'reminder_skipped' => 'Reminder SMS was not sent (the clinic may have this notification disabled, or a quota/phone issue).',
         'cancelled' => 'Payment plan cancelled.',
+        'deleted' => 'Payment plan deleted.',
     ],
 
     'sms_settings' => [

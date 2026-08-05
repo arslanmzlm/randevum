@@ -1330,6 +1330,9 @@ export const tr = {
         remind_confirm_message:
             '{name} adlı hastaya taksit hatırlatma SMS’i gönderilsin mi?',
         cancel_action: 'Planı iptal et',
+        delete_action: 'Planı sil',
+        delete_confirm_message:
+            'Bu taksit planı ve tüm taksitleri silinecek. Bu işlem geri alınamaz.',
         cancel_confirm_title: 'Taksit planını iptal et',
         cancel_confirm_message:
             'Plan ve bekleyen taksitleri iptal edilecek. Tahsil edilmiş ödemeler etkilenmez. Devam edilsin mi?',

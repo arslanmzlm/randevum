@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\InstallmentStatus;
 use App\Enums\PaymentPlanStatus;
 use App\Models\Concerns\BelongsToClinic;
 use Database\Factories\PaymentPlanFactory;
@@ -87,6 +88,20 @@ class PaymentPlan extends Model
     public function installments(): HasMany
     {
         return $this->hasMany(PaymentPlanInstallment::class)->orderBy('sequence');
+    }
+
+    /**
+     * Whether any money has been taken against this plan — a paid installment or a transaction
+     * pointing at one. Such a plan may be cancelled but never deleted: the payment records would
+     * lose the schedule they belong to.
+     */
+    public function hasCollectedInstallments(): bool
+    {
+        return $this->installments()
+            ->where(fn ($query) => $query
+                ->where('status', InstallmentStatus::Paid->value)
+                ->orWhereHas('transactions'))
+            ->exists();
     }
 
     /**

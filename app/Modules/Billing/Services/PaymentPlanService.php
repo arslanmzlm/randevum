@@ -191,4 +191,28 @@ class PaymentPlanService implements PaymentPlanCreatorContract
             ]);
         }
     }
+
+    /**
+     * Remove a plan created by mistake, along with its (uncollected) installments and status
+     * logs. The policy already refuses once anything has been collected; this re-checks so the
+     * rule holds even if the service is called from somewhere else.
+     */
+    public function delete(PaymentPlan $plan): void
+    {
+        if ($plan->hasCollectedInstallments()) {
+            throw ValidationException::withMessages([
+                'plan' => __('payment_plan.errors.delete_after_collection'),
+            ]);
+        }
+
+        DB::transaction(function () use ($plan): void {
+            foreach ($plan->installments as $installment) {
+                $installment->statusLogs()->delete();
+                $installment->delete();
+            }
+
+            $plan->statusLogs()->delete();
+            $plan->delete();
+        });
+    }
 }

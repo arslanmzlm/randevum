@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { router } from '@inertiajs/vue3';
-import { IconX } from '@tabler/icons-vue';
+import { IconTrash, IconX } from '@tabler/icons-vue';
 import { useConfirm } from 'primevue/useconfirm';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -8,7 +8,7 @@ import InstallmentStatusTag from '@/components/payment-plans/InstallmentStatusTa
 import { useCan } from '@/composables/useCan';
 import { useDateTime } from '@/composables/useDateTime';
 import { useMoney } from '@/composables/useMoney';
-import { cancel } from '@/routes/payment-plans';
+import { cancel, destroy } from '@/routes/payment-plans';
 import type { PatientPaymentPlan } from '@/types/payment-plan';
 import { paymentPlanStatusSeverity } from '@/utils/installmentStatus';
 
@@ -30,6 +30,33 @@ const statusSeverity = computed(() =>
 const canCancel = computed(
     () => props.plan.status === 'active' && can('paymentPlans.cancel'),
 );
+
+// A plan with money against it is cancelled, never deleted: the payment records would lose the
+// schedule they belong to. The server enforces the same rule.
+const hasCollected = computed(() =>
+    props.plan.installments.some(
+        (installment) => installment.status === 'paid',
+    ),
+);
+
+const canDelete = computed(
+    () => can('paymentPlans.delete') && !hasCollected.value,
+);
+
+function deletePlan(): void {
+    confirm.require({
+        header: t('common.confirm_title'),
+        message: t('payment_plan.delete_confirm_message'),
+        rejectProps: {
+            label: t('common.cancel'),
+            severity: 'secondary',
+            outlined: true,
+        },
+        acceptProps: { label: t('common.delete'), severity: 'danger' },
+        accept: () =>
+            router.delete(destroy(props.plan.id).url, { preserveScroll: true }),
+    });
+}
 
 function cancelPlan(): void {
     confirm.require({
@@ -100,6 +127,7 @@ function cancelPlan(): void {
                 </div>
                 <Button
                     v-if="canCancel"
+                    v-tooltip.top="t('payment_plan.cancel_action')"
                     type="button"
                     severity="danger"
                     text
@@ -108,6 +136,18 @@ function cancelPlan(): void {
                     @click="cancelPlan"
                 >
                     <IconX class="size-4" />
+                </Button>
+                <Button
+                    v-if="canDelete"
+                    v-tooltip.top="t('payment_plan.delete_action')"
+                    type="button"
+                    severity="danger"
+                    text
+                    rounded
+                    :aria-label="t('payment_plan.delete_action')"
+                    @click="deletePlan"
+                >
+                    <IconTrash class="size-4" />
                 </Button>
             </div>
         </div>

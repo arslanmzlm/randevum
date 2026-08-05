@@ -65,6 +65,7 @@ return [
         'reminder_sent' => 'Hatırlatma SMS\'i gönderildi.',
         'reminder_skipped' => 'Hatırlatma SMS\'i gönderilmedi (klinik için bu bildirim kapalı olabilir veya kota/telefon sorunu var).',
         'cancelled' => 'Taksit planı iptal edildi.',
+        'deleted' => 'Taksit planı silindi.',
     ],
 
     'sms_settings' => [

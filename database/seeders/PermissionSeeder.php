@@ -96,6 +96,7 @@ class PermissionSeeder extends Seeder
         'paymentPlans.create' => ['owner', 'manager', 'doctor', 'receptionist'],
         // Managerial, higher blast radius — not in the brief; narrow set like appointments.delete.
         'paymentPlans.cancel' => ['owner', 'manager'],
+        'paymentPlans.delete' => ['owner', 'manager'],
         // Manual "Hatırlat" — mirrors appointments.sendReminder.
         'paymentPlans.sendReminder' => ['owner', 'manager', 'receptionist'],
         // Installment collect reuses transactions.create (no dedicated permission).

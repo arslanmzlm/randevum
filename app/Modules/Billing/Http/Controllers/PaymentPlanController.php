@@ -131,6 +131,21 @@ class PaymentPlanController extends Controller
     /**
      * POST /payment-plans/{paymentPlan}/cancel
      */
+    /**
+     * DELETE /payment-plans/{paymentPlan} — for a plan entered by mistake. Blocked by the policy
+     * once any installment has been collected; cancel that one instead.
+     */
+    public function destroy(PaymentPlan $paymentPlan): RedirectResponse
+    {
+        $this->authorize('delete', $paymentPlan);
+
+        $this->service->delete($paymentPlan);
+
+        Toast::success(__('messages.payment_plan.deleted'));
+
+        return back();
+    }
+
     public function cancel(Request $request, PaymentPlan $paymentPlan): RedirectResponse
     {
         $this->authorize('cancel', $paymentPlan);

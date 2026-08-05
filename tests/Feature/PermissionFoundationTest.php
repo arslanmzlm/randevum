@@ -82,6 +82,7 @@ it('grants the owner role the full clinic + doctor + service + product + patient
             'paymentPlans.viewAny',
             'paymentPlans.create',
             'paymentPlans.cancel',
+            'paymentPlans.delete',
             'paymentPlans.sendReminder',
             'anamnesis.update',
         ]);
@@ -152,6 +153,7 @@ it('grants the manager role full management except self-create', function (): vo
             'paymentPlans.viewAny',
             'paymentPlans.create',
             'paymentPlans.cancel',
+            'paymentPlans.delete',
             'paymentPlans.sendReminder',
             'anamnesis.update',
         ]);
