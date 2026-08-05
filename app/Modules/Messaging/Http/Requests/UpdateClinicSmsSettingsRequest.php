@@ -130,7 +130,17 @@ class UpdateClinicSmsSettingsRequest extends FormRequest
         /** @var array<string, mixed> $raw */
         $raw = $this->validated()['settings'];
 
-        return array_map(fn ($v) => (bool) $v, $raw);
+        $settings = array_map(fn ($v) => (bool) $v, $raw);
+
+        // Non-togglable types (balance reminder) always send; a submitted `false` is ignored
+        // rather than rejected, so an older client cannot switch them off.
+        foreach (SmsType::clinicScopedCases() as $type) {
+            if (! $type->isTogglable() && array_key_exists($type->value, $settings)) {
+                $settings[$type->value] = true;
+            }
+        }
+
+        return $settings;
     }
 
     /**

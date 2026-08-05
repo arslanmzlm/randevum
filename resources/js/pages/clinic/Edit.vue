@@ -5,10 +5,11 @@ import {
     IconCalendarX,
     IconClock,
     IconMapPin,
+    IconMessage,
     IconPhone,
     IconPhoto,
 } from '@tabler/icons-vue';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import ClinicAddressFields from '@/components/clinic/ClinicAddressFields.vue';
 import ClinicAppointmentSettingsFields from '@/components/clinic/ClinicAppointmentSettingsFields.vue';
@@ -19,6 +20,7 @@ import ClinicSmsSettingsForm from '@/components/clinic/ClinicSmsSettingsForm.vue
 import { provideClinicForm } from '@/components/clinic/formContext';
 import ImageUploadField from '@/components/ImageUploadField.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import PillTabs from '@/components/PillTabs.vue';
 import SectionCard from '@/components/SectionCard.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { update } from '@/routes/clinic';
@@ -92,6 +94,49 @@ const activeTab = ref(
 
 // The first three tabs edit ONE clinic form, so the save row belongs to them; the SMS tab carries
 // its own form and its own submit.
+const tabs = computed(() => [
+    ...(props.canEditClinic
+        ? [
+              {
+                  id: 'clinic-tab-clinic',
+                  value: 'clinic',
+                  label: t('clinic.tabs.clinic'),
+                  icon: IconBuildingHospital,
+              },
+              {
+                  id: 'clinic-tab-contact',
+                  value: 'contact',
+                  label: t('clinic.tabs.contact'),
+                  icon: IconPhone,
+              },
+              {
+                  id: 'clinic-tab-appointments',
+                  value: 'appointments',
+                  label: t('clinic.tabs.appointments'),
+                  icon: IconCalendarX,
+              },
+          ]
+        : []),
+    ...(props.sms
+        ? [
+              {
+                  id: 'clinic-tab-sms',
+                  value: 'sms',
+                  label: t('clinic.tabs.sms'),
+                  icon: IconMessage,
+              },
+          ]
+        : []),
+]);
+
+// Keep the address bar on the tab being read, so a refresh or a shared link lands in the same
+// place. replaceState (not push) — tab switching is not navigation history.
+watch(activeTab, (tab) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', tab);
+    window.history.replaceState({}, '', url);
+});
+
 const showClinicSubmit = computed(
     () => props.canEditClinic && activeTab.value !== 'sms',
 );
@@ -111,136 +156,107 @@ function submit(): void {
             :breadcrumbs="[{ label: t('nav.clinic') }]"
         />
 
-        <Tabs v-model:value="activeTab">
-            <TabList>
-                <Tab v-if="canEditClinic" id="clinic-tab-clinic" value="clinic">
-                    {{ t('clinic.tabs.clinic') }}
-                </Tab>
-                <Tab
-                    v-if="canEditClinic"
-                    id="clinic-tab-contact"
-                    value="contact"
-                >
-                    {{ t('clinic.tabs.contact') }}
-                </Tab>
-                <Tab
-                    v-if="canEditClinic"
-                    id="clinic-tab-appointments"
-                    value="appointments"
-                >
-                    {{ t('clinic.tabs.appointments') }}
-                </Tab>
-                <Tab v-if="sms" id="clinic-tab-sms" value="sms">
-                    {{ t('clinic.tabs.sms') }}
-                </Tab>
-            </TabList>
-
-            <TabPanels>
-                <TabPanel v-if="canEditClinic" value="clinic">
-                    <div class="flex flex-col gap-6">
-                        <SectionCard
-                            :icon="IconBuildingHospital"
-                            :title="t('clinic.sections.info')"
-                        >
-                            <ClinicInfoFields :vertical-label="verticalLabel" />
-                        </SectionCard>
-
-                        <SectionCard
-                            :icon="IconClock"
-                            :title="t('clinic.sections.hours')"
-                        >
-                            <ClinicHoursFields />
-                        </SectionCard>
-
-                        <SectionCard
-                            :icon="IconPhoto"
-                            :title="t('clinic.sections.media')"
-                        >
-                            <div class="grid grid-cols-1 gap-6 sm:grid-cols-3">
-                                <ImageUploadField
-                                    :url="clinic.logo_url"
-                                    :label="t('clinic.media.logo')"
-                                    :hint="t('clinic.media.logo_hint')"
-                                    :upload-url="updateMedia('logo').url"
-                                    :remove-url="removeMedia('logo').url"
-                                    :remove-confirm="
-                                        t('clinic.media.remove_confirm')
-                                    "
-                                    aspect-class="aspect-square"
-                                />
-                                <ImageUploadField
-                                    :url="clinic.cover_url"
-                                    :label="t('clinic.media.cover')"
-                                    :hint="t('clinic.media.cover_hint')"
-                                    :upload-url="updateMedia('cover').url"
-                                    :remove-url="removeMedia('cover').url"
-                                    :remove-confirm="
-                                        t('clinic.media.remove_confirm')
-                                    "
-                                    aspect-class="aspect-video"
-                                />
-                                <ImageUploadField
-                                    :url="clinic.cover_mobile_url"
-                                    :label="t('clinic.media.cover_mobile')"
-                                    :hint="t('clinic.media.cover_mobile_hint')"
-                                    :upload-url="
-                                        updateMedia('cover_mobile').url
-                                    "
-                                    :remove-url="
-                                        removeMedia('cover_mobile').url
-                                    "
-                                    :remove-confirm="
-                                        t('clinic.media.remove_confirm')
-                                    "
-                                    aspect-class="aspect-square"
-                                />
-                            </div>
-                        </SectionCard>
-                    </div>
-                </TabPanel>
-
-                <TabPanel v-if="canEditClinic" value="contact">
-                    <div class="flex flex-col gap-6">
-                        <SectionCard
-                            :icon="IconPhone"
-                            :title="t('clinic.sections.contact')"
-                        >
-                            <ClinicContactFields />
-                        </SectionCard>
-
-                        <SectionCard
-                            :icon="IconMapPin"
-                            :title="t('clinic.sections.address')"
-                        >
-                            <ClinicAddressFields
-                                :countries="countries"
-                                :cities="cities"
-                            />
-                        </SectionCard>
-                    </div>
-                </TabPanel>
-
-                <TabPanel v-if="canEditClinic" value="appointments">
+        <PillTabs v-model="activeTab" :tabs="tabs">
+            <TabPanel v-if="canEditClinic" value="clinic">
+                <div class="flex flex-col gap-6">
                     <SectionCard
-                        :icon="IconCalendarX"
-                        :title="t('clinic.sections.appointment_settings')"
+                        :icon="IconBuildingHospital"
+                        :title="t('clinic.sections.info')"
                     >
-                        <ClinicAppointmentSettingsFields />
+                        <ClinicInfoFields :vertical-label="verticalLabel" />
                     </SectionCard>
-                </TabPanel>
 
-                <TabPanel v-if="sms" value="sms">
-                    <ClinicSmsSettingsForm
-                        :settings="sms.settings"
-                        :templates="sms.templates"
-                        :defaults="sms.defaults"
-                        :variables="sms.variables"
-                        :sample="sms.sample"
-                        :quota="sms.quota"
-                    />
-                </TabPanel>
-            </TabPanels>
-        </Tabs>
+                    <SectionCard
+                        :icon="IconClock"
+                        :title="t('clinic.sections.hours')"
+                    >
+                        <ClinicHoursFields />
+                    </SectionCard>
+
+                    <SectionCard
+                        :icon="IconPhoto"
+                        :title="t('clinic.sections.media')"
+                    >
+                        <div class="grid grid-cols-1 gap-6 sm:grid-cols-3">
+                            <ImageUploadField
+                                :url="clinic.logo_url"
+                                :label="t('clinic.media.logo')"
+                                :hint="t('clinic.media.logo_hint')"
+                                :upload-url="updateMedia('logo').url"
+                                :remove-url="removeMedia('logo').url"
+                                :remove-confirm="
+                                    t('clinic.media.remove_confirm')
+                                "
+                                aspect-class="aspect-square"
+                            />
+                            <ImageUploadField
+                                :url="clinic.cover_url"
+                                :label="t('clinic.media.cover')"
+                                :hint="t('clinic.media.cover_hint')"
+                                :upload-url="updateMedia('cover').url"
+                                :remove-url="removeMedia('cover').url"
+                                :remove-confirm="
+                                    t('clinic.media.remove_confirm')
+                                "
+                                aspect-class="aspect-video"
+                            />
+                            <ImageUploadField
+                                :url="clinic.cover_mobile_url"
+                                :label="t('clinic.media.cover_mobile')"
+                                :hint="t('clinic.media.cover_mobile_hint')"
+                                :upload-url="updateMedia('cover_mobile').url"
+                                :remove-url="removeMedia('cover_mobile').url"
+                                :remove-confirm="
+                                    t('clinic.media.remove_confirm')
+                                "
+                                aspect-class="aspect-square"
+                            />
+                        </div>
+                    </SectionCard>
+                </div>
+            </TabPanel>
+
+            <TabPanel v-if="canEditClinic" value="contact">
+                <div class="flex flex-col gap-6">
+                    <SectionCard
+                        :icon="IconPhone"
+                        :title="t('clinic.sections.contact')"
+                    >
+                        <ClinicContactFields />
+                    </SectionCard>
+
+                    <SectionCard
+                        :icon="IconMapPin"
+                        :title="t('clinic.sections.address')"
+                    >
+                        <ClinicAddressFields
+                            :countries="countries"
+                            :cities="cities"
+                        />
+                    </SectionCard>
+                </div>
+            </TabPanel>
+
+            <TabPanel v-if="canEditClinic" value="appointments">
+                <SectionCard
+                    :icon="IconCalendarX"
+                    :title="t('clinic.sections.appointment_settings')"
+                >
+                    <ClinicAppointmentSettingsFields />
+                </SectionCard>
+            </TabPanel>
+
+            <TabPanel v-if="sms" value="sms">
+                <ClinicSmsSettingsForm
+                    :settings="sms.settings"
+                    :templates="sms.templates"
+                    :defaults="sms.defaults"
+                    :variables="sms.variables"
+                    :sample="sms.sample"
+                    :quota="sms.quota"
+                />
+            </TabPanel>
+        </PillTabs>
 
         <!-- One form across the three clinic tabs: fields can be edited on any of them and saved
              once. The SMS tab brings its own form and submit. -->

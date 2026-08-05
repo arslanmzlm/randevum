@@ -4,6 +4,7 @@ import { IconBell, IconCalendarDollar, IconMessage } from '@tabler/icons-vue';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import SectionCard from '@/components/SectionCard.vue';
+import SettingRow from '@/components/SettingRow.vue';
 import SmsQuotaPanel from '@/components/sms-settings/SmsQuotaPanel.vue';
 import SmsTemplateField from '@/components/sms-settings/SmsTemplateField.vue';
 import SmsTypeToggleRow from '@/components/sms-settings/SmsTypeToggleRow.vue';
@@ -117,12 +118,19 @@ function submit(): void {
                 <p class="-mt-2 mb-4 text-sm text-surface-500">
                     {{ t('sms_settings.card.system.description') }}
                 </p>
-                <SmsTypeToggleRow
-                    v-model="form.settings.balance_reminder"
+                <!-- Not togglable: an operational notice to the clinic itself, so the row states
+                     the fact instead of offering a switch that always snaps back on. -->
+                <SettingRow
                     :label="t('sms_settings.type.balance_reminder.label')"
-                    :hint="t('sms_settings.type.balance_reminder.hint')"
-                    :disabled="!canUpdate"
-                />
+                    :description="t('sms_settings.type.balance_reminder.hint')"
+                >
+                    <Tag
+                        severity="success"
+                        :value="
+                            t('sms_settings.type.balance_reminder.always_on')
+                        "
+                    />
+                </SettingRow>
             </SectionCard>
 
             <SectionCard

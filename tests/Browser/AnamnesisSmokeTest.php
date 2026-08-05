@@ -57,6 +57,8 @@ it('renders the patient show page with the Anamnesis section and no JS errors', 
         ->assertNoJavascriptErrors()
         // Anamnesis section title + patient name (page body, not shell/nav).
         ->assertSee('Anamnez')
+        // The form (and its PDF action) live on their own tab; the summary tab only reports.
+        ->click('#patient-tab-anamnesis')
         ->assertSee(trim($patient->first_name.' '.$patient->last_name))
         // The PDF download action's label — in-body, part of SectionCard's #actions slot.
         ->assertSee('Anamnez (PDF)')

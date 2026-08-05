@@ -404,6 +404,8 @@ export const tr = {
         clinic_form_title: 'Anamnez',
         download_pdf: 'Anamnez (PDF)',
         not_filled: 'Henüz doldurulmadı',
+        edit: 'Anamnezi düzenle',
+        fill: 'Anamnezi doldur',
         expand: 'Anamnezi aç',
         collapse: 'Anamnezi kapat',
         save: 'Kaydet',
@@ -608,6 +610,7 @@ export const tr = {
         tabs: {
             summary: 'Özet',
             clinical: 'Klinik',
+            anamnesis: 'Anamnez',
             finance: 'Finans',
             messages: 'İletişim',
         },
@@ -1426,7 +1429,8 @@ export const tr = {
             },
             balance_reminder: {
                 label: 'Bakiye hatırlatma',
-                hint: 'Ödenmemiş bakiyesi olan hastalara, kalan tutarı hatırlatan otomatik bir SMS gönderilir. Bu mesajın metni özelleştirilemez.',
+                hint: "Ödenmemiş bakiyesi olan hastalar için kliniğe bilgilendirme SMS'i gönderilir. Bu bildirim her zaman açıktır ve metni özelleştirilemez.",
+                always_on: 'Her zaman açık',
             },
             installment_due_7d: {
                 label: 'Taksit hatırlatma (7 gün önce)',

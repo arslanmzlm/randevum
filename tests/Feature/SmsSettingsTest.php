@@ -634,3 +634,38 @@ it('balance_reminder has no template path — PUT with only settings (no templat
 
     expect($row->template)->toBeNull();
 });
+
+// ---------------------------------------------------------------------------
+// Balance reminder — an operational notice to the clinic, never switchable off
+// ---------------------------------------------------------------------------
+
+it('keeps balance_reminder enabled even when the payload asks to disable it', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    smsRole($owner, 'owner', $clinic->id);
+
+    $payload = [];
+    foreach (SmsType::clinicScopedCases() as $type) {
+        $payload[$type->value] = false;
+    }
+
+    $this->actingAs($owner)
+        ->put(route('clinic.sms-settings.update'), ['settings' => $payload])
+        ->assertRedirect();
+
+    $this->actingAs($owner)
+        ->get(route('clinic.edit'))
+        ->assertInertia(fn ($page) => $page
+            ->where('sms.settings.balance_reminder', true)
+            ->where('sms.settings.reminder_24h', false)
+        );
+});
+
+it('marks balance_reminder as the only clinic-scoped type that cannot be toggled', function (): void {
+    $notTogglable = array_values(array_filter(
+        SmsType::clinicScopedCases(),
+        fn (SmsType $type) => ! $type->isTogglable(),
+    ));
+
+    expect($notTogglable)->toBe([SmsType::BalanceReminder]);
+});

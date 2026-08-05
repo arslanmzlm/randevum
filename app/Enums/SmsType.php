@@ -34,6 +34,15 @@ enum SmsType: string
     }
 
     /**
+     * Returns true for the types a clinic may switch off. BalanceReminder is an operational
+     * notice to the clinic itself, not patient marketing, so it always sends.
+     */
+    public function isTogglable(): bool
+    {
+        return $this->isClinicScoped() && $this !== self::BalanceReminder;
+    }
+
+    /**
      * Returns true for the types a clinic may override with a custom template.
      * BalanceReminder stays a fixed built-in message; OTP is platform-level.
      */

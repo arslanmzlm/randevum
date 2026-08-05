@@ -3,13 +3,18 @@ import { Head, router, usePage } from '@inertiajs/vue3';
 import {
     IconArrowLeft,
     IconCash,
+    IconHeartbeat,
+    IconMessage,
     IconPencil,
+    IconStethoscope,
     IconTrash,
+    IconUser,
 } from '@tabler/icons-vue';
 import { useConfirm } from 'primevue/useconfirm';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import AnamnesisSection from '@/components/anamnesis/AnamnesisSection.vue';
+import AnamnesisSummaryCard from '@/components/anamnesis/AnamnesisSummaryCard.vue';
 import ButtonLink from '@/components/ButtonLink.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PatientAppointmentsSection from '@/components/patients/PatientAppointmentsSection.vue';
@@ -22,6 +27,7 @@ import PatientTagsSection from '@/components/patients/PatientTagsSection.vue';
 import PatientTreatmentsList from '@/components/patients/PatientTreatmentsList.vue';
 import UngroupedTreatmentsSection from '@/components/patients/UngroupedTreatmentsSection.vue';
 import RecordPaymentDialog from '@/components/payments/RecordPaymentDialog.vue';
+import PillTabs from '@/components/PillTabs.vue';
 import { useCan } from '@/composables/useCan';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { destroy, edit, index } from '@/routes/patients';
@@ -32,6 +38,7 @@ defineOptions({ layout: AppLayout });
 const props = defineProps<PatientShowProps>();
 
 const { t } = useI18n();
+
 const confirm = useConfirm();
 const { can } = useCan();
 
@@ -44,6 +51,57 @@ const canRecordPayment = computed(() => can('transactions.create'));
 const isPodiatry = computed(
     () => page.props.activeClinic?.vertical.slug === 'podiatry',
 );
+
+const tabs = computed(() => [
+    {
+        id: 'patient-tab-summary',
+        value: 'summary',
+        label: t('patient.tabs.summary'),
+        icon: IconUser,
+    },
+    {
+        id: 'patient-tab-clinical',
+        value: 'clinical',
+        label: t('patient.tabs.clinical'),
+        icon: IconStethoscope,
+    },
+    ...(isPodiatry.value
+        ? [
+              {
+                  id: 'patient-tab-anamnesis',
+                  value: 'anamnesis',
+                  label: t('patient.tabs.anamnesis'),
+                  icon: IconHeartbeat,
+              },
+          ]
+        : []),
+    {
+        id: 'patient-tab-finance',
+        value: 'finance',
+        label: t('patient.tabs.finance'),
+        icon: IconCash,
+    },
+    {
+        id: 'patient-tab-messages',
+        value: 'messages',
+        label: t('patient.tabs.messages'),
+        icon: IconMessage,
+    },
+]);
+
+const validTabs = tabs.value.map((tab) => tab.value);
+const requestedTab = new URLSearchParams(window.location.search).get('tab');
+const activeTab = ref(
+    requestedTab && validTabs.includes(requestedTab) ? requestedTab : 'summary',
+);
+
+// Keep the address bar on the tab being read; replaceState because switching tabs is not
+// navigation history.
+watch(activeTab, (tab) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', tab);
+    window.history.replaceState({}, '', url);
+});
 
 const showPaymentDialog = ref(false);
 
@@ -121,96 +179,82 @@ function removePatient(): void {
             </template>
         </PageHeader>
 
-        <!-- Four tabs instead of one long stack: the page carried nine sections and the reader
-             had to scroll past the clinical history to reach the balance. -->
-        <Tabs value="summary">
-            <TabList>
-                <!-- Stable ids: the tab labels collide with sidebar group names, so tests (and
-                     anything else scripting the page) need an unambiguous handle. -->
-                <Tab id="patient-tab-summary" value="summary">
-                    {{ t('patient.tabs.summary') }}
-                </Tab>
-                <Tab id="patient-tab-clinical" value="clinical">
-                    {{ t('patient.tabs.clinical') }}
-                </Tab>
-                <Tab id="patient-tab-finance" value="finance">
-                    {{ t('patient.tabs.finance') }}
-                </Tab>
-                <Tab id="patient-tab-messages" value="messages">
-                    {{ t('patient.tabs.messages') }}
-                </Tab>
-            </TabList>
-
-            <TabPanels>
-                <TabPanel value="summary">
-                    <div class="flex flex-col gap-6">
-                        <div
-                            class="grid grid-cols-1 items-start gap-6 lg:grid-cols-3"
-                        >
-                            <PatientProfileCard
-                                class="lg:col-span-2"
-                                :patient="patient"
-                            />
-                            <PatientAppointmentsSection
-                                :appointments="appointments"
-                                only="upcoming"
-                            />
-                        </div>
-
-                        <PatientTagsSection
+        <!-- Tabs instead of one long stack: the page carried nine sections and the reader had to
+             scroll past the clinical history to reach the balance. -->
+        <PillTabs v-model="activeTab" :tabs="tabs">
+            <TabPanel value="summary">
+                <div class="flex flex-col gap-6">
+                    <div
+                        class="grid grid-cols-1 items-start gap-6 lg:grid-cols-3"
+                    >
+                        <PatientProfileCard
+                            class="lg:col-span-2"
                             :patient="patient"
-                            :all-tags="allTags"
                         />
-
-                        <AnamnesisSection
-                            v-if="isPodiatry"
-                            :patient="patient"
-                            :anamnesis="anamnesis"
-                        />
-                    </div>
-                </TabPanel>
-
-                <TabPanel value="clinical">
-                    <div class="flex flex-col gap-6">
-                        <PatientTreatmentsList :treatments="treatments" />
-
-                        <PatientCasesSection :cases="cases" />
-
-                        <UngroupedTreatmentsSection
-                            :treatments="treatments"
-                            :cases="cases"
-                            :patient-id="patient.id"
-                            :own-doctor-id="ownDoctorId"
-                        />
-
                         <PatientAppointmentsSection
                             :appointments="appointments"
-                            only="past"
+                            only="upcoming"
                         />
                     </div>
-                </TabPanel>
 
-                <TabPanel value="finance">
-                    <div class="flex flex-col gap-6">
-                        <PatientBalanceSection
-                            :balance="balance"
-                            :transactions="transactions"
-                        />
+                    <PatientTagsSection
+                        :patient="patient"
+                        :all-tags="allTags"
+                    />
 
-                        <PatientPaymentPlansSection
-                            v-if="paymentPlans"
-                            :patient-id="patient.id"
-                            :plans="paymentPlans"
-                            :treatments="treatments"
-                        />
-                    </div>
-                </TabPanel>
+                    <!-- Read-only here; filling and editing live on the Anamnez tab. -->
+                    <AnamnesisSummaryCard
+                        v-if="isPodiatry"
+                        :anamnesis="anamnesis"
+                        @edit="activeTab = 'anamnesis'"
+                    />
+                </div>
+            </TabPanel>
 
-                <TabPanel value="messages">
-                    <PatientSmsLogList :logs="smsLogs" />
-                </TabPanel>
-            </TabPanels>
-        </Tabs>
+            <TabPanel value="clinical">
+                <div class="flex flex-col gap-6">
+                    <PatientTreatmentsList :treatments="treatments" />
+
+                    <PatientCasesSection :cases="cases" />
+
+                    <UngroupedTreatmentsSection
+                        :treatments="treatments"
+                        :cases="cases"
+                        :patient-id="patient.id"
+                        :own-doctor-id="ownDoctorId"
+                    />
+
+                    <PatientAppointmentsSection
+                        :appointments="appointments"
+                        only="past"
+                    />
+                </div>
+            </TabPanel>
+
+            <TabPanel v-if="isPodiatry" value="anamnesis">
+                <AnamnesisSection :patient="patient" :anamnesis="anamnesis" />
+            </TabPanel>
+
+            <TabPanel value="finance">
+                <div class="flex flex-col gap-6">
+                    <PatientBalanceSection
+                        :balance="balance"
+                        :transactions="transactions"
+                    />
+
+                    <PatientPaymentPlansSection
+                        v-if="paymentPlans"
+                        :patient-id="patient.id"
+                        :plans="paymentPlans"
+                        :treatments="treatments"
+                    />
+                </div>
+            </TabPanel>
+
+            <TabPanel value="messages">
+                <PatientSmsLogList :logs="smsLogs" />
+            </TabPanel>
+        </PillTabs>
 
         <RecordPaymentDialog
             v-if="canRecordPayment"
