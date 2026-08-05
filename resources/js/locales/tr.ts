@@ -914,6 +914,10 @@ export const tr = {
             count: 'Randevu sayısı',
             count_hint: '1 ile 12 arasında.',
             interval: 'Aralık',
+            interval_custom: 'Özel (gün)',
+            interval_days: 'Kaç günde bir',
+            interval_days_hint: 'Seanslar arasındaki gün sayısı.',
+            day_suffix: 'gün',
             seed_hint:
                 'Tüm satırlara uygulanır; satırlarda ayrıca değiştirebilirsiniz.',
             regenerated_hint:
@@ -1037,6 +1041,10 @@ export const tr = {
             count: 'Seans sayısı',
             count_hint: '2 ile 12 arasında.',
             interval: 'Aralık',
+            interval_custom: 'Özel (gün)',
+            interval_days: 'Kaç günde bir',
+            interval_days_hint: 'Seanslar arasındaki gün sayısı.',
+            day_suffix: 'gün',
             interval_weekly: 'Haftalık',
             interval_biweekly: 'İki haftada bir',
             interval_monthly: 'Aylık',

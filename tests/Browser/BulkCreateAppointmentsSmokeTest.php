@@ -40,6 +40,8 @@ it('renders the bulk appointment create page with the occurrence generator and n
         ->assertSee('Randevu Üreteci')
         // Generator field label, always rendered inside the generator card.
         ->assertSee('Randevu sayısı')
+        // Count + interval sit in the details card; the free-day field appears with "Özel (gün)".
+        ->assertSee('Aralık')
         // Submit button label rendered inside the page body.
         ->assertSee('Randevuları Oluştur')
         // Guard against the silent-blank-body false green: <main> must be non-empty.

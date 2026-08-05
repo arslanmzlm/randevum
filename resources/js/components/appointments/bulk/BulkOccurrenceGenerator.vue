@@ -1,19 +1,20 @@
 <script setup lang="ts">
 import { IconCalendarPlus, IconPlus } from '@tabler/icons-vue';
-import { computed, reactive, watch } from 'vue';
+import { computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import AppointmentTypeSelect from '@/components/AppointmentTypeSelect.vue';
 import FormField from '@/components/FormField.vue';
-import type { FollowUpInterval } from '@/types/treatment';
 import { clampTime } from '@/utils/appointmentTime';
 import { buildOccurrences, offsetDate } from '@/utils/followUpOccurrences';
 import BulkOccurrenceRow from './BulkOccurrenceRow.vue';
 import { useBulkAppointmentForm } from './formContext';
+import { useBulkGenerator } from './generatorContext';
 
 const props = defineProps<{
     doctorId: number | null;
     typeOptions: Array<{ label: string; value: number; color: string }>;
-    defaultSlotDuration: number;
+    /** Resolved from the picked service/type by the page (service → type → clinic default). */
+    seedDuration: number;
 }>();
 
 const { t } = useI18n();
@@ -24,29 +25,17 @@ const minDate = new Date();
 
 const MAX_OCCURRENCES = 12;
 
-// Generator params are client-only (they shape the row list but aren't submitted), so they live
-// here rather than on the form — only `occurrences` is posted.
-const gen = reactive<{
-    date: Date | null;
-    time: string;
-    count: number;
-    interval: FollowUpInterval;
-    duration_minutes: number | null;
-    appointment_type_id: number | null;
-}>({
-    date: null,
-    time: '',
-    count: 4,
-    interval: 'weekly',
-    duration_minutes: props.defaultSlotDuration,
-    appointment_type_id: null,
-});
+// Count and interval live in the details card above; the page owns the shared state.
+const gen = useBulkGenerator();
 
-const intervalOptions: Array<{ value: FollowUpInterval; label: string }> = [
-    { value: 'weekly', label: t('treatment.follow_up.interval_weekly') },
-    { value: 'biweekly', label: t('treatment.follow_up.interval_biweekly') },
-    { value: 'monthly', label: t('treatment.follow_up.interval_monthly') },
-];
+// Picking a service (or type) sets the slot length here exactly as it does on the single
+// appointment screen; a per-row edit afterwards is still the explicit override.
+watch(
+    () => props.seedDuration,
+    (duration) => {
+        gen.duration_minutes = duration;
+    },
+);
 
 function onTimeBlur(): void {
     gen.time = clampTime(gen.time);
@@ -64,13 +53,14 @@ const occurrencesError = computed<string | undefined>(() =>
 // Any core generator-param change rebuilds the whole list from the pattern — manual row edits are
 // intentionally discarded (decided: keep simple, mirrors the treatment follow-up generator).
 watch(
-    () => [gen.date, gen.time, gen.count, gen.interval],
+    () => [gen.date, gen.time, gen.count, gen.interval, gen.interval_days],
     () => {
         form.occurrences = buildOccurrences({
             startDate: gen.date,
             time: gen.time,
             count: gen.count,
             interval: gen.interval,
+            intervalDays: gen.interval_days,
             seedDuration: gen.duration_minutes,
             seedTypeId: gen.appointment_type_id,
         });
@@ -110,7 +100,9 @@ function addRow(): void {
     const base = last?.date ?? gen.date;
 
     form.occurrences.push({
-        date: base ? offsetDate(base, gen.interval, 1) : null,
+        date: base
+            ? offsetDate(base, gen.interval, 1, gen.interval_days)
+            : null,
         time: last?.time || gen.time,
         duration_minutes: last?.duration_minutes ?? gen.duration_minutes,
         appointment_type_id:
@@ -157,30 +149,6 @@ function removeOccurrence(index: number): void {
                     mask="99:99"
                     fluid
                     @blur="onTimeBlur"
-                />
-            </FormField>
-
-            <FormField
-                :label="t('appointment_bulk.generator.count')"
-                :hint="t('appointment_bulk.generator.count_hint')"
-            >
-                <InputNumber
-                    v-model="gen.count"
-                    :min="1"
-                    :max="12"
-                    show-buttons
-                    :use-grouping="false"
-                    fluid
-                />
-            </FormField>
-
-            <FormField :label="t('appointment_bulk.generator.interval')">
-                <Select
-                    v-model="gen.interval"
-                    :options="intervalOptions"
-                    option-label="label"
-                    option-value="value"
-                    fluid
                 />
             </FormField>
 

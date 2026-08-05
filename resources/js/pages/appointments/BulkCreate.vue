@@ -2,7 +2,7 @@
 import { Head, useForm, useHttp } from '@inertiajs/vue3';
 import { IconCircleCheck, IconClipboardList } from '@tabler/icons-vue';
 import { useConfirm } from 'primevue/useconfirm';
-import { computed } from 'vue';
+import { computed, reactive } from 'vue';
 import { useI18n } from 'vue-i18n';
 import {
     bulkPrecheck,
@@ -11,6 +11,11 @@ import {
 import AppointmentTopCard from '@/components/appointments/AppointmentTopCard.vue';
 import BulkOccurrenceGenerator from '@/components/appointments/bulk/BulkOccurrenceGenerator.vue';
 import { provideBulkAppointmentForm } from '@/components/appointments/bulk/formContext';
+import {
+    provideBulkGenerator
+    
+} from '@/components/appointments/bulk/generatorContext';
+import type {BulkGeneratorState} from '@/components/appointments/bulk/generatorContext';
 import { providePatientForm } from '@/components/appointments/patientFormContext';
 import PatientPicker from '@/components/appointments/PatientPicker.vue';
 import FormField from '@/components/FormField.vue';
@@ -44,6 +49,40 @@ const doctorOptions = computed(() =>
 
 // Show the slot length so staff know which duration a service sets; a service with no duration
 // falls back to the clinic default, so show the bare name (no empty "· dk").
+// Generator params live here so the details card can host count/interval while the generator
+// below owns the start slot and the seeds.
+const generator = reactive<BulkGeneratorState>({
+    date: null,
+    time: '',
+    count: 4,
+    interval: 'weekly',
+    interval_days: 7,
+    duration_minutes: props.defaultSlotDuration,
+    appointment_type_id: null,
+});
+
+provideBulkGenerator(generator);
+
+const intervalOptions = computed(() => [
+    { value: 'weekly', label: t('treatment.follow_up.interval_weekly') },
+    { value: 'biweekly', label: t('treatment.follow_up.interval_biweekly') },
+    { value: 'monthly', label: t('treatment.follow_up.interval_monthly') },
+    { value: 'custom', label: t('appointment_bulk.generator.interval_custom') },
+]);
+
+// Same priority the single-appointment screen uses: service duration → type default → clinic
+// default. The generator applies it to the seed and to every row.
+const seedDuration = computed(() => {
+    const serviceDuration = props.services.find(
+        (service) => service.id === form.service_id,
+    )?.duration_minutes;
+    const typeDuration = props.appointmentTypes.find(
+        (type) => type.id === generator.appointment_type_id,
+    )?.default_duration_minutes;
+
+    return serviceDuration ?? typeDuration ?? props.defaultSlotDuration;
+});
+
 const serviceOptions = computed(() =>
     props.services.map((service) => ({
         label: service.duration_minutes
@@ -242,6 +281,65 @@ async function submit(): Promise<void> {
                                 fluid
                             />
                         </FormField>
+
+                        <!-- Count + interval belong with the other "what am I booking" choices;
+                             the generator below only owns the start slot and the seeds. -->
+                        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                            <FormField
+                                :label="t('appointment_bulk.generator.count')"
+                                :hint="
+                                    t('appointment_bulk.generator.count_hint')
+                                "
+                            >
+                                <InputNumber
+                                    v-model="generator.count"
+                                    :min="1"
+                                    :max="12"
+                                    show-buttons
+                                    :use-grouping="false"
+                                    fluid
+                                />
+                            </FormField>
+
+                            <FormField
+                                :label="
+                                    t('appointment_bulk.generator.interval')
+                                "
+                            >
+                                <Select
+                                    v-model="generator.interval"
+                                    :options="intervalOptions"
+                                    option-label="label"
+                                    option-value="value"
+                                    fluid
+                                />
+                            </FormField>
+
+                            <FormField
+                                v-if="generator.interval === 'custom'"
+                                :label="
+                                    t(
+                                        'appointment_bulk.generator.interval_days',
+                                    )
+                                "
+                                :hint="
+                                    t(
+                                        'appointment_bulk.generator.interval_days_hint',
+                                    )
+                                "
+                                class="sm:col-span-2"
+                            >
+                                <InputNumber
+                                    v-model="generator.interval_days"
+                                    :min="1"
+                                    :max="365"
+                                    show-buttons
+                                    :use-grouping="false"
+                                    :suffix="` ${t('appointment_bulk.generator.day_suffix')}`"
+                                    fluid
+                                />
+                            </FormField>
+                        </div>
                     </div>
                 </div>
             </AppointmentTopCard>
@@ -250,7 +348,7 @@ async function submit(): Promise<void> {
                 <BulkOccurrenceGenerator
                     :doctor-id="form.doctor_id"
                     :type-options="typeOptions"
-                    :default-slot-duration="defaultSlotDuration"
+                    :seed-duration="seedDuration"
                 />
             </SectionCard>
 

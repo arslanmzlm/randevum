@@ -1,7 +1,7 @@
 // Pure occurrence-pattern math shared by the treatment follow-up package generator and the
 // standalone bulk-appointment generator, so the "start + count + interval → rows" logic lives in
 // one place. Kept free of Vue/form state — callers own the reactive list.
-import { addMonths, addWeeks } from 'date-fns';
+import { addDays, addMonths, addWeeks } from 'date-fns';
 import type { FollowUpInterval } from '@/types/treatment';
 import { combineDateTime } from '@/utils/appointmentTime';
 
@@ -18,6 +18,7 @@ export function offsetDate(
     base: Date,
     interval: FollowUpInterval,
     step: number,
+    intervalDays = 7,
 ): Date {
     switch (interval) {
         case 'weekly':
@@ -26,6 +27,8 @@ export function offsetDate(
             return addWeeks(base, step * 2);
         case 'monthly':
             return addMonths(base, step);
+        case 'custom':
+            return addDays(base, step * Math.max(1, intervalDays));
     }
 }
 
@@ -39,11 +42,20 @@ export function buildOccurrences(params: {
     time: string;
     count: number;
     interval: FollowUpInterval;
+    /** Spacing in days when `interval` is 'custom'. */
+    intervalDays?: number;
     seedDuration: number | null;
     seedTypeId: number | null;
 }): OccurrenceDraft[] {
-    const { startDate, time, count, interval, seedDuration, seedTypeId } =
-        params;
+    const {
+        startDate,
+        time,
+        count,
+        interval,
+        intervalDays,
+        seedDuration,
+        seedTypeId,
+    } = params;
 
     if (!startDate || !combineDateTime(startDate, time)) {
         return [];
@@ -54,7 +66,7 @@ export function buildOccurrences(params: {
 
     for (let i = 0; i < clamped; i++) {
         rows.push({
-            date: offsetDate(startDate, interval, i),
+            date: offsetDate(startDate, interval, i, intervalDays),
             time,
             duration_minutes: seedDuration,
             appointment_type_id: seedTypeId,

@@ -115,7 +115,8 @@ export type PaymentRowForm = {
     amount: number | null;
 };
 export type FollowUpMode = 'none' | 'single' | 'package';
-export type FollowUpInterval = 'weekly' | 'biweekly' | 'monthly';
+/** 'custom' spaces occurrences by a free day count (the generator's `interval_days`). */
+export type FollowUpInterval = 'weekly' | 'biweekly' | 'monthly' | 'custom';
 
 /** One generated/editable occurrence row in package mode (clinic-local date + "HH:mm" time).
  *  Each row carries its own type and duration so a package can mix e.g. kontrol + muayene. */
