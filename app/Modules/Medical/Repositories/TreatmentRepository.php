@@ -5,7 +5,9 @@ namespace App\Modules\Medical\Repositories;
 use App\Enums\TreatmentStatus;
 use App\Models\Patient;
 use App\Models\Treatment;
+use App\Support\FilterHelper;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class TreatmentRepository
 {
@@ -15,6 +17,41 @@ class TreatmentRepository
     public function create(array $data): Treatment
     {
         return Treatment::create($data);
+    }
+
+    /**
+     * Server-side paginated list of treatments for the active clinic, applying
+     * request-driven search/filter/sort via FilterHelper.
+     *
+     * ClinicScope auto-isolates the tenant — no explicit clinic_id filter needed.
+     *
+     * @param  list<int>|null  $doctorIds  null = all doctors; non-null = constrain to these ids
+     * @return LengthAwarePaginator<Treatment>
+     */
+    public function paginateForActiveClinic(?array $doctorIds, string $timezone): LengthAwarePaginator
+    {
+        $query = Treatment::query()
+            ->with([
+                // withTrashed(): a soft-deleted patient/doctor must still resolve here — the
+                // treatment row outlives them and the list resource needs a name, not a null.
+                'patient' => fn ($q) => $q->withTrashed()->select('id', 'first_name', 'last_name'),
+                'doctor' => fn ($q) => $q->withTrashed()->with('user'),
+                'serviceLines.service',
+            ])
+            ->when($doctorIds !== null, fn ($q) => $q->whereIn('doctor_id', $doctorIds));
+
+        $helper = FilterHelper::for($query)
+            ->searchRelation('patient', ['first_name', 'last_name'], 'first_name', 'last_name', 'phone')
+            ->enumMultiple(['status' => TreatmentStatus::class])
+            ->multiple('doctor_id')
+            ->multipleRelation('serviceLines', 'service_id')
+            ->dateRange('created_at', 'start_date', 'end_date', $timezone);
+
+        request()->filled('sort')
+            ? $helper->sort('created_at', 'completed_at', 'total_amount', 'status')
+            : $query->orderByDesc('created_at');
+
+        return $helper->paginate();
     }
 
     /**

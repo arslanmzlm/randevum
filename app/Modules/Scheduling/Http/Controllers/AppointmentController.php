@@ -7,7 +7,10 @@ use App\Models\Appointment;
 use App\Models\Patient;
 use App\Modules\Catalog\Contracts\ServiceLookupContract;
 use App\Modules\Core\Contracts\DoctorDirectoryContract;
+use App\Modules\Core\Services\StatusLogService;
 use App\Modules\Core\Support\Toast;
+use App\Modules\Medical\Contracts\TreatmentReaderContract;
+use App\Modules\Messaging\Contracts\SmsHistoryContract;
 use App\Modules\Messaging\Contracts\SmsQuotaContract;
 use App\Modules\Scheduling\Http\Requests\BulkCancelAppointmentsRequest;
 use App\Modules\Scheduling\Http\Requests\BulkCancelPreviewRequest;
@@ -20,6 +23,7 @@ use App\Modules\Scheduling\Http\Requests\NoShowAppointmentRequest;
 use App\Modules\Scheduling\Http\Requests\RescheduleAppointmentRequest;
 use App\Modules\Scheduling\Http\Requests\StoreAppointmentRequest;
 use App\Modules\Scheduling\Http\Requests\UpcomingAppointmentsRequest;
+use App\Modules\Scheduling\Http\Resources\AppointmentDetailResource;
 use App\Modules\Scheduling\Http\Resources\AppointmentResource;
 use App\Modules\Scheduling\Services\AppointmentReminderService;
 use App\Modules\Scheduling\Services\AppointmentService;
@@ -45,6 +49,9 @@ class AppointmentController extends Controller
         private ServiceLookupContract $serviceLookup,
         private ClinicContext $clinicContext,
         private SmsQuotaContract $smsQuota,
+        private StatusLogService $statusLogService,
+        private TreatmentReaderContract $treatmentReader,
+        private SmsHistoryContract $smsHistory,
     ) {}
 
     public function index(Request $request): Response
@@ -62,8 +69,9 @@ class AppointmentController extends Controller
         return Inertia::render('appointments/Index', [
             'appointments' => AppointmentResource::collection($paginator),
             'doctors' => $doctors,
-            'services' => $this->serviceLookup->activeForBooking(),
-            'appointmentTypes' => $this->appointmentTypeService->listActiveForBooking(),
+            // Closures: a partial reload (only: ['appointments','query']) must not re-run these.
+            'services' => fn () => $this->serviceLookup->activeForBooking(),
+            'appointmentTypes' => fn () => $this->appointmentTypeService->listActiveForBooking(),
             'query' => FilterHelper::requestState([
                 'status' => 'string',
                 'doctor_id' => 'array',
@@ -247,6 +255,40 @@ class AppointmentController extends Controller
         return response()->json([
             'conflicts' => $this->service->precheckBulkConflicts($validated),
         ]);
+    }
+
+    /**
+     * GET /appointments/{appointment}
+     * Four-section detail page: summary, status history, linked treatment, SMS/cancellation.
+     */
+    public function show(Request $request, Appointment $appointment): Response
+    {
+        $this->authorize('view', $appointment);
+
+        // withTrashed(): a soft-deleted patient/doctor must still resolve here — the appointment
+        // row outlives them and AppointmentDetailResource needs a name, not a null.
+        $appointment->loadMissing([
+            'patient' => fn ($q) => $q->withTrashed(),
+            'doctor' => fn ($q) => $q->withTrashed()->with('user'),
+            'service', 'appointmentType', 'treatment', 'creator',
+        ]);
+
+        $user = $request->user();
+
+        $statusLogs = $this->statusLogService->historyFor('appointment', $appointment->id);
+
+        $props = [
+            'appointment' => (new AppointmentDetailResource($appointment))->resolve(),
+            'statusLogs' => $statusLogs,
+            'treatment' => $this->treatmentReader->summaryForAppointment($appointment->id, $user),
+            'ownDoctorId' => $user->doctor?->id,
+        ];
+
+        if ($user->can('smsLogs.viewAny')) {
+            $props['smsLogs'] = $this->smsHistory->recentForLoggable('appointment', $appointment->id);
+        }
+
+        return Inertia::render('appointments/Show', $props);
     }
 
     public function edit(Request $request, Appointment $appointment): Response

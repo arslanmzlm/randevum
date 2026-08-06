@@ -22,12 +22,12 @@ import PatientBalanceSection from '@/components/patients/PatientBalanceSection.v
 import PatientCasesSection from '@/components/patients/PatientCasesSection.vue';
 import PatientPaymentPlansSection from '@/components/patients/PatientPaymentPlansSection.vue';
 import PatientProfileCard from '@/components/patients/PatientProfileCard.vue';
-import PatientSmsLogList from '@/components/patients/PatientSmsLogList.vue';
 import PatientTagsSection from '@/components/patients/PatientTagsSection.vue';
 import PatientTreatmentsList from '@/components/patients/PatientTreatmentsList.vue';
 import UngroupedTreatmentsSection from '@/components/patients/UngroupedTreatmentsSection.vue';
 import RecordPaymentDialog from '@/components/payments/RecordPaymentDialog.vue';
 import PillTabs from '@/components/PillTabs.vue';
+import SmsLogList from '@/components/sms/SmsLogList.vue';
 import { useCan } from '@/composables/useCan';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { destroy, edit, index } from '@/routes/patients';
@@ -253,7 +253,11 @@ function removePatient(): void {
             </TabPanel>
 
             <TabPanel value="messages">
-                <PatientSmsLogList :logs="smsLogs" />
+                <SmsLogList
+                    :logs="smsLogs"
+                    :title="t('sms.log.patient.title')"
+                    :empty-message="t('sms.log.patient.empty')"
+                />
             </TabPanel>
         </PillTabs>
 

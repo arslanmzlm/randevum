@@ -7,6 +7,7 @@ import {
     IconCalendarOff,
     IconCalendarWeek,
     IconDotsVertical,
+    IconFileDescription,
     IconPencil,
     IconSearch,
     IconStethoscope,
@@ -31,7 +32,7 @@ import { useDateTime } from '@/composables/useDateTime';
 import { useTableFilters } from '@/composables/useTableFilters';
 import { useTreatmentActions } from '@/composables/useTreatmentActions';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { index } from '@/routes/appointments';
+import { index, show as appointmentShow } from '@/routes/appointments';
 import { show } from '@/routes/patients';
 import type {
     AppointmentIndexProps,
@@ -59,7 +60,6 @@ const {
     canCancel,
     canDelete,
     canSendReminder,
-    hasActions,
     goToEdit,
     checkIn,
     confirmMarkNoShow,
@@ -153,6 +153,14 @@ const menuItems = computed<RowMenuItem[]>(() => {
             command: () => confirmSendReminder(row),
         });
     }
+
+    items.push({
+        key: 'detail',
+        label: t('appointment_actions.menu.detail'),
+        tablerIcon: IconFileDescription,
+        colorClass: 'text-primary-600',
+        command: () => router.visit(appointmentShow(row.id).url),
+    });
 
     if (canMarkNoShow(row)) {
         items.push({
@@ -277,9 +285,8 @@ const serviceFilterOptions = computed(() => [
     ...props.services.map((service) => ({
         label: service.name,
         value: String(service.id),
-        color: null as string | null,
     })),
-    { label: t('common.unspecified'), value: FILTER_NONE, color: null },
+    { label: t('common.unspecified'), value: FILTER_NONE },
 ]);
 
 const appointmentTypeFilterOptions = computed(() => [
@@ -526,12 +533,8 @@ const dateRange = computed<(Date | null)[] | null>({
             >
                 <template #body="{ data }">
                     <div class="flex justify-end">
+                        <!-- Always shown: "Detaya git" is available on every visible row. -->
                         <Button
-                            v-if="
-                                hasActions(data) ||
-                                canStartTreatment(data) ||
-                                canViewTreatment(data)
-                            "
                             type="button"
                             severity="secondary"
                             text

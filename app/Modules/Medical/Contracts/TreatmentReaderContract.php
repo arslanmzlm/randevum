@@ -2,9 +2,11 @@
 
 namespace App\Modules\Medical\Contracts;
 
+use App\Models\User;
+
 /**
- * Read seam for treatment data used by the Billing module (overpayment guard).
- * Billing imports this contract; never the concrete TreatmentService or the Treatment model.
+ * Read seam for treatment data used by the Billing and Scheduling modules.
+ * Callers import this contract; never the concrete TreatmentService or the Treatment model.
  */
 interface TreatmentReaderContract
 {
@@ -14,4 +16,13 @@ interface TreatmentReaderContract
      * a draft/prepayment (total not yet final) or it does not exist.
      */
     public function completedTotalCap(int $treatmentId): ?string;
+
+    /**
+     * The appointment's 1:1 treatment as a display summary, or null when there is none or the
+     * user may not view it (TreatmentPolicy::view). Medical owns the gate — callers never
+     * resolve the Treatment model themselves.
+     *
+     * @return array{id:int,status:string,complaint:?string,diagnosis:?string,total_amount:string,completed_at:?string}|null
+     */
+    public function summaryForAppointment(int $appointmentId, User $user): ?array;
 }

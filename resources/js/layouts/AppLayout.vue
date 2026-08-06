@@ -16,6 +16,7 @@ import {
     IconLogout,
     IconMessage,
     IconMessage2,
+    IconNotes,
     IconPackage,
     IconReceipt,
     IconReportMoney,
@@ -67,6 +68,7 @@ import { index as availabilityIndex } from '@/routes/schedule-exceptions';
 import { index as servicesIndex } from '@/routes/services';
 import { index as smsLogsIndex } from '@/routes/sms-logs';
 import { index as tagsIndex } from '@/routes/tags';
+import { index as treatmentsIndex } from '@/routes/treatments';
 import type { NavGroup, NavItem } from '@/types/nav';
 import type { PatientSearchResult } from '@/types/patient';
 
@@ -251,6 +253,19 @@ const navGroups = computed<NavGroup[]>(() =>
                               href: casesIndex().url,
                               component: ['cases/Index', 'cases/Show'],
                               icon: IconFolders,
+                          },
+                      ]
+                    : []),
+                ...(can('treatments.viewAny')
+                    ? [
+                          {
+                              label: t('nav.treatments'),
+                              href: treatmentsIndex().url,
+                              component: [
+                                  'treatments/Index',
+                                  'treatments/Show',
+                              ],
+                              icon: IconNotes,
                           },
                       ]
                     : []),

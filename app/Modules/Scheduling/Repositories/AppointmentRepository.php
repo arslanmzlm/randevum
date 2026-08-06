@@ -32,7 +32,15 @@ class AppointmentRepository
     public function paginateForActiveClinic(?array $doctorIds, string $timezone): LengthAwarePaginator
     {
         $query = Appointment::query()
-            ->with(['patient', 'doctor.user', 'service', 'appointmentType', 'treatment']);
+            ->with([
+                // withTrashed(): a soft-deleted patient/doctor must still resolve here — the
+                // appointment row outlives them and AppointmentResource needs a name, not a null.
+                'patient' => fn ($q) => $q->withTrashed(),
+                'doctor' => fn ($q) => $q->withTrashed()->with('user'),
+                'service',
+                'appointmentType',
+                'treatment',
+            ]);
 
         if ($doctorIds !== null) {
             $query->whereIn('doctor_id', $doctorIds);

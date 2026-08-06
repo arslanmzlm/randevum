@@ -135,6 +135,14 @@ class Appointment extends Model
     }
 
     /**
+     * @return MorphMany<SmsLog, $this>
+     */
+    public function smsLogs(): MorphMany
+    {
+        return $this->morphMany(SmsLog::class, 'loggable');
+    }
+
+    /**
      * @param  Builder<Appointment>  $query
      */
     public function scopeForDoctor(Builder $query, int $doctorId): void

@@ -33,6 +33,7 @@ export const tr = {
         doctors: 'Doktorlar',
         patients: 'Hastalar',
         cases: 'Vakalar',
+        treatments: 'Tedaviler',
         services: 'Hizmetler',
         products: 'Ürünler',
         appointment_types: 'Randevu Türleri',
@@ -844,6 +845,7 @@ export const tr = {
         menu: {
             check_in: 'Geldi olarak işaretle',
             edit: 'Düzenle',
+            detail: 'Detaya git',
             no_show: 'Gelmedi olarak işaretle',
             cancel: 'İptal et',
             delete: 'Sil',
@@ -865,6 +867,47 @@ export const tr = {
         send_reminder_confirm_title: "Hatırlatma SMS'i gönder",
         send_reminder_confirm_message:
             "Hastaya randevu hatırlatma SMS'i gönderilsin mi? SMS gönderimi ücretlendirilir.",
+    },
+    appointment_detail: {
+        title: 'Randevu Detayı',
+        subtitle:
+            'Randevunun özeti, statü geçmişi, bağlı tedavisi ve gönderilen SMS bilgileri.',
+        breadcrumb: 'Detay',
+        sections: {
+            summary: 'Randevu Bilgileri',
+            status_history: 'Statü Geçmişi',
+            treatment: 'Bağlı Tedavi',
+            sms: 'Gönderilen SMS',
+        },
+        fields: {
+            patient: 'Hasta',
+            doctor: 'Doktor',
+            datetime: 'Tarih / Saat',
+            status: 'Durum',
+            service: 'Hizmet',
+            type: 'Randevu türü',
+            walk_in: 'Randevusuz',
+            created_by: 'Oluşturan',
+            created_at: 'Oluşturulma',
+        },
+        status_history: {
+            empty: 'Bu randevu için statü kaydı bulunmuyor.',
+            system_actor: 'Otomatik',
+            initial: 'Oluşturuldu',
+        },
+        treatment: {
+            empty: 'Bu randevudan doğan bir tedavi kaydı yok.',
+            go_to: 'Tedaviye git',
+            complaint: 'Şikayet',
+            diagnosis: 'Tanı',
+            total: 'Tutar',
+            status: 'Durum',
+        },
+        sms: {
+            empty: 'Bu randevu için SMS gönderilmedi.',
+        },
+        cancel_reason: 'İptal nedeni',
+        no_show_reason: 'Gelmedi nedeni',
     },
     appointment_bulk_cancel: {
         title: 'Günü Kapat',
@@ -1080,6 +1123,28 @@ export const tr = {
         report: {
             download: 'Tedavi özeti (PDF)',
         },
+    },
+    treatment_list: {
+        title: 'Tedaviler',
+        subtitle:
+            'Klinikte yapılan tedavileri görüntüleyin, tarihe ve doktora göre filtreleyin.',
+        search_placeholder: 'Hasta adı veya telefon ile ara…',
+        filter_status: 'Durum',
+        filter_doctor: 'Doktor',
+        filter_service: 'Hizmet',
+        filter_date_range: 'Tarih aralığı',
+        columns: {
+            date: 'Tarih',
+            patient: 'Hasta',
+            doctor: 'Doktor',
+            services: 'Hizmetler',
+            amount: 'Tutar',
+            status: 'Durum',
+            actions: 'İşlemler',
+        },
+        view: 'Detay',
+        empty: 'Henüz tedavi kaydı bulunmuyor.',
+        empty_filtered: 'Seçilen filtrelere uygun tedavi bulunamadı.',
     },
     case_list: {
         title: 'Vakalar',

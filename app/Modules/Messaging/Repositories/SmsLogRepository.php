@@ -45,4 +45,20 @@ class SmsLogRepository
             ->limit($limit)
             ->get();
     }
+
+    /**
+     * SMS logs for one polymorphic subject, newest-first, capped at $limit.
+     * ClinicScope is applied automatically.
+     *
+     * @return Collection<int, SmsLog>
+     */
+    public function forLoggable(string $loggableType, int $loggableId, int $limit): Collection
+    {
+        return SmsLog::where('loggable_type', $loggableType)
+            ->where('loggable_id', $loggableId)
+            ->with('patient')
+            ->orderByDesc('created_at')
+            ->limit($limit)
+            ->get();
+    }
 }

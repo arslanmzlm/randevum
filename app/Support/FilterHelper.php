@@ -231,8 +231,54 @@ class FilterHelper
     }
 
     /**
-     * Shared primitive behind multiple()/enum()/enumMultiple(): match any of $values on
-     * $column, OR NULL when $includeNull is true. No-op when there is nothing to apply.
+     * Multi-value filter over a related model's column via a comma-separated
+     * `filter[<param ?? column>]` — for a many-row relation (e.g. a treatment's service
+     * lines) where multiple()'s own-column `whereIn` doesn't apply. Mirrors multiple()'s
+     * semantics exactly: `_id`-suffixed columns are cast to int (non-numeric members
+     * dropped), the `none` member matches rows with NO related row at all
+     * (`whereDoesntHave`), and everything is grouped inside one `where()` so it composes
+     * safely with the rest of the query. Empty/absent param is a no-op.
+     *
+     * @return self<TModel>
+     */
+    public function multipleRelation(string $relation, string $column, ?string $param = null): self
+    {
+        $raw = request()->input('filter.'.($param ?? $column));
+
+        if (blank($raw) || ! is_string($raw)) {
+            return $this;
+        }
+
+        $members = array_values(array_filter(array_map(trim(...), explode(',', $raw)), static fn (string $m): bool => $m !== ''));
+
+        $includeNone = in_array(self::NONE, $members, true);
+        $values = array_values(array_filter($members, static fn (string $m): bool => $m !== self::NONE));
+
+        if (str_ends_with($column, '_id')) {
+            $values = array_values(array_map(static fn (string $v): int => (int) $v, array_filter($values, 'is_numeric')));
+        }
+
+        if ($values === [] && ! $includeNone) {
+            return $this;
+        }
+
+        $this->query->where(function (Builder $query) use ($relation, $column, $values, $includeNone): void {
+            if ($values !== []) {
+                $query->whereHas($relation, fn (Builder $r) => $r->whereIn($column, $values));
+            }
+
+            if ($includeNone) {
+                $query->orWhereDoesntHave($relation);
+            }
+        });
+
+        return $this;
+    }
+
+    /**
+     * Shared primitive behind multiple()/enumMultiple()/multipleRelation(): match any of
+     * $values on $column, OR NULL when $includeNull is true. No-op when there is nothing
+     * to apply.
      *
      * @param  list<mixed>  $values
      */

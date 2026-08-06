@@ -1,6 +1,11 @@
 import type { InertiaForm } from '@inertiajs/vue3';
-import type { AppointmentStatus, AvailabilityReason } from '@/types/enums';
+import type {
+    AppointmentStatus,
+    AvailabilityReason,
+    TreatmentStatus,
+} from '@/types/enums';
 import type { PatientSearchResult } from '@/types/patient';
+import type { SmsLogItem } from '@/types/smsLog';
 import type { Paginated, TableState } from '@/types/table';
 import type { OccurrenceDraft } from '@/utils/followUpOccurrences';
 
@@ -269,6 +274,68 @@ export type BulkPrecheckPayload = {
 /** Response of the bulk pre-check: clinic-local 'd.m.Y H:i' strings for the slots that would be skipped. */
 export type BulkPrecheckResponse = {
     conflicts: string[];
+};
+
+/** Summary block of the appointment detail page (mirrors AppointmentDetailResource). */
+export type AppointmentDetail = {
+    id: number;
+    patient_id: number;
+    patient_name: string;
+    doctor_id: number;
+    doctor_name: string;
+    service_name: string | null;
+    appointment_type: { name: string; color: string } | null;
+    status: AppointmentStatus;
+    is_walk_in: boolean;
+    /** ISO 8601 UTC timestamp. */
+    starts_at: string;
+    /** ISO 8601 UTC timestamp. */
+    ends_at: string;
+    /** The 1:1 treatment id when one exists — drives "start treatment" vs "resume draft". */
+    treatment_id: number | null;
+    /** null for system-created rows. */
+    created_by_name: string | null;
+    /** ISO 8601 UTC timestamp. */
+    created_at: string;
+};
+
+/**
+ * One `status_logs` row for an appointment, oldest → newest on the detail timeline.
+ * The statuses are narrowed to AppointmentStatus so the timeline can render them
+ * through AppointmentStatusTag.
+ */
+export type AppointmentStatusLogEntry = {
+    id: number;
+    /** null on the first (creation) transition. */
+    from_status: AppointmentStatus | null;
+    to_status: AppointmentStatus;
+    /** ISO 8601 UTC timestamp. */
+    transitioned_at: string;
+    /** null ⇒ system/cron transition. */
+    by_user_name: string | null;
+    reason: string | null;
+};
+
+/** The appointment's 1:1 treatment, as a display summary; null when there is none. */
+export type AppointmentLinkedTreatment = {
+    id: number;
+    status: TreatmentStatus;
+    complaint: string | null;
+    diagnosis: string | null;
+    total_amount: string;
+    /** ISO 8601 UTC timestamp. */
+    completed_at: string | null;
+};
+
+/** Props for the `appointments/Show` page (AppointmentController@show). */
+export type AppointmentShowProps = {
+    appointment: AppointmentDetail;
+    statusLogs: AppointmentStatusLogEntry[];
+    treatment: AppointmentLinkedTreatment | null;
+    /** SMS sent for this appointment. Absent when the user lacks `smsLogs.viewAny`. */
+    smsLogs?: SmsLogItem[];
+    /** The user's own doctors.id; gates the actions to own appointments when they lack viewAll. */
+    ownDoctorId: number | null;
 };
 
 /** One row of the selected-day panel (`appointments.day-schedule`). */

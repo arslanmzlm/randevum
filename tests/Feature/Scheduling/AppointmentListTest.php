@@ -635,3 +635,38 @@ it('tenant A user using tenant B service_id / appointment_type_id filters gets z
         ->get(route('appointments.index', ['filter' => ['appointment_type_id' => (string) $typeB->id]]))
         ->assertInertia(fn ($page) => $page->has('appointments.data', 0));
 });
+
+// ---------------------------------------------------------------------------
+// Soft-deleted patient/doctor — the appointment row outlives them
+// ---------------------------------------------------------------------------
+
+it('does not 500 and still shows names when an appointment\'s patient and doctor are soft-deleted', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    alRole($owner, 'owner', $clinic->id);
+
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+
+    // starts_at in the past: keeps this appointment out of the "upcoming appointments" header
+    // widget's own soft-delete gap (a separate, out-of-scope bug in AppointmentService::upcomingFor),
+    // so this test isolates the /appointments list fix under review.
+    $appointment = alAppointment($clinic, $doctor, $patient, [
+        'starts_at' => now()->subDay(),
+        'ends_at' => now()->subDay()->addMinutes(30),
+    ]);
+
+    $patient->delete();
+    $doctor->delete();
+
+    $this->actingAs($owner)
+        ->get(route('appointments.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('appointments.data', 1)
+            ->where('appointments.data.0.id', $appointment->id)
+            ->where('appointments.data.0.patient_name', trim($patient->first_name.' '.$patient->last_name))
+            ->where('appointments.data.0.doctor_name', $doctor->display_name)
+        );
+});

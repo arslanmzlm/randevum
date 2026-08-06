@@ -1,27 +1,23 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
 import {
-    IconBan,
-    IconBell,
     IconBriefcase,
     IconClockHour4,
-    IconClipboardPlus,
-    IconPencil,
+    IconFileDescription,
     IconStethoscope,
     IconTag,
-    IconTrash,
     IconUser,
-    IconUserCheck,
-    IconUserX,
     IconWalk,
 } from '@tabler/icons-vue';
 import { computed, nextTick, ref } from 'vue';
-import type { Component } from 'vue';
 import { useI18n } from 'vue-i18n';
 import AppointmentStatusTag from '@/components/AppointmentStatusTag.vue';
+import { useAppointmentActionMenu } from '@/composables/useAppointmentActionMenu';
+import type { AppointmentActionTarget } from '@/composables/useAppointmentActionMenu';
 import type { AppointmentActions } from '@/composables/useAppointmentActions';
 import { useDateTime } from '@/composables/useDateTime';
 import type { TreatmentActions } from '@/composables/useTreatmentActions';
+import { show as appointmentShow } from '@/routes/appointments';
 import { show as patientShow } from '@/routes/patients';
 import type { CalendarEventDto } from '@/types/calendar';
 
@@ -70,192 +66,26 @@ const timeLabel = computed(() => {
 });
 
 // Map the calendar event to the shape the shared action gates expect (event uses `start`).
-const actionable = computed(() =>
+const target = computed<AppointmentActionTarget | null>(() =>
     appointment.value
         ? {
               id: appointment.value.id,
               doctor_id: appointment.value.doctor_id,
               status: appointment.value.status,
               starts_at: appointment.value.start,
-          }
-        : null,
-);
-
-// Treatment gate needs treatment_id (start vs resume); status/doctor mirror the list row.
-const treatable = computed(() =>
-    appointment.value
-        ? {
-              id: appointment.value.id,
-              doctor_id: appointment.value.doctor_id,
-              status: appointment.value.status,
               treatment_id: appointment.value.treatment_id,
           }
         : null,
 );
 
-function onTreatment(): void {
-    if (treatable.value) {
-        hide();
-        props.treatmentActions.startTreatment(treatable.value);
-    }
-}
-
-function onCheckIn(): void {
-    if (actionable.value) {
-        hide();
-        props.actions.checkIn(actionable.value);
-    }
-}
-
-function onMarkNoShow(): void {
-    if (actionable.value) {
-        hide();
-        props.actions.confirmMarkNoShow(actionable.value);
-    }
-}
-
-function onEdit(): void {
-    if (actionable.value) {
-        props.actions.goToEdit(actionable.value);
-    }
-}
-
-function onSendReminder(): void {
-    if (actionable.value) {
-        hide();
-        props.actions.confirmSendReminder(actionable.value);
-    }
-}
-
-function onCancel(): void {
-    if (actionable.value) {
-        hide();
-        props.actions.confirmCancel(actionable.value);
-    }
-}
-
-function onDelete(): void {
-    if (actionable.value) {
-        hide();
-        props.actions.confirmDelete(actionable.value);
-    }
-}
-
-type PopoverAction = {
-    label: string;
-    icon: Component;
-    run: () => void;
-};
-
-/**
- * The one action this state is really about: continue the treatment if there is one to work on,
- * otherwise check the patient in, otherwise reschedule. Everything else is a menu row.
- */
-const primaryAction = computed<PopoverAction | null>(() => {
-    if (
-        treatable.value &&
-        props.treatmentActions.canStartTreatment(treatable.value)
-    ) {
-        return {
-            label: props.treatmentActions.isResume(treatable.value)
-                ? t('treatment.actions.resume')
-                : t('treatment.actions.start'),
-            icon: IconClipboardPlus,
-            run: onTreatment,
-        };
-    }
-
-    if (actionable.value && props.actions.canCheckIn(actionable.value)) {
-        return {
-            label: t('appointment_actions.menu.check_in'),
-            icon: IconUserCheck,
-            run: onCheckIn,
-        };
-    }
-
-    if (actionable.value && props.actions.canReschedule(actionable.value)) {
-        return {
-            label: t('appointment_actions.menu.edit'),
-            icon: IconPencil,
-            run: onEdit,
-        };
-    }
-
-    return null;
-});
-
-const secondaryActions = computed<PopoverAction[]>(() => {
-    const a = actionable.value;
-
-    if (!a) {
-        return [];
-    }
-
-    const all: PopoverAction[] = [];
-
-    if (props.actions.canCheckIn(a)) {
-        all.push({
-            label: t('appointment_actions.menu.check_in'),
-            icon: IconUserCheck,
-            run: onCheckIn,
-        });
-    }
-
-    if (props.actions.canReschedule(a)) {
-        all.push({
-            label: t('appointment_actions.menu.edit'),
-            icon: IconPencil,
-            run: onEdit,
-        });
-    }
-
-    if (props.actions.canSendReminder(a)) {
-        all.push({
-            label: t('appointment_actions.send_reminder'),
-            icon: IconBell,
-            run: onSendReminder,
-        });
-    }
-
-    // Whatever was promoted to the primary slot must not repeat below it.
-    return all.filter((action) => action.label !== primaryAction.value?.label);
-});
-
-const destructiveActions = computed<PopoverAction[]>(() => {
-    const a = actionable.value;
-
-    if (!a) {
-        return [];
-    }
-
-    const all: PopoverAction[] = [];
-
-    if (props.actions.canMarkNoShow(a)) {
-        all.push({
-            label: t('appointment_actions.menu.no_show'),
-            icon: IconUserX,
-            run: onMarkNoShow,
-        });
-    }
-
-    if (props.actions.canCancel(a)) {
-        all.push({
-            label: t('appointment_actions.menu.cancel'),
-            icon: IconBan,
-            run: onCancel,
-        });
-    }
-
-    if (props.actions.canDelete(a)) {
-        all.push({
-            label: t('appointment_actions.menu.delete'),
-            icon: IconTrash,
-            run: onDelete,
-        });
-    }
-
-    return all;
-});
+const { primaryAction, secondaryActions, destructiveActions } =
+    useAppointmentActionMenu(
+        props.actions,
+        props.treatmentActions,
+        target,
+        // Every action navigates or opens a dialog — close the panel first.
+        { beforeRun: hide },
+    );
 
 const rows = computed(() => {
     const a = appointment.value;
@@ -344,11 +174,6 @@ const rows = computed(() => {
                  menu rows — the same vocabulary as the appointment list's ⋮ menu. Five equal
                  buttons wrapped into a ragged block before. -->
             <footer
-                v-if="
-                    primaryAction ||
-                    secondaryActions.length ||
-                    destructiveActions.length
-                "
                 class="flex flex-col gap-2 border-t border-surface-200 pt-3"
             >
                 <Button
@@ -364,10 +189,12 @@ const rows = computed(() => {
                     </template>
                 </Button>
 
-                <div v-if="secondaryActions.length" class="flex flex-col">
+                <!-- "Detaya git" always closes the group: the popover is a summary, the detail
+                     page is where the status history and SMS live. -->
+                <div class="flex flex-col">
                     <button
                         v-for="action in secondaryActions"
-                        :key="action.label"
+                        :key="action.key"
                         type="button"
                         class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm text-surface-700 transition-colors hover:bg-surface-100"
                         @click="action.run()"
@@ -378,6 +205,15 @@ const rows = computed(() => {
                         />
                         {{ action.label }}
                     </button>
+                    <Link
+                        :href="appointmentShow(appointment.id).url"
+                        class="flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm text-surface-700 transition-colors hover:bg-surface-100"
+                    >
+                        <IconFileDescription
+                            class="size-4 shrink-0 text-surface-400"
+                        />
+                        {{ t('appointment_actions.menu.detail') }}
+                    </Link>
                 </div>
 
                 <div
@@ -386,7 +222,7 @@ const rows = computed(() => {
                 >
                     <button
                         v-for="action in destructiveActions"
-                        :key="action.label"
+                        :key="action.key"
                         type="button"
                         class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm text-red-600 transition-colors hover:bg-red-50"
                         @click="action.run()"

@@ -6,6 +6,7 @@ import type { PaymentMethod, TreatmentStatus } from '@/types/enums';
 import type { MediaItem } from '@/types/media';
 import type { PatientGender } from '@/types/patient';
 import type { InstallmentPlanForm } from '@/types/payment-plan';
+import type { Paginated, TableState } from '@/types/table';
 
 /** Active appointment type for the follow-up booking (duration resolves server-side). */
 export type FollowUpAppointmentTypeOption = Pick<
@@ -204,6 +205,49 @@ export type TreatmentShowProps = {
         /** Attached files. Absent when the user lacks `treatments.media.view`. */
         media?: MediaItem[];
     };
+};
+
+/** One row of the clinic-wide treatments list (mirrors TreatmentListResource). */
+export type TreatmentListItem = {
+    id: number;
+    status: TreatmentStatus;
+    /** ISO 8601 UTC — the list's "tarih" column, and the sort/date-range filter key. */
+    created_at: string;
+    /** ISO 8601 UTC; null while the treatment is a Draft. */
+    completed_at: string | null;
+    patient: { id: number; full_name: string };
+    doctor: { id: number; display_name: string };
+    /** Service-line names in `sort_order`; empty when the treatment has no service line. */
+    service_names: string[];
+    total_amount: string;
+};
+
+/** Server-side list JSON:API state echoed back by the treatment index controller. */
+export type TreatmentListQuery = TableState<{
+    /** csv, e.g. "draft,completed". */
+    status: string;
+    /** Selected doctor ids (as strings, from the comma-joined URL param). */
+    doctor_id: string[];
+    /** csv of service ids; may contain FILTER_NONE (treatments with no service line). */
+    service_id: string;
+    start_date: string;
+    end_date: string;
+}>;
+
+/** Doctor filter option; `[]` when the user lacks `treatments.viewAll`. */
+export type TreatmentListDoctorOption = { id: number; display_name: string };
+
+/** Service filter option (matched against the treatment's service lines). */
+export type TreatmentListServiceOption = { id: number; name: string };
+
+/** Props for the `treatments/Index` page (TreatmentController@index). */
+export type TreatmentIndexProps = {
+    treatments: Paginated<TreatmentListItem>;
+    doctors: TreatmentListDoctorOption[];
+    services: TreatmentListServiceOption[];
+    query: TreatmentListQuery;
+    /** The user's own doctors.id; null when they have no doctor profile. */
+    ownDoctorId: number | null;
 };
 
 /** A treatment a standalone payment may optionally attach to (both Draft & Completed). */

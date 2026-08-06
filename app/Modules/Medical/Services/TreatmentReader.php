@@ -4,7 +4,9 @@ namespace App\Modules\Medical\Services;
 
 use App\Enums\TreatmentStatus;
 use App\Models\Treatment;
+use App\Models\User;
 use App\Modules\Medical\Contracts\TreatmentReaderContract;
+use Illuminate\Support\Facades\Gate;
 
 /**
  * Standalone read seam over the Treatment model. Kept separate from TreatmentService
@@ -22,5 +24,25 @@ class TreatmentReader implements TreatmentReaderContract
         }
 
         return $treatment->total_amount;
+    }
+
+    public function summaryForAppointment(int $appointmentId, User $user): ?array
+    {
+        $treatment = Treatment::with('details')
+            ->where('appointment_id', $appointmentId)
+            ->first();
+
+        if ($treatment === null || ! Gate::forUser($user)->allows('view', $treatment)) {
+            return null;
+        }
+
+        return [
+            'id' => $treatment->id,
+            'status' => $treatment->status->value,
+            'complaint' => $treatment->details?->complaint,
+            'diagnosis' => $treatment->details?->diagnosis,
+            'total_amount' => $treatment->total_amount,
+            'completed_at' => $treatment->completed_at?->toIso8601String(),
+        ];
     }
 }

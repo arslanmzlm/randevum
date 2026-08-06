@@ -5,6 +5,9 @@ use App\Models\Appointment;
 use App\Models\Clinic;
 use App\Models\Doctor;
 use App\Models\Patient;
+use App\Models\Service;
+use App\Models\Treatment;
+use App\Models\TreatmentServiceLine;
 use App\Models\User;
 use App\Support\ClinicContext;
 use App\Support\FilterHelper;
@@ -640,6 +643,142 @@ it('enumMultiple with a value-and-none list on a nullable enum column includes n
     $result = FilterHelper::for(Patient::class)->enumMultiple(['gender' => Gender::class])->paginate();
 
     expect($result->total())->toBe(2);
+});
+
+// ---------------------------------------------------------------------------
+// multipleRelation() — reads filter[<param ?? column>] (csv), matches on a related model
+// ---------------------------------------------------------------------------
+
+it('multipleRelation with a single value matches appointments whose relation has that value', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+
+    $userA = User::factory()->create();
+    $userB = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id]);
+
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $userA->id, 'phone' => '05311111111']);
+    $matchPatient = Patient::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $userB->id, 'phone' => '05322222222']);
+
+    Appointment::factory()->create(['clinic_id' => $clinic->id, 'patient_id' => $matchPatient->id, 'doctor_id' => $doctor->id]);
+    Appointment::factory()->create(['clinic_id' => $clinic->id, 'patient_id' => Patient::factory()->create(['clinic_id' => $clinic->id, 'user_id' => null, 'phone' => '05333333333'])->id, 'doctor_id' => $doctor->id]);
+
+    request()->replace(['filter' => ['user_id' => (string) $userB->id]]);
+
+    $result = FilterHelper::for(Appointment::class)
+        ->multipleRelation('patient', 'user_id')
+        ->paginate();
+
+    expect($result->total())->toBe(1)
+        ->and($result->items()[0]->patient_id)->toBe($matchPatient->id);
+});
+
+it('multipleRelation with multiple values matches any of them', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id]);
+    $doctorB = Doctor::factory()->create(['clinic_id' => $clinic->id]);
+    $doctorC = Doctor::factory()->create(['clinic_id' => $clinic->id]);
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+
+    $appointmentA = Appointment::factory()->create(['clinic_id' => $clinic->id, 'patient_id' => $patient->id, 'doctor_id' => $doctor->id]);
+    $appointmentB = Appointment::factory()->create(['clinic_id' => $clinic->id, 'patient_id' => $patient->id, 'doctor_id' => $doctorB->id]);
+    Appointment::factory()->create(['clinic_id' => $clinic->id, 'patient_id' => $patient->id, 'doctor_id' => $doctorC->id]);
+
+    request()->replace(['filter' => ['doctor_id' => "{$doctor->id},{$doctorB->id}"]]);
+
+    $result = FilterHelper::for(Appointment::class)
+        ->multipleRelation('doctor', 'id', 'doctor_id')
+        ->paginate();
+
+    expect($result->total())->toBe(2)
+        ->and(collect($result->items())->pluck('id')->sort()->values()->all())
+        ->toBe(collect([$appointmentA->id, $appointmentB->id])->sort()->values()->all());
+});
+
+it('multipleRelation with the none member alone matches rows with no related row', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id]);
+    $patientWithService = Patient::factory()->create(['clinic_id' => $clinic->id]);
+    $patientWithoutService = Patient::factory()->create(['clinic_id' => $clinic->id]);
+
+    $service = Service::factory()->create(['clinic_id' => $clinic->id]);
+
+    $treatmentWith = Treatment::factory()->create(['clinic_id' => $clinic->id, 'doctor_id' => $doctor->id, 'patient_id' => $patientWithService->id]);
+    TreatmentServiceLine::factory()->create(['treatment_id' => $treatmentWith->id, 'service_id' => $service->id]);
+
+    $treatmentWithout = Treatment::factory()->create(['clinic_id' => $clinic->id, 'doctor_id' => $doctor->id, 'patient_id' => $patientWithoutService->id]);
+
+    request()->replace(['filter' => ['service_id' => 'none']]);
+
+    $result = FilterHelper::for(Treatment::class)
+        ->multipleRelation('serviceLines', 'service_id')
+        ->paginate();
+
+    expect($result->total())->toBe(1)
+        ->and($result->items()[0]->id)->toBe($treatmentWithout->id);
+});
+
+it('multipleRelation with a value-or-none list matches the value AND rows with no related row', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id]);
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+    $service = Service::factory()->create(['clinic_id' => $clinic->id]);
+
+    $withService = Treatment::factory()->create(['clinic_id' => $clinic->id, 'doctor_id' => $doctor->id, 'patient_id' => $patient->id]);
+    TreatmentServiceLine::factory()->create(['treatment_id' => $withService->id, 'service_id' => $service->id]);
+
+    $withoutService = Treatment::factory()->create(['clinic_id' => $clinic->id, 'doctor_id' => $doctor->id, 'patient_id' => $patient->id]);
+
+    $otherService = Service::factory()->create(['clinic_id' => $clinic->id]);
+    $withOtherService = Treatment::factory()->create(['clinic_id' => $clinic->id, 'doctor_id' => $doctor->id, 'patient_id' => $patient->id]);
+    TreatmentServiceLine::factory()->create(['treatment_id' => $withOtherService->id, 'service_id' => $otherService->id]);
+
+    request()->replace(['filter' => ['service_id' => "{$service->id},none"]]);
+
+    $result = FilterHelper::for(Treatment::class)
+        ->multipleRelation('serviceLines', 'service_id')
+        ->paginate();
+
+    expect($result->total())->toBe(2)
+        ->and(collect($result->items())->pluck('id')->sort()->values()->all())
+        ->toBe(collect([$withService->id, $withoutService->id])->sort()->values()->all());
+});
+
+it('multipleRelation drops non-numeric _id members and is a no-op when all are garbage', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id]);
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+    $service = Service::factory()->create(['clinic_id' => $clinic->id]);
+
+    $treatment = Treatment::factory()->create(['clinic_id' => $clinic->id, 'doctor_id' => $doctor->id, 'patient_id' => $patient->id]);
+    TreatmentServiceLine::factory()->create(['treatment_id' => $treatment->id, 'service_id' => $service->id]);
+    Treatment::factory()->create(['clinic_id' => $clinic->id, 'doctor_id' => $doctor->id, 'patient_id' => $patient->id]);
+
+    request()->replace(['filter' => ['service_id' => "{$service->id},abc"]]);
+    expect(FilterHelper::for(Treatment::class)->multipleRelation('serviceLines', 'service_id')->paginate()->total())->toBe(1);
+
+    request()->replace(['filter' => ['service_id' => 'abc,def']]);
+    expect(FilterHelper::for(Treatment::class)->multipleRelation('serviceLines', 'service_id')->paginate()->total())->toBe(2);
+});
+
+it('multipleRelation ignores an absent param', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id]);
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+    Treatment::factory()->count(2)->create(['clinic_id' => $clinic->id, 'doctor_id' => $doctor->id, 'patient_id' => $patient->id]);
+
+    request()->replace([]);
+    expect(FilterHelper::for(Treatment::class)->multipleRelation('serviceLines', 'service_id')->paginate()->total())->toBe(2);
 });
 
 it('searchRelation matches across multiple fields on the relation (OR logic)', function (): void {

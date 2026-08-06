@@ -6,14 +6,17 @@ import SmsStatusTag from '@/components/SmsStatusTag.vue';
 import { useDateTime } from '@/composables/useDateTime';
 import type { SmsLogItem } from '@/types/smsLog';
 
-defineProps<{ logs: SmsLogItem[] }>();
+// Sent-SMS card for any subject the logs were filtered by (a patient's history, one appointment).
+// The caller supplies the already-translated heading and empty message; the row shape is the
+// canonical SmsLogItem, so every surface renders a send identically.
+defineProps<{ logs: SmsLogItem[]; title: string; emptyMessage: string }>();
 
 const { t } = useI18n();
 const { formatDateTime } = useDateTime();
 </script>
 
 <template>
-    <SectionCard :icon="IconMessage" :title="t('sms.log.patient.title')">
+    <SectionCard :icon="IconMessage" :title="title">
         <ul v-if="logs.length" class="flex flex-col gap-2">
             <li
                 v-for="log in logs"
@@ -38,7 +41,7 @@ const { formatDateTime } = useDateTime();
             </li>
         </ul>
         <p v-else class="text-sm text-surface-400">
-            {{ t('sms.log.patient.empty') }}
+            {{ emptyMessage }}
         </p>
     </SectionCard>
 </template>

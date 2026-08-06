@@ -16,6 +16,11 @@ class AppointmentPolicy
         return $user->can('appointments.viewAny');
     }
 
+    public function view(User $user, Appointment $appointment): bool
+    {
+        return $user->can('appointments.viewAny') && $this->actsOnAccessible($user, $appointment);
+    }
+
     public function create(User $user): bool
     {
         return $user->can('appointments.create');

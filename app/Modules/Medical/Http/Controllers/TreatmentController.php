@@ -9,9 +9,11 @@ use App\Models\Product;
 use App\Models\Treatment;
 use App\Modules\Billing\Contracts\BalanceReaderContract;
 use App\Modules\Catalog\Contracts\ServiceLookupContract;
+use App\Modules\Core\Contracts\DoctorDirectoryContract;
 use App\Modules\Core\Support\Toast;
 use App\Modules\Medical\Http\Requests\CompleteTreatmentRequest;
 use App\Modules\Medical\Http\Resources\AnamnesisResource;
+use App\Modules\Medical\Http\Resources\TreatmentListResource;
 use App\Modules\Medical\Http\Resources\TreatmentProcessResource;
 use App\Modules\Medical\Http\Resources\TreatmentShowResource;
 use App\Modules\Medical\Services\AnamnesisService;
@@ -19,6 +21,7 @@ use App\Modules\Medical\Services\CaseService;
 use App\Modules\Medical\Services\TreatmentService;
 use App\Modules\Medical\Support\MediaItemMapper;
 use App\Support\ClinicContext;
+use App\Support\FilterHelper;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -30,10 +33,46 @@ class TreatmentController extends Controller
         private TreatmentService $treatmentService,
         private CaseService $caseService,
         private ServiceLookupContract $serviceLookup,
+        private DoctorDirectoryContract $doctorDirectory,
         private ClinicContext $clinicContext,
         private BalanceReaderContract $balanceReader,
         private AnamnesisService $anamnesisService,
     ) {}
+
+    /**
+     * GET /treatments
+     * Server-side paginated clinic-wide treatment list.
+     * Visibility mirrors the appointment list — treatments.viewAll → every doctor's
+     * treatments, otherwise only the user's own doctor profile's treatments.
+     */
+    public function index(Request $request): Response
+    {
+        $this->authorize('viewAny', Treatment::class);
+
+        $paginator = $this->treatmentService->listForActiveClinic($request->user());
+
+        $canViewAll = $request->user()->can('treatments.viewAll');
+
+        return Inertia::render('treatments/Index', [
+            'treatments' => TreatmentListResource::collection($paginator),
+            'doctors' => fn () => $canViewAll
+                ? $this->doctorDirectory->activeForClinic()
+                    ->map(fn ($d) => ['id' => $d->id, 'display_name' => $d->display_name])
+                    ->values()
+                : [],
+            'services' => fn () => $this->serviceLookup->activeForTreatment()
+                ->map(fn (array $s) => ['id' => $s['id'], 'name' => $s['name']])
+                ->values(),
+            'query' => FilterHelper::requestState([
+                'status' => 'string',
+                'doctor_id' => 'array',
+                'service_id' => 'string',
+                'start_date' => 'string',
+                'end_date' => 'string',
+            ]),
+            'ownDoctorId' => $request->user()->doctor?->id,
+        ]);
+    }
 
     /**
      * POST /appointments/{appointment}/treatment

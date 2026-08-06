@@ -123,6 +123,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/appointments/bulk-create/precheck', [AppointmentController::class, 'bulkPrecheck'])->middleware('throttle:60,1')->name('appointments.bulk-create.precheck');
     Route::post('/appointments/bulk-create', [AppointmentController::class, 'bulkStore'])->name('appointments.bulk-create.store');
     Route::post('/appointments', [AppointmentController::class, 'store'])->name('appointments.store');
+    // {appointment} must come after every literal /appointments/<word> route above,
+    // otherwise a literal like /appointments/create would bind as an id.
+    Route::get('/appointments/{appointment}', [AppointmentController::class, 'show'])->name('appointments.show');
     Route::get('/appointments/{appointment}/edit', [AppointmentController::class, 'edit'])->name('appointments.edit');
     Route::put('/appointments/{appointment}', [AppointmentController::class, 'update'])->name('appointments.update');
     Route::patch('/appointments/{appointment}/cancel', [AppointmentController::class, 'cancel'])->name('appointments.cancel');
@@ -154,8 +157,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/cases/{case}/treatments', [CaseController::class, 'linkTreatments'])->name('cases.treatments.link');
 });
 
-// Treatment lifecycle — literal segments (process) before {treatment}.
+// Treatment lifecycle — collection route (index) before {treatment}, literal segments
+// (process) before {treatment} too.
 Route::middleware('auth')->group(function () {
+    Route::get('/treatments', [TreatmentController::class, 'index'])->name('treatments.index');
     Route::post('/appointments/{appointment}/treatment', [TreatmentController::class, 'start'])->name('treatments.start');
     Route::get('/treatments/{treatment}/process', [TreatmentController::class, 'process'])->name('treatments.process');
     Route::put('/treatments/{treatment}/complete', [TreatmentController::class, 'complete'])->name('treatments.complete');

@@ -20,4 +20,12 @@ interface SmsHistoryContract
      * @return Collection<int, SmsLog>
      */
     public function recentForPatient(Patient $patient, int $limit = 25): Collection;
+
+    /**
+     * SMS sent for one polymorphic subject (`loggable_type`/`loggable_id`), newest-first,
+     * already mapped through SmsLogResource so callers never touch the SmsLog model.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function recentForLoggable(string $loggableType, int $loggableId, int $limit = 25): array;
 }

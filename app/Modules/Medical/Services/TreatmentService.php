@@ -22,6 +22,7 @@ use App\Support\ClinicContext;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -234,6 +235,34 @@ class TreatmentService
         $doctorId = $user->can('treatments.viewAll') ? null : $user->doctor?->id;
 
         return $this->treatmentRepository->forPatient($patient, $doctorId);
+    }
+
+    /**
+     * Paginated treatment list for the active clinic, scoped to the user's visibility.
+     *
+     * Users with `treatments.viewAll` see every doctor's treatments (further narrowable
+     * by the doctor filter in the request). Users without it are hard-scoped to their own
+     * doctor profile; a user with no profile receives an empty paginator.
+     *
+     * @return LengthAwarePaginator<Treatment>
+     */
+    public function listForActiveClinic(User $user): LengthAwarePaginator
+    {
+        $clinic = $this->clinicContext->clinicOrFail();
+
+        if ($user->can('treatments.viewAll')) {
+            $doctorIds = null;
+        } else {
+            $ownId = $user->doctor?->id;
+
+            if ($ownId === null) {
+                return new LengthAwarePaginator([], 0, 20);
+            }
+
+            $doctorIds = [$ownId];
+        }
+
+        return $this->treatmentRepository->paginateForActiveClinic($doctorIds, $clinic->timezone);
     }
 
     /**
