@@ -75,13 +75,15 @@ Keep it short — this is a "does it work and look right" pass, not an E2E suite
    Read the console for errors and look at the rendered result rather than assuming.
 4. Screenshot the finished state.
 
-Rules that keep this cheap and safe:
-- **Clean up after yourself.** This is the shared demo database, not a test database. Delete any row
-  you created (`ddev php artisan tinker --execute '…forceDelete();'`) before finishing.
+Rules that keep this cheap:
+- **Don't clean up.** This is a local dev database; rows you create while walking the feature are
+  fine to leave. Spend the time on looking at the result, not on tidying data.
 - **Never gate on it.** Findings go into the run-file as notes; only a genuinely broken feature (the
   path cannot be completed) sets `STATUS:blocked`.
-- **Skip silently** if the site is unreachable or the MCP browser is unavailable — note it in the
-  run-file and finish on the Pest smoke alone. Never install or start anything to make it work.
+- **If the site doesn't answer**, check whether the environment is up (`ddev describe`); start it
+  once if it is stopped (`ddev start`). If it still won't come up, note that in the run-file and
+  finish on the Pest smoke alone. Never install anything (no package, no browser download) to make
+  the walk-through work.
 - One browser, one page: don't open parallel tabs, don't leave a dialog open.
 
 ## Finish
