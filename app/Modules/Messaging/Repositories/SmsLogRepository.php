@@ -17,7 +17,7 @@ class SmsLogRepository
      * with search/filter support via FilterHelper.
      *
      * ClinicScope auto-isolates the tenant — no explicit clinic_id filter needed.
-     * Search targets the snapshotted phone column on sms_logs directly.
+     * Search spans the snapshotted phone column and the linked patient's name.
      *
      * @return LengthAwarePaginator<SmsLog>
      */
@@ -26,7 +26,7 @@ class SmsLogRepository
         $query = SmsLog::query()->with('patient')->orderByDesc('created_at');
 
         return FilterHelper::for($query)
-            ->search('phone')
+            ->search('phone', ['patient.first_name', 'patient.last_name'])
             ->enumMultiple(['status' => SmsStatus::class, 'type' => SmsType::class])
             ->dateRange('created_at', 'start_date', 'end_date', $timezone)
             ->paginate();

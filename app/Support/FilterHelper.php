@@ -95,10 +95,48 @@ class FilterHelper
         $needle = '%'.SearchTerm::normalize($term).'%';
 
         foreach ($fields as $index => $field) {
+            $relation = $this->relationOf($field);
+
+            if ($relation !== null) {
+                [$name, $columns] = $relation;
+
+                $index === 0
+                    ? $query->whereHas($name, fn (Builder $related) => $related->whereLike(SearchTerm::column($columns), $needle))
+                    : $query->orWhereHas($name, fn (Builder $related) => $related->whereLike(SearchTerm::column($columns), $needle));
+
+                continue;
+            }
+
             $index === 0
                 ? $query->whereLike(SearchTerm::column($field), $needle)
                 : $query->orWhereLike(SearchTerm::column($field), $needle);
         }
+    }
+
+    /**
+     * A dotted field (`patient.first_name`) searches a related row instead of this table, so one
+     * search box can span both (an SMS log's own phone OR its patient's name). An array of dotted
+     * fields must name the same relation and is matched as those columns joined by a space.
+     *
+     * @param  string|list<string>  $field
+     * @return array{0: string, 1: string|list<string>}|null
+     */
+    private function relationOf(string|array $field): ?array
+    {
+        $first = is_array($field) ? ($field[0] ?? '') : $field;
+
+        if (! str_contains($first, '.')) {
+            return null;
+        }
+
+        [$relation] = explode('.', $first, 2);
+
+        $strip = fn (string $value): string => explode('.', $value, 2)[1];
+
+        return [
+            $relation,
+            is_array($field) ? array_map($strip, $field) : $strip($field),
+        ];
     }
 
     /**

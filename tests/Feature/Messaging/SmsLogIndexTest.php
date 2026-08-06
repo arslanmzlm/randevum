@@ -348,6 +348,41 @@ it('search by phone narrows to matching rows', function (): void {
         );
 });
 
+it('search by patient name narrows to that patient rows', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    smsLogRole($owner, 'owner', $clinic->id);
+
+    $irmak = Patient::factory()->create([
+        'clinic_id' => $clinic->id,
+        'first_name' => 'Irmak',
+        'last_name' => 'Şahin',
+    ]);
+    $other = Patient::factory()->create([
+        'clinic_id' => $clinic->id,
+        'first_name' => 'Kerem',
+        'last_name' => 'Demir',
+    ]);
+
+    makeSmsLog(['clinic_id' => $clinic->id, 'patient_id' => $irmak->id, 'phone' => '+905301111111']);
+    makeSmsLog(['clinic_id' => $clinic->id, 'patient_id' => $other->id, 'phone' => '+905302222222']);
+
+    // Lowercase dotless ı must still match "Irmak" (Turkish folding lives in SearchTerm).
+    $this->actingAs($owner)
+        ->get(route('sms-logs.index', ['filter' => ['search' => 'ırmak']]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('smsLogs.meta.total', 1)
+            ->where('smsLogs.data.0.phone', '+905301111111')
+        );
+
+    // Full name across both columns.
+    $this->actingAs($owner)
+        ->get(route('sms-logs.index', ['filter' => ['search' => 'Kerem Demir']]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('smsLogs.meta.total', 1));
+});
+
 it('query prop reflects submitted filter values', function (): void {
     $clinic = Clinic::factory()->create();
     $owner = User::factory()->create();

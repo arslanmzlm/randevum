@@ -1468,7 +1468,7 @@ export const tr = {
             title: 'SMS Günlüğü',
             subtitle:
                 'Kliniğinizden gönderilen tüm SMS mesajlarını görüntüleyin ve filtreleyin.',
-            search_placeholder: 'Telefon ile ara…',
+            search_placeholder: 'Telefon veya hasta adı ile ara…',
             filter_status: 'Durum',
             filter_type: 'Tür',
             filter_date_range: 'Tarih aralığı',
