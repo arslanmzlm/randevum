@@ -636,6 +636,8 @@ it('returns the created type as json for a non-Inertia request, so a quick-add c
         ->assertOk()
         ->assertJsonPath('data.name', 'Hızlı Kontrol')
         ->assertJsonPath('data.default_duration_minutes', 25)
+        // The quick-add has no flash session, so the toast copy rides along with the row.
+        ->assertJsonPath('message', __('messages.appointment_type.created'))
         ->assertJsonStructure(['data' => ['id', 'name', 'color', 'default_duration_minutes', 'is_active']]);
 });
 

@@ -45,7 +45,7 @@ const toast = useToast();
 const inline = props.mode === 'inline';
 
 const httpForm = inline
-    ? useHttp<CrudFormValues, { data: TItem }>(
+    ? useHttp<CrudFormValues, { data: TItem; message?: string }>(
           props.resource.empty() as unknown as CrudFormValues,
       )
     : null;
@@ -126,10 +126,22 @@ function submit(): void {
             ? httpForm.put(url, options)
             : httpForm.post(url, options);
 
-        // The rejection is the same failure the handlers above already reported.
+        // useHttp resolves only on a 2xx — a 422 rejects after filling the field errors and any
+        // other status rejects through the handlers above — so this branch is the success case,
+        // and the rejection it re-throws was already reported there.
         request
             .then((response) => {
                 visible.value = false;
+
+                // The server sends the same message its flash toast would carry.
+                if (response.message) {
+                    toast.add({
+                        severity: 'success',
+                        summary: response.message,
+                        life: 4000,
+                    });
+                }
+
                 emit('saved', response.data);
             })
             .catch(() => {});

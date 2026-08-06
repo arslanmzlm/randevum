@@ -29,9 +29,13 @@ class CrudResponse
         string $indexRoute,
     ): RedirectResponse|JsonResponse {
         // Inertia's own visits accept text/html and carry the X-Inertia header, so only a caller
-        // that explicitly asked for JSON takes this branch.
+        // that explicitly asked for JSON takes this branch. It carries the message too: there is
+        // no flash session to read it from, and the copy should live in one place.
         if ($request->wantsJson() && ! $request->inertia()) {
-            return response()->json(['data' => $resource->resolve()]);
+            return response()->json([
+                'data' => $resource->resolve(),
+                'message' => $message,
+            ]);
         }
 
         Toast::success($message);
