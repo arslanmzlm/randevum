@@ -47,6 +47,14 @@ class ProductCatalogService implements StockAdjusterContract
         ];
     }
 
+    /** The active clinic's product by id, or null — backs the list page's `?edit=` deep link. */
+    public function findForActiveClinic(?int $id): ?Product
+    {
+        return $id === null || $id <= 0
+            ? null
+            : $this->repository->find($id);
+    }
+
     /**
      * @param  array<string, mixed>  $data
      */

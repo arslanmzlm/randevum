@@ -36,6 +36,12 @@ class ServiceRepository
         return Service::query()->orderByDesc('id')->get();
     }
 
+    /** ClinicScope keeps this to the active clinic, so another clinic's id resolves to null. */
+    public function find(int $id): ?Service
+    {
+        return Service::find($id);
+    }
+
     /**
      * @param  array<string, mixed>  $data
      */

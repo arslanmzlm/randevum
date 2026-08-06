@@ -62,7 +62,7 @@ it('renders the appointment-types index page with body content and no JS errors'
         ->screenshot();
 });
 
-it('renders the appointment-type create page with form sections and no JS errors', function (): void {
+it('opens the appointment-type create dialog from the list with no JS errors', function (): void {
     $clinic = Clinic::factory()->create();
     $owner = User::factory()->create();
 
@@ -72,17 +72,18 @@ it('renders the appointment-type create page with form sections and no JS errors
 
     $this->actingAs($owner);
 
-    visit('/appointment-types/create')
+    // ?new=1 is the shareable form of the dialog — the same state the "Tür Ekle" button sets.
+    visit('/appointment-types?new=1')
         ->assertNoJavascriptErrors()
-        // Section heading inside the form card — rendered in the page body.
-        ->assertSee('Tür Bilgileri')
+        // Dialog header — rendered by CrudDialog, not the list page.
+        ->assertSee('Randevu Türü Ekle')
         // Field label for the color picker — rendered inside FormField.
         ->assertSee('Takvim rengi')
-        // Page description in PageHeader — page-body content.
-        ->assertSee('Yeni bir randevu türü tanımlayın.')
-        // Guard against silent-blank-body false green: <main> must be non-empty.
+        // Submit label, so the shared frame's footer is proven to render.
+        ->assertSee('Türü Ekle')
+        // Guard against silent-blank-body false green: the dialog must carry content.
         ->assertScript(
-            '() => (document.querySelector("main")?.innerText.trim().length ?? 0) > 0',
+            '() => (document.querySelector(".p-dialog")?.innerText.trim().length ?? 0) > 0',
         )
         ->screenshot();
 });
@@ -116,4 +117,40 @@ it('renders the appointment-type select on the create-appointment form when type
             '() => (document.querySelector("main")?.innerText.trim().length ?? 0) > 0',
         )
         ->screenshot();
+});
+
+it('creates a type from the booking form select without leaving the page', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+
+    app(PermissionRegistrar::class)->setPermissionsTeamId($clinic->id);
+    $owner->assignRole('owner');
+    app(PermissionRegistrar::class)->setPermissionsTeamId(null);
+
+    AppointmentType::factory()->create([
+        'clinic_id' => $clinic->id,
+        'vertical_id' => $clinic->vertical_id,
+        'name' => 'Kontrol',
+        'is_active' => true,
+    ]);
+
+    $this->actingAs($owner);
+
+    $page = visit('/appointments/create');
+
+    // Open the type dropdown, then its "add" footer action.
+    $page->script('document.querySelectorAll(".p-select")[1].dispatchEvent(new MouseEvent("click", {bubbles: true}))');
+    $page->script('Array.from(document.querySelectorAll(".p-select-overlay button")).find(b => b.textContent.includes("Tür Ekle")).dispatchEvent(new MouseEvent("click", {bubbles: true}))');
+
+    $page->assertSee('Randevu Türü Ekle')
+        // The only fluid text input in the dialog is the name field (the colour input is fixed-width).
+        ->type('.p-dialog input.p-inputtext-fluid', 'Hızlı Kontrol')
+        ->click('Türü Ekle')
+        ->assertNoJavascriptErrors()
+        ->screenshot();
+
+    // The row is stored and the page never navigated away from the booking form.
+    expect(AppointmentType::where('name', 'Hızlı Kontrol')->exists())->toBeTrue();
+
+    $page->assertUrlIs(config('app.url').'/appointments/create');
 });

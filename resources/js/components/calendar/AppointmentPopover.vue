@@ -15,8 +15,8 @@ import {
     IconUserX,
     IconWalk,
 } from '@tabler/icons-vue';
-import { computed, nextTick, ref  } from 'vue';
-import type {Component} from 'vue';
+import { computed, nextTick, ref } from 'vue';
+import type { Component } from 'vue';
 import { useI18n } from 'vue-i18n';
 import AppointmentStatusTag from '@/components/AppointmentStatusTag.vue';
 import type { AppointmentActions } from '@/composables/useAppointmentActions';

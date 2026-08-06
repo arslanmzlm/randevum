@@ -18,6 +18,8 @@ export type AppointmentTypeQuery = TableState<{
 export type AppointmentTypeIndexProps = {
     appointmentTypes: Paginated<AppointmentType>;
     query: AppointmentTypeQuery;
+    /** Row behind a `?edit=<id>` link, resolved server-side so it opens even when off-page. */
+    editing: AppointmentType | null;
 };
 
 /** Editable fields shared by the create and edit forms. */
@@ -28,8 +30,4 @@ export type AppointmentTypeFormData = {
     /** Drives the booked slot length when no service is chosen; null falls back to the clinic default. */
     default_duration_minutes: number | null;
     is_active: boolean;
-};
-
-export type AppointmentTypeEditProps = {
-    appointmentType: AppointmentType;
 };

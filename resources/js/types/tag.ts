@@ -15,6 +15,8 @@ export type TagWithCount = Tag & {
 export type TagIndexProps = {
     tags: Paginated<TagWithCount>;
     query: TableState;
+    /** Row behind a `?edit=<id>` link, resolved server-side so it opens even when off-page. */
+    editing: TagWithCount | null;
 };
 
 /** Editable fields for the create/edit tag dialog. */

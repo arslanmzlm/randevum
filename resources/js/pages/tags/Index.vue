@@ -1,15 +1,16 @@
 <script setup lang="ts">
-import { Head, router } from '@inertiajs/vue3';
+import { Head } from '@inertiajs/vue3';
 import { IconPlus, IconSearch, IconTag, IconTrash } from '@tabler/icons-vue';
-import { useConfirm } from 'primevue/useconfirm';
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import CrudDialog from '@/components/crud/CrudDialog.vue';
 import DataTableWrapper from '@/components/DataTableWrapper.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import TagChip from '@/components/TagChip.vue';
-import TagFormDialog from '@/components/tags/TagFormDialog.vue';
+import { useCrudDialog } from '@/composables/useCrudDialog';
 import { useTableFilters } from '@/composables/useTableFilters';
+import { tagResource } from '@/crud/tag';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { destroy, index } from '@/routes/tags';
 import type { TagIndexProps, TagWithCount } from '@/types/tag';
@@ -19,7 +20,13 @@ defineOptions({ layout: AppLayout });
 const props = defineProps<TagIndexProps>();
 
 const { t } = useI18n();
-const confirm = useConfirm();
+
+const { visible, item, openCreate, openEdit, confirmDelete } =
+    useCrudDialog<TagWithCount>({
+        lang: tagResource.lang,
+        destroy,
+        editing: () => props.editing,
+    });
 
 // Same server-side list contract as the appointment types screen, so both behave alike.
 const { state, loading, first, sortField, sortOrder, onPage, onSort } =
@@ -35,34 +42,6 @@ const { state, loading, first, sortField, sortOrder, onPage, onSort } =
 const showEmptyState = computed(
     () => props.tags.data.length === 0 && !state.search,
 );
-
-const dialogVisible = ref(false);
-const editing = ref<TagWithCount | null>(null);
-
-function openCreate(): void {
-    editing.value = null;
-    dialogVisible.value = true;
-}
-
-function openEdit(tag: TagWithCount): void {
-    editing.value = tag;
-    dialogVisible.value = true;
-}
-
-function removeTag(tag: TagWithCount): void {
-    confirm.require({
-        header: t('common.confirm_title'),
-        message: t('tag.remove_confirm', { name: tag.name }),
-        rejectProps: {
-            label: t('common.cancel'),
-            severity: 'secondary',
-            outlined: true,
-        },
-        acceptProps: { label: t('common.delete'), severity: 'danger' },
-        accept: () =>
-            router.delete(destroy(tag.id).url, { preserveScroll: true }),
-    });
-}
 </script>
 
 <template>
@@ -167,7 +146,7 @@ function removeTag(tag: TagWithCount): void {
                             text
                             size="small"
                             :aria-label="t('tag.remove')"
-                            @click="removeTag(data)"
+                            @click="confirmDelete(data, data.name)"
                         >
                             <IconTrash />
                         </Button>
@@ -181,6 +160,10 @@ function removeTag(tag: TagWithCount): void {
             </template>
         </DataTableWrapper>
 
-        <TagFormDialog v-model:visible="dialogVisible" :tag="editing" />
+        <CrudDialog
+            v-model:visible="visible"
+            :resource="tagResource"
+            :item="item"
+        />
     </div>
 </template>

@@ -68,7 +68,7 @@ it('renders the products index page with body content and no JS errors', functio
         ->screenshot();
 });
 
-it('renders the product create page with form sections and no JS errors', function (): void {
+it('opens the product create dialog from the list with no JS errors', function (): void {
     $clinic = Clinic::factory()->create();
     $owner = User::factory()->create();
 
@@ -78,17 +78,16 @@ it('renders the product create page with form sections and no JS errors', functi
 
     $this->actingAs($owner);
 
-    visit('/products/create')
+    // ?new=1 is the shareable form of the dialog — the same state the "Ürün Ekle" button sets.
+    visit('/products?new=1')
         ->assertNoJavascriptErrors()
-        // Section heading rendered inside the page body.
-        ->assertSee('Ürün Bilgileri')
-        // Page subtitle rendered by PageHeader.
-        ->assertSee('Kataloğa yeni bir ürün ekleyin.')
-        // Field label for the stock input — confirms the form rendered.
+        // Dialog header — rendered by CrudDialog, not the list page.
+        ->assertSee('Ürün Ekle')
+        // Opening stock only shows on create, so it also proves the create mode.
         ->assertSee('Stok adedi')
-        // Guard against the silent-blank-body false green: <main> must be non-empty.
+        // Guard against the silent-blank-body false green: the dialog must carry content.
         ->assertScript(
-            '() => (document.querySelector("main")?.innerText.trim().length ?? 0) > 0',
+            '() => (document.querySelector(".p-dialog")?.innerText.trim().length ?? 0) > 0',
         )
         ->screenshot();
 });

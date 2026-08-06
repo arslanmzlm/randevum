@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, router } from '@inertiajs/vue3';
+import { Head } from '@inertiajs/vue3';
 import {
     IconPackage,
     IconPlus,
@@ -7,19 +7,20 @@ import {
     IconStack2,
     IconTrash,
 } from '@tabler/icons-vue';
-import { useConfirm } from 'primevue/useconfirm';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import ButtonLink from '@/components/ButtonLink.vue';
+import CrudDialog from '@/components/crud/CrudDialog.vue';
 import DataTableWrapper from '@/components/DataTableWrapper.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import AdjustStockDialog from '@/components/products/AdjustStockDialog.vue';
 import { useCan } from '@/composables/useCan';
+import { useCrudDialog } from '@/composables/useCrudDialog';
 import { useMoney } from '@/composables/useMoney';
 import { useTableFilters } from '@/composables/useTableFilters';
+import { productResource } from '@/crud/product';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { create, destroy, edit, index } from '@/routes/products';
+import { destroy, index } from '@/routes/products';
 import type { Product, ProductIndexProps } from '@/types/product';
 import { productColumns } from './columns';
 
@@ -28,10 +29,23 @@ defineOptions({ layout: AppLayout });
 const props = defineProps<ProductIndexProps>();
 
 const { t } = useI18n();
-const confirm = useConfirm();
 const { can } = useCan();
 const { formatMoney } = useMoney();
-const canManage = computed(() => can('products.create'));
+
+// One control per ability, mirroring what the server enforces on each route.
+const canCreate = computed(() => can('products.create'));
+const canUpdate = computed(() => can('products.update'));
+const canDelete = computed(() => can('products.delete'));
+const canManageStock = computed(() => can('products.manageStock'));
+const showActions = computed(() => canUpdate.value || canDelete.value);
+
+const { visible, item, openCreate, openEdit, confirmDelete } =
+    useCrudDialog<Product>({
+        lang: productResource.lang,
+        destroy,
+        editing: () => props.editing,
+        canCreate: () => canCreate.value,
+    });
 
 const { state, loading, first, sortField, sortOrder, onPage, onSort } =
     useTableFilters<{ is_active: boolean | null }>({
@@ -68,7 +82,7 @@ const statusOptions = computed(() => [
 ]);
 
 const columns = computed(() =>
-    productColumns(t).filter((col) => !col.requiresManage || canManage.value),
+    productColumns(t).filter((col) => !col.requiresManage || showActions.value),
 );
 
 // Stock-adjust modal — the same PATCH .../stock operation as the edit page, reachable from the list.
@@ -78,21 +92,6 @@ const stockTarget = ref<Product | null>(null);
 function openStockDialog(product: Product): void {
     stockTarget.value = product;
     stockDialogVisible.value = true;
-}
-
-function removeProduct(product: Product): void {
-    confirm.require({
-        header: t('common.confirm_title'),
-        message: t('product.remove_confirm', { name: product.name }),
-        rejectProps: {
-            label: t('common.cancel'),
-            severity: 'secondary',
-            outlined: true,
-        },
-        acceptProps: { label: t('common.delete'), severity: 'danger' },
-        accept: () =>
-            router.delete(destroy(product.id).url, { preserveScroll: true }),
-    });
 }
 </script>
 
@@ -106,17 +105,26 @@ function removeProduct(product: Product): void {
             :breadcrumbs="[{ label: t('nav.products') }]"
         >
             <template #actions>
-                <ButtonLink
-                    v-if="canManage"
-                    :href="create().url"
+                <Button
+                    v-if="canCreate"
+                    type="button"
                     :label="t('product.add')"
+                    @click="openCreate"
                 >
                     <template #icon>
                         <IconPlus />
                     </template>
-                </ButtonLink>
+                </Button>
             </template>
         </PageHeader>
+
+        <CrudDialog
+            v-if="canCreate || canUpdate"
+            v-model:visible="visible"
+            :resource="productResource"
+            :item="item"
+            :context="{ currency, brands, categories }"
+        />
 
         <EmptyState
             v-if="showEmptyState"
@@ -202,7 +210,7 @@ function removeProduct(product: Product): void {
                             {{ data.current_stock }} {{ data.unit }}
                         </span>
                         <Button
-                            v-if="canManage"
+                            v-if="canManageStock"
                             type="button"
                             severity="secondary"
                             outlined
@@ -229,20 +237,23 @@ function removeProduct(product: Product): void {
                         v-else-if="col.key === 'actions'"
                         class="flex items-center justify-end gap-1"
                     >
-                        <ButtonLink
-                            :href="edit(data.id).url"
+                        <Button
+                            v-if="canUpdate"
+                            type="button"
                             :label="t('product.edit')"
                             severity="secondary"
                             outlined
                             size="small"
+                            @click="openEdit(data)"
                         />
                         <Button
+                            v-if="canDelete"
                             type="button"
                             severity="danger"
                             text
                             size="small"
                             :aria-label="t('product.remove')"
-                            @click="removeProduct(data)"
+                            @click="confirmDelete(data, data.name)"
                         >
                             <IconTrash />
                         </Button>

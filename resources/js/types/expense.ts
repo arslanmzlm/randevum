@@ -47,4 +47,6 @@ export type ExpenseIndexProps = {
     canViewAll: boolean;
     /** Which list the server actually returned. */
     scope: 'own' | 'all';
+    /** Row behind a `?edit=<id>` link, resolved server-side so it opens even when off-page. */
+    editing: Expense | null;
 };

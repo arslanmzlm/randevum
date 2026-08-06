@@ -320,12 +320,9 @@ export const tr = {
         empty_filtered: 'Aramayla eşleşen hizmet yok.',
         search_placeholder: 'Hizmet ara...',
         filter_status: 'Durum',
-        back: 'Geri',
         create_title: 'Hizmet Ekle',
-        create_subtitle: 'Kataloğa yeni bir hizmet ekleyin.',
         create_submit: 'Hizmeti Ekle',
         edit_title: 'Hizmeti Düzenle',
-        edit_subtitle: 'Hizmet bilgilerini güncelleyin.',
         save: 'Kaydet',
         columns: {
             name: 'Hizmet',
@@ -334,7 +331,6 @@ export const tr = {
             actions: 'İşlemler',
         },
         sections: {
-            info: 'Hizmet Bilgileri',
             templates: 'Varsayılan Klinik Metinleri',
         },
         fields: {
@@ -371,12 +367,9 @@ export const tr = {
         search_placeholder: 'Randevu türü ara...',
         filter_status: 'Durum',
         minutes: '{minutes} dk',
-        back: 'Geri',
         create_title: 'Randevu Türü Ekle',
-        create_subtitle: 'Yeni bir randevu türü tanımlayın.',
         create_submit: 'Türü Ekle',
         edit_title: 'Randevu Türünü Düzenle',
-        edit_subtitle: 'Randevu türü bilgilerini güncelleyin.',
         save: 'Kaydet',
         columns: {
             name: 'Tür',
@@ -533,24 +526,16 @@ export const tr = {
         search_placeholder: 'Ürün ara...',
         filter_status: 'Durum',
         update_stock: 'Stok Güncelle',
-        back: 'Geri',
         create_title: 'Ürün Ekle',
-        create_subtitle: 'Kataloğa yeni bir ürün ekleyin.',
         create_submit: 'Ürünü Ekle',
         edit_title: 'Ürünü Düzenle',
-        edit_subtitle: 'Ürün bilgilerini güncelleyin.',
         save: 'Kaydet',
         stock_save: 'Stoğu Güncelle',
         columns: {
             name: 'Ürün',
             price: 'Fiyat',
-            stock: 'Stok',
             status: 'Durum',
             actions: 'İşlemler',
-        },
-        sections: {
-            info: 'Ürün Bilgileri',
-            stock: 'Stok',
         },
         fields: {
             name: 'Ürün adı',
@@ -568,7 +553,6 @@ export const tr = {
             current_stock:
                 'Stok negatife düşebilir; başlangıç değeri boş bırakılırsa 0 kabul edilir.',
             stock: 'Stok adedini hızlıca güncelleyin. Negatif değer girilebilir.',
-            stock_managed: 'Stoğu yandaki Stok panelinden güncelleyin.',
         },
     },
     availability: {
@@ -1210,7 +1194,8 @@ export const tr = {
         add: 'Gider Ekle',
         create_title: 'Gider Ekle',
         edit_title: 'Gideri Düzenle',
-        submit: 'Kaydet',
+        create_submit: 'Gideri Ekle',
+        save: 'Kaydet',
         edit: 'Düzenle',
         remove: 'Sil',
         empty: 'Bu dönemde gider kaydı yok.',
@@ -1562,6 +1547,7 @@ export const tr = {
         session_expired:
             'Oturumunuz sona erdi. Lütfen sayfayı yenileyip tekrar deneyin.',
         confirm_title: 'Emin misiniz?',
+        search: 'Ara',
         delete: 'Sil',
         cancel: 'Vazgeç',
         back: 'Geri',

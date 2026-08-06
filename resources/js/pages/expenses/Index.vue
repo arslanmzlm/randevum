@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import CrudDialog from '@/components/crud/CrudDialog.vue';
 import DateRangeFilter from '@/components/DateRangeFilter.vue';
-import ExpenseFormDialog from '@/components/expenses/ExpenseFormDialog.vue';
 import ExpenseList from '@/components/expenses/ExpenseList.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import SectionCard from '@/components/SectionCard.vue';
 import { useCan } from '@/composables/useCan';
+import { useCrudDialog } from '@/composables/useCrudDialog';
 import { useExpenseList } from '@/composables/useExpenseList';
+import { expenseResource } from '@/crud/expense';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { index } from '@/routes/expenses';
 import type { Expense, ExpenseIndexProps } from '@/types/expense';
@@ -35,18 +37,11 @@ const scopeOptions = computed(() => [
     { label: t('expense.scope.own'), value: 'own' },
 ]);
 
-const dialogVisible = ref(false);
-const editTarget = ref<Expense | null>(null);
-
-function openCreate(): void {
-    editTarget.value = null;
-    dialogVisible.value = true;
-}
-
-function openEdit(expense: Expense): void {
-    editTarget.value = expense;
-    dialogVisible.value = true;
-}
+// Deletion stays in ExpenseList: it gates each row on ownership and has its own confirmation.
+const { visible, item, openCreate, openEdit } = useCrudDialog<Expense>({
+    lang: expenseResource.lang,
+    editing: () => props.editing,
+});
 </script>
 
 <template>
@@ -96,11 +91,11 @@ function openEdit(expense: Expense): void {
             @update:category="list.setCategory"
         />
 
-        <ExpenseFormDialog
-            v-model:visible="dialogVisible"
-            :expense="editTarget"
-            :categories="categories"
-            :currency="currency"
+        <CrudDialog
+            v-model:visible="visible"
+            :resource="expenseResource"
+            :item="item"
+            :context="{ categories, currency }"
         />
     </div>
 </template>

@@ -33,6 +33,14 @@ class ServiceCatalogService implements ServiceLookupContract
         return $this->repository->allForActiveClinic();
     }
 
+    /** The active clinic's service by id, or null — backs the list page's `?edit=` deep link. */
+    public function findForActiveClinic(?int $id): ?Service
+    {
+        return $id === null || $id <= 0
+            ? null
+            : $this->repository->find($id);
+    }
+
     /**
      * @param  array<string, mixed>  $data
      */

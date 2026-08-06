@@ -60,7 +60,7 @@ it('renders the services index page with body content and no JS errors', functio
         ->screenshot();
 });
 
-it('renders the service create page with form sections and no JS errors', function (): void {
+it('opens the service create dialog from the list with no JS errors', function (): void {
     $clinic = Clinic::factory()->create();
     $owner = User::factory()->create();
 
@@ -70,17 +70,18 @@ it('renders the service create page with form sections and no JS errors', functi
 
     $this->actingAs($owner);
 
-    visit('/services/create')
+    // ?new=1 is the shareable form of the dialog — the same state the "Hizmet Ekle" button sets.
+    visit('/services?new=1')
         ->assertNoJavascriptErrors()
-        // Section heading for the info card — rendered in the page body.
-        ->assertSee('Hizmet Bilgileri')
-        // Section heading for the clinical templates card.
+        // Dialog header — rendered by CrudDialog, not the list page.
+        ->assertSee('Hizmet Ekle')
+        // Section heading for the clinical templates block inside the dialog.
         ->assertSee('Varsayılan Klinik Metinleri')
-        // Page subtitle rendered by the PageHeader component.
-        ->assertSee('Kataloğa yeni bir hizmet ekleyin.')
-        // Guard against the silent-blank-body false green: <main> must be non-empty.
+        // Field label, so the entity's field partial is proven to render.
+        ->assertSee('Süre (dk)')
+        // Guard against the silent-blank-body false green: the dialog must carry content.
         ->assertScript(
-            '() => (document.querySelector("main")?.innerText.trim().length ?? 0) > 0',
+            '() => (document.querySelector(".p-dialog")?.innerText.trim().length ?? 0) > 0',
         )
         ->screenshot();
 });

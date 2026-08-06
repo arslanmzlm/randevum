@@ -97,9 +97,9 @@ it('renders the expense page for a receptionist and opens the add-expense dialog
         );
 
     // Genuine client-side interaction: opening the dialog mounts the AutoComplete/DatePicker
-    // fields and the dialog-only "Kaydet" submit button (not present elsewhere on the page).
+    // fields and the dialog-only "Gideri Ekle" submit button (not present elsewhere on the page).
     $page->click('Gider Ekle')
         ->assertNoJavascriptErrors()
-        ->assertSee('Kaydet')
+        ->assertSee('Gideri Ekle')
         ->screenshot();
 });

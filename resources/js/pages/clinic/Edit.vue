@@ -130,11 +130,13 @@ const tabs = computed(() => [
 ]);
 
 // Keep the address bar on the tab being read, so a refresh or a shared link lands in the same
-// place. replaceState (not push) — tab switching is not navigation history.
+// place. replaceState (not push) — tab switching is not navigation history. The existing state is
+// carried over: Inertia keeps its page snapshot there, and wiping it turns back/forward into a
+// full reload.
 watch(activeTab, (tab) => {
     const url = new URL(window.location.href);
     url.searchParams.set('tab', tab);
-    window.history.replaceState({}, '', url);
+    window.history.replaceState(window.history.state, '', url);
 });
 
 const showClinicSubmit = computed(

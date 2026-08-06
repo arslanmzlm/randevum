@@ -62,6 +62,7 @@ const form = useAppointmentForm();
                 <AppointmentTypeSelect
                     v-model="form.appointment_type_id"
                     :options="appointmentTypeOptions"
+                    creatable
                 />
             </FormField>
 

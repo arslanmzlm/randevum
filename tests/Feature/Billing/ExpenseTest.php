@@ -518,3 +518,62 @@ it("Giderlerim never exposes another clinic's expense even when created_by match
         ->get(route('expenses.index'))
         ->assertInertia(fn ($page) => $page->has('expenses.data', 0));
 });
+
+// ---------------------------------------------------------------------------
+// GET /expenses?edit=<id> — the list's edit-dialog deep link
+// ---------------------------------------------------------------------------
+
+it('resolves ?edit into an editing prop for the row owner', function (): void {
+    $clinic = Clinic::factory()->create();
+    $receptionist = User::factory()->create();
+    exRole($receptionist, 'receptionist', $clinic->id);
+
+    $expense = Expense::factory()->create([
+        'clinic_id' => $clinic->id,
+        'created_by' => $receptionist->id,
+        'amount' => '240.00',
+        'category' => 'Kira',
+    ]);
+
+    $this->actingAs($receptionist)
+        ->get(route('expenses.index', ['edit' => $expense->id]))
+        ->assertInertia(fn ($page) => $page
+            ->where('editing.id', $expense->id)
+            ->where('editing.amount', '240.00')
+            ->where('editing.category', 'Kira')
+        );
+});
+
+it('hides another user\'s expense behind ?edit from a viewer who may not edit it', function (): void {
+    $clinic = Clinic::factory()->create();
+
+    $owner = User::factory()->create();
+    exRole($owner, 'owner', $clinic->id);
+
+    $receptionist = User::factory()->create();
+    exRole($receptionist, 'receptionist', $clinic->id);
+
+    // Entered by the owner: the receptionist has expenses.create but not expenses.viewAny,
+    // so ExpensePolicy::update denies it and the prop must stay null.
+    $ownersExpense = Expense::factory()->create([
+        'clinic_id' => $clinic->id,
+        'created_by' => $owner->id,
+    ]);
+
+    $this->actingAs($receptionist)
+        ->get(route('expenses.index', ['edit' => $ownersExpense->id]))
+        ->assertInertia(fn ($page) => $page->where('editing', null));
+});
+
+it('ignores an ?edit id belonging to another clinic', function (): void {
+    $clinic = Clinic::factory()->create();
+    $other = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    exRole($owner, 'owner', $clinic->id);
+
+    $foreign = Expense::factory()->create(['clinic_id' => $other->id]);
+
+    $this->actingAs($owner)
+        ->get(route('expenses.index', ['edit' => $foreign->id]))
+        ->assertInertia(fn ($page) => $page->where('editing', null));
+});

@@ -21,11 +21,13 @@ export type ProductQuery = TableState<{
     is_active: boolean | null;
 }>;
 
-export type ProductIndexProps = {
+export type ProductIndexProps = ProductSuggestions & {
     products: Paginated<Product>;
     query: ProductQuery;
     /** ISO 4217 code of the active clinic, for price formatting. */
     currency: string;
+    /** Row behind a `?edit=<id>` link, resolved server-side so it opens even when off-page. */
+    editing: Product | null;
 };
 
 /** Editable catalog fields shared by the create and edit forms (stock is separate). */
@@ -57,13 +59,4 @@ export type ProductStockFormData = {
 export type ProductSuggestions = {
     brands: string[];
     categories: string[];
-};
-
-export type ProductCreateProps = ProductSuggestions & {
-    currency: string;
-};
-
-export type ProductEditProps = ProductSuggestions & {
-    product: Product;
-    currency: string;
 };

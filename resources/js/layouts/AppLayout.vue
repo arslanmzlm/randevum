@@ -259,11 +259,7 @@ const navGroups = computed<NavGroup[]>(() =>
                           {
                               label: t('nav.services'),
                               href: servicesIndex().url,
-                              component: [
-                                  'services/Index',
-                                  'services/Create',
-                                  'services/Edit',
-                              ],
+                              component: 'services/Index',
                               icon: IconClipboardList,
                           },
                       ]
@@ -273,11 +269,7 @@ const navGroups = computed<NavGroup[]>(() =>
                           {
                               label: t('nav.products'),
                               href: productsIndex().url,
-                              component: [
-                                  'products/Index',
-                                  'products/Create',
-                                  'products/Edit',
-                              ],
+                              component: 'products/Index',
                               icon: IconPackage,
                           },
                       ]
@@ -287,11 +279,7 @@ const navGroups = computed<NavGroup[]>(() =>
                           {
                               label: t('nav.appointment_types'),
                               href: appointmentTypesIndex().url,
-                              component: [
-                                  'appointment-types/Index',
-                                  'appointment-types/Create',
-                                  'appointment-types/Edit',
-                              ],
+                              component: 'appointment-types/Index',
                               icon: IconTags,
                           },
                       ]

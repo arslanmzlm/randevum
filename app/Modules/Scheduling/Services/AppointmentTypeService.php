@@ -24,6 +24,14 @@ class AppointmentTypeService
         return $this->repository->paginateForActiveClinic();
     }
 
+    /** The active clinic's type by id, or null — backs the list page's `?edit=` deep link. */
+    public function findForActiveClinic(?int $id): ?AppointmentType
+    {
+        return $id === null || $id <= 0
+            ? null
+            : $this->repository->find($id);
+    }
+
     /**
      * Active types for the booking form select, ordered by name.
      *

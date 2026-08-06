@@ -384,3 +384,40 @@ it("clinic A's tag name uniqueness check never collides with clinic B's tag name
         ->post(route('tags.store'), ['name' => 'Shared', 'color' => '#123456'])
         ->assertSessionHasNoErrors();
 });
+
+// ---------------------------------------------------------------------------
+// GET /tags?edit=<id> — the list's edit-dialog deep link
+// ---------------------------------------------------------------------------
+
+it('resolves ?edit into an editing prop for a manager', function (): void {
+    $clinic = Clinic::factory()->create();
+    $manager = User::factory()->create();
+    tagRole($manager, 'manager', $clinic->id);
+
+    $tag = Tag::factory()->create(['clinic_id' => $clinic->id, 'name' => 'VIP', 'color' => '#0D9488']);
+
+    $this->actingAs($manager)
+        ->get(route('tags.index', ['edit' => $tag->id]))
+        ->assertInertia(fn ($page) => $page
+            ->where('editing.id', $tag->id)
+            ->where('editing.name', 'VIP')
+            ->where('editing.color', '#0D9488')
+        );
+});
+
+it('leaves editing null without ?edit and for another clinic\'s tag', function (): void {
+    $clinic = Clinic::factory()->create();
+    $other = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    tagRole($owner, 'owner', $clinic->id);
+
+    $foreign = Tag::factory()->create(['clinic_id' => $other->id]);
+
+    $this->actingAs($owner)
+        ->get(route('tags.index'))
+        ->assertInertia(fn ($page) => $page->where('editing', null));
+
+    $this->actingAs($owner)
+        ->get(route('tags.index', ['edit' => $foreign->id]))
+        ->assertInertia(fn ($page) => $page->where('editing', null));
+});

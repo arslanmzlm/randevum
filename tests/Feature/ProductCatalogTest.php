@@ -146,15 +146,14 @@ it('index passes currency from the active clinic', function (): void {
 // GET /products/create — access control + rendering
 // ---------------------------------------------------------------------------
 
-it('owner can access GET /products/create and the Create component is rendered', function (): void {
+it('owner is redirected from GET /products/create to the list with the create dialog open', function (): void {
     $clinic = Clinic::factory()->create();
     $owner = User::factory()->create();
     pcTestRole($owner, 'owner', $clinic->id);
 
     $this->actingAs($owner)
         ->get(route('products.create'))
-        ->assertOk()
-        ->assertInertia(fn ($page) => $page->component('products/Create'));
+        ->assertRedirect(route('products.index', ['new' => 1]));
 });
 
 it('manager can access GET /products/create', function (): void {
@@ -164,11 +163,10 @@ it('manager can access GET /products/create', function (): void {
 
     $this->actingAs($manager)
         ->get(route('products.create'))
-        ->assertOk()
-        ->assertInertia(fn ($page) => $page->component('products/Create'));
+        ->assertRedirect(route('products.index', ['new' => 1]));
 });
 
-it('create page passes distinct, sorted brand/category suggestions scoped to the active clinic', function (): void {
+it('the list passes distinct, sorted brand/category suggestions scoped to the active clinic', function (): void {
     $clinic = Clinic::factory()->create();
     $other = Clinic::factory()->create();
     $owner = User::factory()->create();
@@ -180,7 +178,7 @@ it('create page passes distinct, sorted brand/category suggestions scoped to the
     Product::factory()->create(['clinic_id' => $other->id, 'vertical_id' => $other->vertical_id, 'brand' => 'LeakBrand', 'category' => 'LeakCategory']);
 
     $this->actingAs($owner)
-        ->get(route('products.create'))
+        ->get(route('products.index'))
         ->assertInertia(fn ($page) => $page
             ->where('brands', ['Convatec', 'Hartmann'])
             ->where('categories', ['Pansuman'])
@@ -390,7 +388,7 @@ it('store rejects a missing unit with a validation error', function (): void {
 // GET /products/{product}/edit — access control + rendering
 // ---------------------------------------------------------------------------
 
-it('owner can access the edit page and the Edit component is rendered', function (): void {
+it('owner is redirected from the edit route to the list with that row open', function (): void {
     $clinic = Clinic::factory()->create();
     $owner = User::factory()->create();
     pcTestRole($owner, 'owner', $clinic->id);
@@ -399,11 +397,7 @@ it('owner can access the edit page and the Edit component is rendered', function
 
     $this->actingAs($owner)
         ->get(route('products.edit', $product))
-        ->assertOk()
-        ->assertInertia(fn ($page) => $page
-            ->component('products/Edit')
-            ->where('product.id', $product->id)
-        );
+        ->assertRedirect(route('products.index', ['edit' => $product->id]));
 });
 
 it('manager can access the edit page', function (): void {
@@ -415,8 +409,7 @@ it('manager can access the edit page', function (): void {
 
     $this->actingAs($manager)
         ->get(route('products.edit', $product))
-        ->assertOk()
-        ->assertInertia(fn ($page) => $page->component('products/Edit'));
+        ->assertRedirect(route('products.index', ['edit' => $product->id]));
 });
 
 it('doctor role gets 403 on GET /products/{product}/edit', function (): void {
@@ -431,7 +424,7 @@ it('doctor role gets 403 on GET /products/{product}/edit', function (): void {
         ->assertForbidden();
 });
 
-it('edit props expose the product resource shape', function (): void {
+it('the list resolves ?edit into an editing prop with the resource shape', function (): void {
     $clinic = Clinic::factory()->create();
     $owner = User::factory()->create();
     pcTestRole($owner, 'owner', $clinic->id);
@@ -446,12 +439,32 @@ it('edit props expose the product resource shape', function (): void {
     ]);
 
     $this->actingAs($owner)
-        ->get(route('products.edit', $product))
+        ->get(route('products.index', ['edit' => $product->id]))
         ->assertInertia(fn ($page) => $page
-            ->where('product.name', 'Tırnak Makası')
-            ->where('product.current_stock', 10)
-            ->where('product.is_active', true)
+            ->where('editing.id', $product->id)
+            ->where('editing.name', 'Tırnak Makası')
+            ->where('editing.current_stock', 10)
+            ->where('editing.is_active', true)
         );
+});
+
+it('the list leaves editing null without ?edit and for a viewer without update rights', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    pcTestRole($owner, 'owner', $clinic->id);
+
+    $doctorUser = User::factory()->create();
+    pcTestRole($doctorUser, 'doctor', $clinic->id);
+
+    $product = Product::factory()->create(['clinic_id' => $clinic->id, 'vertical_id' => $clinic->vertical_id]);
+
+    $this->actingAs($owner)
+        ->get(route('products.index'))
+        ->assertInertia(fn ($page) => $page->where('editing', null));
+
+    $this->actingAs($doctorUser)
+        ->get(route('products.index', ['edit' => $product->id]))
+        ->assertInertia(fn ($page) => $page->where('editing', null));
 });
 
 // ---------------------------------------------------------------------------

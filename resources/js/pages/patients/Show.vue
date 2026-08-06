@@ -96,11 +96,12 @@ const activeTab = ref(
 );
 
 // Keep the address bar on the tab being read; replaceState because switching tabs is not
-// navigation history.
+// navigation history. The existing state is carried over: Inertia keeps its page snapshot there,
+// and wiping it turns back/forward into a full reload.
 watch(activeTab, (tab) => {
     const url = new URL(window.location.href);
     url.searchParams.set('tab', tab);
-    window.history.replaceState({}, '', url);
+    window.history.replaceState(window.history.state, '', url);
 });
 
 const showPaymentDialog = ref(false);

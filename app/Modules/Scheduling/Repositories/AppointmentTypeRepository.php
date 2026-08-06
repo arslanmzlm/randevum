@@ -35,6 +35,12 @@ class AppointmentTypeRepository
         return AppointmentType::active()->orderBy('name')->get();
     }
 
+    /** ClinicScope keeps this to the active clinic, so another clinic's id resolves to null. */
+    public function find(int $id): ?AppointmentType
+    {
+        return AppointmentType::find($id);
+    }
+
     /**
      * @param  array<string, mixed>  $data
      */

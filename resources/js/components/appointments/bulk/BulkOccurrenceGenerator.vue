@@ -161,6 +161,7 @@ function removeOccurrence(index: number): void {
                 <AppointmentTypeSelect
                     v-model="gen.appointment_type_id"
                     :options="typeOptions"
+                    creatable
                 />
             </FormField>
 

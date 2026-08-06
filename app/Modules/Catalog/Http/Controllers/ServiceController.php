@@ -8,9 +8,10 @@ use App\Modules\Catalog\Http\Requests\StoreServiceRequest;
 use App\Modules\Catalog\Http\Requests\UpdateServiceRequest;
 use App\Modules\Catalog\Http\Resources\ServiceResource;
 use App\Modules\Catalog\Services\ServiceCatalogService;
-use App\Modules\Core\Support\Toast;
+use App\Modules\Core\Support\CrudResponse;
 use App\Support\ClinicContext;
 use App\Support\FilterHelper;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -29,54 +30,59 @@ class ServiceController extends Controller
 
         $paginator = $this->catalogService->paginateForActiveClinic();
 
+        $editing = $this->catalogService->findForActiveClinic($request->integer('edit'));
+
         return Inertia::render('services/Index', [
             'services' => ServiceResource::collection($paginator),
             'query' => FilterHelper::requestState([
                 'is_active' => 'boolean',
             ]),
             'currency' => $this->clinicContext->currency(),
+            // ?edit=<id> deep link: resolved here so the dialog opens for a row on any page.
+            'editing' => CrudResponse::editingProp($request, $editing, ServiceResource::class),
         ]);
     }
 
-    public function create(): Response
+    public function create(): RedirectResponse
     {
         $this->authorize('create', Service::class);
 
-        return Inertia::render('services/Create', [
-            'currency' => $this->clinicContext->currency(),
-        ]);
+        return to_route('services.index', ['new' => 1]);
     }
 
-    public function store(StoreServiceRequest $request): RedirectResponse
+    public function store(StoreServiceRequest $request): RedirectResponse|JsonResponse
     {
         $this->authorize('create', Service::class);
 
-        $this->catalogService->create($request->validated());
+        $service = $this->catalogService->create($request->validated());
 
-        Toast::success(__('messages.service.created'));
-
-        return to_route('services.index');
+        return CrudResponse::saved(
+            $request,
+            new ServiceResource($service),
+            __('messages.service.created'),
+            'services.index',
+        );
     }
 
-    public function edit(Service $service): Response
+    public function edit(Service $service): RedirectResponse
     {
         $this->authorize('update', $service);
 
-        return Inertia::render('services/Edit', [
-            'service' => (new ServiceResource($service))->resolve(),
-            'currency' => $this->clinicContext->currency(),
-        ]);
+        return to_route('services.index', ['edit' => $service->id]);
     }
 
-    public function update(UpdateServiceRequest $request, Service $service): RedirectResponse
+    public function update(UpdateServiceRequest $request, Service $service): RedirectResponse|JsonResponse
     {
         $this->authorize('update', $service);
 
-        $this->catalogService->update($service, $request->validated());
+        $saved = $this->catalogService->update($service, $request->validated());
 
-        Toast::success(__('messages.service.updated'));
-
-        return to_route('services.index');
+        return CrudResponse::saved(
+            $request,
+            new ServiceResource($saved),
+            __('messages.service.updated'),
+            'services.index',
+        );
     }
 
     public function destroy(Service $service): RedirectResponse
@@ -85,8 +91,6 @@ class ServiceController extends Controller
 
         $this->catalogService->delete($service);
 
-        Toast::success(__('messages.service.deleted'));
-
-        return to_route('services.index');
+        return CrudResponse::deleted(__('messages.service.deleted'), 'services.index');
     }
 }

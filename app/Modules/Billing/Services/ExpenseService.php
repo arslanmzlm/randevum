@@ -44,6 +44,14 @@ class ExpenseService
         return ['categories' => $this->repository->distinctValues('category')];
     }
 
+    /** The active clinic's expense by id, or null — backs the list page's `?edit=` deep link. */
+    public function findForActiveClinic(?int $id): ?Expense
+    {
+        return $id === null || $id <= 0
+            ? null
+            : $this->repository->find($id);
+    }
+
     /**
      * @param  array<string, mixed>  $data
      */

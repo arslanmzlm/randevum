@@ -4,12 +4,13 @@ namespace App\Modules\Scheduling\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\AppointmentType;
-use App\Modules\Core\Support\Toast;
+use App\Modules\Core\Support\CrudResponse;
 use App\Modules\Scheduling\Http\Requests\StoreAppointmentTypeRequest;
 use App\Modules\Scheduling\Http\Requests\UpdateAppointmentTypeRequest;
 use App\Modules\Scheduling\Http\Resources\AppointmentTypeResource;
 use App\Modules\Scheduling\Services\AppointmentTypeService;
 use App\Support\FilterHelper;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -27,50 +28,58 @@ class AppointmentTypeController extends Controller
 
         $paginator = $this->service->paginateForActiveClinic();
 
+        $editing = $this->service->findForActiveClinic($request->integer('edit'));
+
         return Inertia::render('appointment-types/Index', [
             'appointmentTypes' => AppointmentTypeResource::collection($paginator),
             'query' => FilterHelper::requestState([
                 'is_active' => 'boolean',
             ]),
+            // ?edit=<id> deep link: resolved here so the dialog opens for a row on any page.
+            'editing' => CrudResponse::editingProp($request, $editing, AppointmentTypeResource::class),
         ]);
     }
 
-    public function create(): Response
+    public function create(): RedirectResponse
     {
         $this->authorize('create', AppointmentType::class);
 
-        return Inertia::render('appointment-types/Create');
+        return to_route('appointment-types.index', ['new' => 1]);
     }
 
-    public function store(StoreAppointmentTypeRequest $request): RedirectResponse
+    public function store(StoreAppointmentTypeRequest $request): RedirectResponse|JsonResponse
     {
         $this->authorize('create', AppointmentType::class);
 
-        $this->service->create($request->validated());
+        $type = $this->service->create($request->validated());
 
-        Toast::success(__('messages.appointment_type.created'));
-
-        return to_route('appointment-types.index');
+        return CrudResponse::saved(
+            $request,
+            new AppointmentTypeResource($type),
+            __('messages.appointment_type.created'),
+            'appointment-types.index',
+        );
     }
 
-    public function edit(AppointmentType $appointmentType): Response
+    public function edit(AppointmentType $appointmentType): RedirectResponse
     {
         $this->authorize('update', $appointmentType);
 
-        return Inertia::render('appointment-types/Edit', [
-            'appointmentType' => (new AppointmentTypeResource($appointmentType))->resolve(),
-        ]);
+        return to_route('appointment-types.index', ['edit' => $appointmentType->id]);
     }
 
-    public function update(UpdateAppointmentTypeRequest $request, AppointmentType $appointmentType): RedirectResponse
+    public function update(UpdateAppointmentTypeRequest $request, AppointmentType $appointmentType): RedirectResponse|JsonResponse
     {
         $this->authorize('update', $appointmentType);
 
-        $this->service->update($appointmentType, $request->validated());
+        $type = $this->service->update($appointmentType, $request->validated());
 
-        Toast::success(__('messages.appointment_type.updated'));
-
-        return to_route('appointment-types.index');
+        return CrudResponse::saved(
+            $request,
+            new AppointmentTypeResource($type),
+            __('messages.appointment_type.updated'),
+            'appointment-types.index',
+        );
     }
 
     public function destroy(AppointmentType $appointmentType): RedirectResponse
@@ -79,8 +88,6 @@ class AppointmentTypeController extends Controller
 
         $this->service->delete($appointmentType);
 
-        Toast::success(__('messages.appointment_type.deleted'));
-
-        return to_route('appointment-types.index');
+        return CrudResponse::deleted(__('messages.appointment_type.deleted'), 'appointment-types.index');
     }
 }

@@ -8,10 +8,11 @@ use App\Modules\Billing\Http\Requests\StoreExpenseRequest;
 use App\Modules\Billing\Http\Requests\UpdateExpenseRequest;
 use App\Modules\Billing\Http\Resources\ExpenseResource;
 use App\Modules\Billing\Services\ExpenseService;
-use App\Modules\Core\Support\Toast;
+use App\Modules\Core\Support\CrudResponse;
 use App\Support\ClinicContext;
 use App\Support\DateRangeFilter;
 use App\Support\FilterHelper;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -53,6 +54,8 @@ class ExpenseController extends Controller
                 $category,
             );
 
+        $editing = $this->service->findForActiveClinic($request->integer('edit'));
+
         return Inertia::render('expenses/Index', [
             'expenses' => ExpenseResource::collection($paginator),
             'categories' => $this->service->suggestions()['categories'],
@@ -61,29 +64,37 @@ class ExpenseController extends Controller
             'currency' => $this->clinicContext->currency(),
             'canViewAll' => $canViewAll,
             'scope' => $ownOnly ? 'own' : 'all',
+            // ?edit=<id> deep link: resolved here so the dialog opens for a row on any page.
+            'editing' => CrudResponse::editingProp($request, $editing, ExpenseResource::class),
         ]);
     }
 
-    public function store(StoreExpenseRequest $request): RedirectResponse
+    public function store(StoreExpenseRequest $request): RedirectResponse|JsonResponse
     {
         $this->authorize('create', Expense::class);
 
-        $this->service->create($request->validated(), $request->user()->id);
+        $expense = $this->service->create($request->validated(), $request->user()->id);
 
-        Toast::success(__('expense.created'));
-
-        return back();
+        return CrudResponse::saved(
+            $request,
+            new ExpenseResource($expense),
+            __('expense.created'),
+            'expenses.index',
+        );
     }
 
-    public function update(UpdateExpenseRequest $request, Expense $expense): RedirectResponse
+    public function update(UpdateExpenseRequest $request, Expense $expense): RedirectResponse|JsonResponse
     {
         $this->authorize('update', $expense);
 
-        $this->service->update($expense, $request->validated());
+        $saved = $this->service->update($expense, $request->validated());
 
-        Toast::success(__('expense.updated'));
-
-        return back();
+        return CrudResponse::saved(
+            $request,
+            new ExpenseResource($saved),
+            __('expense.updated'),
+            'expenses.index',
+        );
     }
 
     public function destroy(Expense $expense): RedirectResponse
@@ -92,8 +103,6 @@ class ExpenseController extends Controller
 
         $this->service->delete($expense);
 
-        Toast::success(__('expense.deleted'));
-
-        return back();
+        return CrudResponse::deleted(__('expense.deleted'), 'expenses.index');
     }
 }

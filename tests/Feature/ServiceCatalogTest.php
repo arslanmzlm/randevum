@@ -134,15 +134,14 @@ it('doctor role can access GET /services (read-only)', function (): void {
 // GET /services/create — access control + rendering
 // ---------------------------------------------------------------------------
 
-it('owner can access GET /services/create and the Create component is rendered', function (): void {
+it('owner is redirected from GET /services/create to the list with the create dialog open', function (): void {
     $clinic = Clinic::factory()->create();
     $owner = User::factory()->create();
     scTestRole($owner, 'owner', $clinic->id);
 
     $this->actingAs($owner)
         ->get(route('services.create'))
-        ->assertOk()
-        ->assertInertia(fn ($page) => $page->component('services/Create'));
+        ->assertRedirect(route('services.index', ['new' => 1]));
 });
 
 it('manager can access GET /services/create', function (): void {
@@ -152,8 +151,7 @@ it('manager can access GET /services/create', function (): void {
 
     $this->actingAs($manager)
         ->get(route('services.create'))
-        ->assertOk()
-        ->assertInertia(fn ($page) => $page->component('services/Create'));
+        ->assertRedirect(route('services.index', ['new' => 1]));
 });
 
 it('doctor role gets 403 on GET /services/create', function (): void {
@@ -383,7 +381,7 @@ it('store rejects a default_complaint longer than 5000 characters', function ():
 // GET /services/{service}/edit — access control + rendering
 // ---------------------------------------------------------------------------
 
-it('owner can access the edit page and the Edit component is rendered', function (): void {
+it('owner is redirected from the edit route to the list with that row open', function (): void {
     $clinic = Clinic::factory()->create();
     $owner = User::factory()->create();
     scTestRole($owner, 'owner', $clinic->id);
@@ -392,11 +390,7 @@ it('owner can access the edit page and the Edit component is rendered', function
 
     $this->actingAs($owner)
         ->get(route('services.edit', $service))
-        ->assertOk()
-        ->assertInertia(fn ($page) => $page
-            ->component('services/Edit')
-            ->where('service.id', $service->id)
-        );
+        ->assertRedirect(route('services.index', ['edit' => $service->id]));
 });
 
 it('manager can access the edit page', function (): void {
@@ -408,8 +402,7 @@ it('manager can access the edit page', function (): void {
 
     $this->actingAs($manager)
         ->get(route('services.edit', $service))
-        ->assertOk()
-        ->assertInertia(fn ($page) => $page->component('services/Edit'));
+        ->assertRedirect(route('services.index', ['edit' => $service->id]));
 });
 
 it('doctor role gets 403 on GET /services/{service}/edit', function (): void {
@@ -424,7 +417,7 @@ it('doctor role gets 403 on GET /services/{service}/edit', function (): void {
         ->assertForbidden();
 });
 
-it('edit props expose the service resource shape', function (): void {
+it('the list resolves ?edit into an editing prop with the resource shape', function (): void {
     $clinic = Clinic::factory()->create();
     $owner = User::factory()->create();
     scTestRole($owner, 'owner', $clinic->id);
@@ -438,11 +431,31 @@ it('edit props expose the service resource shape', function (): void {
     ]);
 
     $this->actingAs($owner)
-        ->get(route('services.edit', $service))
+        ->get(route('services.index', ['edit' => $service->id]))
         ->assertInertia(fn ($page) => $page
-            ->where('service.name', 'Tırnak Bakımı')
-            ->where('service.is_active', true)
+            ->where('editing.id', $service->id)
+            ->where('editing.name', 'Tırnak Bakımı')
+            ->where('editing.is_active', true)
         );
+});
+
+it('the list leaves editing null without ?edit and for a viewer without update rights', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    scTestRole($owner, 'owner', $clinic->id);
+
+    $doctorUser = User::factory()->create();
+    scTestRole($doctorUser, 'doctor', $clinic->id);
+
+    $service = Service::factory()->create(['clinic_id' => $clinic->id, 'vertical_id' => $clinic->vertical_id]);
+
+    $this->actingAs($owner)
+        ->get(route('services.index'))
+        ->assertInertia(fn ($page) => $page->where('editing', null));
+
+    $this->actingAs($doctorUser)
+        ->get(route('services.index', ['edit' => $service->id]))
+        ->assertInertia(fn ($page) => $page->where('editing', null));
 });
 
 // ---------------------------------------------------------------------------

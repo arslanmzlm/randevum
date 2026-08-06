@@ -34,6 +34,12 @@ class TagRepository
             ->paginate();
     }
 
+    /** ClinicScope keeps this to the active clinic, so another clinic's id resolves to null. */
+    public function find(int $id): ?Tag
+    {
+        return Tag::withCount('patients')->find($id);
+    }
+
     /**
      * @param  array<string, mixed>  $data
      */

@@ -93,6 +93,12 @@ class ExpenseRepository
             ->all();
     }
 
+    /** ClinicScope keeps this to the active clinic, so another clinic's id resolves to null. */
+    public function find(int $id): ?Expense
+    {
+        return Expense::with('creator')->find($id);
+    }
+
     /**
      * @param  array<string, mixed>  $data
      */

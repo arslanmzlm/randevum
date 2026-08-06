@@ -52,6 +52,12 @@ class ProductRepository
             ->all();
     }
 
+    /** ClinicScope keeps this to the active clinic, so another clinic's id resolves to null. */
+    public function find(int $id): ?Product
+    {
+        return Product::find($id);
+    }
+
     /**
      * @param  array<string, mixed>  $data
      */

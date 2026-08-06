@@ -1,23 +1,24 @@
 <script setup lang="ts">
-import { Head, router } from '@inertiajs/vue3';
+import { Head } from '@inertiajs/vue3';
 import {
     IconClipboardList,
     IconPlus,
     IconSearch,
     IconTrash,
 } from '@tabler/icons-vue';
-import { useConfirm } from 'primevue/useconfirm';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import ButtonLink from '@/components/ButtonLink.vue';
+import CrudDialog from '@/components/crud/CrudDialog.vue';
 import DataTableWrapper from '@/components/DataTableWrapper.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import { useCan } from '@/composables/useCan';
+import { useCrudDialog } from '@/composables/useCrudDialog';
 import { useMoney } from '@/composables/useMoney';
 import { useTableFilters } from '@/composables/useTableFilters';
+import { serviceResource } from '@/crud/service';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { create, destroy, edit, index } from '@/routes/services';
+import { destroy, index } from '@/routes/services';
 import type { Service, ServiceIndexProps } from '@/types/service';
 
 defineOptions({ layout: AppLayout });
@@ -25,10 +26,22 @@ defineOptions({ layout: AppLayout });
 const props = defineProps<ServiceIndexProps>();
 
 const { t } = useI18n();
-const confirm = useConfirm();
 const { can } = useCan();
 const { formatMoney } = useMoney();
-const canManage = computed(() => can('services.create'));
+
+// One control per ability, mirroring what the server enforces on each route.
+const canCreate = computed(() => can('services.create'));
+const canUpdate = computed(() => can('services.update'));
+const canDelete = computed(() => can('services.delete'));
+const showActions = computed(() => canUpdate.value || canDelete.value);
+
+const { visible, item, openCreate, openEdit, confirmDelete } =
+    useCrudDialog<Service>({
+        lang: serviceResource.lang,
+        destroy,
+        editing: () => props.editing,
+        canCreate: () => canCreate.value,
+    });
 
 const { state, loading, first, sortField, sortOrder, onPage, onSort } =
     useTableFilters<{ is_active: boolean | null }>({
@@ -59,21 +72,6 @@ const statusOptions = computed(() => [
     { label: t('service.active'), value: true },
     { label: t('service.passive'), value: false },
 ]);
-
-function removeService(service: Service): void {
-    confirm.require({
-        header: t('common.confirm_title'),
-        message: t('service.remove_confirm', { name: service.name }),
-        rejectProps: {
-            label: t('common.cancel'),
-            severity: 'secondary',
-            outlined: true,
-        },
-        acceptProps: { label: t('common.delete'), severity: 'danger' },
-        accept: () =>
-            router.delete(destroy(service.id).url, { preserveScroll: true }),
-    });
-}
 </script>
 
 <template>
@@ -86,17 +84,26 @@ function removeService(service: Service): void {
             :breadcrumbs="[{ label: t('nav.services') }]"
         >
             <template #actions>
-                <ButtonLink
-                    v-if="canManage"
-                    :href="create().url"
+                <Button
+                    v-if="canCreate"
+                    type="button"
                     :label="t('service.add')"
+                    @click="openCreate"
                 >
                     <template #icon>
                         <IconPlus />
                     </template>
-                </ButtonLink>
+                </Button>
             </template>
         </PageHeader>
+
+        <CrudDialog
+            v-if="canCreate || canUpdate"
+            v-model:visible="visible"
+            :resource="serviceResource"
+            :item="item"
+            :context="{ currency }"
+        />
 
         <EmptyState
             v-if="showEmptyState"
@@ -186,26 +193,29 @@ function removeService(service: Service): void {
             </Column>
 
             <Column
-                v-if="canManage"
+                v-if="showActions"
                 :header="t('service.columns.actions')"
                 class="w-32"
             >
                 <template #body="{ data }">
                     <div class="flex items-center justify-end gap-1">
-                        <ButtonLink
-                            :href="edit(data.id).url"
+                        <Button
+                            v-if="canUpdate"
+                            type="button"
                             :label="t('service.edit')"
                             severity="secondary"
                             outlined
                             size="small"
+                            @click="openEdit(data)"
                         />
                         <Button
+                            v-if="canDelete"
                             type="button"
                             severity="danger"
                             text
                             size="small"
                             :aria-label="t('service.remove')"
-                            @click="removeService(data)"
+                            @click="confirmDelete(data, data.name)"
                         >
                             <IconTrash />
                         </Button>

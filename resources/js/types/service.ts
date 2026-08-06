@@ -24,6 +24,8 @@ export type ServiceIndexProps = {
     query: ServiceQuery;
     /** ISO 4217 code of the active clinic, for price formatting. */
     currency: string;
+    /** Row behind a `?edit=<id>` link, resolved server-side so it opens even when off-page. */
+    editing: Service | null;
 };
 
 /** Editable fields shared by the create and edit forms. */
@@ -38,13 +40,4 @@ export type ServiceFormData = {
     default_diagnosis: string;
     default_treatment_process: string;
     is_active: boolean;
-};
-
-export type ServiceCreateProps = {
-    currency: string;
-};
-
-export type ServiceEditProps = {
-    service: Service;
-    currency: string;
 };

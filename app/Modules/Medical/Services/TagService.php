@@ -46,6 +46,14 @@ class TagService
             ->values();
     }
 
+    /** The active clinic's tag by id, or null — backs the list page's `?edit=` deep link. */
+    public function findForActiveClinic(?int $id): ?Tag
+    {
+        return $id === null || $id <= 0
+            ? null
+            : $this->repository->find($id);
+    }
+
     /**
      * @param  array<string, mixed>  $data
      */

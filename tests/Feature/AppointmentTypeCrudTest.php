@@ -254,18 +254,17 @@ it('index filters appointment types by is_active = false', function (): void {
 });
 
 // ---------------------------------------------------------------------------
-// GET /appointment-types/create — access control + rendering
+// GET /appointment-types/create — access control + redirect to the list dialog
 // ---------------------------------------------------------------------------
 
-it('owner can access GET /appointment-types/create and the Create component is rendered', function (): void {
+it('owner is redirected from GET /appointment-types/create to the list with the create dialog open', function (): void {
     $clinic = Clinic::factory()->create();
     $owner = User::factory()->create();
     atRole($owner, 'owner', $clinic->id);
 
     $this->actingAs($owner)
         ->get(route('appointment-types.create'))
-        ->assertOk()
-        ->assertInertia(fn ($page) => $page->component('appointment-types/Create'));
+        ->assertRedirect(route('appointment-types.index', ['new' => 1]));
 });
 
 it('manager can access GET /appointment-types/create', function (): void {
@@ -275,8 +274,7 @@ it('manager can access GET /appointment-types/create', function (): void {
 
     $this->actingAs($manager)
         ->get(route('appointment-types.create'))
-        ->assertOk()
-        ->assertInertia(fn ($page) => $page->component('appointment-types/Create'));
+        ->assertRedirect(route('appointment-types.index', ['new' => 1]));
 });
 
 it('doctor role gets 403 on GET /appointment-types/create', function (): void {
@@ -512,7 +510,7 @@ it('store accepts boundary value default_duration_minutes = 480', function (): v
 // GET /appointment-types/{appointmentType}/edit — access control + rendering
 // ---------------------------------------------------------------------------
 
-it('owner can access the edit page and the Edit component is rendered', function (): void {
+it('owner is redirected from the edit route to the list with that row open', function (): void {
     $clinic = Clinic::factory()->create();
     $owner = User::factory()->create();
     atRole($owner, 'owner', $clinic->id);
@@ -524,11 +522,7 @@ it('owner can access the edit page and the Edit component is rendered', function
 
     $this->actingAs($owner)
         ->get(route('appointment-types.edit', $type))
-        ->assertOk()
-        ->assertInertia(fn ($page) => $page
-            ->component('appointment-types/Edit')
-            ->where('appointmentType.id', $type->id)
-        );
+        ->assertRedirect(route('appointment-types.index', ['edit' => $type->id]));
 });
 
 it('manager can access the edit page', function (): void {
@@ -543,8 +537,7 @@ it('manager can access the edit page', function (): void {
 
     $this->actingAs($manager)
         ->get(route('appointment-types.edit', $type))
-        ->assertOk()
-        ->assertInertia(fn ($page) => $page->component('appointment-types/Edit'));
+        ->assertRedirect(route('appointment-types.index', ['edit' => $type->id]));
 });
 
 it('doctor role gets 403 on GET /appointment-types/{appointmentType}/edit', function (): void {
@@ -562,7 +555,7 @@ it('doctor role gets 403 on GET /appointment-types/{appointmentType}/edit', func
         ->assertForbidden();
 });
 
-it('edit props expose the appointment type resource shape', function (): void {
+it('the list resolves ?edit into an editing prop with the resource shape', function (): void {
     $clinic = Clinic::factory()->create();
     $owner = User::factory()->create();
     atRole($owner, 'owner', $clinic->id);
@@ -577,13 +570,110 @@ it('edit props expose the appointment type resource shape', function (): void {
     ]);
 
     $this->actingAs($owner)
-        ->get(route('appointment-types.edit', $type))
+        ->get(route('appointment-types.index', ['edit' => $type->id]))
         ->assertInertia(fn ($page) => $page
-            ->where('appointmentType.name', 'Seans')
-            ->where('appointmentType.color', '#7C3AED')
-            ->where('appointmentType.default_duration_minutes', 45)
-            ->where('appointmentType.is_active', true)
+            ->where('editing.id', $type->id)
+            ->where('editing.name', 'Seans')
+            ->where('editing.color', '#7C3AED')
+            ->where('editing.default_duration_minutes', 45)
+            ->where('editing.is_active', true)
         );
+});
+
+it('the list leaves the editing prop null without ?edit', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    atRole($owner, 'owner', $clinic->id);
+
+    $this->actingAs($owner)
+        ->get(route('appointment-types.index'))
+        ->assertInertia(fn ($page) => $page->where('editing', null));
+});
+
+it('the list leaves editing null for a viewer without update rights', function (): void {
+    $clinic = Clinic::factory()->create();
+    $doctorUser = User::factory()->create();
+    atRole($doctorUser, 'doctor', $clinic->id);
+
+    $type = AppointmentType::factory()->create([
+        'clinic_id' => $clinic->id,
+        'vertical_id' => $clinic->vertical_id,
+    ]);
+
+    $this->actingAs($doctorUser)
+        ->get(route('appointment-types.index', ['edit' => $type->id]))
+        ->assertInertia(fn ($page) => $page->where('editing', null));
+});
+
+it('the list ignores an ?edit id belonging to another clinic', function (): void {
+    $clinicA = Clinic::factory()->create();
+    $clinicB = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    atRole($owner, 'owner', $clinicA->id);
+
+    $typeB = AppointmentType::factory()->create([
+        'clinic_id' => $clinicB->id,
+        'vertical_id' => $clinicB->vertical_id,
+    ]);
+
+    $this->actingAs($owner)
+        ->get(route('appointment-types.index', ['edit' => $typeB->id]))
+        ->assertInertia(fn ($page) => $page->where('editing', null));
+});
+
+it('returns the created type as json for a non-Inertia request, so a quick-add can select it', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    atRole($owner, 'owner', $clinic->id);
+
+    $this->actingAs($owner)
+        ->postJson(route('appointment-types.store'), [
+            'name' => 'Hızlı Kontrol',
+            'color' => '#0D9488',
+            'default_duration_minutes' => 25,
+            'is_active' => true,
+        ])
+        ->assertOk()
+        ->assertJsonPath('data.name', 'Hızlı Kontrol')
+        ->assertJsonPath('data.default_duration_minutes', 25)
+        ->assertJsonStructure(['data' => ['id', 'name', 'color', 'default_duration_minutes', 'is_active']]);
+});
+
+it('returns to the list the save came from, keeping its filters and dropping the dialog params', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    atRole($owner, 'owner', $clinic->id);
+
+    $from = route('appointment-types.index').'?filter[is_active]=0&page=2&new=1';
+
+    $this->actingAs($owner)
+        ->from($from)
+        ->post(route('appointment-types.store'), [
+            'name' => 'Kontrol',
+            'color' => '#0D9488',
+            'default_duration_minutes' => 20,
+            'is_active' => true,
+        ])
+        ->assertRedirect(route('appointment-types.index').'?'.http_build_query([
+            'filter' => ['is_active' => '0'],
+            'page' => '2',
+        ]));
+});
+
+it('keeps the redirect for an Inertia store, so the list still gets its toast', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    atRole($owner, 'owner', $clinic->id);
+
+    $this->actingAs($owner)
+        ->withHeaders(['X-Inertia' => 'true', 'X-Inertia-Version' => ''])
+        ->post(route('appointment-types.store'), [
+            'name' => 'Kontrol',
+            'color' => '#0D9488',
+            'default_duration_minutes' => 20,
+            'is_active' => true,
+        ])
+        ->assertRedirect(route('appointment-types.index'));
 });
 
 // ---------------------------------------------------------------------------
@@ -690,6 +780,30 @@ it('update rejects a bad color format', function (): void {
     $this->actingAs($owner)
         ->put(route('appointment-types.update', $type), atStorePayload(['color' => 'not-a-color']))
         ->assertSessionHasErrors('color');
+});
+
+it('returns the updated type as json for a non-Inertia request', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    atRole($owner, 'owner', $clinic->id);
+
+    $type = AppointmentType::factory()->create([
+        'clinic_id' => $clinic->id,
+        'vertical_id' => $clinic->vertical_id,
+        'name' => 'Eski',
+    ]);
+
+    $this->actingAs($owner)
+        ->putJson(route('appointment-types.update', $type), [
+            'name' => 'Yeni',
+            'color' => '#0D9488',
+            'default_duration_minutes' => 40,
+            'is_active' => true,
+        ])
+        ->assertOk()
+        ->assertJsonPath('data.id', $type->id)
+        ->assertJsonPath('data.name', 'Yeni')
+        ->assertJsonPath('data.default_duration_minutes', 40);
 });
 
 // ---------------------------------------------------------------------------
