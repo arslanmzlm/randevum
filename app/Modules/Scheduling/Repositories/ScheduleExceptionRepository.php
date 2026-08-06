@@ -66,6 +66,7 @@ class ScheduleExceptionRepository
     public function inRange(int|array $doctorIds, mixed $startUtc, mixed $endUtc): Collection
     {
         $query = ScheduleException::overlapping($startUtc, $endUtc)
+            ->with('doctor')
             ->orderBy('starts_at');
 
         if (is_array($doctorIds)) {

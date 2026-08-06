@@ -132,6 +132,15 @@ const timeTo = computed(() =>
         : workingTo.value,
 );
 
+// A column mixing several doctors' leave has to name each block; a doctor column already has the
+// name in its header.
+const namedLeave = computed(
+    () =>
+        canViewAll.value &&
+        doctorFilter.value === null &&
+        props.doctors.length > 1,
+);
+
 // Per-doctor columns only when an all-access user views a single day across every doctor.
 const schedulesActive = computed(
     () =>
@@ -270,6 +279,7 @@ const gridColumns = computed<CalendarColumn[]>(() => {
                 events: eventsForDate(ds),
                 exceptions: exceptionsForDate(ds),
                 closedBands: closedBandsFor(date),
+                namedLeave: namedLeave.value,
             });
         }
 
@@ -303,6 +313,7 @@ const gridColumns = computed<CalendarColumn[]>(() => {
             events: dayEvents,
             exceptions: dayExceptions,
             closedBands: closedBandsFor(date),
+            namedLeave: namedLeave.value,
         },
     ];
 });

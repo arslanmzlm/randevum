@@ -305,6 +305,40 @@ test('eventsFor formats exception start and end as clinic-local Y-m-d H:i string
         ->and($result['exceptions'][0]['reason'])->toBe('Break');
 });
 
+test('eventsFor names the doctor on each exception so a mixed column can label its leave', function (): void {
+    $clinic = Clinic::factory()->create(['timezone' => 'Europe/Istanbul']);
+
+    $ownerUser = User::factory()->create();
+    csRole($ownerUser, 'owner', $clinic->id);
+
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+
+    $date = csNextMonday();
+
+    ScheduleException::factory()->create([
+        'clinic_id' => $clinic->id,
+        'doctor_id' => $doctor->id,
+        'starts_at' => Carbon::parse("{$date} 13:00:00", 'Europe/Istanbul')->utc(),
+        'ends_at' => Carbon::parse("{$date} 14:00:00", 'Europe/Istanbul')->utc(),
+        'reason' => 'İzin',
+    ]);
+
+    csActivateClinic($clinic);
+    [$startUtc, $endUtc] = csRangeUtc($clinic);
+
+    $result = app(CalendarService::class)->eventsFor(
+        $ownerUser,
+        $startUtc,
+        $endUtc,
+        null,
+        [AppointmentStatus::Confirmed],
+        $clinic,
+    );
+
+    expect($result['exceptions'][0]['doctor_name'])->toBe($doctor->display_name);
+});
+
 // ---------------------------------------------------------------------------
 // Status filter
 // ---------------------------------------------------------------------------

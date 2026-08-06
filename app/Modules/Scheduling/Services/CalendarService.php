@@ -78,6 +78,7 @@ class CalendarService
             'exceptions' => $exceptions->map(fn (ScheduleException $e) => [
                 'id' => $e->id,
                 'doctor_id' => $e->doctor_id,
+                'doctor_name' => $e->doctor->display_name,
                 'start' => $e->starts_at->setTimezone($tz)->format('Y-m-d H:i'),
                 'end' => $e->ends_at->setTimezone($tz)->format('Y-m-d H:i'),
                 'reason' => $e->reason,

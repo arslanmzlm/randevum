@@ -46,6 +46,7 @@ export type CalendarEventDto = {
 export type CalendarExceptionDto = {
     id: number;
     doctor_id: number;
+    doctor_name: string;
     start: string;
     end: string;
     reason: string | null;
@@ -85,4 +86,6 @@ export type CalendarColumn = {
     events: CalendarEventDto[];
     exceptions: CalendarExceptionDto[];
     closedBands: CalendarClosedBand[];
+    /** Column holds more than one doctor's leave → name each block (a doctor column doesn't). */
+    namedLeave?: boolean;
 };

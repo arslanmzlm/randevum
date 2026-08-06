@@ -118,6 +118,7 @@ function markTop(minutes: number): number {
                         :closed-bands="col.closedBands"
                         :is-today="col.isToday"
                         :now-minutes="nowMinutes"
+                        :named-leave="col.namedLeave"
                         @select="(e, a) => emit('select', e, a)"
                     />
                 </div>

@@ -28,6 +28,8 @@ const props = defineProps<{
     isToday?: boolean;
     /** Clinic-local minute-of-day for the now-line; only drawn when isToday and within window. */
     nowMinutes?: number;
+    /** Label each leave block with its doctor — a column that mixes doctors needs the name. */
+    namedLeave?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -64,24 +66,34 @@ const eventBlocks = computed(() =>
     ),
 );
 
-// Clamp each leave block to this column's date so a multi-day exception fills only its slice.
+// Clamp each leave block to this column's date so a multi-day exception fills only its slice, then
+// lane them like appointments — two doctors off at the same hour would otherwise cover each other.
 const leaveBlocks = computed(() =>
-    props.exceptions.map((e) => {
-        const fromMin =
-            wallClockDate(e.start) < props.date
-                ? props.fromMinutes
-                : wallClockMinutes(e.start);
-        const toMin =
-            wallClockDate(e.end) > props.date
-                ? props.toMinutes
-                : wallClockMinutes(e.end);
-
-        return {
-            key: `exc-${e.id}`,
-            label: e.reason ?? t('calendar.closed'),
-            style: bandStyle(fromMin, toMin),
-        };
-    }),
+    layoutBlocks(
+        props.exceptions,
+        (e) => ({
+            startMin:
+                wallClockDate(e.start) < props.date
+                    ? props.fromMinutes
+                    : wallClockMinutes(e.start),
+            endMin:
+                wallClockDate(e.end) > props.date
+                    ? props.toMinutes
+                    : wallClockMinutes(e.end),
+        }),
+        props.fromMinutes,
+        props.toMinutes,
+    ).map((block) => ({
+        key: `exc-${block.item.id}`,
+        doctorName: props.namedLeave ? block.item.doctor_name : null,
+        reason: block.item.reason ?? t('calendar.closed'),
+        style: {
+            top: `${block.topPct}%`,
+            height: `${block.heightPct}%`,
+            left: `${(block.lane * 100) / block.lanes}%`,
+            width: `${100 / block.lanes}%`,
+        },
+    })),
 );
 
 const nowLineTop = computed(() => {
@@ -119,11 +131,22 @@ const nowLineTop = computed(() => {
         <div
             v-for="block in leaveBlocks"
             :key="block.key"
-            class="calendar-leave pointer-events-none absolute inset-x-0 flex items-center justify-center overflow-hidden px-1"
+            class="calendar-leave pointer-events-none absolute flex items-center justify-center gap-1 overflow-hidden px-1 text-xs font-medium"
             :style="block.style"
         >
-            <span class="truncate text-xs font-medium text-surface-600">
-                {{ block.label }}
+            <span
+                v-if="block.doctorName"
+                class="max-w-full shrink-0 truncate text-surface-700"
+            >
+                {{ block.doctorName }}
+            </span>
+            <span
+                class="truncate"
+                :class="
+                    block.doctorName ? 'text-surface-500' : 'text-surface-600'
+                "
+            >
+                {{ block.doctorName ? '· ' : '' }}{{ block.reason }}
             </span>
         </div>
 
