@@ -819,6 +819,8 @@ export const tr = {
         search_placeholder: 'Hasta adı veya telefon ile ara…',
         filter_status: 'Durum',
         filter_doctor: 'Doktor',
+        filter_service: 'Hizmet',
+        filter_type: 'Randevu türü',
         filter_date_range: 'Tarih aralığı',
         columns: {
             datetime: 'Tarih / Saat',
@@ -1073,6 +1075,7 @@ export const tr = {
         actions: {
             start: 'Tedaviye başla',
             resume: 'Tedaviye devam et',
+            view: 'Tedaviyi görüntüle',
         },
         report: {
             download: 'Tedavi özeti (PDF)',
@@ -1246,7 +1249,6 @@ export const tr = {
         credit: 'Alacak',
         no_transactions: 'Henüz ödeme kaydı yok',
         standalone: 'Bağımsız tahsilat',
-        view_treatment: 'Tedaviyi görüntüle',
         columns: {
             date: 'Tarih',
             method: 'Yöntem',
@@ -1550,6 +1552,8 @@ export const tr = {
             'Oturumunuz sona erdi. Lütfen sayfayı yenileyip tekrar deneyin.',
         confirm_title: 'Emin misiniz?',
         search: 'Ara',
+        unspecified: 'Belirtilmemiş',
+        doctor_selected_suffix: 'doktor',
         delete: 'Sil',
         cancel: 'Vazgeç',
         back: 'Geri',

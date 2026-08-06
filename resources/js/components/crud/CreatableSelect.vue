@@ -13,6 +13,7 @@ import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import CrudDialog from '@/components/crud/CrudDialog.vue';
 import type { CrudResource } from '@/types/crud';
+import { shouldFilterSelect } from '@/utils/selectFilter';
 
 // A Select that can create the thing it is missing: picking "add" opens the entity's own dialog
 // in inline mode, so the surrounding form keeps its state and the new row lands in the list,
@@ -68,9 +69,6 @@ function optionFor(selected: unknown): TOption | undefined {
     return allOptions.value.find((option) => value(option) === selected);
 }
 
-// A search box only earns its place once the list is long enough to scan for.
-const FILTER_THRESHOLD = 8;
-
 const dialogVisible = ref(false);
 
 function onSaved(item: TItem): void {
@@ -103,7 +101,7 @@ function onSaved(item: TItem): void {
             :input-id="inputId"
             :invalid="invalid"
             :show-clear="showClear"
-            :filter="allOptions.length > FILTER_THRESHOLD"
+            :filter="shouldFilterSelect(allOptions.length)"
             :filter-placeholder="t('common.search')"
             fluid
         >

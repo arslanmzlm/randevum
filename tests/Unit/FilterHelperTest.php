@@ -510,6 +510,138 @@ it('requestState date type is null for a blank value', function (): void {
     expect($state['filter']['last_visit_after'])->toBeNull();
 });
 
+// ---------------------------------------------------------------------------
+// multiple() — reads filter[<column>] (csv), `none` sentinel matches NULL
+// ---------------------------------------------------------------------------
+
+it('multiple with a single value behaves like exact()', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+
+    $user = User::factory()->create();
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $user->id, 'phone' => '05311111111']);
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'user_id' => null, 'phone' => '05322222222']);
+
+    request()->replace(['filter' => ['user_id' => (string) $user->id]]);
+
+    $result = FilterHelper::for(Patient::class)->multiple('user_id')->paginate();
+
+    expect($result->total())->toBe(1);
+});
+
+it('multiple with a comma-separated list matches any of the values', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+
+    $userA = User::factory()->create();
+    $userB = User::factory()->create();
+    $userC = User::factory()->create();
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $userA->id, 'phone' => '05311111111']);
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $userB->id, 'phone' => '05322222222']);
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $userC->id, 'phone' => '05333333333']);
+
+    request()->replace(['filter' => ['user_id' => "{$userA->id},{$userB->id}"]]);
+
+    $result = FilterHelper::for(Patient::class)->multiple('user_id')->paginate();
+
+    expect($result->total())->toBe(2);
+});
+
+it('multiple with the none member matches only NULL rows', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+
+    $user = User::factory()->create();
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $user->id, 'phone' => '05311111111']);
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'user_id' => null, 'phone' => '05322222222']);
+
+    request()->replace(['filter' => ['user_id' => 'none']]);
+
+    $result = FilterHelper::for(Patient::class)->multiple('user_id')->paginate();
+
+    expect($result->total())->toBe(1)
+        ->and($result->items()[0]->user_id)->toBeNull();
+});
+
+it('multiple with a value-or-none list matches the value AND NULL rows', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+
+    $userA = User::factory()->create();
+    $userB = User::factory()->create();
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $userA->id, 'phone' => '05311111111']);
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $userB->id, 'phone' => '05322222222']);
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'user_id' => null, 'phone' => '05333333333']);
+
+    request()->replace(['filter' => ['user_id' => "{$userA->id},none"]]);
+
+    $result = FilterHelper::for(Patient::class)->multiple('user_id')->paginate();
+
+    expect($result->total())->toBe(2);
+});
+
+it('multiple on an _id column drops non-numeric members and is a no-op when all are garbage', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+
+    $user = User::factory()->create();
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $user->id, 'phone' => '05311111111']);
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'user_id' => null, 'phone' => '05322222222']);
+
+    request()->replace(['filter' => ['user_id' => "{$user->id},abc"]]);
+    expect(FilterHelper::for(Patient::class)->multiple('user_id')->paginate()->total())->toBe(1);
+
+    request()->replace(['filter' => ['user_id' => 'abc,def']]);
+    expect(FilterHelper::for(Patient::class)->multiple('user_id')->paginate()->total())->toBe(2);
+});
+
+it('multiple ignores an absent or blank param', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+
+    Patient::factory()->count(2)->create(['clinic_id' => $clinic->id]);
+
+    request()->replace([]);
+    expect(FilterHelper::for(Patient::class)->multiple('user_id')->paginate()->total())->toBe(2);
+
+    request()->replace(['filter' => ['user_id' => '']]);
+    expect(FilterHelper::for(Patient::class)->multiple('user_id')->paginate()->total())->toBe(2);
+});
+
+// ---------------------------------------------------------------------------
+// enum() / enumMultiple() — the `none` sentinel matches NULL
+// ---------------------------------------------------------------------------
+
+it('enum with the none value matches only NULL rows', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'gender' => 'female', 'phone' => '05311111111']);
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'gender' => null, 'phone' => '05322222222']);
+
+    request()->replace(['filter' => ['gender' => 'none']]);
+
+    $result = FilterHelper::for(Patient::class)->enum(['gender' => Gender::class])->paginate();
+
+    expect($result->total())->toBe(1)
+        ->and($result->items()[0]->gender)->toBeNull();
+});
+
+it('enumMultiple with a value-and-none list on a nullable enum column includes nulls', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'gender' => 'female', 'phone' => '05311111111']);
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'gender' => 'male', 'phone' => '05322222222']);
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'gender' => null, 'phone' => '05333333333']);
+
+    request()->replace(['filter' => ['gender' => 'female,none']]);
+
+    $result = FilterHelper::for(Patient::class)->enumMultiple(['gender' => Gender::class])->paginate();
+
+    expect($result->total())->toBe(2);
+});
+
 it('searchRelation matches across multiple fields on the relation (OR logic)', function (): void {
     $clinic = Clinic::factory()->create();
     app(ClinicContext::class)->set($clinic->id);

@@ -14,6 +14,11 @@ const props = defineProps<{
     appointment: CalendarEventDto;
     /** Rendered pixel height — drives the compact↔full density switch. */
     heightPx?: number;
+    /**
+     * Doctor accent for a column that mixes doctors (week view): takes over the left bar, so the
+     * doctor becomes the chip's identity colour while the status tint/muting stays readable.
+     */
+    accentColor?: string;
 }>();
 
 const emit = defineEmits<{
@@ -38,7 +43,7 @@ const statusColor = computed(() =>
 // Explicit, self-contained colours: a faint tint of the status colour over the surface with a solid
 // accent bar, so the chip reads correctly in light/dark without depending on any ancestor styling.
 const chipStyle = computed(() => ({
-    borderLeftColor: statusColor.value,
+    borderLeftColor: props.accentColor ?? statusColor.value,
     backgroundColor: `color-mix(in srgb, ${statusColor.value} 12%, var(--p-surface-0))`,
 }));
 </script>
@@ -53,6 +58,7 @@ const chipStyle = computed(() => ({
             appointment.is_walk_in ? 'calendar-event-chip--walkin' : '',
         ]"
         :style="chipStyle"
+        :title="accentColor ? appointment.doctor_name : undefined"
         @click.stop="emit('select', $event)"
     >
         <!-- Compact: one line — time + patient. -->

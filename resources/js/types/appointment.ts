@@ -49,7 +49,12 @@ export type UpcomingAppointmentDto = {
 /** Server-side list JSON:API state echoed back by the appointment index controller. */
 export type AppointmentListQuery = TableState<{
     status: string;
-    doctor_id: number | null;
+    /** Selected doctor ids (as strings, from the comma-joined URL param). */
+    doctor_id: string[];
+    /** '' | '<id>' | FILTER_NONE (unspecified service). */
+    service_id: string;
+    /** '' | '<id>' | FILTER_NONE (unspecified appointment type). */
+    appointment_type_id: string;
     start_date: string;
     end_date: string;
 }>;
@@ -69,6 +74,10 @@ export type CreatedAppointment = {
 export type AppointmentIndexProps = {
     appointments: Paginated<AppointmentListItem>;
     doctors: AppointmentDoctorOption[];
+    /** Active services — the list's service filter options. */
+    services: AppointmentServiceOption[];
+    /** Active appointment types — the list's type filter options. */
+    appointmentTypes: AppointmentTypeOption[];
     query: AppointmentListQuery;
     /** The user's own doctors.id; gates row actions to own appointments when they lack viewAll. */
     ownDoctorId: number | null;

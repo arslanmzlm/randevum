@@ -262,6 +262,44 @@ it('last_visit_before INCLUDES never-visited patients (GATE-1 OPEN-3, locked beh
 });
 
 // ---------------------------------------------------------------------------
+// Gender filter — the `none` sentinel ("Belirtilmemiş")
+// ---------------------------------------------------------------------------
+
+it('filter[gender]=none returns only patients with a null gender', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    pcfRole($owner, 'owner', $clinic->id);
+
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'gender' => 'female', 'first_name' => 'HasGender']);
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'gender' => null, 'first_name' => 'NoGender']);
+
+    $this->actingAs($owner)
+        ->get(route('patients.index', ['filter' => ['gender' => 'none']]))
+        ->assertInertia(fn ($page) => $page
+            ->where('patients.meta.total', 1)
+            ->where('patients.data.0.first_name', 'NoGender')
+        );
+});
+
+it('filter[gender]=none does not leak clinic B patients with a null gender', function (): void {
+    $clinicA = Clinic::factory()->create();
+    $clinicB = Clinic::factory()->create();
+
+    $ownerA = User::factory()->create();
+    pcfRole($ownerA, 'owner', $clinicA->id);
+
+    Patient::factory()->create(['clinic_id' => $clinicA->id, 'gender' => null, 'first_name' => 'PatientA']);
+    Patient::factory()->create(['clinic_id' => $clinicB->id, 'gender' => null, 'first_name' => 'PatientB']);
+
+    $this->actingAs($ownerA)
+        ->get(route('patients.index', ['filter' => ['gender' => 'none']]))
+        ->assertInertia(fn ($page) => $page
+            ->where('patients.meta.total', 1)
+            ->where('patients.data.0.first_name', 'PatientA')
+        );
+});
+
+// ---------------------------------------------------------------------------
 // Multi-tenant isolation
 // ---------------------------------------------------------------------------
 

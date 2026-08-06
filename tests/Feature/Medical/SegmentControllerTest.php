@@ -160,6 +160,39 @@ it('store rejects a tag id in criteria that does not belong to the active clinic
     expect(PatientSegment::where('name', 'ForeignTag')->exists())->toBeFalse();
 });
 
+it('a segment saves with criteria.gender = none (unspecified)', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    segRole($owner, 'owner', $clinic->id);
+
+    $this->actingAs($owner)
+        ->post(route('patient-segments.store'), [
+            'name' => 'Unspecified Gender',
+            'criteria' => ['gender' => 'none'],
+        ])
+        ->assertRedirect();
+
+    $segment = PatientSegment::where('clinic_id', $clinic->id)->where('name', 'Unspecified Gender')->first();
+
+    expect($segment)->not->toBeNull()
+        ->and($segment->criteria['gender'])->toBe('none');
+});
+
+it('store still rejects an unknown gender value when the none sentinel is allowed', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    segRole($owner, 'owner', $clinic->id);
+
+    $this->actingAs($owner)
+        ->post(route('patient-segments.store'), [
+            'name' => 'BadGenderStillRejected',
+            'criteria' => ['gender' => 'not-a-real-gender'],
+        ])
+        ->assertSessionHasErrors('criteria.gender');
+
+    expect(PatientSegment::where('name', 'BadGenderStillRejected')->exists())->toBeFalse();
+});
+
 it('store rejects an invalid gender in criteria', function (): void {
     $clinic = Clinic::factory()->create();
     $owner = User::factory()->create();

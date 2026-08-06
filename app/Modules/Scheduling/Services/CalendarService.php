@@ -24,9 +24,10 @@ class CalendarService
      * Build the calendar events payload for a given user, range and filters.
      *
      * Scope resolution:
-     * - viewAll → all active clinic doctors, optionally narrowed by $doctorId
+     * - viewAll → all active clinic doctors, optionally narrowed by $doctorIds
      * - no viewAll → only the user's own doctor profile (null profile → empty)
      *
+     * @param  list<int>|null  $doctorIds
      * @param  list<AppointmentStatus>  $statuses
      * @return array{data: list<array<string, mixed>>, exceptions: list<array<string, mixed>>}
      */
@@ -34,16 +35,14 @@ class CalendarService
         User $user,
         Carbon $startUtc,
         Carbon $endUtc,
-        ?int $doctorId,
+        ?array $doctorIds,
         array $statuses,
         Clinic $clinic,
     ): array {
         $tz = $clinic->timezone;
 
         if ($user->can('appointments.viewAll')) {
-            $doctorIds = $doctorId !== null
-                ? [$doctorId]
-                : $this->doctorDirectory->activeForClinic()->pluck('id')->all();
+            $doctorIds = $doctorIds ?? $this->doctorDirectory->activeForClinic()->pluck('id')->all();
         } else {
             $ownId = $user->doctor?->id;
 

@@ -8,6 +8,7 @@ import SectionCard from '@/components/SectionCard.vue';
 import { useCan } from '@/composables/useCan';
 import type { CaseMode, OpenCaseOption } from '@/types/treatment';
 import { daysSince } from '@/utils/datetime';
+import { shouldFilterSelect } from '@/utils/selectFilter';
 import { useTreatmentForm } from './formContext';
 
 const props = defineProps<{ openCases: OpenCaseOption[] }>();
@@ -85,6 +86,8 @@ const caseOptions = computed(() =>
                     :options="caseOptions"
                     option-label="label"
                     option-value="value"
+                    :filter="shouldFilterSelect(caseOptions.length)"
+                    :filter-placeholder="t('common.search')"
                     fluid
                 />
             </FormField>

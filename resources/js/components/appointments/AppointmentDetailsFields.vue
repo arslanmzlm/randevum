@@ -7,6 +7,7 @@ import FormField from '@/components/FormField.vue';
 import { useCan } from '@/composables/useCan';
 import { serviceResource } from '@/crud/service';
 import type { Service } from '@/types/service';
+import { shouldFilterSelect } from '@/utils/selectFilter';
 import { useAppointmentForm } from './formContext';
 
 withDefaults(
@@ -68,6 +69,8 @@ function serviceToOption(service: Service): { label: string; value: number } {
                     option-label="label"
                     option-value="value"
                     :disabled="doctorLocked"
+                    :filter="shouldFilterSelect(doctorOptions.length)"
+                    :filter-placeholder="t('common.search')"
                     fluid
                 />
             </FormField>

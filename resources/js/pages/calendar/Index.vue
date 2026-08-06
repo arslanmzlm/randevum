@@ -43,6 +43,7 @@ import {
     parseDateString,
     toDateString,
 } from '@/utils/datetime';
+import { shouldFilterSelect } from '@/utils/selectFilter';
 
 defineOptions({ layout: AppLayout });
 
@@ -54,9 +55,10 @@ const { parseUtc } = useDateTime();
 const canViewAll = computed(() => can('appointments.viewAll'));
 
 // A doctor with full visibility defaults to their own column; a non-doctor (owner/manager/
-// reception) defaults to all doctors. Without viewAll the filter is hidden and the server forces own.
-const doctorFilter = ref<number | null>(
-    canViewAll.value ? (props.ownDoctorId ?? null) : null,
+// reception) defaults to all doctors. Empty selection = every doctor the viewer may see.
+// Without viewAll the filter is hidden and the server forces own.
+const doctorFilter = ref<number[]>(
+    canViewAll.value && props.ownDoctorId ? [props.ownDoctorId] : [],
 );
 const statuses = ref<AppointmentStatus[]>([...DEFAULT_CALENDAR_STATUSES]);
 
@@ -132,22 +134,25 @@ const timeTo = computed(() =>
         : workingTo.value,
 );
 
+// The doctors the grid renders: the selection, or everyone when nothing is selected.
+const visibleDoctors = computed(() =>
+    doctorFilter.value.length
+        ? props.doctors.filter((d) => doctorFilter.value.includes(d.id))
+        : props.doctors,
+);
+
 // A column mixing several doctors' leave has to name each block; a doctor column already has the
 // name in its header.
 const namedLeave = computed(
-    () =>
-        canViewAll.value &&
-        doctorFilter.value === null &&
-        props.doctors.length > 1,
+    () => canViewAll.value && visibleDoctors.value.length > 1,
 );
 
-// Per-doctor columns only when an all-access user views a single day across every doctor.
+// Per-doctor columns only when an all-access user views a single day across several doctors.
 const schedulesActive = computed(
     () =>
         canViewAll.value &&
         activeView.value === 'day' &&
-        doctorFilter.value === null &&
-        props.doctors.length > 1,
+        visibleDoctors.value.length > 1,
 );
 
 // Stable per-doctor accent (cycled) — shared by the day-view column header dot and the month-view
@@ -166,10 +171,19 @@ function doctorColor(doctorId: number): string {
     return DOCTOR_PALETTE[(idx < 0 ? 0 : idx) % DOCTOR_PALETTE.length];
 }
 
+// Only a column that mixes doctors needs the per-chip accent; a per-doctor column names its doctor.
+const mixedDoctorColors = computed(() =>
+    canViewAll.value && visibleDoctors.value.length > 1
+        ? Object.fromEntries(
+              visibleDoctors.value.map((d) => [d.id, doctorColor(d.id)]),
+          )
+        : undefined,
+);
+
 const fetchParams = computed(() => ({
     start: toDateString(range.value.start),
     end: toDateString(range.value.end),
-    doctorId: doctorFilter.value,
+    doctorIds: [...doctorFilter.value],
     statuses: statuses.value,
 }));
 
@@ -280,6 +294,7 @@ const gridColumns = computed<CalendarColumn[]>(() => {
                 exceptions: exceptionsForDate(ds),
                 closedBands: closedBandsFor(date),
                 namedLeave: namedLeave.value,
+                doctorColors: mixedDoctorColors.value,
             });
         }
 
@@ -292,7 +307,7 @@ const gridColumns = computed<CalendarColumn[]>(() => {
     const dayExceptions = exceptionsForDate(ds);
 
     if (schedulesActive.value) {
-        return props.doctors.map((d) => ({
+        return visibleDoctors.value.map((d) => ({
             key: `doc-${d.id}`,
             date,
             label: d.display_name,
@@ -314,6 +329,7 @@ const gridColumns = computed<CalendarColumn[]>(() => {
             exceptions: dayExceptions,
             closedBands: closedBandsFor(date),
             namedLeave: namedLeave.value,
+            doctorColors: mixedDoctorColors.value,
         },
     ];
 });
@@ -390,7 +406,7 @@ function onMonthCellClick(date: Date): void {
 // Month doctor-summary click: drill into that day filtered to the clicked doctor.
 function onSummaryClick(date: string, doctorId: number): void {
     if (canViewAll.value) {
-        doctorFilter.value = doctorId;
+        doctorFilter.value = [doctorId];
     }
 
     viewDate.value = parseDateString(date);
@@ -487,14 +503,18 @@ function onSelectEvent(
                 </div>
 
                 <div class="flex flex-wrap items-center gap-2">
-                    <Select
+                    <MultiSelect
                         v-if="canViewAll && doctors.length > 0"
                         v-model="doctorFilter"
                         :options="doctorOptions"
                         option-label="label"
                         option-value="value"
                         :placeholder="t('calendar.all_doctors')"
+                        :max-selected-labels="0"
+                        :selected-items-label="`{0} ${t('common.doctor_selected_suffix')}`"
                         show-clear
+                        :filter="shouldFilterSelect(doctorOptions.length)"
+                        :filter-placeholder="t('common.search')"
                         class="w-full sm:w-52"
                     />
                     <MultiSelect

@@ -23,6 +23,9 @@ use Illuminate\Pagination\LengthAwarePaginator;
  */
 class FilterHelper
 {
+    /** Sentinel member of a value-set filter meaning "this column IS NULL" ("Belirtilmemiş"). */
+    public const NONE = 'none';
+
     /**
      * @param  Builder<TModel>  $query
      */
@@ -196,6 +199,61 @@ class FilterHelper
     }
 
     /**
+     * Multi-value filter over a comma-separated `filter[<column>]` (`?filter[service_id]=4,7`).
+     * The `none` member matches NULL, so a nullable column can be filtered on "unspecified"
+     * alone or together with real values. `_id` columns are cast to int (non-numeric members
+     * dropped); a single value behaves like exact(). Empty/absent params are no-ops.
+     *
+     * @return self<TModel>
+     */
+    public function multiple(string ...$columns): self
+    {
+        foreach ($columns as $column) {
+            $raw = request()->input("filter.{$column}");
+
+            if (blank($raw) || ! is_string($raw)) {
+                continue;
+            }
+
+            $members = array_values(array_filter(array_map(trim(...), explode(',', $raw)), static fn (string $m): bool => $m !== ''));
+
+            $includeNull = in_array(self::NONE, $members, true);
+            $values = array_values(array_filter($members, static fn (string $m): bool => $m !== self::NONE));
+
+            if (str_ends_with($column, '_id')) {
+                $values = array_values(array_map(static fn (string $v): int => (int) $v, array_filter($values, 'is_numeric')));
+            }
+
+            $this->applyAnyOf($column, $values, $includeNull);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Shared primitive behind multiple()/enum()/enumMultiple(): match any of $values on
+     * $column, OR NULL when $includeNull is true. No-op when there is nothing to apply.
+     *
+     * @param  list<mixed>  $values
+     */
+    private function applyAnyOf(string $column, array $values, bool $includeNull): void
+    {
+        if ($values === [] && ! $includeNull) {
+            return;
+        }
+
+        $this->query->where(function (Builder $query) use ($column, $values, $includeNull): void {
+            if ($values !== []) {
+                $query->whereIn($column, $values);
+            }
+
+            if ($includeNull) {
+                $query->orWhereNull($column);
+            }
+        });
+    }
+
+    /**
      * Three-state boolean filter from `filter[<column>]`: filter when present and
      * non-empty (`1`→true, `0`→false), skip when absent — so "all / only-true /
      * only-false" are all expressible.
@@ -217,7 +275,8 @@ class FilterHelper
 
     /**
      * Exact-match enum filter from `filter[<column>]`, validated against its backed
-     * enum; an absent or invalid value is ignored.
+     * enum; an absent or invalid value is ignored. The raw value `none` matches NULL
+     * instead (see `NONE`).
      *
      * @param  array<string, class-string<BackedEnum>>  $map  ['column' => Enum::class]
      * @return self<TModel>
@@ -225,6 +284,14 @@ class FilterHelper
     public function enum(array $map): self
     {
         foreach ($map as $column => $enum) {
+            $raw = request()->input("filter.{$column}");
+
+            if ($raw === self::NONE) {
+                $this->query->whereNull($column);
+
+                continue;
+            }
+
             $value = request()->enum("filter.{$column}", $enum);
 
             if ($value !== null) {
@@ -237,7 +304,8 @@ class FilterHelper
 
     /**
      * Multi-value enum filter from a comma-separated `filter[<column>]`
-     * (`?filter[status]=open,closed`). Invalid members are dropped; empty is a no-op.
+     * (`?filter[status]=open,closed`). Invalid members are dropped; the `none` member
+     * matches NULL (see `NONE`); empty/absent is a no-op.
      *
      * @param  array<string, class-string<BackedEnum>>  $map  ['column' => Enum::class]
      * @return self<TModel>
@@ -251,14 +319,15 @@ class FilterHelper
                 continue;
             }
 
+            $members = array_map(trim(...), explode(',', $raw));
+            $includeNull = in_array(self::NONE, $members, true);
+
             $values = array_values(array_filter(array_map(
-                static fn (string $case): ?BackedEnum => $enum::tryFrom(trim($case)),
-                explode(',', $raw),
+                static fn (string $case): ?BackedEnum => $enum::tryFrom($case),
+                $members,
             )));
 
-            if ($values !== []) {
-                $this->query->whereIn($column, array_map(static fn (BackedEnum $e) => $e->value, $values));
-            }
+            $this->applyAnyOf($column, array_map(static fn (BackedEnum $e) => $e->value, $values), $includeNull);
         }
 
         return $this;

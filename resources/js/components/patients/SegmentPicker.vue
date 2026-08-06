@@ -7,6 +7,7 @@ import { useI18n } from 'vue-i18n';
 import FormField from '@/components/FormField.vue';
 import { destroy, store } from '@/routes/patient-segments';
 import type { PatientSegment, SegmentCriteria } from '@/types/patient';
+import { shouldFilterSelect } from '@/utils/selectFilter';
 
 const props = defineProps<{
     segments: PatientSegment[];
@@ -85,6 +86,8 @@ function removeSegment(segment: PatientSegment): void {
             option-label="name"
             option-value="id"
             :placeholder="t('segment.apply')"
+            :filter="shouldFilterSelect(segments.length)"
+            :filter-placeholder="t('common.search')"
             class="w-full sm:w-56"
             @update:model-value="onSelect"
         >

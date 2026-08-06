@@ -9,6 +9,7 @@ import type {
     AvailabilityDoctorOption,
     ScheduleExceptionFormData,
 } from '@/types/availability';
+import { shouldFilterSelect } from '@/utils/selectFilter';
 
 const props = defineProps<{
     doctors: AvailabilityDoctorOption[];
@@ -147,6 +148,8 @@ function submit(): void {
                     :options="doctorOptions"
                     option-label="label"
                     option-value="value"
+                    :filter="shouldFilterSelect(doctorOptions.length)"
+                    :filter-placeholder="t('common.search')"
                     fluid
                 />
             </FormField>

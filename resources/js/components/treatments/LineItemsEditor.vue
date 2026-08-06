@@ -15,6 +15,7 @@ import type {
     TreatmentProductOption,
     TreatmentServiceOption,
 } from '@/types/treatment';
+import { shouldFilterSelect } from '@/utils/selectFilter';
 import { lineSubtotal } from '@/utils/treatmentTotals';
 import { useTreatmentForm } from './formContext';
 
@@ -168,7 +169,8 @@ function error(index: number, field: string): string | undefined {
                             :options="options"
                             option-label="name"
                             option-value="id"
-                            filter
+                            :filter="shouldFilterSelect(options.length)"
+                            :filter-placeholder="t('common.search')"
                             :invalid="
                                 Boolean(
                                     error(

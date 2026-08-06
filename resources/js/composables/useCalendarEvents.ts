@@ -14,7 +14,8 @@ export type CalendarEventsState = 'idle' | 'loading' | 'loaded' | 'error';
 export type CalendarEventsParams = {
     start: string;
     end: string;
-    doctorId: number | null;
+    /** Selected doctor ids; empty = every doctor the viewer may see. */
+    doctorIds: number[];
     statuses: AppointmentStatus[];
 };
 
@@ -43,8 +44,8 @@ export function useCalendarEvents(params: () => CalendarEventsParams | null) {
                 query: {
                     start: current.start,
                     end: current.end,
-                    ...(current.doctorId !== null
-                        ? { doctor_id: current.doctorId }
+                    ...(current.doctorIds.length
+                        ? { doctor_id: current.doctorIds.join(',') }
                         : {}),
                     statuses: current.statuses,
                 },

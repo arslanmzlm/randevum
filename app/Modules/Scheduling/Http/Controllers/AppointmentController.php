@@ -62,9 +62,13 @@ class AppointmentController extends Controller
         return Inertia::render('appointments/Index', [
             'appointments' => AppointmentResource::collection($paginator),
             'doctors' => $doctors,
+            'services' => $this->serviceLookup->activeForBooking(),
+            'appointmentTypes' => $this->appointmentTypeService->listActiveForBooking(),
             'query' => FilterHelper::requestState([
                 'status' => 'string',
-                'doctor_id' => 'integer',
+                'doctor_id' => 'array',
+                'service_id' => 'string',
+                'appointment_type_id' => 'string',
                 'start_date' => 'string',
                 'end_date' => 'string',
             ]),

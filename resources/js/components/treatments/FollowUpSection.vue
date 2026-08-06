@@ -17,6 +17,7 @@ import type {
 } from '@/types/treatment';
 import { clampTime, combineDateTime } from '@/utils/appointmentTime';
 import { offsetDate } from '@/utils/followUpOccurrences';
+import { shouldFilterSelect } from '@/utils/selectFilter';
 import FollowUpOccurrenceRow from './FollowUpOccurrenceRow.vue';
 import { useTreatmentForm } from './formContext';
 
@@ -247,7 +248,8 @@ const { state: availabilityState, reason: availabilityReason } =
                             :options="serviceOptions"
                             option-label="label"
                             option-value="value"
-                            filter
+                            :filter="shouldFilterSelect(serviceOptions.length)"
+                            :filter-placeholder="t('common.search')"
                             show-clear
                             fluid
                         />

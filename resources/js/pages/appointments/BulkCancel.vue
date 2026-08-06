@@ -20,6 +20,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { index } from '@/routes/appointments';
 import type { BulkCancelProps } from '@/types/appointment';
 import { toDateString } from '@/utils/datetime';
+import { shouldFilterSelect } from '@/utils/selectFilter';
 
 defineOptions({ layout: AppLayout });
 
@@ -165,6 +166,8 @@ function submit(): void {
                         option-label="display_name"
                         option-value="id"
                         show-clear
+                        :filter="shouldFilterSelect(doctors.length)"
+                        :filter-placeholder="t('common.search')"
                         fluid
                     />
                 </FormField>

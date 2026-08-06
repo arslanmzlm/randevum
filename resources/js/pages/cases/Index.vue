@@ -15,6 +15,7 @@ import { index, show } from '@/routes/cases';
 import { show as patientShow } from '@/routes/patients';
 import type { CaseIndexProps } from '@/types/case';
 import { MVP_CASE_STATUSES } from '@/utils/caseStatus';
+import { shouldFilterSelect } from '@/utils/selectFilter';
 
 defineOptions({ layout: AppLayout });
 
@@ -125,6 +126,8 @@ const statusOptions = computed(() =>
                     option-value="id"
                     :placeholder="t('case_list.filter_doctor')"
                     show-clear
+                    :filter="shouldFilterSelect(doctors.length)"
+                    :filter-placeholder="t('common.search')"
                     class="w-full sm:w-52"
                 />
             </template>

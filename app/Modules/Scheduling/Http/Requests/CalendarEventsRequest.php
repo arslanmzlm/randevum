@@ -41,6 +41,17 @@ class CalendarEventsRequest extends FormRequest
         if (empty($this->input('statuses'))) {
             $this->merge(['statuses' => self::DEFAULT_STATUSES]);
         }
+
+        // `doctor_id` arrives as a comma-joined id list (`?doctor_id=3,7`); explode it onto
+        // the same key so the `array`/`integer` rules below validate each member.
+        $doctorId = $this->input('doctor_id');
+
+        if (is_string($doctorId)) {
+            $this->merge(['doctor_id' => array_values(array_filter(
+                array_map(trim(...), explode(',', $doctorId)),
+                static fn (string $id): bool => $id !== '',
+            ))]);
+        }
     }
 
     /**
@@ -53,8 +64,8 @@ class CalendarEventsRequest extends FormRequest
         return [
             'start' => ['required', 'date_format:Y-m-d'],
             'end' => ['required', 'date_format:Y-m-d', 'after_or_equal:start'],
-            'doctor_id' => [
-                'nullable',
+            'doctor_id' => ['nullable', 'array'],
+            'doctor_id.*' => [
                 'integer',
                 Rule::exists('doctors', 'id')->where('clinic_id', $clinicId),
             ],

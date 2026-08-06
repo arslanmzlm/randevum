@@ -37,7 +37,8 @@ export type Patient = {
 
 /** Saved-segment criteria — the queryable subset of the patient-list filters (search excluded). */
 export type SegmentCriteria = {
-    gender?: PatientGender;
+    /** `'none'` (FILTER_NONE) captures the "unspecified gender" filter. */
+    gender?: PatientGender | 'none';
     is_legacy?: boolean;
     tags?: number[];
     /** Y-m-d. */

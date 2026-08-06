@@ -88,4 +88,6 @@ export type CalendarColumn = {
     closedBands: CalendarClosedBand[];
     /** Column holds more than one doctor's leave → name each block (a doctor column doesn't). */
     namedLeave?: boolean;
+    /** doctor id → accent colour; set when the column mixes doctors (week view). */
+    doctorColors?: Record<number, string>;
 };

@@ -76,7 +76,7 @@ function openRefund(item: TransactionItem): void {
                         :href="treatmentShow(data.treatment_id).url"
                         class="text-primary-600 hover:underline"
                     >
-                        {{ t('balance.view_treatment') }}
+                        {{ t('treatment.actions.view') }}
                     </Link>
                     <span v-else class="text-surface-400">
                         {{ t('balance.standalone') }}

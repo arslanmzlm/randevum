@@ -1,7 +1,7 @@
 import { router } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { useCan } from '@/composables/useCan';
-import { start } from '@/routes/treatments';
+import { show, start } from '@/routes/treatments';
 import type { AppointmentStatus } from '@/types/enums';
 
 /** Minimal shape the treatment gate needs — satisfied by a list row and a calendar event alike. */
@@ -47,7 +47,27 @@ export function useTreatmentActions(ownDoctorId: number | null) {
         router.post(start(row.id).url);
     }
 
-    return { canStartTreatment, isResume, startTreatment };
+    /** Mirrors TreatmentPolicy::view — treatments.viewAll or the treatment's own doctor. */
+    function canViewTreatment(row: TreatableAppointment): boolean {
+        return (
+            row.treatment_id !== null &&
+            (can('treatments.viewAll') || row.doctor_id === ownDoctorId)
+        );
+    }
+
+    function viewTreatment(row: TreatableAppointment): void {
+        if (row.treatment_id !== null) {
+            router.visit(show(row.treatment_id).url);
+        }
+    }
+
+    return {
+        canStartTreatment,
+        isResume,
+        startTreatment,
+        canViewTreatment,
+        viewTreatment,
+    };
 }
 
 export type TreatmentActions = ReturnType<typeof useTreatmentActions>;

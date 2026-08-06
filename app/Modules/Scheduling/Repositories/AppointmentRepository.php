@@ -41,7 +41,7 @@ class AppointmentRepository
         $helper = FilterHelper::for($query)
             ->searchRelation('patient', ['first_name', 'last_name'], 'first_name', 'last_name', 'phone')
             ->enumMultiple(['status' => AppointmentStatus::class])
-            ->exact('doctor_id')
+            ->multiple('doctor_id', 'service_id', 'appointment_type_id')
             ->dateRange('starts_at', 'start_date', 'end_date', $timezone);
 
         // User-supplied sort wins; fall back to newest-first by starts_at.

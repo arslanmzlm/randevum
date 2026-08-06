@@ -4,6 +4,7 @@ namespace App\Modules\Medical\Http\Requests;
 
 use App\Enums\Gender;
 use App\Support\ClinicContext;
+use App\Support\FilterHelper;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -29,7 +30,9 @@ class StoreSegmentRequest extends FormRequest
             'criteria' => ['required', 'array'],
             // Criteria dimensions are limited to queryable Medical-owned data (gender,
             // is_legacy, tags, last-visit range) — balance is deferred, cross-module.
-            'criteria.gender' => ['nullable', Rule::enum(Gender::class)],
+            // The 'none' sentinel lets a segment capture the "Belirtilmemiş" (unspecified
+            // gender) filter the list UI now offers.
+            'criteria.gender' => ['nullable', 'string', Rule::in([...array_column(Gender::cases(), 'value'), FilterHelper::NONE])],
             'criteria.is_legacy' => ['nullable', 'boolean'],
             'criteria.tags' => ['nullable', 'array'],
             'criteria.tags.*' => [

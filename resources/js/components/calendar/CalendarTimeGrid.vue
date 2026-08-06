@@ -119,6 +119,7 @@ function markTop(minutes: number): number {
                         :is-today="col.isToday"
                         :now-minutes="nowMinutes"
                         :named-leave="col.namedLeave"
+                        :doctor-colors="col.doctorColors"
                         @select="(e, a) => emit('select', e, a)"
                     />
                 </div>

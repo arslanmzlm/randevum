@@ -526,6 +526,76 @@ it('doctor_id filter narrows results for a viewAll user to the specified doctor 
         ->and($data[0]['doctor_id'])->toBe($doctorA->id);
 });
 
+it('doctor_id filter with a comma-joined list returns both doctors events', function (): void {
+    $clinic = Clinic::factory()->create(['timezone' => 'Europe/Istanbul']);
+    $owner = User::factory()->create();
+    calRole($owner, 'owner', $clinic->id);
+
+    $doctorUserA = User::factory()->create();
+    $doctorA = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUserA->id]);
+    $doctorUserB = User::factory()->create();
+    $doctorB = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUserB->id]);
+    $doctorUserC = User::factory()->create();
+    $doctorC = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUserC->id]);
+
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+
+    calMakeAppointment($clinic, $doctorA, $patient, 10, 11);
+    calMakeAppointment($clinic, $doctorB, $patient, 12, 13);
+    calMakeAppointment($clinic, $doctorC, $patient, 14, 15);
+
+    $data = $this->actingAs($owner)
+        ->getJson(calEventsUrl(['doctor_id' => "{$doctorA->id},{$doctorB->id}"]))
+        ->assertOk()
+        ->json('data');
+
+    $doctorIds = array_column($data, 'doctor_id');
+    expect(count($data))->toBe(2)
+        ->and($doctorIds)->toContain($doctorA->id)
+        ->and($doctorIds)->toContain($doctorB->id)
+        ->and($doctorIds)->not->toContain($doctorC->id);
+});
+
+it('doctor_id filter with a foreign-clinic doctor id fails validation (422)', function (): void {
+    $clinicA = Clinic::factory()->create(['timezone' => 'Europe/Istanbul']);
+    $clinicB = Clinic::factory()->create(['timezone' => 'Europe/Istanbul']);
+
+    $ownerA = User::factory()->create();
+    calRole($ownerA, 'owner', $clinicA->id);
+
+    $doctorUserB = User::factory()->create();
+    $doctorB = Doctor::factory()->create(['clinic_id' => $clinicB->id, 'user_id' => $doctorUserB->id]);
+
+    $this->actingAs($ownerA)
+        ->getJson(calEventsUrl(['doctor_id' => (string) $doctorB->id]))
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('doctor_id.0');
+});
+
+it('a non-viewAll user passing another doctors id still gets only their own events', function (): void {
+    $clinic = Clinic::factory()->create(['timezone' => 'Europe/Istanbul']);
+
+    $doctorUserA = User::factory()->create();
+    $doctorA = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUserA->id]);
+    calRole($doctorUserA, 'doctor', $clinic->id);
+
+    $doctorUserB = User::factory()->create();
+    $doctorB = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUserB->id]);
+
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+
+    calMakeAppointment($clinic, $doctorA, $patient, 10, 11);
+    calMakeAppointment($clinic, $doctorB, $patient, 12, 13);
+
+    $data = $this->actingAs($doctorUserA)
+        ->getJson(calEventsUrl(['doctor_id' => (string) $doctorB->id]))
+        ->assertOk()
+        ->json('data');
+
+    expect(count($data))->toBe(1)
+        ->and($data[0]['doctor_id'])->toBe($doctorA->id);
+});
+
 // ---------------------------------------------------------------------------
 // DTO format and field completeness
 // ---------------------------------------------------------------------------

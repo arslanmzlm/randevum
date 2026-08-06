@@ -30,6 +30,8 @@ const props = defineProps<{
     nowMinutes?: number;
     /** Label each leave block with its doctor — a column that mixes doctors needs the name. */
     namedLeave?: boolean;
+    /** doctor id → accent colour; set when the column mixes doctors (week view). */
+    doctorColors?: Record<number, string>;
 }>();
 
 const emit = defineEmits<{
@@ -167,6 +169,7 @@ const nowLineTop = computed(() => {
             <CalendarEvent
                 :appointment="block.item"
                 :height-px="(block.endMin - block.startMin) * pxPerMinute"
+                :accent-color="doctorColors?.[block.item.doctor_id]"
                 @select="emit('select', $event, block.item)"
             />
         </div>

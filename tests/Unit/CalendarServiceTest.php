@@ -141,7 +141,7 @@ test('eventsFor with viewAll user returns all clinic doctors appointments', func
         ->and($doctorIds)->toContain($doctorB->id);
 });
 
-test('eventsFor with viewAll user and a doctorId returns only that doctors appointments', function (): void {
+test('eventsFor with viewAll user and a doctorIds array returns only that doctors appointments', function (): void {
     $clinic = Clinic::factory()->create(['timezone' => 'Europe/Istanbul']);
 
     $ownerUser = User::factory()->create();
@@ -165,13 +165,53 @@ test('eventsFor with viewAll user and a doctorId returns only that doctors appoi
         $ownerUser,
         $startUtc,
         $endUtc,
-        $doctorA->id,
+        [$doctorA->id],
         [AppointmentStatus::Confirmed],
         $clinic,
     );
 
     expect(count($result['data']))->toBe(1)
         ->and($result['data'][0]['doctor_id'])->toBe($doctorA->id);
+});
+
+test('eventsFor with viewAll user and a two-doctor doctorIds array returns both doctors appointments', function (): void {
+    $clinic = Clinic::factory()->create(['timezone' => 'Europe/Istanbul']);
+
+    $ownerUser = User::factory()->create();
+    csRole($ownerUser, 'owner', $clinic->id);
+
+    $doctorUserA = User::factory()->create();
+    $doctorA = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUserA->id]);
+
+    $doctorUserB = User::factory()->create();
+    $doctorB = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUserB->id]);
+
+    $doctorUserC = User::factory()->create();
+    $doctorC = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUserC->id]);
+
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+
+    csMakeAppointment($clinic, $doctorA, $patient, 10, 11);
+    csMakeAppointment($clinic, $doctorB, $patient, 12, 13);
+    csMakeAppointment($clinic, $doctorC, $patient, 14, 15);
+
+    csActivateClinic($clinic);
+    [$startUtc, $endUtc] = csRangeUtc($clinic);
+
+    $result = app(CalendarService::class)->eventsFor(
+        $ownerUser,
+        $startUtc,
+        $endUtc,
+        [$doctorA->id, $doctorB->id],
+        [AppointmentStatus::Confirmed],
+        $clinic,
+    );
+
+    $doctorIds = array_column($result['data'], 'doctor_id');
+    expect(count($result['data']))->toBe(2)
+        ->and($doctorIds)->toContain($doctorA->id)
+        ->and($doctorIds)->toContain($doctorB->id)
+        ->and($doctorIds)->not->toContain($doctorC->id);
 });
 
 // ---------------------------------------------------------------------------

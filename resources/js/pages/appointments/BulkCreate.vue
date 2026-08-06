@@ -28,6 +28,7 @@ import type {
     BulkPrecheckResponse,
 } from '@/types/appointment';
 import { combineDateTime } from '@/utils/appointmentTime';
+import { shouldFilterSelect } from '@/utils/selectFilter';
 
 defineOptions({ layout: AppLayout });
 
@@ -260,6 +261,10 @@ async function submit(): Promise<void> {
                                 option-label="label"
                                 option-value="value"
                                 :disabled="doctorLocked"
+                                :filter="
+                                    shouldFilterSelect(doctorOptions.length)
+                                "
+                                :filter-placeholder="t('common.search')"
                                 fluid
                             />
                         </FormField>
@@ -275,6 +280,10 @@ async function submit(): Promise<void> {
                                 option-label="label"
                                 option-value="value"
                                 show-clear
+                                :filter="
+                                    shouldFilterSelect(serviceOptions.length)
+                                "
+                                :filter-placeholder="t('common.search')"
                                 fluid
                             />
                         </FormField>

@@ -58,11 +58,13 @@ class CalendarController extends Controller
             $validated['statuses'],
         );
 
+        $doctorIds = array_map(intval(...), $validated['doctor_id'] ?? []);
+
         $result = $this->calendarService->eventsFor(
             $request->user(),
             $startUtc,
             $endUtc,
-            isset($validated['doctor_id']) ? (int) $validated['doctor_id'] : null,
+            $doctorIds === [] ? null : array_values($doctorIds),
             $statuses,
             $clinic,
         );

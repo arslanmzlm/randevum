@@ -39,6 +39,8 @@ import type {
 } from '@/types/appointment';
 import { MVP_APPOINTMENT_STATUSES } from '@/utils/appointmentStatus';
 import { parseDateString } from '@/utils/datetime';
+import { FILTER_NONE } from '@/utils/filterValues';
+import { shouldFilterSelect } from '@/utils/selectFilter';
 
 defineOptions({ layout: AppLayout });
 
@@ -66,9 +68,13 @@ const {
     confirmSendReminder,
 } = useAppointmentActions(props.ownDoctorId);
 
-const { canStartTreatment, isResume, startTreatment } = useTreatmentActions(
-    props.ownDoctorId,
-);
+const {
+    canStartTreatment,
+    isResume,
+    startTreatment,
+    canViewTreatment,
+    viewTreatment,
+} = useTreatmentActions(props.ownDoctorId);
 
 // One shared popup Menu retargeted per row on the kebab click (PrimeVue pattern).
 const actionsMenu = ref();
@@ -113,6 +119,18 @@ const menuItems = computed<RowMenuItem[]>(() => {
             tablerIcon: IconUserCheck,
             colorClass: 'text-primary-600',
             command: () => checkIn(row),
+        });
+    }
+
+    // A started-but-unfinished appointment is both startable and has a Draft; "start" already
+    // resumes it, so only offer "view" once the appointment is past the startable statuses.
+    if (!canStartTreatment(row) && canViewTreatment(row)) {
+        items.push({
+            key: 'view-treatment',
+            label: t('treatment.actions.view'),
+            tablerIcon: IconStethoscope,
+            colorClass: 'text-primary-600',
+            command: () => viewTreatment(row),
         });
     }
 
@@ -177,7 +195,9 @@ function toggleMenu(event: Event, row: AppointmentListItem): void {
 const { state, loading, first, sortField, sortOrder, onPage, onSort } =
     useTableFilters<{
         status: string[];
-        doctor_id: number | null;
+        doctor_id: string[];
+        service_id: string | null;
+        appointment_type_id: string | null;
         start_date: Date | null;
         end_date: Date | null;
     }>({
@@ -195,8 +215,16 @@ const { state, loading, first, sortField, sortOrder, onPage, onSort } =
                     : [],
             },
             doctor_id: {
-                type: 'number',
-                value: props.query.filter.doctor_id,
+                type: 'array',
+                value: props.query.filter.doctor_id ?? [],
+            },
+            service_id: {
+                type: 'string',
+                value: props.query.filter.service_id || null,
+            },
+            appointment_type_id: {
+                type: 'string',
+                value: props.query.filter.appointment_type_id || null,
             },
             start_date: {
                 type: 'date',
@@ -213,11 +241,21 @@ const { state, loading, first, sortField, sortOrder, onPage, onSort } =
         },
     });
 
+// MultiSelect binds numeric doctor ids; the filter state keeps string ids (URL/CSV canonical form).
+const selectedDoctorIds = computed<number[]>({
+    get: () => state.doctor_id.map(Number),
+    set: (ids) => {
+        state.doctor_id = ids.map(String);
+    },
+});
+
 const hasActiveFilters = computed(
     () =>
         !!state.search ||
         state.status.length > 0 ||
-        state.doctor_id !== null ||
+        state.doctor_id.length > 0 ||
+        !!state.service_id ||
+        !!state.appointment_type_id ||
         state.start_date !== null ||
         state.end_date !== null,
 );
@@ -233,6 +271,25 @@ const statusOptions = computed(() =>
         value: status,
     })),
 );
+
+// "Belirtilmemiş" is the last plain option (not a group) — it filters the column's NULL rows.
+const serviceFilterOptions = computed(() => [
+    ...props.services.map((service) => ({
+        label: service.name,
+        value: String(service.id),
+        color: null as string | null,
+    })),
+    { label: t('common.unspecified'), value: FILTER_NONE, color: null },
+]);
+
+const appointmentTypeFilterOptions = computed(() => [
+    ...props.appointmentTypes.map((type) => ({
+        label: type.name,
+        value: String(type.id),
+        color: type.color as string | null,
+    })),
+    { label: t('common.unspecified'), value: FILTER_NONE, color: null },
+]);
 
 // PrimeVue range DatePicker binds one [start, end] array; bridge it to the two
 // separate filter params. Mid-selection the array is [start, null] (valid partial filter).
@@ -323,16 +380,57 @@ const dateRange = computed<(Date | null)[] | null>({
                     show-clear
                     class="w-full sm:w-64"
                 />
-                <Select
+                <MultiSelect
                     v-if="canViewAll"
-                    v-model="state.doctor_id"
+                    v-model="selectedDoctorIds"
                     :options="doctors"
                     option-label="display_name"
                     option-value="id"
                     :placeholder="t('appointment_list.filter_doctor')"
+                    :max-selected-labels="0"
+                    :selected-items-label="`{0} ${t('common.doctor_selected_suffix')}`"
                     show-clear
+                    :filter="shouldFilterSelect(doctors.length)"
+                    :filter-placeholder="t('common.search')"
                     class="w-full sm:w-52"
                 />
+                <Select
+                    v-if="services.length"
+                    v-model="state.service_id"
+                    :options="serviceFilterOptions"
+                    option-label="label"
+                    option-value="value"
+                    :placeholder="t('appointment_list.filter_service')"
+                    show-clear
+                    :filter="shouldFilterSelect(serviceFilterOptions.length)"
+                    :filter-placeholder="t('common.search')"
+                    class="w-full sm:w-52"
+                />
+                <Select
+                    v-if="appointmentTypes.length"
+                    v-model="state.appointment_type_id"
+                    :options="appointmentTypeFilterOptions"
+                    option-label="label"
+                    option-value="value"
+                    :placeholder="t('appointment_list.filter_type')"
+                    show-clear
+                    :filter="
+                        shouldFilterSelect(appointmentTypeFilterOptions.length)
+                    "
+                    :filter-placeholder="t('common.search')"
+                    class="w-full sm:w-52"
+                >
+                    <template #option="{ option }">
+                        <span class="flex items-center gap-2">
+                            <span
+                                v-if="option.color"
+                                class="size-2.5 shrink-0 rounded-full"
+                                :style="{ backgroundColor: option.color }"
+                            />
+                            {{ option.label }}
+                        </span>
+                    </template>
+                </Select>
                 <DatePicker
                     v-model="dateRange"
                     selection-mode="range"
@@ -429,7 +527,11 @@ const dateRange = computed<(Date | null)[] | null>({
                 <template #body="{ data }">
                     <div class="flex justify-end">
                         <Button
-                            v-if="hasActions(data) || canStartTreatment(data)"
+                            v-if="
+                                hasActions(data) ||
+                                canStartTreatment(data) ||
+                                canViewTreatment(data)
+                            "
                             type="button"
                             severity="secondary"
                             text

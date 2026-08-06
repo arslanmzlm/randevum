@@ -21,6 +21,8 @@ import type {
     SegmentCriteria,
 } from '@/types/patient';
 import { parseDateString, toDateString } from '@/utils/datetime';
+import { FILTER_NONE } from '@/utils/filterValues';
+import { shouldFilterSelect } from '@/utils/selectFilter';
 
 defineOptions({ layout: AppLayout });
 
@@ -175,6 +177,8 @@ const genderOptions = computed(() => [
     { label: t('patient.gender.male'), value: 'male' },
     { label: t('patient.gender.female'), value: 'female' },
     { label: t('patient.gender.other'), value: 'other' },
+    // Last plain option (not a group): filters the rows with no gender recorded.
+    { label: t('common.unspecified'), value: FILTER_NONE },
 ]);
 
 const legacyOptions = computed(() => [
@@ -303,7 +307,8 @@ function genderLabel(gender: Patient['gender']): string {
                                 :max-selected-labels="0"
                                 :selected-items-label="`{0} ${t('tag.selected_suffix')}`"
                                 show-clear
-                                filter
+                                :filter="shouldFilterSelect(tags.length)"
+                                :filter-placeholder="t('common.search')"
                                 class="w-full"
                             >
                                 <template #option="{ option }">

@@ -16,6 +16,7 @@ import type {
     AvailabilityIndexProps,
     ScheduleException,
 } from '@/types/availability';
+import { shouldFilterSelect } from '@/utils/selectFilter';
 
 defineOptions({ layout: AppLayout });
 
@@ -146,6 +147,8 @@ function removeException(exception: ScheduleException): void {
                     option-value="value"
                     :placeholder="t('availability.filter_doctor')"
                     show-clear
+                    :filter="shouldFilterSelect(doctorOptions.length)"
+                    :filter-placeholder="t('common.search')"
                     class="w-full sm:w-72"
                 />
             </div>
