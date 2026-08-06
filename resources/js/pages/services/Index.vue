@@ -102,7 +102,6 @@ const statusOptions = computed(() => [
             v-model:visible="visible"
             :resource="serviceResource"
             :item="item"
-            :context="{ currency }"
         />
 
         <EmptyState

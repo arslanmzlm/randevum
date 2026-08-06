@@ -85,3 +85,39 @@ it('opens the service create dialog from the list with no JS errors', function (
         )
         ->screenshot();
 });
+
+it('creates a service from the booking form select without leaving the page', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+
+    app(PermissionRegistrar::class)->setPermissionsTeamId($clinic->id);
+    $owner->assignRole('owner');
+    app(PermissionRegistrar::class)->setPermissionsTeamId(null);
+
+    Service::factory()->create([
+        'clinic_id' => $clinic->id,
+        'vertical_id' => $clinic->vertical_id,
+        'name' => 'Bakım',
+        'is_active' => true,
+    ]);
+
+    $this->actingAs($owner);
+
+    $page = visit('/appointments/create');
+
+    // Open the service dropdown by its label, then its "add" footer action.
+    $page->script('(() => { const l = Array.from(document.querySelectorAll("label")).find(x => x.textContent.trim().startsWith("Hizmet")); l.closest(".p-floatlabel").querySelector(".p-select").dispatchEvent(new MouseEvent("click", {bubbles: true})); })()');
+    $page->script('Array.from(document.querySelectorAll(".p-select-overlay button")).find(b => b.textContent.includes("Hizmet Ekle")).dispatchEvent(new MouseEvent("click", {bubbles: true}))');
+
+    $page->assertSee('Hizmet Ekle')
+        // The only fluid text input in the dialog is the name field; price is required too.
+        ->type('.p-dialog input.p-inputtext-fluid', 'Hızlı Bakım')
+        // First number input is the price (the second is the optional duration).
+        ->type('.p-dialog input[inputmode=decimal]', '300')
+        ->click('Hizmeti Ekle')
+        ->assertNoJavascriptErrors();
+
+    expect(Service::where('name', 'Hızlı Bakım')->exists())->toBeTrue();
+
+    $page->assertUrlIs(config('app.url').'/appointments/create');
+});

@@ -3,12 +3,14 @@ import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useCrudContext, useCrudForm } from '@/components/crud/crudFormContext';
 import FormField from '@/components/FormField.vue';
+import { useMoney } from '@/composables/useMoney';
 import type { ExpenseFormData } from '@/types/expense';
 
 const { t } = useI18n();
 
 const form = useCrudForm<ExpenseFormData>();
-const context = useCrudContext<{ categories: string[]; currency: string }>();
+const context = useCrudContext<{ categories: string[] }>();
+const { currency } = useMoney();
 
 // Free-text AutoComplete (no forceSelection): suggest the clinic's existing categories, but a
 // typed-in new value is kept and submitted as-is (the products pattern).
@@ -47,7 +49,7 @@ function filterCategories(query: string): void {
                 <InputNumber
                     v-model="form.amount"
                     mode="currency"
-                    :currency="context.currency"
+                    :currency="currency"
                     :min="0"
                     :max-fraction-digits="2"
                     fluid

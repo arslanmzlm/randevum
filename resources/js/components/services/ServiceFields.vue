@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import { IconFileText } from '@tabler/icons-vue';
 import { useI18n } from 'vue-i18n';
-import { useCrudContext, useCrudForm } from '@/components/crud/crudFormContext';
+import { useCrudForm } from '@/components/crud/crudFormContext';
 import FormField from '@/components/FormField.vue';
 import SettingRow from '@/components/SettingRow.vue';
+import { useMoney } from '@/composables/useMoney';
 import type { ServiceFormData } from '@/types/service';
 
 const { t } = useI18n();
 
 const form = useCrudForm<ServiceFormData>();
-const context = useCrudContext<{ currency: string }>();
+const { currency } = useMoney();
 </script>
 
 <template>
@@ -31,7 +32,7 @@ const context = useCrudContext<{ currency: string }>();
                 <InputNumber
                     v-model="form.price"
                     mode="currency"
-                    :currency="context.currency"
+                    :currency="currency"
                     :min="0"
                     :max-fraction-digits="2"
                     fluid

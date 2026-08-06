@@ -2,7 +2,11 @@
 import { IconClipboardList } from '@tabler/icons-vue';
 import { useI18n } from 'vue-i18n';
 import AppointmentTypeSelect from '@/components/AppointmentTypeSelect.vue';
+import CreatableSelect from '@/components/crud/CreatableSelect.vue';
 import FormField from '@/components/FormField.vue';
+import { useCan } from '@/composables/useCan';
+import { serviceResource } from '@/crud/service';
+import type { Service } from '@/types/service';
 import { useAppointmentForm } from './formContext';
 
 withDefaults(
@@ -22,8 +26,23 @@ withDefaults(
 );
 
 const { t } = useI18n();
+const { can } = useCan();
 
 const form = useAppointmentForm();
+
+// A service added from here reaches the page's own list through the prop reload, which also
+// re-labels it with its duration; this is only the shape used until that lands.
+function serviceToOption(service: Service): { label: string; value: number } {
+    return {
+        label: service.duration_minutes
+            ? t('appointment.service_option', {
+                  name: service.name,
+                  minutes: service.duration_minutes,
+              })
+            : service.name,
+        value: service.id,
+    };
+}
 </script>
 
 <template>
@@ -71,13 +90,16 @@ const form = useAppointmentForm();
                 :error="form.errors.service_id"
                 :hint="t('appointment.hints.service')"
             >
-                <Select
+                <CreatableSelect
                     v-model="form.service_id"
                     :options="serviceOptions"
                     option-label="label"
                     option-value="value"
+                    :resource="serviceResource"
+                    :to-option="serviceToOption"
+                    :reload-only="['services']"
+                    :can-create="can('services.create')"
                     show-clear
-                    fluid
                 />
             </FormField>
 

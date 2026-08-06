@@ -138,8 +138,8 @@ it('creates a type from the booking form select without leaving the page', funct
 
     $page = visit('/appointments/create');
 
-    // Open the type dropdown, then its "add" footer action.
-    $page->script('document.querySelectorAll(".p-select")[1].dispatchEvent(new MouseEvent("click", {bubbles: true}))');
+    // Open the type dropdown by its label, then its "add" footer action.
+    $page->script('(() => { const l = Array.from(document.querySelectorAll("label")).find(x => x.textContent.trim().startsWith("Randevu türü")); l.closest(".p-floatlabel").querySelector(".p-select").dispatchEvent(new MouseEvent("click", {bubbles: true})); })()');
     $page->script('Array.from(document.querySelectorAll(".p-select-overlay button")).find(b => b.textContent.includes("Tür Ekle")).dispatchEvent(new MouseEvent("click", {bubbles: true}))');
 
     $page->assertSee('Randevu Türü Ekle')

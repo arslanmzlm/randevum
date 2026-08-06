@@ -8,6 +8,7 @@ import {
 } from '@/components/crud/crudFormContext';
 import FormField from '@/components/FormField.vue';
 import SettingRow from '@/components/SettingRow.vue';
+import { useMoney } from '@/composables/useMoney';
 import type {
     ProductCreateFormData,
     ProductSuggestions,
@@ -16,7 +17,8 @@ import type {
 const { t } = useI18n();
 
 const form = useCrudForm<ProductCreateFormData>();
-const context = useCrudContext<ProductSuggestions & { currency: string }>();
+const context = useCrudContext<ProductSuggestions>();
+const { currency } = useMoney();
 const isEdit = useCrudIsEdit();
 
 // Free-text AutoComplete (no forceSelection): suggest the clinic's existing values, but a typed
@@ -50,7 +52,7 @@ function filterList(source: string[], query: string): string[] {
                 <InputNumber
                     v-model="form.price"
                     mode="currency"
-                    :currency="context.currency"
+                    :currency="currency"
                     :min="0"
                     :max-fraction-digits="2"
                     fluid

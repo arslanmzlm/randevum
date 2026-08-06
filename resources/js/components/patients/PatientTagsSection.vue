@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import { useForm } from '@inertiajs/vue3';
-import { IconTag } from '@tabler/icons-vue';
+import { router, useForm } from '@inertiajs/vue3';
+import { IconPlus, IconTag } from '@tabler/icons-vue';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import CrudDialog from '@/components/crud/CrudDialog.vue';
 import SectionCard from '@/components/SectionCard.vue';
 import TagChip from '@/components/TagChip.vue';
 import { useCan } from '@/composables/useCan';
+import { tagResource } from '@/crud/tag';
 import { sync } from '@/routes/patients/tags';
 import type { Patient } from '@/types/patient';
-import type { Tag } from '@/types/tag';
+import type { Tag, TagWithCount } from '@/types/tag';
 
 const props = defineProps<{
     patient: Patient;
@@ -20,6 +22,7 @@ const { t } = useI18n();
 const { can } = useCan();
 
 const canManage = computed(() => can('patients.update'));
+const canCreateTag = computed(() => can('tags.manage'));
 
 const currentTags = computed<Tag[]>(() => props.patient.tags ?? []);
 
@@ -48,6 +51,19 @@ function persist(ids: number[]): void {
 
 function save(): void {
     persist([...selectedIds.value]);
+}
+
+// Quick-add reuses the tag dialog in inline mode: the picker's own list is a page prop, so it is
+// reloaded before the new tag is ticked. The section still saves on its own button.
+const dialogVisible = ref(false);
+
+function onTagCreated(tag: TagWithCount): void {
+    router.reload({
+        only: ['allTags'],
+        onSuccess: () => {
+            selectedIds.value = [...selectedIds.value, tag.id];
+        },
+    });
 }
 
 // Removing a chip is a client edit persisted immediately via the full-replace sync
@@ -97,6 +113,23 @@ function removeTag(id: number): void {
                             {{ t('tag.no_options') }}
                         </span>
                     </template>
+                    <template v-if="canCreateTag" #footer>
+                        <div class="border-t border-surface-200 p-1">
+                            <Button
+                                type="button"
+                                severity="secondary"
+                                text
+                                size="small"
+                                class="w-full justify-start"
+                                :label="t('tag.add')"
+                                @click="dialogVisible = true"
+                            >
+                                <template #icon>
+                                    <IconPlus class="size-4" />
+                                </template>
+                            </Button>
+                        </div>
+                    </template>
                 </MultiSelect>
                 <Button
                     type="button"
@@ -106,6 +139,15 @@ function removeTag(id: number): void {
                     @click="save"
                 />
             </div>
+
+            <CrudDialog
+                v-if="canCreateTag"
+                v-model:visible="dialogVisible"
+                mode="inline"
+                :resource="tagResource"
+                :item="null"
+                @saved="onTagCreated"
+            />
         </div>
     </SectionCard>
 </template>

@@ -123,7 +123,7 @@ function openStockDialog(product: Product): void {
             v-model:visible="visible"
             :resource="productResource"
             :item="item"
-            :context="{ currency, brands, categories }"
+            :context="{ brands, categories }"
         />
 
         <EmptyState

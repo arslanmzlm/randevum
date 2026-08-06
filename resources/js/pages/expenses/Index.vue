@@ -95,7 +95,7 @@ const { visible, item, openCreate, openEdit } = useCrudDialog<Expense>({
             v-model:visible="visible"
             :resource="expenseResource"
             :item="item"
-            :context="{ categories, currency }"
+            :context="{ categories }"
         />
     </div>
 </template>
