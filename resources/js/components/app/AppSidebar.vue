@@ -27,12 +27,28 @@ const { t } = useI18n();
             class="flex h-16 shrink-0 items-center gap-3"
             :class="props.collapsed ? 'justify-center px-2' : 'px-6'"
         >
+            <!-- Collapsed uses the icon variant, expanded the wordmark; both fall back to the base
+                 logo server-side, so a clinic that uploaded only one image still shows it. -->
             <img
-                v-if="clinic?.logo_url"
-                :src="clinic.logo_url"
+                v-if="props.collapsed && clinic?.logo_icon_url"
+                :src="clinic.logo_icon_url"
                 :alt="clinic.name"
                 class="size-9 shrink-0 rounded-lg object-cover"
             />
+            <template v-else-if="!props.collapsed">
+                <img
+                    v-if="clinic?.logo_url"
+                    :src="clinic.logo_url"
+                    :alt="clinic.name"
+                    class="size-9 shrink-0 rounded-lg object-cover dark:hidden"
+                />
+                <img
+                    v-if="clinic?.logo_dark_url"
+                    :src="clinic.logo_dark_url"
+                    :alt="clinic.name"
+                    class="hidden size-9 shrink-0 rounded-lg object-cover dark:block"
+                />
+            </template>
             <span
                 v-if="!props.collapsed"
                 class="truncate text-lg font-semibold"

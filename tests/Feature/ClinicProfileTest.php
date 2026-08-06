@@ -50,6 +50,8 @@ function clinicUpdatePayload(Clinic $clinic): array
         'district' => null,
         'address' => null,
         'postal_code' => null,
+        'latitude' => null,
+        'longitude' => null,
         'default_slot_duration_minutes' => 45,
         'auto_no_show_enabled' => true,
         'auto_no_show_grace_hours' => 2,
@@ -98,6 +100,26 @@ it('GET /clinic props include countries, cities, vertical, and image URL keys', 
             ->has('clinic.cover_mobile_url')
             ->has('clinic.working_hours')
             ->has('clinic.default_slot_duration_minutes')
+        );
+});
+
+it('GET /clinic props include coordinates, logo variant URLs and mapDefaults', function (): void {
+    $clinic = Clinic::factory()->create(['latitude' => 41.0082, 'longitude' => 28.9784]);
+    $owner = User::factory()->create();
+    clinicRole($owner, 'owner', $clinic->id);
+
+    $this->actingAs($owner)
+        ->get(route('clinic.edit'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('clinic.latitude', 41.0082)
+            ->where('clinic.longitude', 28.9784)
+            ->has('clinic.logo_dark_url')
+            ->has('clinic.logo_icon_url')
+            ->where('mapDefaults.lat', 39)
+            ->where('mapDefaults.lng', 35)
+            ->where('mapDefaults.zoom', 6)
+            ->where('mapDefaults.selected_zoom', 15)
         );
 });
 
@@ -196,6 +218,58 @@ it('PUT /clinic persists updated default_slot_duration_minutes', function (): vo
         ->assertRedirect();
 
     expect($clinic->fresh()->default_slot_duration_minutes)->toBe(60);
+});
+
+it('owner PUT /clinic with coordinates persists latitude and longitude', function (): void {
+    $clinic = Clinic::factory()->create(['latitude' => null, 'longitude' => null]);
+    $owner = User::factory()->create();
+    clinicRole($owner, 'owner', $clinic->id);
+
+    $payload = array_merge(clinicUpdatePayload($clinic), [
+        'latitude' => 41.0082,
+        'longitude' => 28.9784,
+    ]);
+
+    $this->actingAs($owner)
+        ->put(route('clinic.update'), $payload)
+        ->assertRedirect();
+
+    $fresh = $clinic->fresh();
+    expect((float) $fresh->latitude)->toBe(41.0082)
+        ->and((float) $fresh->longitude)->toBe(28.9784);
+});
+
+it('PUT /clinic with both coordinates null clears a previously saved location', function (): void {
+    $clinic = Clinic::factory()->create(['latitude' => 41.0082, 'longitude' => 28.9784]);
+    $owner = User::factory()->create();
+    clinicRole($owner, 'owner', $clinic->id);
+
+    $this->actingAs($owner)
+        ->put(route('clinic.update'), clinicUpdatePayload($clinic))
+        ->assertRedirect();
+
+    $fresh = $clinic->fresh();
+    expect($fresh->latitude)->toBeNull()
+        ->and($fresh->longitude)->toBeNull();
+});
+
+it('a manager can persist clinic coordinates', function (): void {
+    $clinic = Clinic::factory()->create(['latitude' => null, 'longitude' => null]);
+    $manager = User::factory()->create();
+    clinicRole($manager, 'manager', $clinic->id);
+
+    $payload = array_merge(clinicUpdatePayload($clinic), [
+        'latitude' => 39.9334,
+        'longitude' => 32.8597,
+    ]);
+
+    $this->actingAs($manager)
+        ->put(route('clinic.update'), $payload)
+        ->assertRedirect();
+
+    $fresh = $clinic->fresh();
+    expect((float) $fresh->latitude)->toBe(39.9334)
+        ->and((float) $fresh->longitude)->toBe(32.8597);
 });
 
 // ---------------------------------------------------------------------------
@@ -302,6 +376,54 @@ it('rejects PUT /clinic when working_hours is missing entirely', function (): vo
         ->assertSessionHasErrors('working_hours');
 });
 
+it('rejects PUT /clinic with only latitude set (longitude required_with)', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    clinicRole($owner, 'owner', $clinic->id);
+
+    $payload = array_merge(clinicUpdatePayload($clinic), ['latitude' => 41.0082]);
+
+    $this->actingAs($owner)
+        ->put(route('clinic.update'), $payload)
+        ->assertSessionHasErrors('longitude');
+});
+
+it('rejects PUT /clinic with only longitude set (latitude required_with)', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    clinicRole($owner, 'owner', $clinic->id);
+
+    $payload = array_merge(clinicUpdatePayload($clinic), ['longitude' => 28.9784]);
+
+    $this->actingAs($owner)
+        ->put(route('clinic.update'), $payload)
+        ->assertSessionHasErrors('latitude');
+});
+
+it('rejects PUT /clinic when latitude is out of range', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    clinicRole($owner, 'owner', $clinic->id);
+
+    $payload = array_merge(clinicUpdatePayload($clinic), ['latitude' => 95, 'longitude' => 28.9784]);
+
+    $this->actingAs($owner)
+        ->put(route('clinic.update'), $payload)
+        ->assertSessionHasErrors('latitude');
+});
+
+it('rejects PUT /clinic when longitude is out of range', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    clinicRole($owner, 'owner', $clinic->id);
+
+    $payload = array_merge(clinicUpdatePayload($clinic), ['latitude' => 41.0082, 'longitude' => -181]);
+
+    $this->actingAs($owner)
+        ->put(route('clinic.update'), $payload)
+        ->assertSessionHasErrors('longitude');
+});
+
 it('a doctor of the same clinic gets 403 on PUT /clinic', function (): void {
     $clinic = Clinic::factory()->create(['name' => 'Original Name']);
     $doctor = User::factory()->create();
@@ -389,6 +511,65 @@ it('owner can remove a logo and the collection is empty afterwards', function ()
         ->assertRedirect();
 
     expect($clinic->fresh()->getMedia('logo'))->toHaveCount(0);
+});
+
+it('owner can upload a logo_dark and it lands in the logo_dark collection', function (): void {
+    Storage::fake(config('media-library.disk_name'));
+    Queue::fake();
+
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    clinicRole($owner, 'owner', $clinic->id);
+
+    $this->actingAs($owner)
+        ->post(route('clinic.media.update', ['collection' => 'logo_dark']), [
+            'image' => UploadedFile::fake()->image('logo-dark.png', 256, 256),
+        ])
+        ->assertRedirect();
+
+    expect($clinic->fresh()->getMedia('logo_dark'))->toHaveCount(1);
+});
+
+it('owner can remove a logo_icon and the collection is empty afterwards', function (): void {
+    Storage::fake(config('media-library.disk_name'));
+    Queue::fake();
+
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    clinicRole($owner, 'owner', $clinic->id);
+
+    $clinic->addMedia(UploadedFile::fake()->image('icon.png', 256, 256))
+        ->toMediaCollection('logo_icon');
+    expect($clinic->getMedia('logo_icon'))->toHaveCount(1);
+
+    $this->actingAs($owner)
+        ->delete(route('clinic.media.remove', ['collection' => 'logo_icon']))
+        ->assertRedirect();
+
+    expect($clinic->fresh()->getMedia('logo_icon'))->toHaveCount(0);
+});
+
+it('shared activeClinic props fall back to the base logo when only logo is uploaded', function (): void {
+    Storage::fake(config('media-library.disk_name'));
+    Queue::fake();
+
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    clinicRole($owner, 'owner', $clinic->id);
+
+    $clinic->addMedia(UploadedFile::fake()->image('logo.png', 256, 256))
+        ->toMediaCollection('logo');
+    $clinic->refresh();
+
+    $baseLogoUrl = $clinic->imageUrl('logo', 'thumb');
+
+    $this->actingAs($owner)
+        ->get(route('clinic.edit'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('activeClinic.logo_dark_url', $baseLogoUrl)
+            ->where('activeClinic.logo_icon_url', $baseLogoUrl)
+        );
 });
 
 it('owner can upload a cover image meeting the 1920×1080 minimum', function (): void {
@@ -545,6 +726,22 @@ it('a doctor gets 403 when trying to upload media', function (): void {
         ->assertForbidden();
 
     expect($clinic->fresh()->getMedia('logo'))->toHaveCount(0);
+});
+
+it('a doctor of the same clinic gets 403 on POST /clinic/media/logo_icon', function (): void {
+    Storage::fake(config('media-library.disk_name'));
+
+    $clinic = Clinic::factory()->create();
+    $doctor = User::factory()->create();
+    clinicRole($doctor, 'doctor', $clinic->id);
+
+    $this->actingAs($doctor)
+        ->post(route('clinic.media.update', ['collection' => 'logo_icon']), [
+            'image' => UploadedFile::fake()->image('icon.png', 256, 256),
+        ])
+        ->assertForbidden();
+
+    expect($clinic->fresh()->getMedia('logo_icon'))->toHaveCount(0);
 });
 
 it('a doctor gets 403 when trying to remove media', function (): void {

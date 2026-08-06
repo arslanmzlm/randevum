@@ -26,7 +26,7 @@ class UpdateClinicMediaRequest extends FormRequest
         $dimensionRule = match ($collection) {
             'cover' => 'dimensions:min_width=1920,min_height=1080',
             'cover_mobile' => 'dimensions:min_width=1440,min_height=1440',
-            default => 'dimensions:min_width=128,min_height=128', // logo
+            default => 'dimensions:min_width=128,min_height=128', // logo, logo_dark, logo_icon
         };
 
         return [

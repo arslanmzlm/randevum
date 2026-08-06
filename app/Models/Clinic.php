@@ -145,6 +145,8 @@ class Clinic extends Model implements HasMedia
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('logo')->singleFile();
+        $this->addMediaCollection('logo_dark')->singleFile();
+        $this->addMediaCollection('logo_icon')->singleFile();
         $this->addMediaCollection('cover')->singleFile();
         $this->addMediaCollection('cover_mobile')->singleFile();
     }
@@ -161,7 +163,7 @@ class Clinic extends Model implements HasMedia
                 ->fit(Fit::Max, $w, $h)
                 ->format('webp')
                 ->quality(90)
-                ->performOnCollections('logo')
+                ->performOnCollections('logo', 'logo_dark', 'logo_icon')
                 ->queued();
         }
 
@@ -192,5 +194,11 @@ class Clinic extends Model implements HasMedia
                 ->performOnCollections('cover_mobile')
                 ->queued();
         }
+    }
+
+    /** Logo variant with fallback to the base logo; null only when no logo at all is uploaded. */
+    public function logoUrl(string $collection = 'logo', string $conversion = 'medium'): ?string
+    {
+        return $this->imageUrl($collection, $conversion) ?? $this->imageUrl('logo', $conversion);
     }
 }

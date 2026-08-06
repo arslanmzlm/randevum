@@ -222,13 +222,30 @@ export const tr = {
             podiatry: 'Podoloji',
         },
         media: {
+            group_logo: 'Logo varyantları',
+            group_cover: 'Kapak görselleri',
             logo: 'Logo',
+            logo_dark: 'Logo (koyu zemin)',
+            logo_icon: 'Logo (ikon)',
             cover: 'Kapak görseli (web)',
             cover_mobile: 'Kapak görseli (mobil)',
-            logo_hint: 'Kare görsel, en az 128×128 piksel.',
+            logo_hint: 'Açık zeminde kullanılır. En az 128×128 piksel.',
+            logo_dark_hint:
+                'Koyu zeminde kullanılır. Yüklenmezse ana logo gösterilir.',
+            logo_icon_hint:
+                'Dar kenar çubuğunda kullanılır; kare/simge biçimi. Yüklenmezse ana logo gösterilir.',
             cover_hint: '16:9 görsel, en az 1920×1080 piksel.',
             cover_mobile_hint: 'Kare görsel, en az 1440×1440 piksel.',
             remove_confirm: 'Bu görseli kaldırmak istediğinize emin misiniz?',
+        },
+        map: {
+            title: 'Konum',
+            hint: 'Haritaya tıklayarak veya pini sürükleyerek kliniğinizin konumunu seçin. Konum seçmek zorunlu değildir.',
+            empty: 'Konum seçilmedi',
+            selected: 'Seçili konum: {lat}, {lng}',
+            clear: 'Konumu temizle',
+            attribution: '© OpenStreetMap katkıda bulunanlar',
+            loading: 'Harita yükleniyor…',
         },
     },
     doctor: {

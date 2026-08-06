@@ -43,6 +43,8 @@ class UpdateClinicRequest extends FormRequest
             'district' => ['nullable', 'string', 'max:100'],
             'address' => ['nullable', 'string'],
             'postal_code' => ['nullable', 'string', 'max:20'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90', 'required_with:longitude'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180', 'required_with:latitude'],
             'default_slot_duration_minutes' => ['required', 'integer', 'min:5', 'max:480'],
             'auto_no_show_enabled' => ['required', 'boolean'],
             'auto_no_show_grace_hours' => ['required', 'integer', 'min:0', 'max:168'],

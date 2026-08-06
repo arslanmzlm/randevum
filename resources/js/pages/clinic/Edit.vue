@@ -19,6 +19,7 @@ import ClinicInfoFields from '@/components/clinic/ClinicInfoFields.vue';
 import ClinicSmsSettingsForm from '@/components/clinic/ClinicSmsSettingsForm.vue';
 import { provideClinicForm } from '@/components/clinic/formContext';
 import ImageUploadField from '@/components/ImageUploadField.vue';
+import type { MapDefaults } from '@/components/map/types';
 import PageHeader from '@/components/PageHeader.vue';
 import PillTabs from '@/components/PillTabs.vue';
 import SectionCard from '@/components/SectionCard.vue';
@@ -48,6 +49,8 @@ const props = defineProps<{
     sms: ClinicSmsPanel | null;
     /** clinic.update — false for a viewer who only holds the SMS permission. */
     canEditClinic: boolean;
+    /** Where the location picker opens when the clinic has no saved coordinates. */
+    mapDefaults: MapDefaults;
 }>();
 
 const { t, te } = useI18n();
@@ -64,6 +67,8 @@ const form = useForm({
     district: props.clinic.district ?? '',
     address: props.clinic.address ?? '',
     postal_code: props.clinic.postal_code ?? '',
+    latitude: props.clinic.latitude,
+    longitude: props.clinic.longitude,
     default_slot_duration_minutes: props.clinic.default_slot_duration_minutes,
     auto_no_show_enabled: props.clinic.auto_no_show_enabled,
     auto_no_show_grace_hours: props.clinic.auto_no_show_grace_hours,
@@ -179,40 +184,100 @@ function submit(): void {
                         :icon="IconPhoto"
                         :title="t('clinic.sections.media')"
                     >
-                        <div class="grid grid-cols-1 gap-6 sm:grid-cols-3">
-                            <ImageUploadField
-                                :url="clinic.logo_url"
-                                :label="t('clinic.media.logo')"
-                                :hint="t('clinic.media.logo_hint')"
-                                :upload-url="updateMedia('logo').url"
-                                :remove-url="removeMedia('logo').url"
-                                :remove-confirm="
-                                    t('clinic.media.remove_confirm')
-                                "
-                                aspect-class="aspect-square"
-                            />
-                            <ImageUploadField
-                                :url="clinic.cover_url"
-                                :label="t('clinic.media.cover')"
-                                :hint="t('clinic.media.cover_hint')"
-                                :upload-url="updateMedia('cover').url"
-                                :remove-url="removeMedia('cover').url"
-                                :remove-confirm="
-                                    t('clinic.media.remove_confirm')
-                                "
-                                aspect-class="aspect-video"
-                            />
-                            <ImageUploadField
-                                :url="clinic.cover_mobile_url"
-                                :label="t('clinic.media.cover_mobile')"
-                                :hint="t('clinic.media.cover_mobile_hint')"
-                                :upload-url="updateMedia('cover_mobile').url"
-                                :remove-url="removeMedia('cover_mobile').url"
-                                :remove-confirm="
-                                    t('clinic.media.remove_confirm')
-                                "
-                                aspect-class="aspect-square"
-                            />
+                        <div class="flex flex-col gap-8">
+                            <div class="flex flex-col gap-4">
+                                <h3
+                                    class="text-sm font-semibold text-surface-900"
+                                >
+                                    {{ t('clinic.media.group_logo') }}
+                                </h3>
+                                <div
+                                    class="grid grid-cols-1 gap-6 sm:grid-cols-3"
+                                >
+                                    <ImageUploadField
+                                        :url="clinic.logo_url"
+                                        :label="t('clinic.media.logo')"
+                                        :hint="t('clinic.media.logo_hint')"
+                                        :upload-url="updateMedia('logo').url"
+                                        :remove-url="removeMedia('logo').url"
+                                        :remove-confirm="
+                                            t('clinic.media.remove_confirm')
+                                        "
+                                        aspect-class="aspect-square"
+                                    />
+                                    <ImageUploadField
+                                        :url="clinic.logo_dark_url"
+                                        :label="t('clinic.media.logo_dark')"
+                                        :hint="t('clinic.media.logo_dark_hint')"
+                                        :upload-url="
+                                            updateMedia('logo_dark').url
+                                        "
+                                        :remove-url="
+                                            removeMedia('logo_dark').url
+                                        "
+                                        :remove-confirm="
+                                            t('clinic.media.remove_confirm')
+                                        "
+                                        aspect-class="aspect-square"
+                                        tile-class="bg-surface-900"
+                                    />
+                                    <ImageUploadField
+                                        :url="clinic.logo_icon_url"
+                                        :label="t('clinic.media.logo_icon')"
+                                        :hint="t('clinic.media.logo_icon_hint')"
+                                        :upload-url="
+                                            updateMedia('logo_icon').url
+                                        "
+                                        :remove-url="
+                                            removeMedia('logo_icon').url
+                                        "
+                                        :remove-confirm="
+                                            t('clinic.media.remove_confirm')
+                                        "
+                                        aspect-class="aspect-square"
+                                    />
+                                </div>
+                            </div>
+
+                            <div class="flex flex-col gap-4">
+                                <h3
+                                    class="text-sm font-semibold text-surface-900"
+                                >
+                                    {{ t('clinic.media.group_cover') }}
+                                </h3>
+                                <div
+                                    class="grid grid-cols-1 gap-6 sm:grid-cols-2"
+                                >
+                                    <ImageUploadField
+                                        :url="clinic.cover_url"
+                                        :label="t('clinic.media.cover')"
+                                        :hint="t('clinic.media.cover_hint')"
+                                        :upload-url="updateMedia('cover').url"
+                                        :remove-url="removeMedia('cover').url"
+                                        :remove-confirm="
+                                            t('clinic.media.remove_confirm')
+                                        "
+                                        aspect-class="aspect-video"
+                                    />
+                                    <ImageUploadField
+                                        :url="clinic.cover_mobile_url"
+                                        :label="t('clinic.media.cover_mobile')"
+                                        :hint="
+                                            t('clinic.media.cover_mobile_hint')
+                                        "
+                                        :upload-url="
+                                            updateMedia('cover_mobile').url
+                                        "
+                                        :remove-url="
+                                            removeMedia('cover_mobile').url
+                                        "
+                                        :remove-confirm="
+                                            t('clinic.media.remove_confirm')
+                                        "
+                                        aspect-class="aspect-square"
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </SectionCard>
                 </div>
@@ -234,6 +299,7 @@ function submit(): void {
                         <ClinicAddressFields
                             :countries="countries"
                             :cities="cities"
+                            :map-defaults="mapDefaults"
                         />
                     </SectionCard>
                 </div>

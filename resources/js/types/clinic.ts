@@ -33,11 +33,16 @@ export type Clinic = {
     district: string | null;
     address: string | null;
     postal_code: string | null;
+    latitude: number | null;
+    longitude: number | null;
     default_slot_duration_minutes: number;
     auto_no_show_enabled: boolean;
     auto_no_show_grace_hours: number;
     working_hours: WorkingHours;
     logo_url: string | null;
+    /** Raw collection state (no fallback) — the uploader must show what is actually stored. */
+    logo_dark_url: string | null;
+    logo_icon_url: string | null;
     cover_url: string | null;
     cover_mobile_url: string | null;
 };
@@ -55,6 +60,8 @@ export type ClinicFormData = {
     district: string;
     address: string;
     postal_code: string;
+    latitude: number | null;
+    longitude: number | null;
     default_slot_duration_minutes: number;
     auto_no_show_enabled: boolean;
     auto_no_show_grace_hours: number;
@@ -73,6 +80,9 @@ export type SharedClinic = {
     id: number;
     name: string;
     logo_url: string | null;
+    /** Logo variants with the base-logo fallback already applied server-side. */
+    logo_dark_url: string | null;
+    logo_icon_url: string | null;
     /** Clinic IANA timezone — single source for useDateTime()/calendar local rendering. */
     timezone: string;
     /** ISO 4217 currency code — single source for useMoney() money formatting. */

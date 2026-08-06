@@ -102,4 +102,24 @@ return [
         'resend_throttle' => (int) env('PLATFORM_OTP_RESEND_THROTTLE', 60),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Map
+    |--------------------------------------------------------------------------
+    |
+    | Where the location picker opens when a clinic has no saved coordinates,
+    | and the zoom it snaps to once a point is chosen. Never inline a country
+    | centre in the frontend — a second country only changes env here.
+    |
+    */
+
+    'map' => [
+        'default_center' => [
+            'lat' => (float) env('PLATFORM_MAP_DEFAULT_LAT', 39.0),
+            'lng' => (float) env('PLATFORM_MAP_DEFAULT_LNG', 35.0),
+        ],
+        'default_zoom' => (int) env('PLATFORM_MAP_DEFAULT_ZOOM', 6),
+        'selected_zoom' => (int) env('PLATFORM_MAP_SELECTED_ZOOM', 15),
+    ],
+
 ];

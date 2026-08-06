@@ -23,6 +23,10 @@
     color-scheme: dark;
 }
 
+/* Point Tailwind's `dark:` at the app's own `.dark` class (the same selector PrimeVue's
+   darkModeSelector uses) instead of the OS preference, so both flip together. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* Adds centering + padding to Tailwind's stepped `container`; toggled with container-fluid (useContentWidth). */
 @utility container {
     margin-inline: auto;

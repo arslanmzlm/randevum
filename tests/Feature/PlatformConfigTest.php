@@ -20,3 +20,10 @@ it('reads edit windows from the environment', function (): void {
 
     expect(config('platform.edit_windows.treatment'))->toBe(3600);
 });
+
+it('defines the map default centre and zoom levels', function (): void {
+    expect(config('platform.map.default_center.lat'))->toBe(39.0)
+        ->and(config('platform.map.default_center.lng'))->toBe(35.0)
+        ->and(config('platform.map.default_zoom'))->toBe(6)
+        ->and(config('platform.map.selected_zoom'))->toBe(15);
+});

@@ -6,6 +6,9 @@ use App\Support\ClinicContext;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\PermissionRegistrar;
 
 uses(RefreshDatabase::class);
@@ -45,6 +48,8 @@ function clinicIsoPayload(Clinic $clinic, string $name = 'Updated Name'): array
         'district' => null,
         'address' => null,
         'postal_code' => null,
+        'latitude' => null,
+        'longitude' => null,
         'default_slot_duration_minutes' => 30,
         'auto_no_show_enabled' => true,
         'auto_no_show_grace_hours' => 2,
@@ -169,4 +174,65 @@ it('owner B PUT /clinic cannot overwrite owner A data even indirectly', function
 
     expect($clinicB->fresh()->name)->toBe('Beta Changed')
         ->and($clinicA->fresh()->name)->toBe('Alpha Protected');
+});
+
+it('owner A PUT /clinic coordinates never leak into clinic B', function (): void {
+    $clinicA = Clinic::factory()->create(['name' => 'Alpha', 'latitude' => null, 'longitude' => null]);
+    $clinicB = Clinic::factory()->create(['name' => 'Beta', 'latitude' => null, 'longitude' => null]);
+
+    $ownerA = User::factory()->create();
+    clinicIsoRole($ownerA, 'owner', $clinicA->id);
+
+    $payload = array_merge(clinicIsoPayload($clinicA, 'Alpha'), [
+        'latitude' => 41.0082,
+        'longitude' => 28.9784,
+    ]);
+
+    $this->actingAs($ownerA)
+        ->put(route('clinic.update'), $payload)
+        ->assertRedirect();
+
+    $freshA = $clinicA->fresh();
+    $freshB = $clinicB->fresh();
+    expect((float) $freshA->latitude)->toBe(41.0082)
+        ->and((float) $freshA->longitude)->toBe(28.9784)
+        ->and($freshB->latitude)->toBeNull()
+        ->and($freshB->longitude)->toBeNull();
+});
+
+it('owner A POST /clinic/media/logo_icon stores media on clinic A only', function (): void {
+    Storage::fake(config('media-library.disk_name'));
+    Queue::fake();
+
+    $clinicA = Clinic::factory()->create(['name' => 'Alpha']);
+    $clinicB = Clinic::factory()->create(['name' => 'Beta']);
+
+    $ownerA = User::factory()->create();
+    clinicIsoRole($ownerA, 'owner', $clinicA->id);
+
+    $this->actingAs($ownerA)
+        ->post(route('clinic.media.update', ['collection' => 'logo_icon']), [
+            'image' => UploadedFile::fake()->image('icon.png', 256, 256),
+        ])
+        ->assertRedirect();
+
+    expect($clinicA->fresh()->getMedia('logo_icon'))->toHaveCount(1)
+        ->and($clinicB->fresh()->getMedia('logo_icon'))->toHaveCount(0);
+});
+
+it("owner B's GET /clinic never exposes clinic A's coordinates", function (): void {
+    $clinicA = Clinic::factory()->create(['name' => 'Alpha', 'latitude' => 41.0082, 'longitude' => 28.9784]);
+    $clinicB = Clinic::factory()->create(['name' => 'Beta', 'latitude' => null, 'longitude' => null]);
+
+    $ownerB = User::factory()->create();
+    clinicIsoRole($ownerB, 'owner', $clinicB->id);
+
+    $this->actingAs($ownerB)
+        ->get(route('clinic.edit'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('clinic.id', $clinicB->id)
+            ->where('clinic.latitude', null)
+            ->where('clinic.longitude', null)
+        );
 });

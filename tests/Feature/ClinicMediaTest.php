@@ -47,6 +47,74 @@ it('keeps only one file in a single-file collection', function (): void {
     expect($clinic->getMedia('logo'))->toHaveCount(1);
 });
 
+it('registers logo_dark as a single-file collection', function (): void {
+    Queue::fake();
+
+    // A fresh Clinic per collection: calling getMedia() caches the model's `media`
+    // relation, and a later addMedia() on a DIFFERENT collection saved through the
+    // same cached instance would trim against that stale snapshot.
+    $clinic = Clinic::factory()->create();
+    $clinic->addMedia(UploadedFile::fake()->image('dark-a.png'))->toMediaCollection('logo_dark');
+    $clinic->addMedia(UploadedFile::fake()->image('dark-b.png'))->toMediaCollection('logo_dark');
+
+    expect($clinic->getMedia('logo_dark'))->toHaveCount(1);
+});
+
+it('registers logo_icon as a single-file collection', function (): void {
+    Queue::fake();
+
+    $clinic = Clinic::factory()->create();
+    $clinic->addMedia(UploadedFile::fake()->image('icon-a.png'))->toMediaCollection('logo_icon');
+    $clinic->addMedia(UploadedFile::fake()->image('icon-b.png'))->toMediaCollection('logo_icon');
+
+    expect($clinic->getMedia('logo_icon'))->toHaveCount(1);
+});
+
+it('registers large/medium/thumb conversions for logo_dark and logo_icon', function (): void {
+    $clinic = Clinic::factory()->create();
+    $clinic->registerAllMediaConversions();
+
+    $forCollection = fn (string $collection) => collect($clinic->mediaConversions)
+        ->filter(fn ($conversion) => in_array($collection, $conversion->getPerformOnCollections(), true))
+        ->map->getName();
+
+    expect($forCollection('logo_dark'))->toContain('large', 'medium', 'thumb')
+        ->and($forCollection('logo_icon'))->toContain('large', 'medium', 'thumb');
+});
+
+it('stores logo_dark and logo_icon media under the same tenant/clinic path prefix', function (): void {
+    Queue::fake();
+
+    $clinic = Clinic::factory()->create();
+
+    $darkMedia = $clinic->addMedia(UploadedFile::fake()->image('dark.png', 600, 600))
+        ->toMediaCollection('logo_dark');
+    $iconMedia = $clinic->addMedia(UploadedFile::fake()->image('icon.png', 600, 600))
+        ->toMediaCollection('logo_icon');
+
+    expect($darkMedia->getPathRelativeToRoot())
+        ->toStartWith("tenants/{$clinic->tenant_id}/clinics/{$clinic->id}/")
+        ->and($iconMedia->getPathRelativeToRoot())
+        ->toStartWith("tenants/{$clinic->tenant_id}/clinics/{$clinic->id}/");
+});
+
+it('Clinic::logoUrl falls back to the base logo, then to null', function (): void {
+    Queue::fake();
+
+    $clinic = Clinic::factory()->create();
+
+    expect($clinic->logoUrl('logo_icon'))->toBeNull();
+
+    $clinic->addMedia(UploadedFile::fake()->image('logo.png', 600, 600))->toMediaCollection('logo');
+    $clinic->refresh();
+    expect($clinic->logoUrl('logo_icon'))->toBe($clinic->imageUrl('logo', 'medium'));
+
+    $clinic->addMedia(UploadedFile::fake()->image('icon.png', 600, 600))->toMediaCollection('logo_icon');
+    $clinic->refresh();
+    expect($clinic->logoUrl('logo_icon'))->toBe($clinic->imageUrl('logo_icon', 'medium'))
+        ->and($clinic->logoUrl('logo_icon'))->not->toBe($clinic->imageUrl('logo', 'medium'));
+});
+
 it('refuses media for a clinic-scoped owner without a defined path branch', function (): void {
     $patient = Patient::factory()->create();
 

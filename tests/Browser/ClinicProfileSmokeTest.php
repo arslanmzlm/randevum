@@ -48,3 +48,27 @@ it('renders the clinic profile page with body content and no JS errors', functio
         )
         ->screenshot();
 });
+
+it('renders the map location picker on the contact tab', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+
+    app(PermissionRegistrar::class)->setPermissionsTeamId($clinic->id);
+    $owner->assignRole('owner');
+    app(PermissionRegistrar::class)->setPermissionsTeamId(null);
+
+    $this->actingAs($owner);
+
+    visit('/clinic?tab=contact')
+        ->assertNoJavascriptErrors()
+        ->assertSee('Adres')
+        ->assertSee('Konum')
+        ->assertScript(
+            '() => (document.querySelector("main")?.innerText.trim().length ?? 0) > 0',
+        )
+        // Leaflet stamps this class on its host once the map actually mounts. OSM
+        // tiles may fail to load in the test network — that's a failed image
+        // request, not a JS error, so this assertion stays valid regardless.
+        ->assertScript('() => !!document.querySelector(".leaflet-container")')
+        ->screenshot();
+});

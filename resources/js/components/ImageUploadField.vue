@@ -13,6 +13,8 @@ const props = defineProps<{
     hint?: string;
     /** Tailwind aspect-ratio class for the preview tile (e.g. `aspect-video`). */
     aspectClass: string;
+    /** Preview-tile background; a dark-surface logo is invisible on the default light tile. */
+    tileClass?: string;
     /** POST endpoint that stores the uploaded image (multipart). */
     uploadUrl: string;
     /** DELETE endpoint that clears the image. */
@@ -87,9 +89,10 @@ function remove(): void {
         <!-- The preview tile is the drop zone and doubles as the picker, so the whole thing is
              clickable rather than only the button below. -->
         <div
-            class="relative w-full max-w-xs cursor-pointer overflow-hidden rounded-xl border bg-surface-50 transition-colors"
+            class="relative w-full max-w-xs cursor-pointer overflow-hidden rounded-xl border transition-colors"
             :class="[
                 aspectClass,
+                tileClass ?? 'bg-surface-50',
                 isDragging
                     ? 'border-2 border-dashed border-primary-400 bg-primary-50'
                     : 'border-surface-200',

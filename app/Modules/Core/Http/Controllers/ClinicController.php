@@ -20,6 +20,9 @@ use Inertia\Response;
 
 class ClinicController extends Controller
 {
+    /** @var list<string> */
+    private const MEDIA_COLLECTIONS = ['logo', 'logo_dark', 'logo_icon', 'cover', 'cover_mobile'];
+
     public function __construct(
         private ClinicContext $clinicContext,
         private ClinicProfileService $profileService,
@@ -61,6 +64,12 @@ class ClinicController extends Controller
             // viewer lacks smsSettings.view — the tab is then not rendered at all.
             'sms' => $sms,
             'canEditClinic' => $canEditClinic,
+            'mapDefaults' => [
+                'lat' => (float) config('platform.map.default_center.lat'),
+                'lng' => (float) config('platform.map.default_center.lng'),
+                'zoom' => (int) config('platform.map.default_zoom'),
+                'selected_zoom' => (int) config('platform.map.selected_zoom'),
+            ],
         ]);
     }
 
@@ -79,7 +88,7 @@ class ClinicController extends Controller
 
     public function updateMedia(UpdateClinicMediaRequest $request, string $collection): RedirectResponse
     {
-        abort_unless(in_array($collection, ['logo', 'cover', 'cover_mobile'], true), 404);
+        abort_unless(in_array($collection, self::MEDIA_COLLECTIONS, true), 404);
 
         $clinic = $this->clinicContext->clinicOrFail();
 
@@ -94,7 +103,7 @@ class ClinicController extends Controller
 
     public function removeMedia(Request $request, string $collection): RedirectResponse
     {
-        abort_unless(in_array($collection, ['logo', 'cover', 'cover_mobile'], true), 404);
+        abort_unless(in_array($collection, self::MEDIA_COLLECTIONS, true), 404);
 
         $clinic = $this->clinicContext->clinicOrFail();
 
@@ -125,11 +134,17 @@ class ClinicController extends Controller
             'district' => $clinic->district,
             'address' => $clinic->address,
             'postal_code' => $clinic->postal_code,
+            // decimal:7 cast returns a string; the props contract types these `number | null`.
+            'latitude' => $clinic->latitude === null ? null : (float) $clinic->latitude,
+            'longitude' => $clinic->longitude === null ? null : (float) $clinic->longitude,
             'default_slot_duration_minutes' => $clinic->default_slot_duration_minutes,
             'auto_no_show_enabled' => $clinic->auto_no_show_enabled,
             'auto_no_show_grace_hours' => $clinic->auto_no_show_grace_hours,
             'working_hours' => $clinic->working_hours,
             'logo_url' => $clinic->imageUrl('logo'),
+            // Raw collection, no fallback: the uploader must show what is actually stored here.
+            'logo_dark_url' => $clinic->imageUrl('logo_dark'),
+            'logo_icon_url' => $clinic->imageUrl('logo_icon'),
             'cover_url' => $clinic->imageUrl('cover'),
             'cover_mobile_url' => $clinic->imageUrl('cover_mobile'),
         ];
