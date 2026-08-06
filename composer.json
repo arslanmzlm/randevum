@@ -80,6 +80,10 @@
         "test": [
             "@php artisan config:clear --ansi",
             "@lint:check",
+            "@php artisan test --parallel"
+        ],
+        "test:serial": [
+            "@php artisan config:clear --ansi",
             "@php artisan test"
         ],
         "post-autoload-dump": [
