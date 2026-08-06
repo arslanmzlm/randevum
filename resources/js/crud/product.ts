@@ -19,8 +19,8 @@ export const productResource: CrudResource<ProductCreateFormData, Product> = {
         current_stock: null,
         is_active: true,
     }),
-    // current_stock stays null on edit: the field is hidden and UpdateProductRequest doesn't
-    // validate it, so stock only ever changes through the stock adjustment.
+    // On edit current_stock is shown read-only; UpdateProductRequest doesn't validate the key, so
+    // it is dropped server-side and stock still only moves through the stock adjustment.
     toForm: (product) => ({
         name: product.name,
         description: product.description ?? '',
@@ -29,7 +29,7 @@ export const productResource: CrudResource<ProductCreateFormData, Product> = {
         sku: product.sku ?? '',
         unit: product.unit,
         price: Number(product.price),
-        current_stock: null,
+        current_stock: product.current_stock,
         is_active: product.is_active,
     }),
     fields: ProductFields,

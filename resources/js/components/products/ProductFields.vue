@@ -57,16 +57,21 @@ function filterList(source: string[], query: string): string[] {
                 />
             </FormField>
 
-            <!-- Opening stock only: an existing product's stock is adjusted from the list. -->
+            <!-- Editable as the opening level on create; afterwards it only reports where stock
+                 stands, because moving it goes through the list's stock adjustment. -->
             <FormField
-                v-if="!isEdit"
                 :label="t('product.fields.current_stock')"
                 :error="form.errors.current_stock"
-                :hint="t('product.hints.current_stock')"
+                :hint="
+                    isEdit
+                        ? t('product.hints.stock_managed')
+                        : t('product.hints.current_stock')
+                "
             >
                 <InputNumber
                     v-model="form.current_stock"
                     :use-grouping="false"
+                    :disabled="isEdit"
                     fluid
                 />
             </FormField>

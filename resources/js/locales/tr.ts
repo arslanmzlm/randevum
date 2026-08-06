@@ -553,6 +553,8 @@ export const tr = {
             current_stock:
                 'Stok negatife düşebilir; başlangıç değeri boş bırakılırsa 0 kabul edilir.',
             stock: 'Stok adedini hızlıca güncelleyin. Negatif değer girilebilir.',
+            stock_managed:
+                'Stok yalnızca listedeki stok güncelleme işlemiyle değişir.',
         },
     },
     availability: {

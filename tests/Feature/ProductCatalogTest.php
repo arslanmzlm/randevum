@@ -448,6 +448,23 @@ it('the list resolves ?edit into an editing prop with the resource shape', funct
         );
 });
 
+it('ignores current_stock sent with an update, so the read-only field cannot move stock', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    pcTestRole($owner, 'owner', $clinic->id);
+
+    $product = Product::factory()->create([
+        'clinic_id' => $clinic->id,
+        'vertical_id' => $clinic->vertical_id,
+        'current_stock' => 60,
+    ]);
+
+    $this->actingAs($owner)
+        ->put(route('products.update', $product), pcStorePayload(['current_stock' => 999]));
+
+    expect($product->fresh()->current_stock)->toBe(60);
+});
+
 it('the list leaves editing null without ?edit and for a viewer without update rights', function (): void {
     $clinic = Clinic::factory()->create();
     $owner = User::factory()->create();
