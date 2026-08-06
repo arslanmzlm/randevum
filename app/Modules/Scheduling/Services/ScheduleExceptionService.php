@@ -34,7 +34,7 @@ class ScheduleExceptionService
      */
     public function store(array $data, User $actor): void
     {
-        $clinic = Clinic::findOrFail($this->clinicContext->id());
+        $clinic = $this->clinicContext->clinicOrFail();
 
         if ($data['scope'] === 'clinic') {
             // Conflicting-appointment preview + cancel handled when appointments exist

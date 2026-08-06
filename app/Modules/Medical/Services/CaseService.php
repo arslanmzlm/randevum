@@ -6,7 +6,6 @@ use App\Enums\CaseStatus;
 use App\Enums\TreatmentStatus;
 use App\Models\Appointment;
 use App\Models\CaseRecord;
-use App\Models\Clinic;
 use App\Models\Treatment;
 use App\Models\User;
 use App\Modules\Core\Services\StatusLogService;
@@ -185,7 +184,7 @@ class CaseService
     public function createForPatient(array $data, User $actor): CaseRecord
     {
         $treatmentIds = $data['treatment_ids'] ?? [];
-        $clinic = Clinic::findOrFail($this->clinicContext->id());
+        $clinic = $this->clinicContext->clinicOrFail();
 
         if (! empty($treatmentIds)) {
             $doctorId = $this->resolveDoctorFromTreatments($treatmentIds, (int) $data['patient_id'], $actor);

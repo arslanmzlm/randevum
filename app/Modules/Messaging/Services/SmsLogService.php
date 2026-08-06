@@ -2,7 +2,6 @@
 
 namespace App\Modules\Messaging\Services;
 
-use App\Models\Clinic;
 use App\Models\Patient;
 use App\Models\SmsLog;
 use App\Modules\Messaging\Contracts\SmsHistoryContract;
@@ -23,7 +22,7 @@ class SmsLogService implements SmsHistoryContract
      */
     public function listForActiveClinic(): LengthAwarePaginator
     {
-        $clinic = Clinic::findOrFail($this->clinicContext->id());
+        $clinic = $this->clinicContext->clinicOrFail();
 
         return $this->repository->paginateForActiveClinic($clinic->timezone);
     }

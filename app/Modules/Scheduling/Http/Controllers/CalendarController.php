@@ -5,7 +5,6 @@ namespace App\Modules\Scheduling\Http\Controllers;
 use App\Enums\AppointmentStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
-use App\Models\Clinic;
 use App\Modules\Core\Contracts\DoctorDirectoryContract;
 use App\Modules\Scheduling\Http\Requests\CalendarEventsRequest;
 use App\Modules\Scheduling\Services\CalendarService;
@@ -28,7 +27,7 @@ class CalendarController extends Controller
     {
         $this->authorize('viewAny', Appointment::class);
 
-        $clinic = Clinic::findOrFail($this->clinicContext->id());
+        $clinic = $this->clinicContext->clinicOrFail();
 
         $doctors = $this->doctorDirectory->activeForClinic()
             ->map(fn ($d) => ['id' => $d->id, 'display_name' => $d->display_name]);
@@ -47,7 +46,7 @@ class CalendarController extends Controller
     {
         $this->authorize('viewAny', Appointment::class);
 
-        $clinic = Clinic::findOrFail($this->clinicContext->id());
+        $clinic = $this->clinicContext->clinicOrFail();
         $validated = $request->validated();
         $tz = $clinic->timezone;
 

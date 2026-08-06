@@ -66,7 +66,7 @@ class ClinicController extends Controller
 
     public function update(UpdateClinicRequest $request): RedirectResponse
     {
-        $clinic = Clinic::findOrFail($this->clinicContext->id());
+        $clinic = $this->clinicContext->clinicOrFail();
 
         $this->authorize('update', $clinic);
 
@@ -81,7 +81,7 @@ class ClinicController extends Controller
     {
         abort_unless(in_array($collection, ['logo', 'cover', 'cover_mobile'], true), 404);
 
-        $clinic = Clinic::findOrFail($this->clinicContext->id());
+        $clinic = $this->clinicContext->clinicOrFail();
 
         $this->authorize('update', $clinic);
 
@@ -96,7 +96,7 @@ class ClinicController extends Controller
     {
         abort_unless(in_array($collection, ['logo', 'cover', 'cover_mobile'], true), 404);
 
-        $clinic = Clinic::findOrFail($this->clinicContext->id());
+        $clinic = $this->clinicContext->clinicOrFail();
 
         $this->authorize('update', $clinic);
 

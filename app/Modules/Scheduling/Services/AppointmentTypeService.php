@@ -64,7 +64,7 @@ class AppointmentTypeService
      */
     public function create(array $data): AppointmentType
     {
-        $clinic = Clinic::findOrFail($this->clinicContext->id());
+        $clinic = $this->clinicContext->clinicOrFail();
         $data['vertical_id'] = $clinic->vertical_id;
 
         // clinic_id is auto-set by BelongsToClinic on create — not set manually.

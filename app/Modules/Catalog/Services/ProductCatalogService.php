@@ -2,7 +2,6 @@
 
 namespace App\Modules\Catalog\Services;
 
-use App\Models\Clinic;
 use App\Models\Product;
 use App\Modules\Catalog\Contracts\StockAdjusterContract;
 use App\Modules\Catalog\Repositories\ProductRepository;
@@ -60,7 +59,7 @@ class ProductCatalogService implements StockAdjusterContract
      */
     public function create(array $data): Product
     {
-        $clinic = Clinic::findOrFail($this->clinicContext->id());
+        $clinic = $this->clinicContext->clinicOrFail();
         $data['vertical_id'] = $clinic->vertical_id;
 
         // Passing null explicitly would violate the NOT NULL constraint — fall back to the

@@ -3,7 +3,6 @@
 namespace App\Modules\Medical\Services;
 
 use App\Models\CaseRecord;
-use App\Models\Clinic;
 use App\Models\User;
 use App\Modules\Core\Contracts\FollowUpRemindersContract;
 use App\Modules\Medical\Repositories\CaseRepository;
@@ -26,7 +25,7 @@ class FollowUpReminderService implements FollowUpRemindersContract
             return [];
         }
 
-        $clinic = Clinic::findOrFail($this->clinicContext->id());
+        $clinic = $this->clinicContext->clinicOrFail();
 
         // follow_up_date is a tz-less DATE; compare against the clinic's local calendar date.
         $today = Carbon::now($clinic->timezone)->toDateString();

@@ -3,7 +3,6 @@
 namespace App\Modules\Billing\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Models\Clinic;
 use App\Models\Expense;
 use App\Modules\Billing\Services\ExpenseService;
 use App\Modules\Billing\Services\FinanceReportService;
@@ -28,7 +27,7 @@ class FinanceController extends Controller
         $this->authorize('reports.revenue');
         $this->authorize('viewAny', Expense::class);
 
-        $clinic = Clinic::findOrFail($this->clinicContext->id());
+        $clinic = $this->clinicContext->clinicOrFail();
         [$entire, $start, $end] = DateRangeFilter::resolve($request, $clinic->timezone);
         $category = DateRangeFilter::category($request);
 
@@ -56,7 +55,7 @@ class FinanceController extends Controller
     {
         $this->authorize('reports.revenue');
 
-        $clinic = Clinic::findOrFail($this->clinicContext->id());
+        $clinic = $this->clinicContext->clinicOrFail();
         $this->reportService->clearCache($clinic->id);
 
         Toast::success(__('revenue.cache_cleared'));

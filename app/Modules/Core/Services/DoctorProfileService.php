@@ -2,7 +2,6 @@
 
 namespace App\Modules\Core\Services;
 
-use App\Models\Clinic;
 use App\Models\Doctor;
 use App\Models\User;
 use App\Modules\Core\Contracts\AppointmentCancellationContract;
@@ -44,7 +43,7 @@ class DoctorProfileService
     public function addDoctor(array $validated): Doctor
     {
         return DB::transaction(function () use ($validated): Doctor {
-            $clinic = Clinic::findOrFail($this->clinicContext->id());
+            $clinic = $this->clinicContext->clinicOrFail();
 
             $user = User::create([
                 'first_name' => $validated['first_name'],

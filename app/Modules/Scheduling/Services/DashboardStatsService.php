@@ -29,7 +29,7 @@ class DashboardStatsService implements DashboardStatsContract
             return ['appointments' => null, 'revenue' => null, 'today_schedule' => null];
         }
 
-        $clinic = Clinic::findOrFail($clinicId);
+        $clinic = $this->clinicContext->clinicOrFail();
 
         return [
             'appointments' => $this->appointmentStats($user, $clinic->timezone),

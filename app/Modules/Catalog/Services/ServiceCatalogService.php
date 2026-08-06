@@ -2,7 +2,6 @@
 
 namespace App\Modules\Catalog\Services;
 
-use App\Models\Clinic;
 use App\Models\Service;
 use App\Modules\Catalog\Contracts\ServiceLookupContract;
 use App\Modules\Catalog\Repositories\ServiceRepository;
@@ -46,7 +45,7 @@ class ServiceCatalogService implements ServiceLookupContract
      */
     public function create(array $data): Service
     {
-        $clinic = Clinic::findOrFail($this->clinicContext->id());
+        $clinic = $this->clinicContext->clinicOrFail();
         $data['vertical_id'] = $clinic->vertical_id;
 
         // clinic_id is auto-set by BelongsToClinic on create — not set manually.

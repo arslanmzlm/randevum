@@ -276,7 +276,7 @@ class TreatmentService
         }
 
         // mode === 'new'
-        $clinic = Clinic::findOrFail($this->clinicContext->id());
+        $clinic = $this->clinicContext->clinicOrFail();
 
         $case = $this->caseRepository->create([
             'patient_id' => $treatment->patient_id,

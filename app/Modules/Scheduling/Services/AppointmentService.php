@@ -58,7 +58,7 @@ class AppointmentService implements AppointmentCancellationContract, Appointment
      */
     public function listForActiveClinic(User $user): LengthAwarePaginator
     {
-        $clinic = Clinic::findOrFail($this->clinicContext->id());
+        $clinic = $this->clinicContext->clinicOrFail();
 
         if ($user->can('appointments.viewAll')) {
             $doctorIds = null;
@@ -138,7 +138,7 @@ class AppointmentService implements AppointmentCancellationContract, Appointment
      */
     public function create(array $data, User $actor): Appointment
     {
-        $clinic = Clinic::findOrFail($this->clinicContext->id());
+        $clinic = $this->clinicContext->clinicOrFail();
 
         $duration = $this->availabilityService->resolveDuration(
             ! empty($data['duration_minutes']) ? (int) $data['duration_minutes'] : null,
@@ -231,7 +231,7 @@ class AppointmentService implements AppointmentCancellationContract, Appointment
             ]);
         }
 
-        $clinic = Clinic::findOrFail($this->clinicContext->id());
+        $clinic = $this->clinicContext->clinicOrFail();
 
         $duration = $this->availabilityService->resolveDuration(
             ! empty($data['duration_minutes']) ? (int) $data['duration_minutes'] : null,
@@ -465,7 +465,7 @@ class AppointmentService implements AppointmentCancellationContract, Appointment
      */
     private function bulkCancelCriteria(array $data, User $user): array
     {
-        $clinic = Clinic::findOrFail($this->clinicContext->id());
+        $clinic = $this->clinicContext->clinicOrFail();
         $tz = $clinic->timezone;
 
         $fromUtc = Carbon::createFromFormat('Y-m-d', $data['start_date'], $tz)->startOfDay()->utc();
@@ -687,7 +687,7 @@ class AppointmentService implements AppointmentCancellationContract, Appointment
      */
     public function scheduleFollowUps(array $criteria, User $actor): array
     {
-        $clinic = Clinic::findOrFail($this->clinicContext->id());
+        $clinic = $this->clinicContext->clinicOrFail();
 
         $doctorId = (int) $criteria['doctor_id'];
         $patientId = (int) $criteria['patient_id'];
@@ -779,7 +779,7 @@ class AppointmentService implements AppointmentCancellationContract, Appointment
      */
     public function precheckBulkConflicts(array $data): array
     {
-        $clinic = Clinic::findOrFail($this->clinicContext->id());
+        $clinic = $this->clinicContext->clinicOrFail();
 
         $doctorId = (int) $data['doctor_id'];
         $serviceId = ! empty($data['service_id']) ? (int) $data['service_id'] : null;
