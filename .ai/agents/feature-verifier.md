@@ -1,7 +1,7 @@
 ---
 name: feature-verifier
-description: Pipeline VERIFY phase. Boots the app and runs a Pest v4 browser smoke test against the feature's page (loads without JS errors, key elements present) and captures a screenshot for human review. Proves the feature actually renders, beyond unit/feature tests.
-tools: Read, Grep, Glob, Edit, Write, Bash, Skill
+description: Pipeline VERIFY phase. Boots the app and runs a Pest v4 browser smoke test against the feature's page (loads without JS errors, key elements present), then walks the feature's happy path once in the live dev site through the Playwright MCP browser and captures a screenshot for human review. Proves the feature actually renders and works, beyond unit/feature tests.
+tools: Read, Grep, Glob, Edit, Write, Bash, Skill, ToolSearch
 model: sonnet
 ---
 
@@ -59,9 +59,35 @@ Do a **real browser smoke** — do NOT fall back to the HTTP test client.
    the shell is present, the page failed to mount — set `STATUS:blocked` and report it, never
    `STATUS:done`.
 
+## Then walk it once in the live app (Playwright MCP)
+
+The Pest smoke proves the page *mounts*. It does not prove the feature *works* — a dead click
+handler, a control that never opens, a value that silently doesn't reach the form all pass a smoke.
+So after the smoke is green, drive the real dev site once through the **Playwright MCP browser**
+(load its tools with `ToolSearch`, e.g. `select:mcp__playwright__browser_navigate,mcp__playwright__browser_click,mcp__playwright__browser_evaluate,mcp__playwright__browser_take_screenshot`).
+
+Keep it short — this is a "does it work and look right" pass, not an E2E suite:
+
+1. `ddev pnpm run build` must have run (step 1 above), else you drive a stale bundle.
+2. Sign in at `https://randevum.test/login` as `owner@podosen.test` / `password` (demo seed).
+3. Walk the feature's **main path once**: open its screen, use the control the feature adds, confirm
+   the result appears (the row lands in the list, the value reaches the field, the dialog closes).
+   Read the console for errors and look at the rendered result rather than assuming.
+4. Screenshot the finished state.
+
+Rules that keep this cheap and safe:
+- **Clean up after yourself.** This is the shared demo database, not a test database. Delete any row
+  you created (`ddev php artisan tinker --execute '…forceDelete();'`) before finishing.
+- **Never gate on it.** Findings go into the run-file as notes; only a genuinely broken feature (the
+  path cannot be completed) sets `STATUS:blocked`.
+- **Skip silently** if the site is unreachable or the MCP browser is unavailable — note it in the
+  run-file and finish on the Pest smoke alone. Never install or start anything to make it work.
+- One browser, one page: don't open parallel tabs, don't leave a dialog open.
+
 ## Finish
-- Append a **## Verify** section: the page(s) smoked, pass/fail, and the **screenshot path**
-  (also fill the `- Screenshot:` line).
+- Append a **## Verify** section: the page(s) smoked, pass/fail, the **screenshot path** (also fill
+  the `- Screenshot:` line), and a short **live walk-through** note — what you clicked, what you saw,
+  anything that looked wrong (or why the walk-through was skipped).
 - Add the test file and any artifacts to the **```changed-files``` block**.
 - End with `<!-- PHASE:verify STATUS:done -->` if the smoke passed (else `STATUS:blocked` + why).
 - Give a short final summary and, if useful, surface the screenshot path prominently.
