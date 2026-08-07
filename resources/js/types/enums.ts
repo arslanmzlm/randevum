@@ -79,3 +79,13 @@ export type CustomizableSmsType =
 
 /** Mirrors `App\Enums\SmsStatus`; the SMS-log surfaces branch on it (status→severity/label). */
 export type SmsStatus = 'queued' | 'sent' | 'failed' | 'skipped';
+
+/**
+ * Mirrors `App\Enums\StockMovementReason`; the stock-history list branches on it
+ * (reason→severity/label) and the manual stock dialog offers a subset of the cases.
+ */
+export type StockMovementReason =
+    | 'treatment_usage'
+    | 'manual_adjustment'
+    | 'return'
+    | 'initial';

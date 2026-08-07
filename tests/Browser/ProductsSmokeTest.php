@@ -1,7 +1,9 @@
 <?php
 
+use App\Enums\StockMovementReason;
 use App\Models\Clinic;
 use App\Models\Product;
+use App\Models\StockMovement;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
@@ -88,6 +90,55 @@ it('opens the product create dialog from the list with no JS errors', function (
         // Guard against the silent-blank-body false green: the dialog must carry content.
         ->assertScript(
             '() => (document.querySelector(".p-dialog")?.innerText.trim().length ?? 0) > 0',
+        )
+        ->screenshot();
+});
+
+it('renders the product movements page with body content and no JS errors', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+
+    app(PermissionRegistrar::class)->setPermissionsTeamId($clinic->id);
+    $owner->assignRole('owner');
+    app(PermissionRegistrar::class)->setPermissionsTeamId(null);
+
+    $product = Product::factory()->create([
+        'clinic_id' => $clinic->id,
+        'vertical_id' => $clinic->vertical_id,
+        'name' => 'Diyabetik Ayak Kremi',
+        'is_active' => true,
+        'current_stock' => 15,
+    ]);
+
+    StockMovement::factory()->initial()->create([
+        'clinic_id' => $clinic->id,
+        'product_id' => $product->id,
+        'quantity' => 15,
+        'balance_after' => 15,
+        'created_by' => $owner->id,
+    ]);
+
+    StockMovement::factory()->create([
+        'clinic_id' => $clinic->id,
+        'product_id' => $product->id,
+        'quantity' => -3,
+        'balance_after' => 12,
+        'reason' => StockMovementReason::ManualAdjustment,
+        'note' => 'Sayım düzeltmesi',
+        'created_by' => $owner->id,
+    ]);
+
+    $this->actingAs($owner);
+
+    visit("/products/{$product->id}/movements")
+        ->assertNoJavascriptErrors()
+        // Page title rendered by PageHeader — lives in the page body.
+        ->assertSee('Stok Hareketleri')
+        // Reason tag label rendered inside a table row.
+        ->assertSee('Sayım düzeltmesi')
+        // Guard against the silent-blank-body false green: <main> must be non-empty.
+        ->assertScript(
+            '() => (document.querySelector("main")?.innerText.trim().length ?? 0) > 0',
         )
         ->screenshot();
 });

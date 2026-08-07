@@ -1,10 +1,14 @@
 <?php
 
+use App\Enums\StockMovementReason;
 use App\Models\Clinic;
 use App\Models\Product;
+use App\Models\StockMovement;
+use App\Models\User;
 use App\Modules\Catalog\Services\ProductCatalogService;
 use App\Support\ClinicContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
@@ -62,13 +66,64 @@ it('updateStock sets only current_stock and leaves other fields unchanged', func
         'price' => '100.00',
         'current_stock' => 5,
     ]);
+    $actor = User::factory()->create();
 
     $service = app(ProductCatalogService::class);
-    $updated = $service->updateStock($product, -10);
+    $updated = $service->updateStock($product, -10, StockMovementReason::ManualAdjustment, null, $actor);
 
     expect($updated->current_stock)->toBe(-10)
         ->and($updated->name)->toBe('Unchanged Name')
         ->and((float) $updated->price)->toBe(100.0);
+});
+
+it('create records the initial movement alongside the product', function (): void {
+    $clinic = Clinic::factory()->create();
+
+    app(ClinicContext::class)->set($clinic->id);
+
+    $service = app(ProductCatalogService::class);
+
+    $product = $service->create([
+        'name' => 'Initial Movement Product',
+        'unit' => 'adet',
+        'price' => '80.00',
+        'current_stock' => 30,
+        'is_active' => true,
+    ]);
+
+    $movement = StockMovement::withoutGlobalScopes()->where('product_id', $product->id)->first();
+
+    expect($movement)->not->toBeNull()
+        ->and($movement->quantity)->toBe(30)
+        ->and($movement->balance_after)->toBe(30)
+        ->and($movement->reason)->toBe(StockMovementReason::Initial);
+});
+
+it('a rolled-back create transaction leaves neither the product nor a movement', function (): void {
+    $clinic = Clinic::factory()->create();
+
+    app(ClinicContext::class)->set($clinic->id);
+
+    $service = app(ProductCatalogService::class);
+
+    try {
+        DB::transaction(function () use ($service): void {
+            $service->create([
+                'name' => 'Rolled Back Product',
+                'unit' => 'adet',
+                'price' => '80.00',
+                'current_stock' => 15,
+                'is_active' => true,
+            ]);
+
+            throw new RuntimeException('force rollback');
+        });
+    } catch (RuntimeException) {
+        // expected
+    }
+
+    expect(Product::withoutGlobalScopes()->where('name', 'Rolled Back Product')->exists())->toBeFalse()
+        ->and(StockMovement::withoutGlobalScopes()->where('clinic_id', $clinic->id)->exists())->toBeFalse();
 });
 
 it('delete soft-deletes the product', function (): void {

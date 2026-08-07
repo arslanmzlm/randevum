@@ -2,6 +2,7 @@
 
 use App\Enums\AppointmentStatus;
 use App\Enums\CaseStatus;
+use App\Enums\StockMovementReason;
 use App\Enums\TransactionStatus;
 use App\Enums\TreatmentStatus;
 use App\Models\Appointment;
@@ -13,6 +14,7 @@ use App\Models\PodiatryTreatmentDetail;
 use App\Models\Product;
 use App\Models\Service;
 use App\Models\StatusLog;
+use App\Models\StockMovement;
 use App\Models\Transaction;
 use App\Models\Treatment;
 use App\Models\User;
@@ -295,6 +297,28 @@ it('allows stock to go negative when deduction exceeds available stock', functio
 
     $fresh = Product::withoutGlobalScopes()->find($product->id);
     expect($fresh->current_stock)->toBe(-3);
+});
+
+it('writes one treatment_usage stock movement per product line with the completing actor', function (): void {
+    ['owner' => $owner, 'treatment' => $treatment, 'clinic' => $clinic] = ctSetup();
+
+    $product = Product::factory()->create(['clinic_id' => $clinic->id, 'current_stock' => 10]);
+
+    $this->actingAs($owner)
+        ->put(route('treatments.complete', $treatment), ctPayload([
+            'products' => [
+                ['product_id' => $product->id, 'quantity' => 3, 'unit_price' => '25.00'],
+            ],
+        ]));
+
+    $movement = StockMovement::withoutGlobalScopes()->where('product_id', $product->id)->first();
+
+    expect($movement)->not->toBeNull()
+        ->and($movement->quantity)->toBe(-3)
+        ->and($movement->balance_after)->toBe(7)
+        ->and($movement->reason)->toBe(StockMovementReason::TreatmentUsage)
+        ->and($movement->treatment_id)->toBe($treatment->id)
+        ->and($movement->created_by)->toBe($owner->id);
 });
 
 // ---------------------------------------------------------------------------

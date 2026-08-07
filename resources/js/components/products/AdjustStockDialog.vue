@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { useForm } from '@inertiajs/vue3';
-import { watch } from 'vue';
+import { computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import FormField from '@/components/FormField.vue';
 import { update as updateStock } from '@/routes/products/stock';
 import type { Product, ProductStockFormData } from '@/types/product';
+import { MANUAL_STOCK_MOVEMENT_REASONS } from '@/utils/stockMovementReason';
 
 const props = defineProps<{ product: Product | null }>();
 
@@ -13,13 +14,27 @@ const visible = defineModel<boolean>('visible', { required: true });
 const { t } = useI18n();
 
 // Self-contained stock-adjust form — the same PATCH .../stock operation as the edit page.
-const stockForm = useForm<ProductStockFormData>({ current_stock: 0 });
+// `reason` + `note` are what the ledger records for this manual movement.
+const stockForm = useForm<ProductStockFormData>({
+    current_stock: 0,
+    reason: 'manual_adjustment',
+    note: '',
+});
+
+const reasonOptions = computed(() =>
+    MANUAL_STOCK_MOVEMENT_REASONS.map((reason) => ({
+        label: t(`stock_movement.reason.${reason}`),
+        value: reason,
+    })),
+);
 
 // Initialize from the target product each time the dialog opens.
 watch(visible, (open) => {
     if (open && props.product) {
         stockForm.clearErrors();
         stockForm.current_stock = props.product.current_stock;
+        stockForm.reason = 'manual_adjustment';
+        stockForm.note = '';
     }
 });
 
@@ -61,6 +76,26 @@ function submitStock(): void {
                     show-buttons
                     fluid
                 />
+            </FormField>
+
+            <FormField
+                :label="t('product.fields.stock_reason')"
+                :error="stockForm.errors.reason"
+            >
+                <Select
+                    v-model="stockForm.reason"
+                    :options="reasonOptions"
+                    option-label="label"
+                    option-value="value"
+                    fluid
+                />
+            </FormField>
+
+            <FormField
+                :label="t('product.fields.stock_note')"
+                :error="stockForm.errors.note"
+            >
+                <Textarea v-model="stockForm.note" rows="2" fluid />
             </FormField>
 
             <div class="mt-6 flex justify-end gap-2">

@@ -40,4 +40,9 @@ class ProductPolicy
     {
         return $user->can('products.manageStock');
     }
+
+    public function viewMovements(User $user, Product $product): bool
+    {
+        return $user->can('products.manageStock');
+    }
 }

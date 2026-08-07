@@ -2,7 +2,9 @@
 
 namespace App\Modules\Catalog\Http\Requests;
 
+use App\Enums\StockMovementReason;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateProductStockRequest extends FormRequest
 {
@@ -22,6 +24,10 @@ class UpdateProductStockRequest extends FormRequest
         return [
             // No min:0 — stock may go negative (MVP design decision).
             'current_stock' => ['required', 'integer'],
+            // Nullable: defaults to ManualAdjustment in the controller when absent.
+            'reason' => ['nullable', Rule::enum(StockMovementReason::class)
+                ->only([StockMovementReason::ManualAdjustment, StockMovementReason::Return])],
+            'note' => ['nullable', 'string', 'max:500'],
         ];
     }
 }

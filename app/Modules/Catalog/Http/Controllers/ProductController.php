@@ -2,6 +2,7 @@
 
 namespace App\Modules\Catalog\Http\Controllers;
 
+use App\Enums\StockMovementReason;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Modules\Catalog\Http\Requests\StoreProductRequest;
@@ -93,7 +94,18 @@ class ProductController extends Controller
     {
         $this->authorize('manageStock', $product);
 
-        $this->catalogService->updateStock($product, $request->validated()['current_stock']);
+        $validated = $request->validated();
+        $reason = isset($validated['reason'])
+            ? StockMovementReason::from($validated['reason'])
+            : StockMovementReason::ManualAdjustment;
+
+        $this->catalogService->updateStock(
+            $product,
+            $validated['current_stock'],
+            $reason,
+            $validated['note'] ?? null,
+            $request->user(),
+        );
 
         Toast::success(__('messages.product.stock_updated'));
 

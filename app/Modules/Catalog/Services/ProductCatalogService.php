@@ -2,17 +2,20 @@
 
 namespace App\Modules\Catalog\Services;
 
+use App\Enums\StockMovementReason;
 use App\Models\Product;
-use App\Modules\Catalog\Contracts\StockAdjusterContract;
+use App\Models\User;
 use App\Modules\Catalog\Repositories\ProductRepository;
 use App\Support\ClinicContext;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
-class ProductCatalogService implements StockAdjusterContract
+class ProductCatalogService
 {
     public function __construct(
         private ProductRepository $repository,
+        private StockMovementService $stockMovementService,
         private ClinicContext $clinicContext,
     ) {}
 
@@ -55,6 +58,10 @@ class ProductCatalogService implements StockAdjusterContract
     }
 
     /**
+     * Creates the product with its opening stock already on it, then records a matching
+     * `initial` movement in the same transaction — only when the resolved stock is non-zero,
+     * so a product created with no stock leaves no ledger noise.
+     *
      * @param  array<string, mixed>  $data
      */
     public function create(array $data): Product
@@ -64,10 +71,22 @@ class ProductCatalogService implements StockAdjusterContract
 
         // Passing null explicitly would violate the NOT NULL constraint — fall back to the
         // column default (0) when no initial stock level is supplied.
-        $data['current_stock'] = $data['current_stock'] ?? 0;
+        $initialStock = (int) ($data['current_stock'] ?? 0);
+        $data['current_stock'] = $initialStock;
 
-        // clinic_id is auto-set by BelongsToClinic on create — not set manually.
-        return $this->repository->create($data);
+        return DB::transaction(function () use ($data, $initialStock): Product {
+            // clinic_id is auto-set by BelongsToClinic on create — not set manually.
+            $product = $this->repository->create($data);
+
+            if ($initialStock !== 0) {
+                // The product already carries the initial stock value — record the movement
+                // directly (bypassing StockMovementService::record()'s own current_stock
+                // read-modify-write) so the delta is not double-applied.
+                $this->stockMovementService->recordInitial($product, $initialStock);
+            }
+
+            return $product;
+        });
     }
 
     /**
@@ -78,21 +97,24 @@ class ProductCatalogService implements StockAdjusterContract
         return $this->repository->update($product, $data);
     }
 
-    public function updateStock(Product $product, int $currentStock): Product
-    {
-        return $this->repository->updateStock($product, $currentStock);
+    /**
+     * Sets current_stock to an absolute value via the single stock funnel, recording the
+     * matching movement in the same transaction.
+     */
+    public function updateStock(
+        Product $product,
+        int $currentStock,
+        StockMovementReason $reason,
+        ?string $note,
+        User $actor,
+    ): Product {
+        $this->stockMovementService->setAbsolute($product, $currentStock, $reason, $note, $actor);
+
+        return $product->fresh();
     }
 
     public function delete(Product $product): void
     {
         $this->repository->delete($product);
-    }
-
-    /**
-     * Atomically adjust current_stock by $delta. Negative delta deducts (may go below 0).
-     */
-    public function adjust(int $productId, int $delta): void
-    {
-        $this->repository->adjustStock($productId, $delta);
     }
 }

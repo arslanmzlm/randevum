@@ -553,6 +553,7 @@ export const tr = {
         columns: {
             name: 'Ürün',
             price: 'Fiyat',
+            stock: 'Stok',
             status: 'Durum',
             actions: 'İşlemler',
         },
@@ -566,6 +567,8 @@ export const tr = {
             price: 'Fiyat',
             current_stock: 'Stok adedi',
             is_active: 'Aktif',
+            stock_reason: 'Neden',
+            stock_note: 'Not (isteğe bağlı)',
         },
         hints: {
             is_active: 'Pasif ürünler tedavi ekranındaki listede görünmez.',
@@ -574,6 +577,33 @@ export const tr = {
             stock: 'Stok adedini hızlıca güncelleyin. Negatif değer girilebilir.',
             stock_managed:
                 'Stok yalnızca listedeki stok güncelleme işlemiyle değişir.',
+        },
+    },
+    stock_movement: {
+        title: 'Stok Hareketleri',
+        subtitle:
+            'Bu ürünün stoğunun ne zaman, neden ve kim tarafından değiştiği.',
+        open: 'Stok hareketleri',
+        current_stock: 'Güncel stok',
+        empty: 'Bu ürün için henüz stok hareketi yok.',
+        empty_filtered: 'Seçilen filtrelerle eşleşen stok hareketi yok.',
+        filter_reason: 'Neden',
+        filter_date_range: 'Tarih aralığı',
+        treatment_link: 'Tedaviyi aç',
+        columns: {
+            datetime: 'Tarih',
+            reason: 'Neden',
+            quantity: 'Hareket',
+            balance_after: 'Kalan',
+            source: 'Kaynak',
+            user: 'İşlemi yapan',
+            note: 'Not',
+        },
+        reason: {
+            treatment_usage: 'Tedavide kullanım',
+            manual_adjustment: 'Elle düzeltme',
+            return: 'İade',
+            initial: 'Açılış stoğu',
         },
     },
     availability: {

@@ -1,3 +1,4 @@
+import type { StockMovementReason } from '@/types/enums';
 import type { Paginated, TableState } from '@/types/table';
 
 /** Canonical product shape emitted by ProductResource (index + edit). */
@@ -53,6 +54,10 @@ export type ProductCreateFormData = ProductFormData & {
 export type ProductStockFormData = {
     /** May be negative. */
     current_stock: number;
+    /** Server only accepts the manual subset (manual_adjustment / return). */
+    reason: StockMovementReason;
+    /** Free-text ledger note; empty string = none. */
+    note: string;
 };
 
 /** Existing brand/category values for this clinic, feeding the form autocompletes. */

@@ -2,8 +2,10 @@
 
 namespace App\Modules\Verticals\Podiatry\Database\Seeders;
 
+use App\Enums\StockMovementReason;
 use App\Models\Clinic;
 use App\Models\Product;
+use App\Models\StockMovement;
 use App\Models\Vertical;
 use Illuminate\Database\Seeder;
 
@@ -39,13 +41,28 @@ class PodiatryProductsSeeder extends Seeder
 
         foreach ($clinics as $clinic) {
             foreach (self::PRODUCTS as $productData) {
-                Product::withoutGlobalScopes()->firstOrCreate(
+                $product = Product::withoutGlobalScopes()->firstOrCreate(
                     ['clinic_id' => $clinic->id, 'name' => $productData['name']],
                     array_merge($productData, [
                         'vertical_id' => $podiatry->id,
                         'is_active' => true,
                     ]),
                 );
+
+                // Idempotent: only write the initial movement the first time this product
+                // is seeded, so re-running doesn't duplicate ledger rows.
+                if ($product->wasRecentlyCreated) {
+                    StockMovement::withoutGlobalScopes()->create([
+                        'clinic_id' => $clinic->id,
+                        'product_id' => $product->id,
+                        'quantity' => $productData['current_stock'],
+                        'balance_after' => $productData['current_stock'],
+                        'reason' => StockMovementReason::Initial,
+                        'treatment_id' => null,
+                        'note' => null,
+                        'created_by' => null,
+                    ]);
+                }
             }
         }
     }

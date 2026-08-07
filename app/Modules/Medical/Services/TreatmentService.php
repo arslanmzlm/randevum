@@ -4,6 +4,7 @@ namespace App\Modules\Medical\Services;
 
 use App\Enums\AppointmentStatus;
 use App\Enums\CaseStatus;
+use App\Enums\StockMovementReason;
 use App\Enums\TreatmentStatus;
 use App\Models\Appointment;
 use App\Models\Clinic;
@@ -162,7 +163,14 @@ class TreatmentService
 
             // 5. Stock deduction (negative allowed per domain rules)
             foreach ($treatment->productLines as $line) {
-                $this->stockAdjuster->adjust($line->product_id, -$line->quantity);
+                $this->stockAdjuster->adjust(
+                    $line->product_id,
+                    -$line->quantity,
+                    StockMovementReason::TreatmentUsage,
+                    $treatment->id,
+                    null,
+                    $actor,
+                );
             }
 
             // 6. Optional payment — either a split payment set or a taksit (installment) plan.

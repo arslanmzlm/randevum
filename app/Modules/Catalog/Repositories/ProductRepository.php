@@ -90,10 +90,12 @@ class ProductRepository
     }
 
     /**
-     * Atomic increment/decrement — avoids a read-then-write race condition.
+     * Lock the product row for update inside the caller's transaction, so the
+     * read-modify-write of current_stock (and the balance_after it feeds) cannot race.
+     * withoutGlobalScopes() bypasses ClinicScope — the caller already resolved the id.
      */
-    public function adjustStock(int $productId, int $delta): void
+    public function lockForUpdate(int $productId): ?Product
     {
-        Product::withoutGlobalScopes()->where('id', $productId)->increment('current_stock', $delta);
+        return Product::withoutGlobalScopes()->whereKey($productId)->lockForUpdate()->first();
     }
 }

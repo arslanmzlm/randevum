@@ -2,6 +2,7 @@
 
 use App\Modules\Catalog\Http\Controllers\ProductController;
 use App\Modules\Catalog\Http\Controllers\ServiceController;
+use App\Modules\Catalog\Http\Controllers\StockMovementController;
 use App\Modules\Core\Http\Controllers\ClinicController;
 use App\Modules\Core\Http\Controllers\DoctorController;
 use App\Modules\Medical\Http\Controllers\AnamnesisController;
@@ -195,6 +196,7 @@ Route::middleware('auth')->group(function () {
 // not captured as a route-model-bound id.
 Route::middleware('auth')->group(function () {
     Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+    Route::get('/products/{product}/movements', [StockMovementController::class, 'index'])->name('products.movements.index');
     Route::get('/products/create', [ProductController::class, 'create'])->name('products.create');
     Route::post('/products', [ProductController::class, 'store'])->name('products.store');
     Route::get('/products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 import {
+    IconHistory,
     IconPackage,
     IconPlus,
     IconSearch,
@@ -9,6 +10,7 @@ import {
 } from '@tabler/icons-vue';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import ButtonLink from '@/components/ButtonLink.vue';
 import CrudDialog from '@/components/crud/CrudDialog.vue';
 import DataTableWrapper from '@/components/DataTableWrapper.vue';
 import EmptyState from '@/components/EmptyState.vue';
@@ -21,6 +23,7 @@ import { useTableFilters } from '@/composables/useTableFilters';
 import { productResource } from '@/crud/product';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { destroy, index } from '@/routes/products';
+import { index as movementsIndex } from '@/routes/products/movements';
 import type { Product, ProductIndexProps } from '@/types/product';
 import { productColumns } from './columns';
 
@@ -221,6 +224,19 @@ function openStockDialog(product: Product): void {
                         >
                             <IconStack2 />
                         </Button>
+                        <ButtonLink
+                            v-if="canManageStock"
+                            :href="movementsIndex(data.id).url"
+                            severity="secondary"
+                            outlined
+                            size="small"
+                            :aria-label="t('stock_movement.open')"
+                            v-tooltip.top="t('stock_movement.open')"
+                        >
+                            <template #icon>
+                                <IconHistory />
+                            </template>
+                        </ButtonLink>
                     </div>
 
                     <Tag

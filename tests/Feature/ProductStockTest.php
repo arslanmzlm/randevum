@@ -157,6 +157,28 @@ it('doctor role gets 403 on PATCH /products/{product}/stock', function (): void 
         ->assertForbidden();
 });
 
+it('PATCH stock accepts reason and note without breaking the redirect', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    psTestRole($owner, 'owner', $clinic->id);
+
+    $product = Product::factory()->create([
+        'clinic_id' => $clinic->id,
+        'vertical_id' => $clinic->vertical_id,
+        'current_stock' => 10,
+    ]);
+
+    $this->actingAs($owner)
+        ->patch(route('products.stock.update', $product), [
+            'current_stock' => 20,
+            'reason' => 'return',
+            'note' => 'Test note',
+        ])
+        ->assertRedirect(route('products.index'));
+
+    expect($product->fresh()->current_stock)->toBe(20);
+});
+
 it('manager is allowed to update stock', function (): void {
     $clinic = Clinic::factory()->create();
     $manager = User::factory()->create();
