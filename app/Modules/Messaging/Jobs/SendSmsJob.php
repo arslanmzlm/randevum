@@ -15,6 +15,12 @@ use Illuminate\Queue\SerializesModels;
 /**
  * The single path for sending SMS: records an sms_logs row (queued), sends via the
  * bound provider, then settles the row to sent/failed. Runs on the dedicated `sms` queue.
+ *
+ * The log row is created once, in the constructor, which only ever runs at dispatch
+ * time — a queue retry/redelivery reuses the already-serialized job instance and calls
+ * handle() again without re-running the constructor. That row's id travels with the
+ * job so a redelivered attempt updates the SAME row instead of opening a second one,
+ * and handle() can tell "already sent" apart from "never attempted".
  */
 final class SendSmsJob implements ShouldQueue
 {
@@ -23,14 +29,13 @@ final class SendSmsJob implements ShouldQueue
     use Queueable;
     use SerializesModels;
 
+    public readonly int $smsLogId;
+
     public function __construct(public readonly SmsMessage $message)
     {
         $this->onQueue('sms');
-    }
 
-    public function handle(SmsProviderInterface $provider): void
-    {
-        $log = SmsLog::create([
+        $this->smsLogId = SmsLog::create([
             'clinic_id' => $this->message->clinicId,
             'patient_id' => $this->message->patientId,
             'phone' => $this->message->phone,
@@ -40,16 +45,31 @@ final class SendSmsJob implements ShouldQueue
             'body' => $this->message->body,
             'status' => SmsStatus::Queued,
             'scheduled_at' => now(),
-        ]);
+        ])->id;
+    }
+
+    public function handle(SmsProviderInterface $provider): void
+    {
+        $log = SmsLog::findOrFail($this->smsLogId);
+
+        // A retry/redelivery of a job whose send already completed (e.g. Redis
+        // `retry_after` elapses mid-flight and Horizon re-queues the same payload)
+        // must not hit the provider a second time — exit quietly instead.
+        if ($log->status === SmsStatus::Sent) {
+            return;
+        }
 
         $response = $provider->send($this->message->phone, $this->message->body);
 
-        // provider_ref is kept even on failure — providers may return a tracking id with an error.
-        $log->update([
+        // Retry the write itself, not the whole job: if this update throws (transient
+        // DB error), letting the job fail would make Horizon redeliver it — resending
+        // an SMS that already went out — for the exact failure mode this guards against.
+        retry(3, fn () => $log->update([
             'status' => $response->successful ? SmsStatus::Sent : SmsStatus::Failed,
+            // provider_ref is kept even on failure — providers may return a tracking id with an error.
             'provider_ref' => $response->reference,
             'error' => $response->error,
             'sent_at' => $response->successful ? now() : null,
-        ]);
+        ]), 100);
     }
 }

@@ -48,7 +48,10 @@ it('dispatches SendSmsJob when clinicId is null (OTP / platform send)', function
     app(SmsDispatcherContract::class)->dispatch($message);
 
     Queue::assertPushed(SendSmsJob::class);
-    expect(SmsLog::withoutGlobalScopes()->count())->toBe(0);
+    // SendSmsJob opens its sms_logs row in the constructor (dispatch-time), which
+    // runs even under Queue::fake() — a queued send is visible immediately.
+    expect(SmsLog::withoutGlobalScopes()->count())->toBe(1)
+        ->and(SmsLog::withoutGlobalScopes()->sole()->status)->toBe(SmsStatus::Queued);
 });
 
 it('dispatches SendSmsJob for Otp type even when clinicId is set (belt-and-suspenders)', function (): void {
@@ -66,7 +69,9 @@ it('dispatches SendSmsJob for Otp type even when clinicId is set (belt-and-suspe
     app(SmsDispatcherContract::class)->dispatch($message);
 
     Queue::assertPushed(SendSmsJob::class);
-    expect(SmsLog::withoutGlobalScopes()->count())->toBe(0);
+    // Same as above: the constructor-created row exists regardless of Queue::fake().
+    expect(SmsLog::withoutGlobalScopes()->count())->toBe(1)
+        ->and(SmsLog::withoutGlobalScopes()->sole()->status)->toBe(SmsStatus::Queued);
 });
 
 // ---------------------------------------------------------------------------
@@ -82,7 +87,8 @@ it('dispatches SendSmsJob when no preference row exists (missing row = enabled)'
     app(SmsDispatcherContract::class)->dispatch(cliMsg($clinic->id, SmsType::AppointmentCreated));
 
     Queue::assertPushed(SendSmsJob::class);
-    expect(SmsLog::withoutGlobalScopes()->count())->toBe(0);
+    expect(SmsLog::withoutGlobalScopes()->count())->toBe(1)
+        ->and(SmsLog::withoutGlobalScopes()->sole()->status)->toBe(SmsStatus::Queued);
 });
 
 it('dispatches SendSmsJob when the type is explicitly enabled', function (): void {

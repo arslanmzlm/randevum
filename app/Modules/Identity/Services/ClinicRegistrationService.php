@@ -64,8 +64,16 @@ class ClinicRegistrationService
             return ['user' => $user, 'clinic' => $clinic];
         });
 
-        // Dispatch after the transaction commits so listeners see persisted rows.
-        event(new ClinicRegistered($result['clinic']));
+        // Dispatch after the transaction commits so listeners see persisted rows. The
+        // tenant+clinic+user are already committed at this point, so a provisioning
+        // listener failure must not surface as a registration error — it's retried
+        // in-process (listeners provision via firstOrCreate, safe to re-run) and, if
+        // still failing, logged for manual follow-up rather than failing the signup.
+        try {
+            retry(2, fn () => event(new ClinicRegistered($result['clinic'])), 200);
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         return $result['user'];
     }

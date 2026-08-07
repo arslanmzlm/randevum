@@ -61,8 +61,15 @@ class BranchProvisioningService
         });
 
         // Dispatched after commit so listeners (appointment/follow-up type
-        // provisioning) see a persisted branch, exactly as at signup.
-        event(new ClinicRegistered($branch));
+        // provisioning) see a persisted branch, exactly as at signup. The branch is
+        // already committed, so a listener failure must not surface as a request
+        // error — retried in-process (listeners provision via firstOrCreate, safe to
+        // re-run) and, if still failing, logged for manual follow-up instead.
+        try {
+            retry(2, fn () => event(new ClinicRegistered($branch)), 200);
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         return $branch;
     }
