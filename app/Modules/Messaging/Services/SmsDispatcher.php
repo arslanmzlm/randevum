@@ -39,21 +39,29 @@ class SmsDispatcher implements SmsDispatcherContract
             return false;
         }
 
-        if (! $this->quota->hasRoom($message->clinicId)) {
-            $this->writeSkipped($message, 'quota exceeded');
+        // The quota check and the write that consumes it (a Skipped row, or the Queued
+        // row SendSmsJob's constructor creates) run under one clinic-row lock so two
+        // concurrent dispatches can't both pass the check before either commits — see
+        // SmsQuotaService::withLock. The job's queue push is deferred via afterCommit()
+        // so a worker never tries to load its log row before this transaction is visible
+        // to other connections (QUEUE_CONNECTION=redis pushes immediately otherwise).
+        return $this->quota->withLock($message->clinicId, function (bool $hasRoom) use ($message): bool {
+            if (! $hasRoom) {
+                $this->writeSkipped($message, 'quota exceeded');
 
-            return false;
-        }
+                return false;
+            }
 
-        if ($message->phone === null) {
-            $this->writeSkipped($message, 'no phone');
+            if ($message->phone === null) {
+                $this->writeSkipped($message, 'no phone');
 
-            return false;
-        }
+                return false;
+            }
 
-        SendSmsJob::dispatch($message);
+            SendSmsJob::dispatch($message)->afterCommit();
 
-        return true;
+            return true;
+        });
     }
 
     /**

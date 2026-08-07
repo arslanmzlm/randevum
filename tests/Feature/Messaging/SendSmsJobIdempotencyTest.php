@@ -91,3 +91,43 @@ it('a retry after a failed send is still allowed to resend — Failed is not tre
 
     expect(SmsLog::sole()->status)->toBe(SmsStatus::Sent);
 });
+
+// ---------------------------------------------------------------------------
+// failed() — Horizon calls this once retries (supervisor-sms tries:3) are exhausted
+// ---------------------------------------------------------------------------
+
+it('failed() settles a still-Queued log row to Failed with the exception message', function (): void {
+    $job = new SendSmsJob(new SmsMessage(
+        phone: '+905321112233',
+        body: 'Randevu hatırlatması',
+        type: SmsType::Reminder24h,
+    ));
+
+    $job->failed(new RuntimeException('Netgsm connection timed out'));
+
+    $log = SmsLog::sole();
+
+    expect($log->status)->toBe(SmsStatus::Failed)
+        ->and($log->error)->toBe('Netgsm connection timed out');
+});
+
+it('failed() does not pull an already-Sent log row back to Failed', function (): void {
+    $provider = new CountingSmsProviderFake;
+
+    $job = new SendSmsJob(new SmsMessage(
+        phone: '+905321112233',
+        body: 'Randevu hatırlatması',
+        type: SmsType::Reminder24h,
+    ));
+
+    // The send itself succeeded; imagine Horizon still calls failed() for some unrelated
+    // reason (e.g. a middleware exception after handle() returned) — the settled Sent
+    // row must never be downgraded.
+    $job->handle($provider);
+    $job->failed(new RuntimeException('should not matter'));
+
+    $log = SmsLog::sole();
+
+    expect($log->status)->toBe(SmsStatus::Sent)
+        ->and($log->error)->toBeNull();
+});

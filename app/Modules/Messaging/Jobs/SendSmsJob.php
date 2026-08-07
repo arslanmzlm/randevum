@@ -11,6 +11,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Throwable;
 
 /**
  * The single path for sending SMS: records an sms_logs row (queued), sends via the
@@ -71,5 +72,27 @@ final class SendSmsJob implements ShouldQueue
             'error' => $response->error,
             'sent_at' => $response->successful ? now() : null,
         ]), 100);
+    }
+
+    /**
+     * Called once Horizon exhausts retries (supervisor-sms tries:3). Without this, a
+     * dead job leaves its log row stuck at Queued forever — the panel would show it as
+     * still "sending" indefinitely instead of a settled failure.
+     */
+    public function failed(Throwable $e): void
+    {
+        $log = SmsLog::find($this->smsLogId);
+
+        // Mirror handle()'s guard: a row that already sent must never be pulled back
+        // to Failed — e.g. the send succeeded but the settling update itself then threw
+        // and exhausted its retries.
+        if ($log === null || $log->status === SmsStatus::Sent) {
+            return;
+        }
+
+        $log->update([
+            'status' => SmsStatus::Failed,
+            'error' => $e->getMessage(),
+        ]);
     }
 }
