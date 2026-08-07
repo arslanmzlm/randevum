@@ -96,10 +96,11 @@ it('renders the finance report for an owner', function (): void {
     ['owner' => $owner] = frSetup();
 
     $this->actingAs($owner)
-        ->get(route('reports.finance'))
+        ->get(route('reports.index'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->component('reports/Finance')
+            ->component('reports/Index')
+            ->where('breakdown', null)
             ->has('revenue.summary')
             ->has('revenue.range.by_method')
             ->has('revenue.range.by_period')
@@ -116,7 +117,7 @@ it('allows a manager to view the finance report', function (): void {
     frRole($manager, 'manager', $clinic->id);
 
     $this->actingAs($manager)
-        ->get(route('reports.finance'))
+        ->get(route('reports.index'))
         ->assertOk();
 });
 
@@ -125,7 +126,7 @@ it('forbids a receptionist from the finance report and never exposes revenue or 
     $receptionist = User::factory()->create();
     frRole($receptionist, 'receptionist', $clinic->id);
 
-    $response = $this->actingAs($receptionist)->get(route('reports.finance'));
+    $response = $this->actingAs($receptionist)->get(route('reports.index'));
 
     $response->assertForbidden();
     expect($response->getContent())
@@ -155,7 +156,7 @@ it('sums today and this-month collections net of refunds', function (): void {
     frPayment($clinic, $patient, '300.00', PaymentMethod::Card, '2026-06-02 09:00:00');
 
     $this->actingAs($owner)
-        ->get(route('reports.finance'))
+        ->get(route('reports.index'))
         ->assertInertia(fn ($page) => $page
             ->where('revenue.summary.today', '150.00')
             ->where('revenue.summary.this_month', '450.00')
@@ -169,7 +170,7 @@ it('excludes pending transactions from collected totals', function (): void {
     frPayment($clinic, $patient, '999.00', PaymentMethod::Cash, '2026-06-15 09:00:00', TransactionStatus::Pending);
 
     $this->actingAs($owner)
-        ->get(route('reports.finance'))
+        ->get(route('reports.index'))
         ->assertInertia(fn ($page) => $page->where('revenue.summary.today', '100.00'));
 });
 
@@ -185,7 +186,7 @@ it('breaks the selected range down by payment method in enum order', function ()
     frPayment($clinic, $patient, '25.00', PaymentMethod::Cash, '2026-06-11 09:00:00');
 
     $this->actingAs($owner)
-        ->get(route('reports.finance', ['start' => '2026-06-10', 'end' => '2026-06-11']))
+        ->get(route('reports.index', ['start' => '2026-06-10', 'end' => '2026-06-11']))
         ->assertInertia(fn ($page) => $page
             ->where('revenue.range.total', '175.00')
             ->where('revenue.range.by_method.0.method', 'cash')
@@ -203,7 +204,7 @@ it('buckets the range by clinic-local day', function (): void {
     frPayment($clinic, $patient, '20.00', PaymentMethod::Cash, '2026-06-11 09:00:00');
 
     $this->actingAs($owner)
-        ->get(route('reports.finance', ['start' => '2026-06-11', 'end' => '2026-06-11']))
+        ->get(route('reports.index', ['start' => '2026-06-11', 'end' => '2026-06-11']))
         ->assertInertia(fn ($page) => $page
             ->where('revenue.range.granularity', 'day')
             ->has('revenue.range.by_period', 1)
@@ -219,7 +220,7 @@ it('respects the start/end range filter', function (): void {
     frPayment($clinic, $patient, '200.00', PaymentMethod::Cash, '2026-06-20 09:00:00');
 
     $this->actingAs($owner)
-        ->get(route('reports.finance', ['start' => '2026-06-18', 'end' => '2026-06-25']))
+        ->get(route('reports.index', ['start' => '2026-06-18', 'end' => '2026-06-25']))
         ->assertInertia(fn ($page) => $page
             ->where('revenue.range.total', '200.00')
             ->has('revenue.range.by_period', 1)
@@ -239,7 +240,7 @@ it('never counts another clinic transactions', function (): void {
     frPayment($otherClinic, $otherPatient, '5000.00', PaymentMethod::Cash, '2026-06-15 09:00:00');
 
     $this->actingAs($owner)
-        ->get(route('reports.finance'))
+        ->get(route('reports.index'))
         ->assertInertia(fn ($page) => $page->where('revenue.summary.today', '100.00'));
 });
 
@@ -254,7 +255,7 @@ it('totals all settled transactions for an all-time view', function (): void {
     frPayment($clinic, $patient, '250.00', PaymentMethod::Card, '2026-06-15 09:00:00');
 
     $this->actingAs($owner)
-        ->get(route('reports.finance', ['entire' => '1']))
+        ->get(route('reports.index', ['entire' => '1']))
         ->assertInertia(fn ($page) => $page
             ->where('revenue.range.entire', true)
             ->where('revenue.range.total', '350.00')
@@ -269,7 +270,7 @@ it('buckets long spans by month instead of day', function (): void {
     frPayment($clinic, $patient, '60.00', PaymentMethod::Cash, '2026-03-05 09:00:00');
 
     $this->actingAs($owner)
-        ->get(route('reports.finance', ['start' => '2026-01-01', 'end' => '2026-06-30']))
+        ->get(route('reports.index', ['start' => '2026-01-01', 'end' => '2026-06-30']))
         ->assertInertia(fn ($page) => $page
             ->where('revenue.range.granularity', 'month')
             ->has('revenue.range.by_period', 2)
@@ -290,22 +291,22 @@ it('serves a cached revenue figure and only recomputes after the cache is cleare
 
     // First view computes & caches.
     $this->actingAs($owner)
-        ->get(route('reports.finance'))
+        ->get(route('reports.index'))
         ->assertInertia(fn ($page) => $page->where('revenue.summary.today', '100.00'));
 
     // A new payment lands but the cached figure holds until cleared.
     frPayment($clinic, $patient, '50.00', PaymentMethod::Cash, '2026-06-15 10:00:00');
 
     $this->actingAs($owner)
-        ->get(route('reports.finance'))
+        ->get(route('reports.index'))
         ->assertInertia(fn ($page) => $page->where('revenue.summary.today', '100.00'));
 
     $this->actingAs($owner)
-        ->post(route('reports.finance.clear'))
+        ->post(route('reports.clear-cache'))
         ->assertRedirect();
 
     $this->actingAs($owner)
-        ->get(route('reports.finance'))
+        ->get(route('reports.index'))
         ->assertInertia(fn ($page) => $page->where('revenue.summary.today', '150.00'));
 });
 
@@ -315,7 +316,7 @@ it('forbids a receptionist from clearing the finance cache', function (): void {
     frRole($receptionist, 'receptionist', $clinic->id);
 
     $this->actingAs($receptionist)
-        ->post(route('reports.finance.clear'))
+        ->post(route('reports.clear-cache'))
         ->assertForbidden();
 });
 
@@ -324,12 +325,12 @@ it('an expense recorded after caching is still reflected live (expense side is n
     frPayment($clinic, $patient, '100.00', PaymentMethod::Cash, '2026-06-15 09:00:00');
 
     // Prime the revenue cache.
-    $this->actingAs($owner)->get(route('reports.finance'));
+    $this->actingAs($owner)->get(route('reports.index'));
 
     frExpense($clinic, '30.00', '2026-06-15');
 
     $this->actingAs($owner)
-        ->get(route('reports.finance'))
+        ->get(route('reports.index'))
         ->assertInertia(fn ($page) => $page->where('expense.total', '30.00'));
 });
 
@@ -345,7 +346,7 @@ it('income total is patient collections plus manual income, split apart in the r
     frManualIncome($clinic, '50.00', '2026-06-10 09:00:00', 'Kurs geliri');
 
     $this->actingAs($owner)
-        ->get(route('reports.finance', ['start' => '2026-06-10', 'end' => '2026-06-10']))
+        ->get(route('reports.index', ['start' => '2026-06-10', 'end' => '2026-06-10']))
         ->assertInertia(fn ($page) => $page
             ->where('revenue.range.total', '700.00')
             ->where('revenue.range.patient_total', '500.00')
@@ -361,7 +362,7 @@ it('breaks manual income down by category, largest first, uncategorized mapped t
     frManualIncome($clinic, '30.00', '2026-06-11 09:00:00', null);
 
     $this->actingAs($owner)
-        ->get(route('reports.finance', ['start' => '2026-06-10', 'end' => '2026-06-11']))
+        ->get(route('reports.index', ['start' => '2026-06-10', 'end' => '2026-06-11']))
         ->assertInertia(fn ($page) => $page
             ->has('revenue.range.manual_by_category', 3)
             ->where('revenue.range.manual_by_category.0.category', 'Kurs geliri')
@@ -378,7 +379,7 @@ it('honours the date window for the patient/manual split', function (): void {
     frManualIncome($clinic, '900.00', '2026-06-05 09:00:00', 'Dışında');
 
     $this->actingAs($owner)
-        ->get(route('reports.finance', ['start' => '2026-06-18', 'end' => '2026-06-25']))
+        ->get(route('reports.index', ['start' => '2026-06-18', 'end' => '2026-06-25']))
         ->assertInertia(fn ($page) => $page
             ->where('revenue.range.patient_total', '0.00')
             ->where('revenue.range.manual_total', '0.00')
@@ -393,7 +394,7 @@ it('never counts another clinic\'s manual income toward the split or the cache',
     frManualIncome($otherClinic, '9999.00', '2026-06-15 09:00:00');
 
     $this->actingAs($owner)
-        ->get(route('reports.finance'))
+        ->get(route('reports.index'))
         ->assertInertia(fn ($page) => $page
             ->where('revenue.summary.today', '100.00')
         );
@@ -410,7 +411,7 @@ it('computes net as revenue minus expense for the selected window', function ():
     frExpense($clinic, '120.00', '2026-06-10');
 
     $this->actingAs($owner)
-        ->get(route('reports.finance', ['start' => '2026-06-10', 'end' => '2026-06-10']))
+        ->get(route('reports.index', ['start' => '2026-06-10', 'end' => '2026-06-10']))
         ->assertInertia(fn ($page) => $page
             ->where('revenue.range.total', '500.00')
             ->where('expense.total', '120.00')
@@ -425,7 +426,7 @@ it('nets negative when expense exceeds revenue for the window', function (): voi
     frExpense($clinic, '200.00', '2026-06-10');
 
     $this->actingAs($owner)
-        ->get(route('reports.finance', ['start' => '2026-06-10', 'end' => '2026-06-10']))
+        ->get(route('reports.index', ['start' => '2026-06-10', 'end' => '2026-06-10']))
         ->assertInertia(fn ($page) => $page->where('net', '-150.00'));
 });
 
@@ -437,7 +438,7 @@ it('breaks the expense window down by category, largest first', function (): voi
     frExpense($clinic, '50.00', '2026-06-11', 'Kira');
 
     $this->actingAs($owner)
-        ->get(route('reports.finance', ['start' => '2026-06-10', 'end' => '2026-06-11']))
+        ->get(route('reports.index', ['start' => '2026-06-10', 'end' => '2026-06-11']))
         ->assertInertia(fn ($page) => $page
             ->has('expense.by_category', 2)
             ->where('expense.by_category.0.category', 'Fatura')
@@ -456,7 +457,7 @@ it('reports the expense total for the window without repeating the list', functi
 
     // The rows themselves live on /expenses; this page only carries the totals + breakdown.
     $this->actingAs($owner)
-        ->get(route('reports.finance', ['start' => '2026-06-01', 'end' => '2026-06-30']))
+        ->get(route('reports.index', ['start' => '2026-06-01', 'end' => '2026-06-30']))
         ->assertInertia(fn ($page) => $page
             ->where('expense.total', '30.00')
             ->missing('expenses')
@@ -471,7 +472,7 @@ it('keeps revenue, expense total and net whole regardless of the category filter
     frExpense($clinic, '50.00', '2026-06-10', 'Fatura');
 
     $this->actingAs($owner)
-        ->get(route('reports.finance', ['start' => '2026-06-10', 'end' => '2026-06-10', 'category' => 'Kira']))
+        ->get(route('reports.index', ['start' => '2026-06-10', 'end' => '2026-06-10', 'category' => 'Kira']))
         ->assertInertia(fn ($page) => $page
             ->where('expense.total', '150.00')
             ->where('net', '350.00')
@@ -487,7 +488,7 @@ it("never counts another clinic's expenses toward the total", function (): void 
 
     // Clinic B's expense must not reach the window total.
     $this->actingAs($owner)
-        ->get(route('reports.finance', ['start' => '2026-06-10', 'end' => '2026-06-10']))
+        ->get(route('reports.index', ['start' => '2026-06-10', 'end' => '2026-06-10']))
         ->assertInertia(fn ($page) => $page
             ->where('expense.total', '40.00')
             ->where('expense.by_category.0.total', '40.00')

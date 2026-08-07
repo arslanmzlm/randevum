@@ -67,7 +67,7 @@ import { index as incomesIndex } from '@/routes/incomes';
 import { index as patientsIndex, show as patientShow } from '@/routes/patients';
 import { installments as paymentPlansIndex } from '@/routes/payment-plans';
 import { index as productsIndex } from '@/routes/products';
-import { finance as financeReport } from '@/routes/reports';
+import { index as reportsIndex } from '@/routes/reports';
 import { index as availabilityIndex } from '@/routes/schedule-exceptions';
 import { index as servicesIndex } from '@/routes/services';
 import { index as smsLogsIndex } from '@/routes/sms-logs';
@@ -333,9 +333,9 @@ const navGroups = computed<NavGroup[]>(() =>
                 ...(can('reports.revenue')
                     ? [
                           {
-                              label: t('nav.finance'),
-                              href: financeReport().url,
-                              component: 'reports/Finance',
+                              label: t('nav.reports'),
+                              href: reportsIndex().url,
+                              component: 'reports/Index',
                               icon: IconReportMoney,
                           },
                       ]

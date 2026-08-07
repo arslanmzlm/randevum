@@ -1,11 +1,11 @@
 <?php
 
 use App\Modules\Billing\Http\Controllers\ExpenseController;
-use App\Modules\Billing\Http\Controllers\FinanceController;
 use App\Modules\Billing\Http\Controllers\ManualIncomeController;
 use App\Modules\Billing\Http\Controllers\PaymentController;
 use App\Modules\Billing\Http\Controllers\PaymentPlanController;
 use App\Modules\Billing\Http\Controllers\RefundController;
+use App\Modules\Billing\Http\Controllers\ReportController;
 use Illuminate\Support\Facades\Route;
 
 // Payment recording — standalone or treatment-bound.
@@ -19,9 +19,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/payment-plans/installments/{installment}/remind', [PaymentPlanController::class, 'sendReminder'])->name('payment-plans.installments.remind');
     Route::post('/payment-plans/{paymentPlan}/cancel', [PaymentPlanController::class, 'cancel'])->name('payment-plans.cancel');
     Route::delete('/payment-plans/{paymentPlan}', [PaymentPlanController::class, 'destroy'])->name('payment-plans.destroy');
-    // Unified finance overview (revenue + expense + net) — owner/manager, gated by reports.revenue.
-    Route::get('/reports/finance', [FinanceController::class, 'index'])->name('reports.finance');
-    Route::post('/reports/finance/clear-cache', [FinanceController::class, 'clearCache'])->name('reports.finance.clear');
+    // Tek sekmeli rapor sayfası (finans + kırılımlar) — owner/manager, reports.revenue ile korunur.
+    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
+    Route::post('/reports/clear-cache', [ReportController::class, 'clearCache'])->name('reports.clear-cache');
     // Giderlerim — own-expenses self-service, every clinic role (gated by expenses.create).
     Route::get('/expenses', [ExpenseController::class, 'index'])->name('expenses.index');
     Route::post('/expenses', [ExpenseController::class, 'store'])->name('expenses.store');

@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Cache;
 
 /**
  * Composes the revenue and expense reports into the unified finance-page figures
- * (net = revenue − expense), keeping FinanceController thin. Owns the revenue
+ * (net = revenue − expense), keeping ReportController thin. Owns the revenue
  * report's cache boundary (1h TTL, unchanged); the expense report is always
  * computed live (see ExpenseReportService), so a stale-revenue + fresh-expense
  * net is possible for up to an hour — acceptable, matches prior revenue staleness.

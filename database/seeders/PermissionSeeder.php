@@ -100,9 +100,9 @@ class PermissionSeeder extends Seeder
         // Manual "Hatırlat" — mirrors appointments.sendReminder.
         'paymentPlans.sendReminder' => ['owner', 'manager', 'receptionist'],
         // Installment collect reuses transactions.create (no dedicated permission).
-        // Revenue report — clinic financial overview, management-only. Now also gates
-        // the merged finance page (revenue + expense + net); route renamed to
-        // reports.finance but the permission name is unchanged.
+        // Revenue report — clinic financial overview, management-only. Also gates the
+        // single tabbed reports page (finance + doctor/service/product/appointment-type/
+        // expense-owner breakdowns) and its Excel export; one permission for every tab.
         'reports.revenue' => ['owner', 'manager'],
         // Expenses — recording is every clinic role's own-record ("Giderlerim");
         // viewAny is the all-clinic list (finance page) and also the ownership

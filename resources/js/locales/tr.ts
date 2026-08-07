@@ -40,6 +40,7 @@ export const tr = {
         tags: 'Etiketler',
         follow_up_types: 'Takip Türleri',
         finance: 'Finans',
+        reports: 'Raporlar',
         expenses: 'Giderler',
         incomes: 'Gelirler',
         payment_plans: 'Taksitler',
@@ -1350,6 +1351,66 @@ export const tr = {
         this_month: 'Bu ay',
         last_month: 'Geçen ay',
         this_year: 'Bu yıl',
+    },
+    report: {
+        title: 'Raporlar',
+        subtitle:
+            'Seçili dönem için finans özeti ve doktor, hizmet, ürün, randevu türü ile gider sahibi kırılımları.',
+        export: "Excel'e aktar",
+        empty: 'Bu dönemde veri yok.',
+        total: 'Toplam',
+        tabs: {
+            finance: 'Finans',
+            doctor: 'Doktor',
+            service: 'Hizmet',
+            product: 'Ürün',
+            appointment_type: 'Randevu türü',
+            expense_owner: 'Gider sahibi',
+        },
+        // Each tab is computed from a different date column, so its totals need not match the
+        // finance tab's. One line per tab says which date the window is applied to.
+        hint: {
+            doctor: 'Tahsilat ödeme tarihine, tamamlanan tedavi adedi tamamlanma tarihine, randevu sayıları randevu tarihine göre hesaplanır.',
+            service:
+                'Tamamlanmış tedavilerin hizmet satırlarıdır; tutar tahsilat değil, satılan tutardır ve tedavinin tamamlanma tarihine göre hesaplanır.',
+            product:
+                'Tamamlanmış tedavilerin ürün satırlarıdır; tutar tahsilat değil, satılan tutardır ve tedavinin tamamlanma tarihine göre hesaplanır.',
+            appointment_type:
+                'Tahsilat ödeme tarihine, randevu adedi randevu tarihine göre hesaplanır.',
+            expense_owner: 'Gider tarihine göre hesaplanır.',
+        },
+        columns: {
+            average: 'Ortalama',
+            appointment_count: 'Randevu',
+            cancelled_count: 'İptal',
+            no_show_count: 'Gelmedi',
+            cancelled_rate: 'İptal oranı',
+            no_show_rate: 'Gelmedi oranı',
+        },
+        label_header: {
+            doctor: 'Doktor',
+            service: 'Hizmet',
+            product: 'Ürün',
+            appointment_type: 'Randevu türü',
+            expense_owner: 'Kullanıcı',
+        },
+        amount_header: {
+            doctor: 'Tahsilat',
+            service: 'Satış tutarı',
+            product: 'Satış tutarı',
+            appointment_type: 'Tahsilat',
+            expense_owner: 'Toplam gider',
+        },
+        count_header: {
+            doctor: 'Tamamlanan tedavi',
+            service: 'Satılan adet',
+            product: 'Satılan adet',
+            appointment_type: 'Randevu adedi',
+            expense_owner: 'Gider adedi',
+        },
+        average_header: {
+            unit: 'Birim ortalama',
+        },
     },
     revenue: {
         refresh: 'Veriyi yenile',

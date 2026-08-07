@@ -10,8 +10,8 @@ use Spatie\Permission\PermissionRegistrar;
 
 /**
  * Browser smoke — Feature 1.35 (Gider takibi / birleşik finans sayfası). Real Chromium via
- * pest-plugin-browser: the manager-only finance overview (/reports/finance — revenue + expense
- * + net) and the all-staff expense page (/expenses) must both mount, render
+ * pest-plugin-browser: the manager-only finance overview (/reports, finance tab — revenue +
+ * expense + net) and the all-staff expense page (/expenses) must both mount, render
  * page-body content (not just the app shell), and produce no JavaScript errors. Also exercises
  * the add-expense dialog (genuine client-side interaction) on the expense page.
  *
@@ -51,7 +51,7 @@ it('renders the finance overview for an owner with revenue, expense and net, and
 
     $this->actingAs($owner);
 
-    visit('/reports/finance')
+    visit('/reports')
         ->assertNoJavascriptErrors()
         // PageHeader title — finance.title, in the page body.
         ->assertSee('Finans')
@@ -63,6 +63,30 @@ it('renders the finance overview for an owner with revenue, expense and net, and
         ->assertSee('Kira')
         ->assertSee('Giderler sayfasına git')
         // Guard against the silent-blank-body false green: <main> must be non-empty.
+        ->assertScript(
+            '() => (document.querySelector("main")?.innerText.trim().length ?? 0) > 0',
+        )
+        ->screenshot();
+});
+
+it('renders the doctor and service report breakdown tabs with no JS errors', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    feRole($owner, 'owner', $clinic->id);
+
+    $this->actingAs($owner);
+
+    visit('/reports?tab=doctor')
+        ->assertNoJavascriptErrors()
+        ->assertSee('Doktor')
+        ->assertScript(
+            '() => (document.querySelector("main")?.innerText.trim().length ?? 0) > 0',
+        )
+        ->screenshot();
+
+    visit('/reports?tab=service')
+        ->assertNoJavascriptErrors()
+        ->assertSee('Hizmet')
         ->assertScript(
             '() => (document.querySelector("main")?.innerText.trim().length ?? 0) > 0',
         )

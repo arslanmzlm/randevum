@@ -93,3 +93,15 @@ export type StockMovementReason =
     | 'manual_adjustment'
     | 'return'
     | 'initial';
+
+/**
+ * Mirrors `App\Enums\ReportTab`; the report page branches on it (which panel renders and
+ * which column set the breakdown table gets).
+ */
+export type ReportTab =
+    | 'finance'
+    | 'doctor'
+    | 'service'
+    | 'product'
+    | 'appointment_type'
+    | 'expense_owner';

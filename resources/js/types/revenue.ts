@@ -1,5 +1,4 @@
 import type { PaymentMethod } from '@/types/enums';
-import type { ExpenseFilters } from '@/types/expense';
 
 export interface RevenueMethodTotal {
     method: PaymentMethod;
@@ -49,14 +48,4 @@ export interface CategoryTotal {
 export interface ExpenseReport {
     total: string;
     by_category: CategoryTotal[];
-}
-
-/** Unified finance page (revenue + expense + net) — owner/manager. */
-export interface FinanceReportProps {
-    revenue: RevenueReport;
-    expense: ExpenseReport;
-    /** revenue.range.total − expense.total (bcmath); may be negative. */
-    net: string;
-    filters: ExpenseFilters;
-    currency: string;
 }
