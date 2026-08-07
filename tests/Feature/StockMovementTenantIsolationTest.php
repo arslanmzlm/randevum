@@ -5,6 +5,7 @@ use App\Models\Clinic;
 use App\Models\Product;
 use App\Models\StockMovement;
 use App\Models\User;
+use App\Modules\Catalog\Exceptions\ProductClinicMismatchException;
 use App\Modules\Catalog\Services\StockMovementService;
 use App\Support\ClinicContext;
 use Database\Seeders\PermissionSeeder;
@@ -76,8 +77,7 @@ it("movements written for clinic A are absent from clinic B's list even for a sa
         ->assertInertia(fn ($page) => $page->has('movements.data', 1));
 });
 
-it("a movement created via the service carries the product's clinic_id, not the ambient context's", function (): void {
-    $clinicA = Clinic::factory()->create();
+it("a movement created via the service carries the product's own clinic_id when no ambient context is bound", function (): void {
     $clinicB = Clinic::factory()->create();
 
     $productB = Product::factory()->create([
@@ -86,8 +86,10 @@ it("a movement created via the service carries the product's clinic_id, not the 
         'current_stock' => 5,
     ]);
 
-    // Ambient context is clinic A while the product being adjusted belongs to clinic B.
-    app(ClinicContext::class)->set($clinicA->id);
+    // No active clinic (the queue/command shape) — the caller's productId is the source
+    // of truth, and the movement must be stamped from the locked product, never from an
+    // ambient context that doesn't even exist here.
+    app(ClinicContext::class)->forget();
 
     app(StockMovementService::class)->adjust(
         $productB->id,
@@ -99,4 +101,37 @@ it("a movement created via the service carries the product's clinic_id, not the 
 
     expect($movement)->not->toBeNull()
         ->and($movement->clinic_id)->toBe($clinicB->id);
+});
+
+it('adjusting a product that belongs to another clinic than the active one throws a distinct isolation exception, not a generic not-found', function (): void {
+    $clinicA = Clinic::factory()->create();
+    $clinicB = Clinic::factory()->create();
+
+    $productB = Product::factory()->create([
+        'clinic_id' => $clinicB->id,
+        'vertical_id' => $clinicB->vertical_id,
+        'current_stock' => 5,
+    ]);
+
+    // Ambient context is clinic A while the product being adjusted belongs to clinic B —
+    // a tenant-isolation violation, distinguishable from a plain missing product id.
+    app(ClinicContext::class)->set($clinicA->id);
+
+    expect(fn () => app(StockMovementService::class)->adjust(
+        $productB->id,
+        3,
+        StockMovementReason::ManualAdjustment,
+    ))->toThrow(ProductClinicMismatchException::class);
+
+    expect(StockMovement::withoutGlobalScopes()->where('product_id', $productB->id)->exists())->toBeFalse();
+});
+
+it('adjusting a product id that does not exist at all throws a plain not-found error, distinct from a clinic mismatch', function (): void {
+    app(ClinicContext::class)->set(Clinic::factory()->create()->id);
+
+    expect(fn () => app(StockMovementService::class)->adjust(
+        PHP_INT_MAX,
+        1,
+        StockMovementReason::ManualAdjustment,
+    ))->toThrow(RuntimeException::class, 'not found for stock adjustment');
 });

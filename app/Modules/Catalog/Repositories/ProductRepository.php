@@ -3,12 +3,16 @@
 namespace App\Modules\Catalog\Repositories;
 
 use App\Models\Product;
+use App\Modules\Catalog\Exceptions\ProductClinicMismatchException;
+use App\Support\ClinicContext;
 use App\Support\FilterHelper;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class ProductRepository
 {
+    public function __construct(private ClinicContext $clinicContext) {}
+
     /**
      * Paginated list for the active clinic with server-side search / sort / filter.
      * ClinicScope on Product restricts results to the active clinic automatically.
@@ -34,6 +38,20 @@ class ProductRepository
     public function allForActiveClinic(): Collection
     {
         return Product::query()->orderByDesc('id')->get();
+    }
+
+    /**
+     * Active products for the active clinic, projected for the treatment product-line editor,
+     * ordered by name. ClinicScope filters to the active clinic automatically.
+     *
+     * @return Collection<int, Product>
+     */
+    public function activeForTreatment(): Collection
+    {
+        return Product::active()
+            ->select(['id', 'name', 'price', 'unit', 'current_stock'])
+            ->orderBy('name')
+            ->get();
     }
 
     /**
@@ -92,10 +110,24 @@ class ProductRepository
     /**
      * Lock the product row for update inside the caller's transaction, so the
      * read-modify-write of current_stock (and the balance_after it feeds) cannot race.
-     * withoutGlobalScopes() bypasses ClinicScope — the caller already resolved the id.
+     * withoutGlobalScopes() bypasses ClinicScope (a soft-deleted product must still be
+     * lockable for a void/refund's stock reversal, so SoftDeletingScope goes with it) —
+     * but a locked row belonging to a DIFFERENT active clinic throws
+     * ProductClinicMismatchException rather than being treated as not found: unlike a
+     * genuinely missing id (a caller bug), this is a tenant-isolation violation and must
+     * stay distinguishable from "not found" in logs and catch blocks. Queue/command
+     * callers run with no active clinic (ClinicContext::has() false) — the check is
+     * skipped there, since the caller in that context IS the source of truth for which
+     * product to lock.
      */
     public function lockForUpdate(int $productId): ?Product
     {
-        return Product::withoutGlobalScopes()->whereKey($productId)->lockForUpdate()->first();
+        $product = Product::withoutGlobalScopes()->whereKey($productId)->lockForUpdate()->first();
+
+        if ($product !== null && $this->clinicContext->has() && $product->clinic_id !== $this->clinicContext->id()) {
+            throw new ProductClinicMismatchException($productId, $this->clinicContext->id(), $product->clinic_id);
+        }
+
+        return $product;
     }
 }

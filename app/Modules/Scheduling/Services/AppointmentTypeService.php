@@ -4,12 +4,13 @@ namespace App\Modules\Scheduling\Services;
 
 use App\Models\AppointmentType;
 use App\Models\Clinic;
+use App\Modules\Core\Contracts\AppointmentTypeLookupContract;
 use App\Modules\Scheduling\Repositories\AppointmentTypeRepository;
 use App\Support\ClinicContext;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
-class AppointmentTypeService
+class AppointmentTypeService implements AppointmentTypeLookupContract
 {
     public function __construct(
         private AppointmentTypeRepository $repository,
@@ -55,6 +56,20 @@ class AppointmentTypeService
                 'name' => $t->name,
                 'color' => $t->color,
                 'default_duration_minutes' => $t->default_duration_minutes,
+            ])
+            ->values();
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, array{id: int, name: string, color: string|null}>
+     */
+    public function activeForTreatment(): \Illuminate\Support\Collection
+    {
+        return $this->repository->activeForClinic()
+            ->map(fn (AppointmentType $t) => [
+                'id' => $t->id,
+                'name' => $t->name,
+                'color' => $t->color,
             ])
             ->values();
     }

@@ -4,6 +4,7 @@ namespace App\Modules\Scheduling;
 
 use App\Modules\Core\Contracts\AppointmentCancellationContract;
 use App\Modules\Core\Contracts\AppointmentLifecycleContract;
+use App\Modules\Core\Contracts\AppointmentTypeLookupContract;
 use App\Modules\Core\Contracts\DashboardStatsContract;
 use App\Modules\Core\Contracts\PatientAppointmentsContract;
 use App\Modules\Core\Contracts\UpcomingAppointmentsContract;
@@ -12,6 +13,7 @@ use App\Modules\Scheduling\Console\Commands\AutoNoShowCommand;
 use App\Modules\Scheduling\Console\Commands\SendRemindersCommand;
 use App\Modules\Scheduling\Listeners\ProvisionDefaultAppointmentTypes;
 use App\Modules\Scheduling\Services\AppointmentService;
+use App\Modules\Scheduling\Services\AppointmentTypeService;
 use App\Modules\Scheduling\Services\DashboardStatsService;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
@@ -25,6 +27,7 @@ class SchedulingServiceProvider extends ServiceProvider
         $this->app->bind(PatientAppointmentsContract::class, AppointmentService::class);
         $this->app->bind(UpcomingAppointmentsContract::class, AppointmentService::class);
         $this->app->bind(DashboardStatsContract::class, DashboardStatsService::class);
+        $this->app->bind(AppointmentTypeLookupContract::class, AppointmentTypeService::class);
     }
 
     public function boot(): void

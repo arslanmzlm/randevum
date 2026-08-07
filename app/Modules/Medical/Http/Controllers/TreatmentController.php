@@ -4,11 +4,11 @@ namespace App\Modules\Medical\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
-use App\Models\AppointmentType;
-use App\Models\Product;
 use App\Models\Treatment;
 use App\Modules\Billing\Contracts\BalanceReaderContract;
+use App\Modules\Catalog\Contracts\ProductLookupContract;
 use App\Modules\Catalog\Contracts\ServiceLookupContract;
+use App\Modules\Core\Contracts\AppointmentTypeLookupContract;
 use App\Modules\Core\Contracts\DoctorDirectoryContract;
 use App\Modules\Core\Support\Toast;
 use App\Modules\Medical\Http\Requests\CompleteTreatmentRequest;
@@ -34,6 +34,8 @@ class TreatmentController extends Controller
         private TreatmentService $treatmentService,
         private CaseService $caseService,
         private ServiceLookupContract $serviceLookup,
+        private ProductLookupContract $productLookup,
+        private AppointmentTypeLookupContract $appointmentTypeLookup,
         private DoctorDirectoryContract $doctorDirectory,
         private ClinicContext $clinicContext,
         private BalanceReaderContract $balanceReader,
@@ -111,28 +113,11 @@ class TreatmentController extends Controller
 
         $services = $this->serviceLookup->activeForTreatment();
 
-        $products = Product::active()
-            ->select(['id', 'name', 'price', 'unit', 'current_stock'])
-            ->orderBy('name')
-            ->get()
-            ->map(fn (Product $p) => [
-                'id' => $p->id,
-                'name' => $p->name,
-                'price' => $p->price,
-                'unit' => $p->unit,
-                'current_stock' => $p->current_stock,
-            ]);
+        $products = $this->productLookup->activeForTreatment();
 
         $openCases = $this->caseService->openCasesForProcess($treatment->patient_id, $treatment->doctor_id);
 
-        $appointmentTypes = AppointmentType::active()
-            ->orderBy('name')
-            ->get()
-            ->map(fn (AppointmentType $type) => [
-                'id' => $type->id,
-                'name' => $type->name,
-                'color' => $type->color,
-            ]);
+        $appointmentTypes = $this->appointmentTypeLookup->activeForTreatment();
 
         $treatmentData = (new TreatmentProcessResource($treatment))->resolve();
 

@@ -5,13 +5,14 @@ namespace App\Modules\Catalog\Services;
 use App\Enums\StockMovementReason;
 use App\Models\Product;
 use App\Models\User;
+use App\Modules\Catalog\Contracts\ProductLookupContract;
 use App\Modules\Catalog\Repositories\ProductRepository;
 use App\Support\ClinicContext;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
-class ProductCatalogService
+class ProductCatalogService implements ProductLookupContract
 {
     public function __construct(
         private ProductRepository $repository,
@@ -33,6 +34,22 @@ class ProductCatalogService
     public function listForActiveClinic(): Collection
     {
         return $this->repository->allForActiveClinic();
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, array{id: int, name: string, price: string, unit: string, current_stock: int}>
+     */
+    public function activeForTreatment(): \Illuminate\Support\Collection
+    {
+        return $this->repository->activeForTreatment()
+            ->map(fn (Product $p) => [
+                'id' => $p->id,
+                'name' => $p->name,
+                'price' => $p->price,
+                'unit' => $p->unit,
+                'current_stock' => $p->current_stock,
+            ])
+            ->values();
     }
 
     /**
