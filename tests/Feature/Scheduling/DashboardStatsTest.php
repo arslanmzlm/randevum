@@ -728,6 +728,30 @@ it('today_collected excludes transactions from yesterday (clinic tz boundary)', 
         );
 });
 
+it('today_collected excludes manual income (patient_id null) but still includes a patient payment on the same day', function (): void {
+    ['clinic' => $clinic, 'owner' => $owner, 'patient' => $patient] = dsSetup();
+
+    Transaction::factory()->create([
+        'clinic_id' => $clinic->id,
+        'patient_id' => $patient->id,
+        'amount' => '300.00',
+        'paid_at' => now(),
+    ]);
+
+    Transaction::factory()->manual()->create([
+        'clinic_id' => $clinic->id,
+        'amount' => '999.00',
+        'paid_at' => now(),
+    ]);
+
+    $this->actingAs($owner)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('stats.revenue.today_collected', '300.00')
+        );
+});
+
 it('stats.revenue carries the currency from the clinic', function (): void {
     ['owner' => $owner] = dsSetup();
 

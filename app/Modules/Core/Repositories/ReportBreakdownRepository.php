@@ -87,35 +87,44 @@ class ReportBreakdownRepository
     }
 
     /**
-     * Appointment total/cancelled/no-show counts per doctor, windowed on starts_at.
+     * Appointment total/cancelled/no-show counts per doctor, windowed on starts_at, plus the
+     * same three counts restricted to starts_at <= now — the cancelled/no-show RATE uses the
+     * past-only pair as both numerator and denominator (a future-dated cancellation must not
+     * inflate the rate for a window that includes it; adet metrikleri stay whole-window).
      * One grouped (doctor_id, status) query, folded in PHP.
      *
-     * @return array<int, array{total: int, cancelled: int, no_show: int}>
+     * @return array<int, array{total: int, cancelled: int, no_show: int, past_total: int, past_cancelled: int, past_no_show: int}>
      */
     public function appointmentCountsByDoctor(?CarbonInterface $startUtc, ?CarbonInterface $endUtc): array
     {
+        $now = now()->utc();
+
         $rows = Appointment::query()
             ->when($startUtc, fn ($query) => $query->where('starts_at', '>=', $startUtc))
             ->when($endUtc, fn ($query) => $query->where('starts_at', '<=', $endUtc))
             ->groupBy('doctor_id', 'status')
-            ->selectRaw('doctor_id, status, count(*) as total')
+            ->selectRaw('doctor_id, status, count(*) as total, sum(case when starts_at <= ? then 1 else 0 end) as past_total', [$now])
             ->get();
 
         $result = [];
 
         foreach ($rows as $row) {
             $doctorId = (int) $row->doctor_id;
-            $result[$doctorId] ??= ['total' => 0, 'cancelled' => 0, 'no_show' => 0];
+            $result[$doctorId] ??= ['total' => 0, 'cancelled' => 0, 'no_show' => 0, 'past_total' => 0, 'past_cancelled' => 0, 'past_no_show' => 0];
             $count = (int) $row->total;
+            $pastCount = (int) $row->past_total;
 
             $result[$doctorId]['total'] += $count;
+            $result[$doctorId]['past_total'] += $pastCount;
 
             // Appointment::status is cast to AppointmentStatus, so a raw grouped row still
             // hydrates it as the enum instance (not its scalar value) — compare enum-to-enum.
             if ($row->status === AppointmentStatus::Cancelled) {
                 $result[$doctorId]['cancelled'] += $count;
+                $result[$doctorId]['past_cancelled'] += $pastCount;
             } elseif ($row->status === AppointmentStatus::NoShow) {
                 $result[$doctorId]['no_show'] += $count;
+                $result[$doctorId]['past_no_show'] += $pastCount;
             }
         }
 

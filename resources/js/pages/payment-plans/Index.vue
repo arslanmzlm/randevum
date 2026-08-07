@@ -197,6 +197,17 @@ function submitCollect(): void {
         return;
     }
 
+    // An empty amount would reach the server as null and be read as "collect the whole remaining";
+    // the dialog must never produce that request.
+    if (collectForm.amount === null || Number(collectForm.amount) <= 0) {
+        collectForm.setError(
+            'amount',
+            t('payment_plan.collect_amount_required'),
+        );
+
+        return;
+    }
+
     collectForm
         .transform((data) => ({
             ...data,
@@ -517,7 +528,7 @@ function remind(row: PendingInstallment): void {
                         v-model="collectForm.amount"
                         mode="currency"
                         :currency="currency"
-                        :min="0"
+                        :min="0.01"
                         :max="collectMax"
                         :max-fraction-digits="2"
                         fluid

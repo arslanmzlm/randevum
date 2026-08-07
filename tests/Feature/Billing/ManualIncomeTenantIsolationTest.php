@@ -94,3 +94,31 @@ it("clinic A's category suggestions never include clinic B's manual-income categ
             fn ($categories) => collect($categories)->contains('Kira geliri') && ! collect($categories)->contains('Kurs geliri'),
         ));
 });
+
+it("clinic B's narrowed (no reports.revenue) doctor view never returns clinic A's manual income, even one created by a same-permission role", function (): void {
+    $clinicA = Clinic::factory()->create();
+    $ownerA = User::factory()->create();
+    mitRole($ownerA, 'owner', $clinicA->id);
+    Transaction::factory()->manual()->create([
+        'clinic_id' => $clinicA->id,
+        'category' => 'A geliri',
+        'created_by' => $ownerA->id,
+    ]);
+
+    $clinicB = Clinic::factory()->create();
+    $doctorB = User::factory()->create();
+    mitRole($doctorB, 'doctor', $clinicB->id);
+    $incomeB = Transaction::factory()->manual()->create([
+        'clinic_id' => $clinicB->id,
+        'category' => 'B geliri',
+        'created_by' => $doctorB->id,
+    ]);
+
+    $this->actingAs($doctorB)
+        ->get(route('incomes.index', ['entire' => 1]))
+        ->assertInertia(fn ($page) => $page
+            ->has('incomes.data', 1)
+            ->where('incomes.data.0.id', $incomeB->id)
+            ->where('categories', ['B geliri'])
+        );
+});

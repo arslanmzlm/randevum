@@ -116,7 +116,10 @@ class ReportBreakdownService
         foreach ($ids as $id) {
             $amount = $collected[$id] ?? '0.00';
             $count = $completedCounts[$id] ?? 0;
-            $appointments = $appointmentCounts[$id] ?? ['total' => 0, 'cancelled' => 0, 'no_show' => 0];
+            $appointments = $appointmentCounts[$id] ?? [
+                'total' => 0, 'cancelled' => 0, 'no_show' => 0,
+                'past_total' => 0, 'past_cancelled' => 0, 'past_no_show' => 0,
+            ];
 
             $rows[] = [
                 'id' => $id,
@@ -127,8 +130,11 @@ class ReportBreakdownService
                 'appointment_count' => $appointments['total'],
                 'cancelled_count' => $appointments['cancelled'],
                 'no_show_count' => $appointments['no_show'],
-                'cancelled_rate' => $this->rate($appointments['cancelled'], $appointments['total']),
-                'no_show_rate' => $this->rate($appointments['no_show'], $appointments['total']),
+                // Rate numerator AND denominator are past-only: a future-dated cancellation
+                // must not inflate the rate for a window that includes it (adet metrikleri
+                // above stay whole-window, per Owner brief).
+                'cancelled_rate' => $this->rate($appointments['past_cancelled'], $appointments['past_total']),
+                'no_show_rate' => $this->rate($appointments['past_no_show'], $appointments['past_total']),
             ];
         }
 

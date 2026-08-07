@@ -5,11 +5,11 @@ import { useI18n } from 'vue-i18n';
 import FormField from '@/components/FormField.vue';
 import { useMoney } from '@/composables/useMoney';
 import { refund } from '@/routes/transactions';
-import type { TransactionItem } from '@/types/balance';
+import type { RefundTarget } from '@/types/balance';
 
 const props = defineProps<{
     /** The original payment being reversed; drives the amount cap. Null ⇒ nothing selected yet. */
-    transaction: TransactionItem | null;
+    transaction: RefundTarget | null;
     visible: boolean;
 }>();
 

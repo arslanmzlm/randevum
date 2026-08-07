@@ -109,6 +109,9 @@ class TransactionRepository
      * the given timezone. SUM includes negative refund counter-entries so the result
      * is net-of-refunds. Pending transactions are excluded — paid_at is NOT NULL on
      * every row, so a date filter alone is insufficient; only settled rows count.
+     * Patient collections only (dashboard tile) — manual income (patient_id NULL) stays
+     * out so it doesn't inflate "bugün tahsil edilen"; it still counts in the finance
+     * report via collectedBetween()/settledRowsBetween()/allSettledRows().
      *
      * BelongsToClinic global scope provides tenant isolation automatically.
      * Returns a 2-dp decimal string (e.g. "1250.00").
@@ -120,6 +123,7 @@ class TransactionRepository
 
         $total = Transaction::whereBetween('paid_at', [$dayStart, $dayEnd])
             ->whereNot('status', TransactionStatus::Pending)
+            ->whereNotNull('patient_id')
             ->sum('amount');
 
         return number_format((float) $total, 2, '.', '');

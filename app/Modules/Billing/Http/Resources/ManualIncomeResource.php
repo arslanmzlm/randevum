@@ -26,6 +26,9 @@ class ManualIncomeResource extends JsonResource
             'created_by' => $this->created_by,
             'creator_name' => $this->whenLoaded('creator', fn () => $this->creator?->name),
             'created_at' => $this->created_at->toIso8601String(),
+            'status' => $this->status->value,
+            'original_transaction_id' => $this->original_transaction_id,
+            'refundable_amount' => $this->refundable_amount,
         ];
     }
 }

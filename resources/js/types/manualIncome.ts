@@ -1,4 +1,4 @@
-import type { PaymentMethod } from '@/types/enums';
+import type { PaymentMethod, TransactionStatus } from '@/types/enums';
 import type { DateWindowFilters, Paginated, TableState } from '@/types/table';
 
 /**
@@ -18,6 +18,11 @@ export type ManualIncome = {
     creator_name?: string | null;
     /** ISO-8601 — drives the client-side delete-window hint. */
     created_at: string;
+    status: TransactionStatus;
+    /** Set only on refund counter-entries → the original income they reverse; null otherwise. */
+    original_transaction_id: number | null;
+    /** Decimal string — remaining refundable; "0.00" for counter-entries and fully-refunded rows. */
+    refundable_amount: string;
 };
 
 /** Add dialog fields. paid_at is a Date in the form, transformed to Y-m-d on submit. */

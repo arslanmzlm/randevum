@@ -1601,6 +1601,7 @@ export const tr = {
         collect_breakdown:
             'Taksit tutarı {total} · tahsil edilen {collected} · kalan {remaining}',
         collect_amount: 'Tahsil edilecek tutar',
+        collect_amount_required: 'Tahsil edilecek tutarı girin.',
         collect_remaining: 'Kalan tutar: {amount}',
         collect_submit: 'Tahsil et',
         remind_action: 'Hatırlat',

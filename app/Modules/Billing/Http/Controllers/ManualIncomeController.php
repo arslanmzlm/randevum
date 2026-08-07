@@ -28,10 +28,15 @@ class ManualIncomeController extends Controller
     {
         $this->authorize('viewAny', Transaction::class);
 
+        // The list itself is gated by transactions.viewAny; seeing every user's income (not
+        // just rows this viewer created) additionally requires reports.revenue.
+        $ownerUserId = $request->user()->can('reports.revenue') ? null : $request->user()->id;
+
         [$entire, $start, $end] = DateRangeFilter::resolve($request, $this->clinicContext->timezone());
         $category = DateRangeFilter::category($request);
 
         $paginator = $this->service->paginate(
+            $ownerUserId,
             $entire ? null : $start,
             $entire ? null : $end,
             $category,
@@ -40,7 +45,7 @@ class ManualIncomeController extends Controller
 
         return Inertia::render('incomes/Index', [
             'incomes' => ManualIncomeResource::collection($paginator),
-            'categories' => $this->service->suggestions()['categories'],
+            'categories' => $this->service->suggestions($ownerUserId)['categories'],
             'filters' => ['start' => $start, 'end' => $end, 'entire' => $entire, 'category' => $category],
             'query' => FilterHelper::requestState(),
             'currency' => $this->clinicContext->currency(),

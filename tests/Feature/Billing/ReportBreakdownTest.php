@@ -131,6 +131,75 @@ it('doctor tab reports collected amount, completed count, average and appointmen
         );
 });
 
+it('cancelled/no-show rate denominator excludes future-dated appointments while appointment_count/cancelled_count stay whole-window', function (): void {
+    ['clinic' => $clinic, 'owner' => $owner] = rbSetup();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id]);
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+
+    // 2 past appointments (1 cancelled) — the rate's numerator AND denominator.
+    Appointment::factory()->create([
+        'clinic_id' => $clinic->id, 'doctor_id' => $doctor->id, 'patient_id' => $patient->id,
+        'starts_at' => now()->subDays(2), 'status' => AppointmentStatus::Cancelled,
+    ]);
+    Appointment::factory()->create([
+        'clinic_id' => $clinic->id, 'doctor_id' => $doctor->id, 'patient_id' => $patient->id,
+        'starts_at' => now()->subDay(), 'status' => AppointmentStatus::Confirmed,
+    ]);
+
+    // 3 future appointments, none cancelled — must inflate appointment_count but not the rate.
+    for ($i = 1; $i <= 3; $i++) {
+        Appointment::factory()->create([
+            'clinic_id' => $clinic->id, 'doctor_id' => $doctor->id, 'patient_id' => $patient->id,
+            'starts_at' => now()->addDays($i), 'status' => AppointmentStatus::Confirmed,
+        ]);
+    }
+
+    $this->actingAs($owner)
+        ->get(route('reports.index', [
+            'tab' => 'doctor',
+            'start' => now()->subWeek()->toDateString(),
+            'end' => now()->addWeek()->toDateString(),
+        ]))
+        ->assertInertia(fn ($page) => $page
+            ->has('breakdown.data', 1)
+            ->where('breakdown.data.0.appointment_count', 5)
+            ->where('breakdown.data.0.cancelled_count', 1)
+            ->where('breakdown.data.0.no_show_count', 0)
+            // Whole-number rates round-trip through JSON as ints (no fractional part), unlike
+            // the fractional 33.3 elsewhere in this file — hence 50/0, not 50.0/0.0.
+            ->where('breakdown.data.0.cancelled_rate', 50)
+            ->where('breakdown.data.0.no_show_rate', 0)
+        );
+});
+
+it('a window entirely in the past yields the same rate as before the fix (denominator == the whole window)', function (): void {
+    ['clinic' => $clinic, 'owner' => $owner] = rbSetup();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id]);
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+
+    Appointment::factory()->create([
+        'clinic_id' => $clinic->id, 'doctor_id' => $doctor->id, 'patient_id' => $patient->id,
+        'starts_at' => now()->subDays(10), 'status' => AppointmentStatus::Cancelled,
+    ]);
+    Appointment::factory()->create([
+        'clinic_id' => $clinic->id, 'doctor_id' => $doctor->id, 'patient_id' => $patient->id,
+        'starts_at' => now()->subDays(9), 'status' => AppointmentStatus::Confirmed,
+    ]);
+
+    $this->actingAs($owner)
+        ->get(route('reports.index', [
+            'tab' => 'doctor',
+            'start' => now()->subDays(30)->toDateString(),
+            'end' => now()->subDays(1)->toDateString(),
+        ]))
+        ->assertInertia(fn ($page) => $page
+            ->has('breakdown.data', 1)
+            ->where('breakdown.data.0.appointment_count', 2)
+            ->where('breakdown.data.0.cancelled_count', 1)
+            ->where('breakdown.data.0.cancelled_rate', 50)
+        );
+});
+
 // ---------------------------------------------------------------------------
 // Service / Product tabs
 // ---------------------------------------------------------------------------

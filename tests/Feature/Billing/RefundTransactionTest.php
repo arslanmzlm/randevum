@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\InstallmentStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\TransactionStatus;
 use App\Enums\TreatmentStatus;
@@ -7,6 +8,8 @@ use App\Models\Appointment;
 use App\Models\Clinic;
 use App\Models\Doctor;
 use App\Models\Patient;
+use App\Models\PaymentPlan;
+use App\Models\PaymentPlanInstallment;
 use App\Models\PodiatryTreatmentDetail;
 use App\Models\StatusLog;
 use App\Models\Transaction;
@@ -126,6 +129,52 @@ it('full refund creates a counter-entry transaction with negative amount and sta
         ->and($counter->payment_method)->toBe(PaymentMethod::Cash)
         ->and($counter->note)->toBe('Full return')
         ->and($counter->clinic_id)->toBe($clinic->id);
+});
+
+it('refund counter-entry copies category, alongside patient_id, treatment_id and payment_plan_installment_id from the original', function (): void {
+    ['owner' => $owner, 'clinic' => $clinic, 'patient' => $patient, 'treatment' => $treatment] = rfSetup(150.00);
+
+    $plan = PaymentPlan::factory()->create([
+        'clinic_id' => $clinic->id,
+        'patient_id' => $patient->id,
+        'treatment_id' => $treatment->id,
+        'total_amount' => '150.00',
+        'down_payment' => null,
+        'installment_count' => 1,
+    ]);
+    $installment = PaymentPlanInstallment::factory()->create([
+        'clinic_id' => $clinic->id,
+        'payment_plan_id' => $plan->id,
+        'sequence' => 1,
+        'amount' => '150.00',
+        'status' => InstallmentStatus::Paid,
+        'paid_at' => now()->subHour(),
+    ]);
+
+    $payment = Transaction::factory()->create([
+        'clinic_id' => $clinic->id,
+        'patient_id' => $patient->id,
+        'treatment_id' => $treatment->id,
+        'payment_plan_installment_id' => $installment->id,
+        'amount' => '150.00',
+        'category' => 'Taksit',
+        'payment_method' => PaymentMethod::Cash,
+        'status' => TransactionStatus::Completed,
+        'paid_at' => now()->subHour(),
+        'created_by' => $owner->id,
+    ]);
+
+    $this->actingAs($owner)
+        ->post(route('transactions.refund', $payment), rfPayload(['amount' => '150.00']))
+        ->assertRedirect();
+
+    $counter = Transaction::withoutGlobalScopes()->where('original_transaction_id', $payment->id)->first();
+
+    expect($counter)->not->toBeNull()
+        ->and($counter->category)->toBe('Taksit')
+        ->and($counter->patient_id)->toBe($patient->id)
+        ->and($counter->treatment_id)->toBe($treatment->id)
+        ->and($counter->payment_plan_installment_id)->toBe($installment->id);
 });
 
 it('full refund flips the original to Refunded status', function (): void {

@@ -2,6 +2,7 @@
 
 namespace App\Modules\Billing\Services;
 
+use App\Enums\TransactionStatus;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Modules\Billing\Contracts\PaymentRecorderContract;
@@ -20,22 +21,34 @@ class ManualIncomeService
     public function __construct(
         private ManualIncomeRepository $repository,
         private PaymentRecorderContract $paymentRecorder,
+        private RefundService $refundService,
     ) {}
 
     /**
      * @return LengthAwarePaginator<Transaction>
      */
-    public function paginate(?string $startDate, ?string $endDate, ?string $category, string $timezone): LengthAwarePaginator
+    public function paginate(?int $ownerUserId, ?string $startDate, ?string $endDate, ?string $category, string $timezone): LengthAwarePaginator
     {
-        return $this->repository->paginateForActiveClinic($startDate, $endDate, $category, $timezone);
+        $paginator = $this->repository->paginateForActiveClinic($ownerUserId, $startDate, $endDate, $category, $timezone);
+
+        // refunded_total is a SUM of negative counter-entries → negate to the positive refunded
+        // figure that refundableFor() expects (single definition, shared with BalanceService).
+        $paginator->through(function (Transaction $transaction): Transaction {
+            $refundedSoFar = bcsub('0', bcadd('0', (string) ($transaction->refunded_total ?? '0'), 2), 2);
+            $transaction->setAttribute('refundable_amount', $this->refundService->refundableFor($transaction, $refundedSoFar));
+
+            return $transaction;
+        });
+
+        return $paginator;
     }
 
     /**
      * @return array{categories: list<string>}
      */
-    public function suggestions(): array
+    public function suggestions(?int $ownerUserId): array
     {
-        return ['categories' => $this->repository->distinctCategories()];
+        return ['categories' => $this->repository->distinctCategories($ownerUserId)];
     }
 
     /** The active clinic's manual income row by id, or null. */
@@ -70,6 +83,16 @@ class ManualIncomeService
     public function delete(Transaction $transaction): void
     {
         if ($transaction->patient_id !== null) {
+            throw ValidationException::withMessages([
+                'transaction' => [__('transactions.errors.delete_window_passed')],
+            ]);
+        }
+
+        // Refunded originals and counter-entries are never hard-deletable: deleting either side
+        // corrupts money (orphaned counter-entry, or a resurrected refundable balance).
+        if ($transaction->original_transaction_id !== null
+            || $transaction->status !== TransactionStatus::Completed
+            || $transaction->refunds()->exists()) {
             throw ValidationException::withMessages([
                 'transaction' => [__('transactions.errors.delete_window_passed')],
             ]);

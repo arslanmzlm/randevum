@@ -3,7 +3,6 @@
 namespace App\Modules\Billing\Services;
 
 use App\Enums\InstallmentStatus;
-use App\Enums\TransactionStatus;
 use App\Models\PaymentPlan;
 use App\Models\PaymentPlanInstallment;
 use App\Models\Transaction;
@@ -21,6 +20,7 @@ class BalanceService implements BalanceReaderContract
         private PaymentPlanRepository $paymentPlanRepository,
         private ClinicContext $clinicContext,
         private InstallmentSettlementService $settlement,
+        private RefundService $refundService,
     ) {}
 
     public function paidTotalForPatient(int $patientId): string
@@ -151,18 +151,6 @@ class BalanceService implements BalanceReaderContract
      */
     private function computeRefundableAmount(Transaction $tx, array $refundedMap): string
     {
-        // Counter-entries, fully-refunded rows, and non-positive amounts are not refundable.
-        if (
-            $tx->original_transaction_id !== null
-            || $tx->status === TransactionStatus::Refunded
-            || bccomp((string) $tx->amount, '0', 2) <= 0
-        ) {
-            return '0.00';
-        }
-
-        $refundedSoFar = $refundedMap[$tx->id] ?? '0.00';
-        $remaining = bcsub((string) $tx->amount, $refundedSoFar, 2);
-
-        return bccomp($remaining, '0', 2) > 0 ? $remaining : '0.00';
+        return $this->refundService->refundableFor($tx, $refundedMap[$tx->id] ?? '0.00');
     }
 }

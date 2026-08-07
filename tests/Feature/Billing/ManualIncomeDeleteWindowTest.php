@@ -4,6 +4,7 @@ use App\Models\Clinic;
 use App\Models\StatusLog;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Modules\Billing\Services\RefundService;
 use App\Support\ClinicContext;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
@@ -137,4 +138,43 @@ it('a patient payment cannot be deleted through /incomes/{id}', function (): voi
         ->assertForbidden();
 
     expect(Transaction::withoutGlobalScopes()->find($patientPayment->id))->not->toBeNull();
+});
+
+// ---------------------------------------------------------------------------
+// Refunded originals and their counter-entries are never hard-deletable
+// ---------------------------------------------------------------------------
+
+it('refuses to delete a refunded manual income original (the counter-entry would orphan)', function (): void {
+    ['clinic' => $clinic] = midClinic();
+    $owner = User::factory()->create();
+    midRole($owner, 'owner', $clinic->id);
+
+    $income = Transaction::factory()->manual()->create(['clinic_id' => $clinic->id, 'created_by' => $owner->id, 'amount' => '300.00']);
+    app(ClinicContext::class)->set($clinic->id);
+    app(RefundService::class)->refund($income, ['amount' => '300.00', 'reason' => 'test'], $owner);
+    app(ClinicContext::class)->forget();
+    $income->refresh();
+
+    $this->actingAs($owner)
+        ->delete(route('incomes.destroy', $income))
+        ->assertForbidden();
+
+    expect(Transaction::withoutGlobalScopes()->find($income->id))->not->toBeNull();
+});
+
+it('refuses to delete a refund counter-entry (the refund must never be hard-deleted)', function (): void {
+    ['clinic' => $clinic] = midClinic();
+    $owner = User::factory()->create();
+    midRole($owner, 'owner', $clinic->id);
+
+    $income = Transaction::factory()->manual()->create(['clinic_id' => $clinic->id, 'created_by' => $owner->id, 'amount' => '300.00']);
+    app(ClinicContext::class)->set($clinic->id);
+    $counterEntry = app(RefundService::class)->refund($income, ['amount' => '300.00', 'reason' => 'test'], $owner);
+    app(ClinicContext::class)->forget();
+
+    $this->actingAs($owner)
+        ->delete(route('incomes.destroy', $counterEntry))
+        ->assertForbidden();
+
+    expect(Transaction::withoutGlobalScopes()->find($counterEntry->id))->not->toBeNull();
 });

@@ -16,11 +16,14 @@ class ManualIncomeRepository
 {
     /**
      * paid_at is a timestamptz (unlike expenses.expense_date, a plain DATE), so the clinic-local
-     * window is converted to UTC and compared with a range rather than whereDate().
+     * window is converted to UTC and compared with a range rather than whereDate(). $ownerUserId
+     * narrows to that user's own rows (a viewer without reports.revenue — see
+     * ManualIncomeController::index); null returns every clinic manual-income row.
      *
      * @return LengthAwarePaginator<Transaction>
      */
     public function paginateForActiveClinic(
+        ?int $ownerUserId,
         ?string $startDate,
         ?string $endDate,
         ?string $category,
@@ -30,6 +33,8 @@ class ManualIncomeRepository
             Transaction::query()
                 ->whereNull('patient_id')
                 ->with('creator:id,first_name,last_name')
+                ->withSum('refunds as refunded_total', 'amount')
+                ->when($ownerUserId, fn ($query) => $query->where('created_by', $ownerUserId))
                 ->when(
                     $startDate,
                     fn ($query) => $query->where('paid_at', '>=', CarbonImmutable::parse($startDate, $timezone)->startOfDay()->utc()),
@@ -47,11 +52,12 @@ class ManualIncomeRepository
     /**
      * @return list<string>
      */
-    public function distinctCategories(): array
+    public function distinctCategories(?int $ownerUserId): array
     {
         return Transaction::query()
             ->whereNull('patient_id')
             ->whereNotNull('category')
+            ->when($ownerUserId, fn ($query) => $query->where('created_by', $ownerUserId))
             ->distinct()
             ->orderBy('category')
             ->pluck('category')

@@ -72,29 +72,33 @@ class PaymentPlanService implements PaymentPlanCreatorContract
      */
     public function collect(PaymentPlanInstallment $installment, array $data, User $actor): Transaction
     {
-        if (! in_array($installment->status, [InstallmentStatus::Pending, InstallmentStatus::PartiallyPaid], true)) {
-            throw ValidationException::withMessages([
-                'installment' => [__('payment_plan.errors.not_pending')],
-            ]);
-        }
-
-        $installment->loadMissing('plan');
-        $plan = $installment->plan;
-
-        $remaining = $this->settlement->remaining($installment);
-        $amount = (string) ($data['amount'] ?? $remaining);
-
-        if (bccomp($amount, '0', 2) <= 0 || bccomp($amount, $remaining, 2) > 0) {
-            throw ValidationException::withMessages([
-                'amount' => [__('payment_plan.errors.amount_exceeds_remaining')],
-            ]);
-        }
-
         // Resolve once so a backdated collection shows the same date on the transaction
         // and the installment row (PaymentPlanCard reads installment.paid_at).
         $paidAt = $data['paid_at'] ?? now();
 
-        return DB::transaction(function () use ($installment, $plan, $data, $actor, $paidAt, $amount): Transaction {
+        return DB::transaction(function () use ($installment, $data, $actor, $paidAt): Transaction {
+            // Lock + re-read before deriving the remaining: two concurrent requests on the
+            // same installment must serialize here, so the second sees the first's already-
+            // committed collection instead of both reading the same stale remaining.
+            $locked = $this->repository->lockInstallmentForUpdate($installment->id);
+            $locked->loadMissing('plan');
+            $plan = $locked->plan;
+
+            if (! in_array($locked->status, [InstallmentStatus::Pending, InstallmentStatus::PartiallyPaid], true)) {
+                throw ValidationException::withMessages([
+                    'installment' => [__('payment_plan.errors.not_pending')],
+                ]);
+            }
+
+            $remaining = $this->settlement->remaining($locked);
+            $amount = (string) ($data['amount'] ?? $remaining);
+
+            if (bccomp($amount, '0', 2) <= 0 || bccomp($amount, $remaining, 2) > 0) {
+                throw ValidationException::withMessages([
+                    'amount' => [__('payment_plan.errors.amount_exceeds_remaining')],
+                ]);
+            }
+
             $transaction = $this->paymentRecorder->record([
                 'amount' => $amount,
                 'payment_method' => $data['payment_method'],
@@ -102,10 +106,10 @@ class PaymentPlanService implements PaymentPlanCreatorContract
                 'treatment_id' => $plan->treatment_id,
                 'note' => $data['note'] ?? null,
                 'paid_at' => $paidAt,
-                'payment_plan_installment_id' => $installment->id,
+                'payment_plan_installment_id' => $locked->id,
             ], $actor);
 
-            $this->settlement->sync($installment, $actor, $paidAt);
+            $this->settlement->sync($locked, $actor, $paidAt);
 
             return $transaction;
         });

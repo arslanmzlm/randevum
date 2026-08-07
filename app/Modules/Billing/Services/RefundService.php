@@ -60,6 +60,7 @@ class RefundService
                 'treatment_id' => $original->treatment_id,
                 'original_transaction_id' => $original->id,
                 'payment_plan_installment_id' => $original->payment_plan_installment_id,
+                'category' => $original->category,
                 'amount' => bcsub('0', $refundAmount, 2),
                 'payment_method' => $original->payment_method->value,
                 'status' => TransactionStatus::Refunded->value,
@@ -104,5 +105,24 @@ class RefundService
 
             return $counterEntry;
         });
+    }
+
+    /**
+     * Remaining refundable for an original payment; 0.00 for counter-entries, fully-refunded
+     * rows and non-positive amounts. $refundedSoFar is the POSITIVE cumulative refunded total.
+     */
+    public function refundableFor(Transaction $transaction, string $refundedSoFar): string
+    {
+        if (
+            $transaction->original_transaction_id !== null
+            || $transaction->status === TransactionStatus::Refunded
+            || bccomp((string) $transaction->amount, '0', 2) <= 0
+        ) {
+            return '0.00';
+        }
+
+        $remaining = bcsub((string) $transaction->amount, $refundedSoFar, 2);
+
+        return bccomp($remaining, '0', 2) > 0 ? $remaining : '0.00';
     }
 }

@@ -43,6 +43,6 @@ class ProductPolicy
 
     public function viewMovements(User $user, Product $product): bool
     {
-        return $user->can('products.manageStock');
+        return $user->can('products.manageStock') || $user->can('products.viewAny');
     }
 }

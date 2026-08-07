@@ -40,6 +40,11 @@ const canCreate = computed(() => can('products.create'));
 const canUpdate = computed(() => can('products.update'));
 const canDelete = computed(() => can('products.delete'));
 const canManageStock = computed(() => can('products.manageStock'));
+// Reading the movement history is open to anyone who can see products; only the manual
+// adjustment stays behind manageStock (mirrors ProductPolicy::viewMovements).
+const canViewMovements = computed(
+    () => canManageStock.value || can('products.viewAny'),
+);
 const showActions = computed(() => canUpdate.value || canDelete.value);
 
 const { visible, item, openCreate, openEdit, confirmDelete } =
@@ -225,7 +230,7 @@ function openStockDialog(product: Product): void {
                             <IconStack2 />
                         </Button>
                         <ButtonLink
-                            v-if="canManageStock"
+                            v-if="canViewMovements"
                             :href="movementsIndex(data.id).url"
                             severity="secondary"
                             outlined

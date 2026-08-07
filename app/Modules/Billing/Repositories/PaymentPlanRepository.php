@@ -150,4 +150,10 @@ class PaymentPlanRepository
             ->where('status', '!=', InstallmentStatus::Paid->value)
             ->exists();
     }
+
+    /** Re-read an installment under a row lock (see PaymentPlanService::collect). */
+    public function lockInstallmentForUpdate(int $id): PaymentPlanInstallment
+    {
+        return PaymentPlanInstallment::query()->whereKey($id)->lockForUpdate()->firstOrFail();
+    }
 }

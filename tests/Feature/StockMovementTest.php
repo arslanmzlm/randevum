@@ -237,7 +237,7 @@ it('owner can view the movements page and gets the prop shape, newest-first', fu
         );
 });
 
-it('doctor role (no products.manageStock) gets 403 on GET /products/{product}/movements', function (): void {
+it('doctor role (has products.viewAny, not products.manageStock) can view movements, but the manual stock-adjust endpoint still 403s', function (): void {
     $clinic = Clinic::factory()->create();
     $doctorUser = User::factory()->create();
     smTestRole($doctorUser, 'doctor', $clinic->id);
@@ -245,6 +245,22 @@ it('doctor role (no products.manageStock) gets 403 on GET /products/{product}/mo
     $product = Product::factory()->create(['clinic_id' => $clinic->id, 'vertical_id' => $clinic->vertical_id]);
 
     $this->actingAs($doctorUser)
+        ->get(route('products.movements.index', $product))
+        ->assertOk();
+
+    $this->actingAs($doctorUser)
+        ->patch(route('products.stock.update', $product), ['current_stock' => 99])
+        ->assertForbidden();
+});
+
+it('a role with neither products.viewAny nor products.manageStock gets 403 on GET /products/{product}/movements', function (): void {
+    $clinic = Clinic::factory()->create();
+    $assistant = User::factory()->create();
+    smTestRole($assistant, 'assistant', $clinic->id);
+
+    $product = Product::factory()->create(['clinic_id' => $clinic->id, 'vertical_id' => $clinic->vertical_id]);
+
+    $this->actingAs($assistant)
         ->get(route('products.movements.index', $product))
         ->assertForbidden();
 });
