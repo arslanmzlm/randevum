@@ -37,6 +37,8 @@ return [
         'cases.viewAll' => 'Tüm doktorların vakalarını gör',
         'cases.viewAny' => 'Vaka listesini gör',
         'clinic.update' => 'Klinik bilgilerini düzenle',
+        'clinics.create' => 'Yeni şube aç',
+        'clinics.switch' => 'Şubeler arası geçiş yap',
         'doctors.create' => 'Doktor ekle',
         'doctors.createOwn' => 'Kendi doktor profilini oluştur',
         'doctors.delete' => 'Doktoru sil',

@@ -7,6 +7,7 @@ use App\Enums\TransactionStatus;
 use App\Enums\TreatmentStatus;
 use App\Models\Appointment;
 use App\Models\AppointmentType;
+use App\Models\Clinic;
 use App\Models\Doctor;
 use App\Models\Expense;
 use App\Models\Product;
@@ -14,6 +15,7 @@ use App\Models\Service;
 use App\Models\Transaction;
 use App\Models\Treatment;
 use App\Models\User;
+use App\Scopes\ClinicScope;
 use App\Support\ClinicContext;
 use Carbon\CarbonInterface;
 
@@ -287,6 +289,113 @@ class ReportBreakdownRepository
         }
 
         return $result;
+    }
+
+    /**
+     * Collected (non-pending) amount per branch (clinic), net of refunds — mirrors the
+     * finance tab's revenue definition. Bypasses ClinicScope: the caller passes the
+     * exact tenant ∩ membership id set. Fails closed (empty array) on an empty set.
+     *
+     * @param  list<int>  $clinicIds
+     * @return array<int, string> clinic_id => amount (2-dp decimal string)
+     */
+    public function collectedByClinic(array $clinicIds, ?CarbonInterface $startUtc, ?CarbonInterface $endUtc): array
+    {
+        if ($clinicIds === []) {
+            return [];
+        }
+
+        $rows = Transaction::withoutGlobalScope(ClinicScope::class)
+            ->whereIn('clinic_id', $clinicIds)
+            ->whereNot('status', TransactionStatus::Pending)
+            ->when($startUtc, fn ($query) => $query->where('paid_at', '>=', $startUtc))
+            ->when($endUtc, fn ($query) => $query->where('paid_at', '<=', $endUtc))
+            ->groupBy('clinic_id')
+            ->selectRaw('clinic_id, sum(amount) as total')
+            ->get();
+
+        $result = [];
+
+        foreach ($rows as $row) {
+            $result[(int) $row->clinic_id] = bcadd('0', (string) $row->total, 2);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Settled transaction count per branch (clinic), same filter as collectedByClinic().
+     *
+     * @param  list<int>  $clinicIds
+     * @return array<int, int> clinic_id => count
+     */
+    public function settledCountByClinic(array $clinicIds, ?CarbonInterface $startUtc, ?CarbonInterface $endUtc): array
+    {
+        if ($clinicIds === []) {
+            return [];
+        }
+
+        $rows = Transaction::withoutGlobalScope(ClinicScope::class)
+            ->whereIn('clinic_id', $clinicIds)
+            ->whereNot('status', TransactionStatus::Pending)
+            ->when($startUtc, fn ($query) => $query->where('paid_at', '>=', $startUtc))
+            ->when($endUtc, fn ($query) => $query->where('paid_at', '<=', $endUtc))
+            ->groupBy('clinic_id')
+            ->selectRaw('clinic_id, count(*) as total')
+            ->get();
+
+        $result = [];
+
+        foreach ($rows as $row) {
+            $result[(int) $row->clinic_id] = (int) $row->total;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Expense total per branch (clinic) over the plain expense_date window — no tz
+     * math, same as ExpenseReportService.
+     *
+     * @param  list<int>  $clinicIds
+     * @return array<int, string> clinic_id => amount (2-dp decimal string)
+     */
+    public function expenseTotalsByClinic(array $clinicIds, ?string $startDate, ?string $endDate): array
+    {
+        if ($clinicIds === []) {
+            return [];
+        }
+
+        $rows = Expense::withoutGlobalScope(ClinicScope::class)
+            ->whereIn('clinic_id', $clinicIds)
+            ->when($startDate, fn ($query) => $query->whereDate('expense_date', '>=', $startDate))
+            ->when($endDate, fn ($query) => $query->whereDate('expense_date', '<=', $endDate))
+            ->groupBy('clinic_id')
+            ->selectRaw('clinic_id, sum(amount) as total')
+            ->get();
+
+        $result = [];
+
+        foreach ($rows as $row) {
+            $result[(int) $row->clinic_id] = bcadd('0', (string) $row->total, 2);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Branch (clinic) display names for the given ids — mirrors doctorLabels().
+     *
+     * @param  array<int, int>  $ids
+     * @return array<int, string> clinic_id => name
+     */
+    public function clinicLabels(array $ids): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+
+        return Clinic::withoutGlobalScopes()->whereIn('id', $ids)->pluck('name', 'id')->all();
     }
 
     /**

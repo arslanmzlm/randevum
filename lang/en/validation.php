@@ -182,6 +182,9 @@ return [
         'attribute-name' => [
             'rule-name' => 'custom-message',
         ],
+        'copy_catalog' => [
+            'vertical_mismatch' => 'The catalog can only be copied between branches of the same clinic type.',
+        ],
     ],
 
     /*
@@ -214,6 +217,7 @@ return [
         'last_name' => 'last name',
         'clinic_name' => 'clinic name',
         'vertical_id' => 'clinic type',
+        'copy_catalog' => 'copy catalog',
         'terms' => 'terms of service and privacy policy',
         'dpa' => 'data processing agreement',
         // clinic profile

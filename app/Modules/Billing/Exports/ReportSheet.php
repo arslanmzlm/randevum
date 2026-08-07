@@ -101,7 +101,7 @@ class ReportSheet implements FromArray, WithColumnFormatting, WithColumnWidths, 
 
             $letter = Coordinate::stringFromColumnIndex($index + 1);
             $formats[$letter] = match ($column) {
-                'amount', 'average' => NumberFormat::FORMAT_NUMBER_00,
+                'amount', 'average', 'expense', 'net' => NumberFormat::FORMAT_NUMBER_00,
                 'cancelled_rate', 'no_show_rate' => '0.0',
                 default => NumberFormat::FORMAT_NUMBER,
             };
@@ -117,7 +117,7 @@ class ReportSheet implements FromArray, WithColumnFormatting, WithColumnWidths, 
     {
         return array_map(fn (string $column): mixed => match ($column) {
             'label' => $row['label'],
-            'amount', 'average' => (float) $row[$column],
+            'amount', 'average', 'expense', 'net' => (float) $row[$column],
             'cancelled_rate', 'no_show_rate' => (float) $row[$column],
             default => (int) $row[$column],
         }, $this->columns());
@@ -141,8 +141,10 @@ class ReportSheet implements FromArray, WithColumnFormatting, WithColumnWidths, 
      */
     private function columns(): array
     {
-        return $this->tab === ReportTab::Doctor
-            ? ['label', 'amount', 'count', 'average', 'appointment_count', 'cancelled_count', 'no_show_count', 'cancelled_rate', 'no_show_rate']
-            : ['label', 'amount', 'count', 'average'];
+        return match ($this->tab) {
+            ReportTab::Doctor => ['label', 'amount', 'count', 'average', 'appointment_count', 'cancelled_count', 'no_show_count', 'cancelled_rate', 'no_show_rate'],
+            ReportTab::Branch => ['label', 'amount', 'count', 'average', 'expense', 'net'],
+            default => ['label', 'amount', 'count', 'average'],
+        };
     }
 }

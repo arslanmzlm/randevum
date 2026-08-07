@@ -12,6 +12,7 @@ return [
         'product' => 'Product',
         'appointment_type' => 'Appointment type',
         'expense_owner' => 'Expense owner',
+        'branch' => 'Branch',
     ],
 
     'columns' => [
@@ -24,6 +25,8 @@ return [
         'no_show_count' => 'No-show',
         'cancelled_rate' => 'Cancellation rate (%)',
         'no_show_rate' => 'No-show rate (%)',
+        'expense' => 'Expense',
+        'net' => 'Net',
     ],
 
     // Per-tab overrides for the shared label/amount/count columns: the same cell means a
@@ -35,6 +38,7 @@ return [
         'product' => 'Product',
         'appointment_type' => 'Appointment type',
         'expense_owner' => 'User',
+        'branch' => 'Branch',
     ],
 
     'amount_header' => [
@@ -43,6 +47,7 @@ return [
         'product' => 'Sold value',
         'appointment_type' => 'Collected',
         'expense_owner' => 'Total expense',
+        'branch' => 'Collected',
     ],
 
     'count_header' => [
@@ -51,6 +56,7 @@ return [
         'product' => 'Units sold',
         'appointment_type' => 'Appointments',
         'expense_owner' => 'Expense count',
+        'branch' => 'Transaction count',
     ],
 
     'finance' => [

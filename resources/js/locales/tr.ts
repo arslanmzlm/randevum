@@ -40,6 +40,7 @@ export const tr = {
         tags: 'Etiketler',
         follow_up_types: 'Takip Türleri',
         roles: 'Roller',
+        branches: 'Şubeler',
         finance: 'Finans',
         reports: 'Raporlar',
         expenses: 'Giderler',
@@ -1052,6 +1053,10 @@ export const tr = {
         loading: 'Randevular yükleniyor…',
         no_events: 'Bu aralıkta randevu bulunmuyor.',
         all_doctors: 'Tüm doktorlar',
+        all_branches: 'Tüm şubeler',
+        branch_filter: 'şube',
+        multi_branch_month_only:
+            'Birden fazla şube seçiliyken yalnız ay görünümü kullanılabilir.',
         filter_status: 'Durum',
         walk_in: 'Randevusuz',
         closed: 'Kapalı',
@@ -1418,6 +1423,27 @@ export const tr = {
         last_month: 'Geçen ay',
         this_year: 'Bu yıl',
     },
+    branch: {
+        title: 'Şubeler',
+        subtitle: 'Bu tenant altındaki tüm şubeler.',
+        create_title: 'Yeni Şube',
+        create_subtitle: 'Aynı tenant altında yeni bir şube açın.',
+        submit: 'Şubeyi Aç',
+        name: 'Şube adı',
+        vertical: 'Klinik türü',
+        status: 'Durum',
+        active: 'Aktif',
+        passive: 'Pasif',
+        created_at: 'Açılış',
+        current: 'Mevcut',
+        switcher_label: 'Şube seç',
+        copy_catalog: 'Kataloğu bu şubeden kopyala (hizmetler + ürünler)',
+        copy_catalog_hint:
+            'Kataloğu yalnızca aynı klinik türündeki şubelerden kopyalayabilirsiniz.',
+        copy_catalog_source:
+            'Katalog {name} şubesinden kopyalanır; stoklar sıfırdan başlar.',
+        empty: 'Henüz başka şube açılmamış.',
+    },
     report: {
         title: 'Raporlar',
         subtitle:
@@ -1433,6 +1459,7 @@ export const tr = {
             product: 'Ürün',
             appointment_type: 'Randevu türü',
             expense_owner: 'Gider sahibi',
+            branch: 'Şube',
         },
         // Each tab is computed from a different date column, so its totals need not match the
         // finance tab's. One line per tab says which date the window is applied to.
@@ -1445,6 +1472,7 @@ export const tr = {
             appointment_type:
                 'Tahsilat ödeme tarihine, randevu adedi randevu tarihine göre hesaplanır.',
             expense_owner: 'Gider tarihine göre hesaplanır.',
+            branch: 'Tahsilat ödeme tarihine, gider ise gider tarihine göre hesaplanır; yalnızca çalıştığınız şubeler listelenir.',
         },
         columns: {
             average: 'Ortalama',
@@ -1453,6 +1481,8 @@ export const tr = {
             no_show_count: 'Gelmedi',
             cancelled_rate: 'İptal oranı',
             no_show_rate: 'Gelmedi oranı',
+            expense: 'Gider',
+            net: 'Net',
         },
         label_header: {
             doctor: 'Doktor',
@@ -1460,6 +1490,7 @@ export const tr = {
             product: 'Ürün',
             appointment_type: 'Randevu türü',
             expense_owner: 'Kullanıcı',
+            branch: 'Şube',
         },
         amount_header: {
             doctor: 'Tahsilat',
@@ -1467,6 +1498,7 @@ export const tr = {
             product: 'Satış tutarı',
             appointment_type: 'Tahsilat',
             expense_owner: 'Toplam gider',
+            branch: 'Tahsilat',
         },
         count_header: {
             doctor: 'Tamamlanan tedavi',
@@ -1474,6 +1506,7 @@ export const tr = {
             product: 'Satılan adet',
             appointment_type: 'Randevu adedi',
             expense_owner: 'Gider adedi',
+            branch: 'İşlem adedi',
         },
         average_header: {
             unit: 'Birim ortalama',

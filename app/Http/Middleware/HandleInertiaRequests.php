@@ -3,7 +3,9 @@
 namespace App\Http\Middleware;
 
 use App\Models\Clinic;
+use App\Models\User;
 use App\Modules\Core\Contracts\UpcomingAppointmentsContract;
+use App\Modules\Core\Services\ClinicMembershipService;
 use App\Support\ClinicContext;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -50,6 +52,7 @@ class HandleInertiaRequests extends Middleware
                 'permissions' => fn () => $request->user()?->getAllPermissions()->pluck('name')->all() ?? [],
             ],
             'activeClinic' => fn () => $this->sharedClinic(),
+            'availableClinics' => fn () => $this->sharedAvailableClinics($request),
             'upcomingAppointments' => fn () => $this->sharedUpcomingAppointments($request),
             'flash' => [
                 'toasts' => fn () => $request->session()->get('toasts', []),
@@ -75,6 +78,40 @@ class HandleInertiaRequests extends Middleware
 
         return app(UpcomingAppointmentsContract::class)
             ->upcomingFor($user, config('platform.appointment.upcoming_widget_limit'));
+    }
+
+    /**
+     * Clinics the user can switch into (branch switcher). [] for guests, users with a
+     * single membership, and users who hold clinics.switch nowhere — the switcher is
+     * hidden entirely in every one of those cases (single-branch behaviour unchanged).
+     *
+     * @return list<array{id: int, name: string}>
+     */
+    private function sharedAvailableClinics(Request $request): array
+    {
+        $user = $request->user();
+
+        if (! $user instanceof User) {
+            return [];
+        }
+
+        $membership = app(ClinicMembershipService::class);
+        $clinics = $membership->clinicsFor($user);
+
+        if ($clinics->count() < 2 || $membership->switchableClinicIds($user) === []) {
+            return [];
+        }
+
+        // Filtered by the same predicate ClinicPolicy::switchTo enforces, so a
+        // listed entry can never 403 on click (e.g. active=C not switchable,
+        // switchable=[A] only → B must not appear even though it's a membership).
+        $targetIds = $membership->switchTargetsFor($user, app(ClinicContext::class)->id());
+
+        return $clinics->whereIn('id', $targetIds)
+            ->map(fn (Clinic $clinic): array => [
+                'id' => $clinic->id,
+                'name' => $clinic->name,
+            ])->values()->all();
     }
 
     /**

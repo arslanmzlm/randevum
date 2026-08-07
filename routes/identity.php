@@ -1,5 +1,7 @@
 <?php
 
+use App\Modules\Identity\Http\Controllers\BranchController;
+use App\Modules\Identity\Http\Controllers\ClinicSwitchController;
 use App\Modules\Identity\Http\Controllers\RoleController;
 use App\Modules\Identity\Http\Controllers\RolePermissionController;
 use Illuminate\Support\Facades\Route;
@@ -11,4 +13,12 @@ Route::middleware('auth')->group(function (): void {
     Route::put('/settings/roles/permissions', [RolePermissionController::class, 'update'])->name('settings.roles.permissions.update');
     Route::delete('/settings/roles/customizations', [RoleController::class, 'revert'])->name('settings.roles.revert');
     Route::delete('/settings/roles/{role}', [RoleController::class, 'destroy'])->whereNumber('role')->name('settings.roles.destroy');
+});
+
+// Multi-branch: switching the active clinic + opening a new branch under the tenant.
+Route::middleware('auth')->group(function (): void {
+    Route::post('/clinics/switch', [ClinicSwitchController::class, 'store'])->name('clinics.switch');
+    Route::get('/settings/branches', [BranchController::class, 'index'])->name('settings.branches.index');
+    Route::get('/settings/branches/create', [BranchController::class, 'create'])->name('settings.branches.create');
+    Route::post('/settings/branches', [BranchController::class, 'store'])->name('settings.branches.store');
 });

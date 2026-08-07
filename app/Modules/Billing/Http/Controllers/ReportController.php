@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Expense;
 use App\Modules\Billing\Exports\ReportExport;
 use App\Modules\Billing\Services\FinanceReportService;
+use App\Modules\Core\Services\ClinicMembershipService;
 use App\Modules\Core\Services\ReportBreakdownService;
 use App\Modules\Core\Support\Toast;
 use App\Support\ClinicContext;
@@ -31,6 +32,7 @@ class ReportController extends Controller
         private FinanceReportService $financeReportService,
         private ReportBreakdownService $breakdownService,
         private ClinicContext $clinicContext,
+        private ClinicMembershipService $membership,
     ) {}
 
     /**
@@ -46,6 +48,15 @@ class ReportController extends Controller
         [$entire, $start, $end] = DateRangeFilter::resolve($request, $clinic->timezone);
         $tab = ReportTab::tryFrom((string) $request->string('tab')) ?? ReportTab::Finance;
         [$sort, $perPage] = $this->sortAndPerPage($request);
+
+        $branchIds = $this->membership->branchIdsForTenant($request->user(), $clinic->tenant_id);
+        $multiBranch = count($branchIds) > 1;
+
+        // Tek şubeli klinikte hiçbir yeni kontrol görünmez: silently fall back rather
+        // than error when the tab is requested without a second branch.
+        if ($tab === ReportTab::Branch && ! $multiBranch) {
+            $tab = ReportTab::Finance;
+        }
 
         $windowStart = $entire ? null : $start;
         $windowEnd = $entire ? null : $end;
@@ -64,7 +75,7 @@ class ReportController extends Controller
             $expense = $report['expense'];
             $net = $report['net'];
         } else {
-            $result = $this->breakdownService->build($tab, $clinic->timezone, $windowStart, $windowEnd, $sort, $perPage, paginate: true);
+            $result = $this->breakdownService->build($tab, $clinic->timezone, $windowStart, $windowEnd, $sort, $perPage, paginate: true, branchIds: $branchIds);
 
             $breakdown = [
                 'data' => $result['data'],
@@ -83,6 +94,7 @@ class ReportController extends Controller
             'net' => $net,
             'breakdown' => $breakdown,
             'query' => ['sort' => $resolvedSort, 'per_page' => $perPage],
+            'multiBranch' => $multiBranch,
         ]);
     }
 
@@ -99,8 +111,19 @@ class ReportController extends Controller
         [$entire, $start, $end] = DateRangeFilter::resolve($request, $clinic->timezone);
         [$sort] = $this->sortAndPerPage($request);
 
+        $branchIds = $this->membership->branchIdsForTenant($request->user(), $clinic->tenant_id);
+        $multiBranch = count($branchIds) > 1;
+
         $tabParam = (string) $request->string('tab');
         $tabs = $tabParam === 'all' ? ReportTab::cases() : [ReportTab::tryFrom($tabParam) ?? ReportTab::Finance];
+
+        // Same "tek şubeli klinikte hiçbir yeni kontrol görünmez" fallback as index():
+        // drop the branch tab from ?tab=all, or fall back an explicit ?tab=branch.
+        if (! $multiBranch) {
+            $tabs = $tabParam === 'all'
+                ? array_values(array_filter($tabs, fn (ReportTab $t): bool => $t !== ReportTab::Branch))
+                : array_map(fn (ReportTab $t): ReportTab => $t === ReportTab::Branch ? ReportTab::Finance : $t, $tabs);
+        }
 
         // The finance sheet carries the expense total and the expense-by-category block,
         // so exporting it needs the same gate index() applies before rendering that tab.
@@ -126,6 +149,7 @@ class ReportController extends Controller
                 $sort,
                 $this->financeReportService,
                 $this->breakdownService,
+                $branchIds,
             ),
             $filename,
         );

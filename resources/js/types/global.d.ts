@@ -1,7 +1,7 @@
 import type { SidebarMode } from '@/composables/useSidebar';
 import type { UpcomingAppointmentDto } from '@/types/appointment';
 import type { Auth } from '@/types/auth';
-import type { SharedClinic } from '@/types/clinic';
+import type { SharedClinic, SwitchableClinic } from '@/types/clinic';
 
 // Extend ImportMeta interface for Vite...
 declare module 'vite/client' {
@@ -22,6 +22,8 @@ declare module '@inertiajs/core' {
             name: string;
             auth: Auth;
             activeClinic: SharedClinic | null;
+            /** Branches the viewer may switch into; [] for guests and single-branch users. */
+            availableClinics: SwitchableClinic[];
             /** Next N upcoming appointments for the viewer's scope; [] for guests / no permission. */
             upcomingAppointments: UpcomingAppointmentDto[];
             [key: string]: unknown;

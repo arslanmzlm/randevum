@@ -20,7 +20,7 @@ class PermissionCatalog
         'finance' => ['transactions', 'paymentPlans', 'expenses'],
         'catalog' => ['services', 'products'],
         'messaging' => ['smsSettings', 'smsLogs'],
-        'clinic' => ['clinic', 'doctors'],
+        'clinic' => ['clinic', 'clinics', 'doctors'],
         'reports' => ['reports'],
         'roles' => ['roles'],
     ];

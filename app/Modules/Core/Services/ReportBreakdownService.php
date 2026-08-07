@@ -25,12 +25,17 @@ class ReportBreakdownService
     /** Extra sort fields the doctor tab exposes on top of the common set. */
     private const SORT_FIELDS_DOCTOR = ['appointment_count', 'cancelled_rate', 'no_show_rate'];
 
+    /** Extra sort fields the branch (umbrella report) tab exposes on top of the common set. */
+    private const SORT_FIELDS_BRANCH = ['expense', 'net'];
+
     public function __construct(
         private ReportBreakdownRepository $repository,
         private ClinicContext $clinicContext,
     ) {}
 
     /**
+     * @param  list<int>  $branchIds  only consulted for ReportTab::Branch (the umbrella
+     *                                report); every other tab ignores it.
      * @return array{
      *   data: array<int, array<string, mixed>>,
      *   meta: array{current_page: int, last_page: int, per_page: int, total: int, from: ?int, to: ?int}|null,
@@ -46,6 +51,7 @@ class ReportBreakdownService
         string $sort,
         int $perPage,
         bool $paginate,
+        array $branchIds = [],
     ): array {
         $startUtc = $this->moneyBound($startDate, $timezone, endOfDay: false);
         $endUtc = $this->moneyBound($endDate, $timezone, endOfDay: true);
@@ -63,6 +69,7 @@ class ReportBreakdownService
             ),
             ReportTab::AppointmentType => $this->appointmentTypeRows($startUtc, $endUtc),
             ReportTab::ExpenseOwner => $this->expenseOwnerRows($startDate, $endDate),
+            ReportTab::Branch => $this->branchRows($branchIds, $startUtc, $endUtc, $startDate, $endDate),
         };
 
         [$field, $direction] = $this->resolveSort($tab, $sort);
@@ -232,6 +239,40 @@ class ReportBreakdownService
         return $rows;
     }
 
+    /**
+     * Umbrella (çatı) report rows: one row per tenant branch, "şube kırılımlı + toplam".
+     *
+     * @param  list<int>  $branchIds
+     * @return array<int, array<string, mixed>>
+     */
+    private function branchRows(array $branchIds, ?CarbonImmutable $startUtc, ?CarbonImmutable $endUtc, ?string $startDate, ?string $endDate): array
+    {
+        $collected = $this->repository->collectedByClinic($branchIds, $startUtc, $endUtc);
+        $settledCounts = $this->repository->settledCountByClinic($branchIds, $startUtc, $endUtc);
+        $expenses = $this->repository->expenseTotalsByClinic($branchIds, $startDate, $endDate);
+        $labels = $this->repository->clinicLabels($branchIds);
+
+        $rows = [];
+
+        foreach ($branchIds as $id) {
+            $amount = $collected[$id] ?? '0.00';
+            $count = $settledCounts[$id] ?? 0;
+            $expense = $expenses[$id] ?? '0.00';
+
+            $rows[] = [
+                'id' => $id,
+                'label' => $labels[$id] ?? __('report.unspecified'),
+                'amount' => $amount,
+                'count' => $count,
+                'average' => $this->average($amount, $count),
+                'expense' => $expense,
+                'net' => bcsub($amount, $expense, 2),
+            ];
+        }
+
+        return $rows;
+    }
+
     private function average(string $amount, int $count): string
     {
         return $count > 0 ? bcdiv($amount, (string) $count, 2) : '0.00';
@@ -265,9 +306,11 @@ class ReportBreakdownService
         $field = ltrim($sort, '-');
         $direction = str_starts_with($sort, '-') ? 'desc' : 'asc';
 
-        $allowed = $tab === ReportTab::Doctor
-            ? [...self::SORT_FIELDS_COMMON, ...self::SORT_FIELDS_DOCTOR]
-            : self::SORT_FIELDS_COMMON;
+        $allowed = match ($tab) {
+            ReportTab::Doctor => [...self::SORT_FIELDS_COMMON, ...self::SORT_FIELDS_DOCTOR],
+            ReportTab::Branch => [...self::SORT_FIELDS_COMMON, ...self::SORT_FIELDS_BRANCH],
+            default => self::SORT_FIELDS_COMMON,
+        };
 
         if (! in_array($field, $allowed, true)) {
             return ['amount', 'desc'];
@@ -306,7 +349,7 @@ class ReportBreakdownService
     {
         return match ($field) {
             'label' => $this->compareLabels((string) $a['label'], (string) $b['label'], $collator),
-            'amount', 'average' => bccomp((string) $a[$field], (string) $b[$field], 2),
+            'amount', 'average', 'expense', 'net' => bccomp((string) $a[$field], (string) $b[$field], 2),
             default => ($a[$field] ?? 0) <=> ($b[$field] ?? 0),
         };
     }

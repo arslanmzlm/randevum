@@ -21,6 +21,7 @@ class ReportExport implements WithMultipleSheets
 
     /**
      * @param  array<int, ReportTab>  $tabs
+     * @param  list<int>  $branchIds
      */
     public function __construct(
         private array $tabs,
@@ -31,6 +32,7 @@ class ReportExport implements WithMultipleSheets
         private string $sort,
         private FinanceReportService $financeReportService,
         private ReportBreakdownService $breakdownService,
+        private array $branchIds = [],
     ) {}
 
     /**
@@ -57,6 +59,7 @@ class ReportExport implements WithMultipleSheets
             $this->sort,
             perPage: 0,
             paginate: false,
+            branchIds: $this->branchIds,
         );
 
         return new ReportSheet($tab, $result['data'], $result['totals']);

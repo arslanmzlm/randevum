@@ -10,9 +10,9 @@ use App\Models\User;
 use App\Modules\Compliance\Contracts\ConsentRecorderContract;
 use App\Modules\Core\Services\RoleResolver;
 use App\Modules\Identity\Events\ClinicRegistered;
+use App\Modules\Identity\Support\ClinicSlug;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use Spatie\Permission\PermissionRegistrar;
 
 /**
@@ -41,7 +41,7 @@ class ClinicRegistrationService
                 'tenant_id' => $tenant->id,
                 'vertical_id' => (int) $data['vertical_id'],
                 'name' => $data['clinic_name'],
-                'slug' => $this->uniqueSlug($data['clinic_name']),
+                'slug' => ClinicSlug::unique($data['clinic_name']),
                 'country_id' => $countryId,
                 'working_hours' => Clinic::defaultWorkingHours(),
                 'onboarded_at' => now(),
@@ -68,19 +68,5 @@ class ClinicRegistrationService
         event(new ClinicRegistered($result['clinic']));
 
         return $result['user'];
-    }
-
-    private function uniqueSlug(string $clinicName): string
-    {
-        $base = Str::slug($clinicName);
-        $slug = $base;
-        $suffix = 2;
-
-        while (Clinic::where('slug', $slug)->exists()) {
-            $slug = "{$base}-{$suffix}";
-            $suffix++;
-        }
-
-        return $slug;
     }
 }

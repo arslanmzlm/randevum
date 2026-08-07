@@ -3,6 +3,7 @@
 namespace App\Modules\Scheduling\Http\Requests;
 
 use App\Enums\AppointmentStatus;
+use App\Modules\Core\Services\ClinicMembershipService;
 use App\Support\ClinicContext;
 use Carbon\Carbon;
 use Illuminate\Contracts\Validation\Validator;
@@ -59,7 +60,17 @@ class CalendarEventsRequest extends FormRequest
      */
     public function rules(): array
     {
-        $clinicId = app(ClinicContext::class)->id();
+        $clinicContext = app(ClinicContext::class);
+        $clinicId = $clinicContext->id();
+        $activeClinic = $clinicContext->clinic();
+        // Tenant-intersected, not the raw membership set: a user with clinic-scoped
+        // roles at an unrelated tenant must not be able to pull that tenant's data
+        // into this clinic's calendar via clinic_id[]. No active clinic (e.g. a user
+        // with no clinic role at all) → no membership ids; the controller's
+        // authorize() still 403s before this would otherwise matter.
+        $membershipIds = $activeClinic === null
+            ? []
+            : app(ClinicMembershipService::class)->branchIdsForTenant($this->user(), $activeClinic->tenant_id);
 
         return [
             'start' => ['required', 'date_format:Y-m-d'],
@@ -71,6 +82,10 @@ class CalendarEventsRequest extends FormRequest
             ],
             'statuses' => ['nullable', 'array'],
             'statuses.*' => ['string', Rule::in(self::MVP_STATUSES)],
+            // A foreign clinic id is rejected here (fail closed) rather than silently
+            // dropped — every value must be one of the user's own memberships.
+            'clinic_id' => ['sometimes', 'array', 'max:20'],
+            'clinic_id.*' => ['integer', Rule::in($membershipIds)],
         ];
     }
 

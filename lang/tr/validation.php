@@ -85,6 +85,7 @@ return [
         'last_name' => 'Soyad',
         'clinic_name' => 'Klinik adı',
         'vertical_id' => 'Klinik türü',
+        'copy_catalog' => 'Kataloğu kopyala',
         'terms' => 'Kullanım Koşulları ve Gizlilik Politikası',
         'dpa' => 'Veri İşleme Sözleşmesi',
         // Fallback for the `name` column, shared by every entity form. A form that wants a
@@ -253,5 +254,9 @@ return [
     'sms_template_unknown_variable' => ':attribute içinde izin verilmeyen bir değişken var: :variable',
     'sms_template_segment_limit' => ':attribute en fazla :max SMS segmentine izin verir (girilen metin :segments segment).',
 
-    'custom' => [],
+    'custom' => [
+        'copy_catalog' => [
+            'vertical_mismatch' => 'Katalog kopyalama yalnızca aynı klinik türündeki şubeler arasında yapılabilir.',
+        ],
+    ],
 ];

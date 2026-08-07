@@ -4,6 +4,7 @@
  * Labels stay out of here: the page resolves them from the `report` message tree at render time.
  */
 import {
+    IconBuildingStore,
     IconCalendarStats,
     IconClipboardList,
     IconPackage,
@@ -22,6 +23,7 @@ export const REPORT_TABS: { value: ReportTab; icon: Component }[] = [
     { value: 'product', icon: IconPackage },
     { value: 'appointment_type', icon: IconCalendarStats },
     { value: 'expense_owner', icon: IconReceipt },
+    { value: 'branch', icon: IconBuildingStore },
 ];
 
 // Typed by BreakdownTab → a new server-side tab without a column set is a compile error.
@@ -158,6 +160,44 @@ export const REPORT_BREAKDOWN_COLUMNS: Record<BreakdownTab, BreakdownColumn[]> =
             {
                 field: 'average',
                 headerKey: 'columns.average',
+                type: 'money',
+                sortable: true,
+            },
+        ],
+        branch: [
+            {
+                field: 'label',
+                headerKey: 'label_header.branch',
+                type: 'text',
+                sortable: true,
+            },
+            {
+                field: 'amount',
+                headerKey: 'amount_header.branch',
+                type: 'money',
+                sortable: true,
+            },
+            {
+                field: 'count',
+                headerKey: 'count_header.branch',
+                type: 'number',
+                sortable: true,
+            },
+            {
+                field: 'average',
+                headerKey: 'columns.average',
+                type: 'money',
+                sortable: true,
+            },
+            {
+                field: 'expense',
+                headerKey: 'columns.expense',
+                type: 'money',
+                sortable: true,
+            },
+            {
+                field: 'net',
+                headerKey: 'columns.net',
                 type: 'money',
                 sortable: true,
             },

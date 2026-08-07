@@ -12,6 +12,7 @@ return [
         'product' => 'Ürün',
         'appointment_type' => 'Randevu Türü',
         'expense_owner' => 'Gider Sahibi',
+        'branch' => 'Şube',
     ],
 
     'columns' => [
@@ -24,6 +25,8 @@ return [
         'no_show_count' => 'Gelmedi',
         'cancelled_rate' => 'İptal Oranı (%)',
         'no_show_rate' => 'Gelmedi Oranı (%)',
+        'expense' => 'Gider',
+        'net' => 'Net',
     ],
 
     // Per-tab overrides for the shared label/amount/count columns: the same cell means a
@@ -35,6 +38,7 @@ return [
         'product' => 'Ürün',
         'appointment_type' => 'Randevu Türü',
         'expense_owner' => 'Kullanıcı',
+        'branch' => 'Şube',
     ],
 
     'amount_header' => [
@@ -43,6 +47,7 @@ return [
         'product' => 'Satış Tutarı',
         'appointment_type' => 'Tahsilat',
         'expense_owner' => 'Toplam Gider',
+        'branch' => 'Tahsilat',
     ],
 
     'count_header' => [
@@ -51,6 +56,7 @@ return [
         'product' => 'Satılan Adet',
         'appointment_type' => 'Randevu Adedi',
         'expense_owner' => 'Gider Adedi',
+        'branch' => 'İşlem Adedi',
     ],
 
     'finance' => [

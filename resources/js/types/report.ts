@@ -22,6 +22,9 @@ export interface BreakdownRow {
     /** 0–100 with one decimal. */
     cancelled_rate?: number;
     no_show_rate?: number;
+    /** Branch tab only: the branch's expense total and `amount - expense`. */
+    expense?: string;
+    net?: string;
 }
 
 export type BreakdownColumnType = 'text' | 'money' | 'number' | 'percent';
@@ -53,4 +56,6 @@ export interface ReportIndexProps {
     breakdown: BreakdownPayload | null;
     /** Single JSON:API sort token (`-amount` = desc) plus the active page size. */
     query: { sort: string; per_page: number };
+    /** The tenant holds more than one branch the viewer belongs to → offer the `branch` tab. */
+    multiBranch: boolean;
 }

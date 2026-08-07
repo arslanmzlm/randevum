@@ -10,6 +10,7 @@ enum ReportTab: string
     case Product = 'product';
     case AppointmentType = 'appointment_type';
     case ExpenseOwner = 'expense_owner';
+    case Branch = 'branch';
 
     public function isFinance(): bool
     {

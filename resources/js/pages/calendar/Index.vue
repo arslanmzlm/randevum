@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
+import { Head, usePage } from '@inertiajs/vue3';
 import {
     IconCalendarPlus,
     IconChevronLeft,
@@ -8,7 +8,7 @@ import {
 } from '@tabler/icons-vue';
 import { useElementSize, useNow } from '@vueuse/core';
 import { addDays, startOfWeek } from 'date-fns';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import AppointmentCancelDialog from '@/components/appointments/AppointmentCancelDialog.vue';
 import ButtonLink from '@/components/ButtonLink.vue';
@@ -51,6 +51,7 @@ const props = defineProps<CalendarIndexProps>();
 
 const { t, locale } = useI18n();
 const { can } = useCan();
+const page = usePage();
 const { parseUtc } = useDateTime();
 const canViewAll = computed(() => can('appointments.viewAll'));
 
@@ -61,6 +62,19 @@ const doctorFilter = ref<number[]>(
     canViewAll.value && props.ownDoctorId ? [props.ownDoctorId] : [],
 );
 const statuses = ref<AppointmentStatus[]>([...DEFAULT_CALENDAR_STATUSES]);
+
+// Empty = the active clinic only. More than one branch turns the grid into a cross-branch month
+// summary. Doctors are per-clinic, so the doctor filter and the per-doctor columns only make sense
+// while the grid is showing the active clinic alone.
+const branchFilter = ref<number[]>([]);
+const multiBranch = computed(() => branchFilter.value.length > 1);
+const activeClinicId = computed(() => page.props.activeClinic?.id ?? null);
+const crossBranch = computed(
+    () =>
+        multiBranch.value ||
+        (branchFilter.value.length === 1 &&
+            branchFilter.value[0] !== activeClinicId.value),
+);
 
 // View/date state + the fetch range, header title, and prev/next/today stepping (pure nav math).
 const { activeView, viewDate, range, currentTitle, goPrev, goNext, goToday } =
@@ -134,11 +148,21 @@ const timeTo = computed(() =>
         : workingTo.value,
 );
 
+// Week/day place events on a single clinic's time axis, and events of several branches carry
+// different timezones — only the month summary is meaningful across branches.
+watch(multiBranch, (multi) => {
+    if (multi) {
+        activeView.value = 'month';
+    }
+});
+
 // The doctors the grid renders: the selection, or everyone when nothing is selected.
 const visibleDoctors = computed(() =>
-    doctorFilter.value.length
-        ? props.doctors.filter((d) => doctorFilter.value.includes(d.id))
-        : props.doctors,
+    crossBranch.value
+        ? []
+        : doctorFilter.value.length
+          ? props.doctors.filter((d) => doctorFilter.value.includes(d.id))
+          : props.doctors,
 );
 
 // A column mixing several doctors' leave has to name each block; a doctor column already has the
@@ -156,8 +180,9 @@ const schedulesActive = computed(
 );
 
 // Stable per-doctor accent (cycled) — shared by the day-view column header dot and the month-view
-// daily summary dot, so a doctor reads as the same colour across views.
-const DOCTOR_PALETTE = [
+// daily summary dot, so a doctor reads as the same colour across views. Branch chips cycle the
+// same palette over the branch list.
+const CHIP_PALETTE = [
     'var(--p-blue-400)',
     'var(--p-green-400)',
     'var(--p-purple-400)',
@@ -165,10 +190,17 @@ const DOCTOR_PALETTE = [
     'var(--p-pink-400)',
     'var(--p-teal-400)',
 ];
+function paletteAt(index: number): string {
+    return CHIP_PALETTE[(index < 0 ? 0 : index) % CHIP_PALETTE.length];
+}
 function doctorColor(doctorId: number): string {
-    const idx = props.doctors.findIndex((d) => d.id === doctorId);
-
-    return DOCTOR_PALETTE[(idx < 0 ? 0 : idx) % DOCTOR_PALETTE.length];
+    return paletteAt(props.doctors.findIndex((d) => d.id === doctorId));
+}
+// The month grid's chip dimension follows the mode: doctor normally, branch in multi-branch mode.
+function chipColor(key: number): string {
+    return multiBranch.value
+        ? paletteAt(props.clinics.findIndex((c) => c.id === key))
+        : doctorColor(key);
 }
 
 // Only a column that mixes doctors needs the per-chip accent; a per-doctor column names its doctor.
@@ -183,7 +215,10 @@ const mixedDoctorColors = computed(() =>
 const fetchParams = computed(() => ({
     start: toDateString(range.value.start),
     end: toDateString(range.value.end),
-    doctorIds: [...doctorFilter.value],
+    // Doctors are per-clinic, so a doctor filter cannot reach another branch — the server ignores
+    // it outside the active clinic and we keep the request honest about that.
+    doctorIds: crossBranch.value ? [] : [...doctorFilter.value],
+    clinicIds: [...branchFilter.value],
     statuses: statuses.value,
 }));
 
@@ -334,24 +369,26 @@ const gridColumns = computed<CalendarColumn[]>(() => {
     ];
 });
 
-// Month view: ONE chip per doctor per day, keyed by date for the grid cell lookup.
+// Month view: ONE chip per dimension per day — the doctor normally, the branch when several are
+// selected. Keyed by date for the grid cell lookup.
+const summaryOrder = computed<number[]>(() =>
+    multiBranch.value ? branchFilter.value : props.doctors.map((d) => d.id),
+);
+
 const summariesByDate = computed(() => {
     const byKey = new Map<string, CalendarDaySummary>();
 
     for (const a of data.value) {
         const date = wallClockDate(a.start);
-        const key = `${date}-${a.doctor_id}`;
+        const dimension = multiBranch.value ? a.clinic_id : a.doctor_id;
+        const label = multiBranch.value ? a.clinic_name : a.doctor_name;
+        const key = `${date}-${dimension}`;
         const existing = byKey.get(key);
 
         if (existing) {
             existing.count += 1;
         } else {
-            byKey.set(key, {
-                date,
-                doctorId: a.doctor_id,
-                doctorName: a.doctor_name,
-                count: 1,
-            });
+            byKey.set(key, { date, key: dimension, label, count: 1 });
         }
     }
 
@@ -366,8 +403,8 @@ const summariesByDate = computed(() => {
     for (const arr of byDate.values()) {
         arr.sort(
             (a, b) =>
-                props.doctors.findIndex((d) => d.id === a.doctorId) -
-                props.doctors.findIndex((d) => d.id === b.doctorId),
+                summaryOrder.value.indexOf(a.key) -
+                summaryOrder.value.indexOf(b.key),
         );
     }
 
@@ -385,10 +422,22 @@ const statusOptions = computed(() =>
         color: appointmentStatusColor(status),
     })),
 );
+const branchOptions = computed(() =>
+    props.clinics.map((c) => ({ label: c.name, value: c.id })),
+);
+// Week/day are unavailable while several branches are selected (see the multiBranch watcher).
 const viewOptions = computed(() => [
     { label: t('calendar.views.month'), value: 'month' as const },
-    { label: t('calendar.views.week'), value: 'week' as const },
-    { label: t('calendar.views.day'), value: 'day' as const },
+    {
+        label: t('calendar.views.week'),
+        value: 'week' as const,
+        disabled: multiBranch.value,
+    },
+    {
+        label: t('calendar.views.day'),
+        value: 'day' as const,
+        disabled: multiBranch.value,
+    },
 ]);
 
 const isLoading = computed(
@@ -403,10 +452,14 @@ function onMonthCellClick(date: Date): void {
     activeView.value = 'day';
 }
 
-// Month doctor-summary click: drill into that day filtered to the clicked doctor.
-function onSummaryClick(date: string, doctorId: number): void {
-    if (canViewAll.value) {
-        doctorFilter.value = [doctorId];
+// Month summary click: drill into that day filtered to the clicked chip — the branch in
+// multi-branch mode (which also drops back to a single branch, re-enabling the day view), the
+// doctor otherwise.
+function onSummaryClick(date: string, key: number): void {
+    if (multiBranch.value) {
+        branchFilter.value = [key];
+    } else if (canViewAll.value) {
+        doctorFilter.value = [key];
     }
 
     viewDate.value = parseDateString(date);
@@ -504,7 +557,21 @@ function onSelectEvent(
 
                 <div class="flex flex-wrap items-center gap-2">
                     <MultiSelect
-                        v-if="canViewAll && doctors.length > 0"
+                        v-if="clinics.length > 1"
+                        v-model="branchFilter"
+                        :options="branchOptions"
+                        option-label="label"
+                        option-value="value"
+                        :placeholder="t('calendar.all_branches')"
+                        :max-selected-labels="1"
+                        :selected-items-label="`{0} ${t('calendar.branch_filter')}`"
+                        show-clear
+                        :filter="shouldFilterSelect(branchOptions.length)"
+                        :filter-placeholder="t('common.search')"
+                        class="w-full sm:w-52"
+                    />
+                    <MultiSelect
+                        v-if="!crossBranch && canViewAll && doctors.length > 0"
                         v-model="doctorFilter"
                         :options="doctorOptions"
                         option-label="label"
@@ -536,14 +603,23 @@ function onSelectEvent(
                             </span>
                         </template>
                     </MultiSelect>
-                    <SelectButton
-                        v-model="activeView"
-                        :options="viewOptions"
-                        option-label="label"
-                        option-value="value"
-                        :allow-empty="false"
-                        :aria-label="t('calendar.title')"
-                    />
+                    <span
+                        v-tooltip.top="
+                            multiBranch
+                                ? t('calendar.multi_branch_month_only')
+                                : undefined
+                        "
+                    >
+                        <SelectButton
+                            v-model="activeView"
+                            :options="viewOptions"
+                            option-label="label"
+                            option-value="value"
+                            option-disabled="disabled"
+                            :allow-empty="false"
+                            :aria-label="t('calendar.title')"
+                        />
+                    </span>
                 </div>
             </div>
 
@@ -556,7 +632,7 @@ function onSelectEvent(
                     :view-date="viewDate"
                     :summaries="summariesByDate"
                     :today-key="todayKey"
-                    :doctor-color="doctorColor"
+                    :chip-color="chipColor"
                     @cell-click="onMonthCellClick"
                     @summary-click="onSummaryClick"
                 />

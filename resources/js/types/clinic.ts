@@ -91,6 +91,9 @@ export type SharedClinic = {
     vertical: { slug: string | null };
 };
 
+/** One clinic the viewer holds a clinic-scoped role in — the topbar branch switcher's option. */
+export type SwitchableClinic = { id: number; name: string };
+
 /** The SMS preferences tab payload on the clinic profile page (null when not permitted). */
 export type ClinicSmsPanel = {
     settings: Record<SmsType, boolean>;

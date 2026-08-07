@@ -5,21 +5,22 @@ import { useI18n } from 'vue-i18n';
 import type { CalendarDaySummary } from '@/types/calendar';
 import { formatWeekdayShort, toDateString } from '@/utils/datetime';
 
-// Month overview: a 6×7 grid showing ONE chip per doctor per day ("Dr X · N") instead of every
-// appointment — a readable summary, not a noisy list. Clicking a day drills into it; clicking a
-// doctor chip drills into that day filtered to that doctor.
+// Month overview: a 6×7 grid showing ONE chip per dimension per day ("Dr X · N") instead of every
+// appointment — a readable summary, not a noisy list. The dimension is the doctor normally and the
+// branch in multi-branch mode, so the chip only knows a `key`/`label`. Clicking a day drills into
+// it; clicking a chip drills into that day filtered to that key.
 const props = defineProps<{
     viewDate: Date;
-    /** Per-doctor daily summaries keyed by 'YYYY-MM-DD'. */
+    /** Daily summaries keyed by 'YYYY-MM-DD'. */
     summaries: Map<string, CalendarDaySummary[]>;
     /** Clinic-local today ('YYYY-MM-DD') for the today highlight. */
     todayKey: string;
-    doctorColor: (doctorId: number) => string;
+    chipColor: (key: number) => string;
 }>();
 
 const emit = defineEmits<{
     'cell-click': [date: Date];
-    'summary-click': [date: string, doctorId: number];
+    'summary-click': [date: string, key: number];
 }>();
 
 const { locale } = useI18n();
@@ -100,26 +101,22 @@ const weeks = computed(() => {
                 <span class="flex min-h-0 flex-col gap-0.5 overflow-hidden">
                     <button
                         v-for="summary in cell.visible"
-                        :key="summary.doctorId"
+                        :key="summary.key"
                         type="button"
                         class="flex cursor-pointer items-center gap-1 rounded px-1 py-0.5 text-xs hover:bg-surface-100"
                         @click.stop="
-                            emit(
-                                'summary-click',
-                                summary.date,
-                                summary.doctorId,
-                            )
+                            emit('summary-click', summary.date, summary.key)
                         "
                     >
                         <span
                             class="size-2 shrink-0 rounded-full"
                             :style="{
-                                backgroundColor: doctorColor(summary.doctorId),
+                                backgroundColor: chipColor(summary.key),
                             }"
                             aria-hidden="true"
                         />
                         <span class="truncate text-surface-600">
-                            {{ summary.doctorName }}
+                            {{ summary.label }}
                         </span>
                         <span
                             class="ml-auto shrink-0 font-semibold text-surface-900"

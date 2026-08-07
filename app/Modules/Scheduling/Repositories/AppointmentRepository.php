@@ -384,6 +384,42 @@ class AppointmentRepository
     }
 
     /**
+     * All appointments that strictly overlap [startUtc, endUtc) across several clinics
+     * (multi-branch calendar), filtered to the given statuses. Bypasses ClinicScope —
+     * the caller passes the exact membership-intersected id set, so no defensive
+     * clinic_id re-check is needed on the joined tables here (there are none).
+     * Returns early with an empty collection when $clinicIds === [] (fail closed).
+     *
+     * @param  list<int>  $clinicIds
+     * @param  list<AppointmentStatus>  $statuses
+     * @return Collection<int, Appointment>
+     */
+    public function inRangeForClinics(array $clinicIds, mixed $startUtc, mixed $endUtc, array $statuses): Collection
+    {
+        if ($clinicIds === []) {
+            return new Collection;
+        }
+
+        // Every eager-loaded relation below is itself clinic-scoped (BelongsToClinic):
+        // left un-bypassed, each one would silently filter to the active clinic's
+        // context and null out for every OTHER selected branch's appointments (a hard
+        // crash on doctor/patient, silently wrong data on service/type/treatment).
+        return Appointment::withoutGlobalScope(ClinicScope::class)
+            ->inRange($startUtc, $endUtc)
+            ->withStatus($statuses)
+            ->whereIn('clinic_id', $clinicIds)
+            ->with([
+                'patient' => fn ($q) => $q->withoutGlobalScope(ClinicScope::class),
+                'service' => fn ($q) => $q->withoutGlobalScope(ClinicScope::class),
+                'appointmentType' => fn ($q) => $q->withoutGlobalScope(ClinicScope::class),
+                'doctor' => fn ($q) => $q->withoutGlobalScope(ClinicScope::class)->with('user'),
+                'treatment' => fn ($q) => $q->withoutGlobalScope(ClinicScope::class),
+            ])
+            ->orderBy('starts_at')
+            ->get();
+    }
+
+    /**
      * A patient's appointments for the patient-detail history, newest first.
      * ClinicScope is applied automatically.
      *

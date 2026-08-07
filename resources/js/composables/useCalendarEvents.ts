@@ -16,6 +16,8 @@ export type CalendarEventsParams = {
     end: string;
     /** Selected doctor ids; empty = every doctor the viewer may see. */
     doctorIds: number[];
+    /** Selected branch clinic ids; empty = the active clinic only. */
+    clinicIds: number[];
     statuses: AppointmentStatus[];
 };
 
@@ -46,6 +48,9 @@ export function useCalendarEvents(params: () => CalendarEventsParams | null) {
                     end: current.end,
                     ...(current.doctorIds.length
                         ? { doctor_id: current.doctorIds.join(',') }
+                        : {}),
+                    ...(current.clinicIds.length
+                        ? { clinic_id: current.clinicIds }
                         : {}),
                     statuses: current.statuses,
                 },

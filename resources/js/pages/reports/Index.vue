@@ -63,8 +63,12 @@ watch(activeTab, (tab) => {
     }
 });
 
+// The umbrella tab only exists for a tenant with a second branch the viewer belongs to; the server
+// silently falls back to `finance` if it is requested anyway.
 const tabs = computed(() =>
-    REPORT_TABS.map((tab) => ({
+    REPORT_TABS.filter(
+        (tab) => tab.value !== 'branch' || props.multiBranch,
+    ).map((tab) => ({
         value: tab.value,
         label: t(`report.tabs.${tab.value}`),
         icon: tab.icon,

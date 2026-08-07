@@ -21,6 +21,8 @@ export type CalendarIndexProps = {
     /** clinics.default_slot_duration_minutes — the time-grid slot size. */
     defaultSlotDuration: number;
     defaultView: CalendarView;
+    /** Branches the viewer may span; [] under 2 memberships or without appointments.viewAll. */
+    clinics: { id: number; name: string }[];
 };
 
 /** One appointment event from `GET /calendar/events`. start/end are clinic-local 'YYYY-MM-DD HH:mm'. */
@@ -28,6 +30,9 @@ export type CalendarEventDto = {
     id: number;
     doctor_id: number;
     doctor_name: string;
+    /** Owning branch — start/end are formatted in THIS clinic's timezone, not the active one. */
+    clinic_id: number;
+    clinic_name: string;
     title: string;
     /** Patient the popover title links to. */
     patient_id: number;
@@ -59,11 +64,15 @@ export type CalendarEventsResponse = {
     exceptions: CalendarExceptionDto[];
 };
 
-/** Per-doctor appointment count for one day — the month view's summary chip. */
+/**
+ * Appointment count for one day and one dimension — the month view's summary chip. The dimension
+ * is the doctor by default and the branch in multi-branch mode, so the chip carries a generic
+ * `key`/`label` pair instead of doctor-specific fields.
+ */
 export type CalendarDaySummary = {
     date: string;
-    doctorId: number;
-    doctorName: string;
+    key: number;
+    label: string;
     count: number;
 };
 

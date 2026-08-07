@@ -104,7 +104,8 @@ export type ReportTab =
     | 'service'
     | 'product'
     | 'appointment_type'
-    | 'expense_owner';
+    | 'expense_owner'
+    | 'branch';
 
 /**
  * Mirrors `App\Enums\AnamnesisFieldType`; the dynamic anamnesis section branches on it to pick

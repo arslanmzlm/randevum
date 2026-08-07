@@ -3,6 +3,7 @@ import { router, usePage } from '@inertiajs/vue3';
 import {
     IconArrowsMaximize,
     IconArrowsMinimize,
+    IconBuildingCommunity,
     IconBuildingHospital,
     IconCalendarDollar,
     IconCalendarEvent,
@@ -42,6 +43,7 @@ import {
 } from 'vue';
 import { useI18n } from 'vue-i18n';
 import AppSidebar from '@/components/app/AppSidebar.vue';
+import ClinicSwitcher from '@/components/app/ClinicSwitcher.vue';
 import QuickAccessSidebar from '@/components/app/QuickAccessSidebar.vue';
 import QuickAccessToggle from '@/components/app/QuickAccessToggle.vue';
 import SidebarToggle from '@/components/app/SidebarToggle.vue';
@@ -71,6 +73,7 @@ import { index as productsIndex } from '@/routes/products';
 import { index as reportsIndex } from '@/routes/reports';
 import { index as availabilityIndex } from '@/routes/schedule-exceptions';
 import { index as servicesIndex } from '@/routes/services';
+import { index as branchesIndex } from '@/routes/settings/branches';
 import { index as rolesIndex } from '@/routes/settings/roles';
 import { index as smsLogsIndex } from '@/routes/sms-logs';
 import { index as tagsIndex } from '@/routes/tags';
@@ -235,6 +238,19 @@ const navGroups = computed<NavGroup[]>(() =>
                               href: clinicEdit().url,
                               component: 'clinic/Edit',
                               icon: IconBuildingHospital,
+                          },
+                      ]
+                    : []),
+                ...(can('clinics.create')
+                    ? [
+                          {
+                              label: t('nav.branches'),
+                              href: branchesIndex().url,
+                              component: [
+                                  'settings/branches/Index',
+                                  'settings/branches/Create',
+                              ],
+                              icon: IconBuildingCommunity,
                           },
                       ]
                     : []),
@@ -623,7 +639,10 @@ function goToPasswordChange(): void {
             <header
                 class="flex h-16 shrink-0 items-center justify-between gap-2 border-b border-surface-200 bg-surface-0 px-6"
             >
-                <SidebarToggle />
+                <div class="flex min-w-0 items-center gap-2">
+                    <SidebarToggle />
+                    <ClinicSwitcher />
+                </div>
 
                 <div class="flex shrink-0 items-center gap-1">
                     <Button
