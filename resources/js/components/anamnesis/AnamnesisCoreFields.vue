@@ -16,13 +16,13 @@ const { t } = useI18n();
 
 const form = useAnamnesisForm();
 
-// Allowed values mirrored by hand from the PodiatryAnamnesis model consts (frontend-components rule
+// Allowed values mirrored by hand from the Anamnesis model consts (frontend-components rule
 // — validated clinical strings, not branched-on enums). Labels resolve from health.options.*.
 const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', '0+', '0-'];
-const smoking = ['none', 'former', 'active'];
+const smoking = ['none', 'occasional', 'regular'];
 const alcohol = ['none', 'occasional', 'regular'];
-const diabetes = ['type1', 'type2'];
-const pregnancy = ['pregnant', 'breastfeeding'];
+const diabetes = ['none', 'type1', 'type2'];
+const pregnancy = ['none', 'pregnant', 'breastfeeding'];
 
 function options(field: string, values: string[]) {
     return values.map((value) => ({
@@ -42,10 +42,28 @@ const fieldError = (key: string): string | undefined =>
 
 const showWomen = computed(() => props.patient.gender === 'female');
 
+// Derived, never stored — mirrors Anamnesis::bmi() so the form gives live feedback.
+const bmi = computed<number | null>(() => {
+    const height = form.height_cm;
+    const weight = form.weight_kg;
+
+    if (!height || !weight) {
+        return null;
+    }
+
+    return Math.round((weight / (height / 100) ** 2) * 10) / 10;
+});
+
 const booleanFlags = [
     'hypertension',
     'cardiovascular',
+    'respiratory',
+    'kidney_liver',
+    'thyroid',
+    'epilepsy',
+    'bleeding_disorder',
     'blood_thinners',
+    'infectious_disease',
 ] as const;
 </script>
 
@@ -63,20 +81,6 @@ const booleanFlags = [
                     <Select
                         v-model="form.blood_type"
                         :options="bloodTypeOptions"
-                        option-label="label"
-                        option-value="value"
-                        :disabled="disabled"
-                        show-clear
-                        fluid
-                    />
-                </FormField>
-                <FormField
-                    :label="t('health.fields.smoking')"
-                    :error="fieldError('smoking')"
-                >
-                    <Select
-                        v-model="form.smoking"
-                        :options="smokingOptions"
                         option-label="label"
                         option-value="value"
                         :disabled="disabled"
@@ -109,6 +113,34 @@ const booleanFlags = [
                         :max-fraction-digits="2"
                         :suffix="` ${t('health.units.kg')}`"
                         :disabled="disabled"
+                        fluid
+                    />
+                </FormField>
+
+                <!-- Derived from the pair above; read-only, so it stays out of FormField. -->
+                <div
+                    v-if="bmi !== null"
+                    class="flex flex-col justify-center gap-0.5 px-3"
+                >
+                    <span class="text-xs text-surface-500">
+                        {{ t('health.fields.bmi') }}
+                    </span>
+                    <span class="text-sm font-medium text-surface-900">
+                        {{ bmi }} {{ t('health.units.bmi') }}
+                    </span>
+                </div>
+
+                <FormField
+                    :label="t('health.fields.smoking')"
+                    :error="fieldError('smoking')"
+                >
+                    <Select
+                        v-model="form.smoking"
+                        :options="smokingOptions"
+                        option-label="label"
+                        option-value="value"
+                        :disabled="disabled"
+                        show-clear
                         fluid
                     />
                 </FormField>
@@ -158,6 +190,20 @@ const booleanFlags = [
                 </SettingRow>
             </div>
 
+            <!-- Which disease: only asked once the flag is on. -->
+            <FormField
+                v-if="form.infectious_disease"
+                :label="t('health.fields.infectious_disease_note')"
+                :error="fieldError('infectious_disease_note')"
+            >
+                <InputText
+                    v-model="form.infectious_disease_note"
+                    :maxlength="500"
+                    :disabled="disabled"
+                    fluid
+                />
+            </FormField>
+
             <FormField
                 :label="t('health.fields.regular_medications')"
                 :error="fieldError('regular_medications')"
@@ -202,7 +248,37 @@ const booleanFlags = [
             </FormField>
         </div>
 
-        <!-- Kadın — pregnancy/breastfeeding is UI-gated to female patients (server stays lenient). -->
+        <div class="flex flex-col gap-5">
+            <h3 class="text-sm font-semibold text-surface-500">
+                {{ t('health.groups.history') }}
+            </h3>
+            <FormField
+                :label="t('health.fields.surgery_history')"
+                :error="fieldError('surgery_history')"
+            >
+                <Textarea
+                    v-model="form.surgery_history"
+                    rows="2"
+                    auto-resize
+                    :disabled="disabled"
+                    fluid
+                />
+            </FormField>
+            <FormField
+                :label="t('health.fields.family_history')"
+                :error="fieldError('family_history')"
+            >
+                <Textarea
+                    v-model="form.family_history"
+                    rows="2"
+                    auto-resize
+                    :disabled="disabled"
+                    fluid
+                />
+            </FormField>
+        </div>
+
+        <!-- Kadın — pregnancy/menstrual notes are UI-gated to female patients (server stays lenient). -->
         <div v-if="showWomen" class="flex flex-col gap-5">
             <h3 class="text-sm font-semibold text-surface-500">
                 {{ t('health.groups.women') }}
@@ -221,44 +297,49 @@ const booleanFlags = [
                     fluid
                 />
             </FormField>
+            <FormField
+                :label="t('health.fields.menstrual_notes')"
+                :error="fieldError('menstrual_notes')"
+            >
+                <Textarea
+                    v-model="form.menstrual_notes"
+                    rows="2"
+                    auto-resize
+                    :disabled="disabled"
+                    fluid
+                />
+            </FormField>
         </div>
 
         <div class="flex flex-col gap-5">
             <h3 class="text-sm font-semibold text-surface-500">
-                {{ t('health.groups.podiatry') }}
+                {{ t('health.groups.physician') }}
             </h3>
-            <FormField
-                :label="t('health.fields.foot_surgery_history')"
-                :error="fieldError('foot_surgery_history')"
-            >
-                <Textarea
-                    v-model="form.foot_surgery_history"
-                    rows="2"
-                    auto-resize
-                    :disabled="disabled"
-                    fluid
-                />
-            </FormField>
-
-            <SettingRow :label="t('health.fields.diabetic_foot_history')">
-                <ToggleSwitch
-                    v-model="form.diabetic_foot_history"
-                    :disabled="disabled"
-                />
-            </SettingRow>
-
-            <FormField
-                :label="t('health.fields.current_foot_complaint')"
-                :error="fieldError('current_foot_complaint')"
-            >
-                <Textarea
-                    v-model="form.current_foot_complaint"
-                    rows="2"
-                    auto-resize
-                    :disabled="disabled"
-                    fluid
-                />
-            </FormField>
+            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                <FormField
+                    :label="t('health.fields.physician_name')"
+                    :error="fieldError('physician_name')"
+                >
+                    <InputText
+                        v-model="form.physician_name"
+                        :maxlength="150"
+                        :disabled="disabled"
+                        fluid
+                    />
+                </FormField>
+                <FormField
+                    :label="t('health.fields.physician_phone')"
+                    :error="fieldError('physician_phone')"
+                >
+                    <InputText
+                        v-model="form.physician_phone"
+                        :maxlength="30"
+                        inputmode="tel"
+                        :disabled="disabled"
+                        fluid
+                    />
+                </FormField>
+            </div>
         </div>
     </div>
 </template>

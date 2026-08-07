@@ -1,5 +1,5 @@
 import type { InertiaForm } from '@inertiajs/vue3';
-import type { Anamnesis } from '@/types/anamnesis';
+import type { Anamnesis, AnamnesisFieldDefinition } from '@/types/anamnesis';
 import type { PatientBalance, TransactionItem } from '@/types/balance';
 import type { PatientCaseItem } from '@/types/case';
 import type { AppointmentStatus } from '@/types/enums';
@@ -152,6 +152,10 @@ export type PatientShowProps = {
     allTags: Tag[];
     /** The patient's structured health-intake record; null until first saved. */
     anamnesis: Anamnesis | null;
+    /** Active anamnesis field definitions for the clinic's vertical, in `sort` order. */
+    anamnesisFields: AnamnesisFieldDefinition[];
+    /** Active + inactive definitions — labels a retired field's stored value in the summary card. */
+    anamnesisFieldsAll: AnamnesisFieldDefinition[];
 };
 
 /** Payload for the inline patient-level note quick-edit endpoint. */

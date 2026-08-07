@@ -2,17 +2,11 @@
 
 namespace App\Modules\Medical\Services;
 
-use App\Models\Clinic;
+use App\Models\Anamnesis;
 use App\Models\Patient;
-use App\Models\PodiatryAnamnesis;
-use App\Support\ClinicContext;
-use Illuminate\Validation\ValidationException;
 
 class AnamnesisService
 {
-    /** Morph slug used for the podiatry vertical anamnesis table. */
-    private const PODIATRY_ANAMNESIS_SLUG = 'podiatry';
-
     /**
      * Free-text fields normalized to null when blank, so the PDF's "omit unfilled"
      * logic triggers regardless of what the client submits ('' vs null).
@@ -20,21 +14,25 @@ class AnamnesisService
      * @var list<string>
      */
     private const NULLABLE_TEXT_FIELDS = [
+        'infectious_disease_note',
         'regular_medications',
         'other_chronic',
         'allergies',
-        'foot_surgery_history',
-        'current_foot_complaint',
+        'surgery_history',
+        'family_history',
+        'menstrual_notes',
+        'physician_name',
+        'physician_phone',
     ];
 
     public function __construct(
-        private ClinicContext $clinicContext,
+        private AnamnesisFieldService $anamnesisFieldService,
     ) {}
 
     /**
-     * @return ?PodiatryAnamnesis Null until the patient's first save.
+     * @return ?Anamnesis Null until the patient's first save.
      */
-    public function read(Patient $patient): ?PodiatryAnamnesis
+    public function read(Patient $patient): ?Anamnesis
     {
         return $patient->anamnesis;
     }
@@ -43,26 +41,28 @@ class AnamnesisService
      * Get-or-create the patient's single anamnesis row, then fill + save it.
      *
      * @param  array<string, mixed>  $data  Validated by UpdateAnamnesisRequest
-     *
-     * @throws ValidationException
      */
-    public function update(Patient $patient, array $data): PodiatryAnamnesis
+    public function update(Patient $patient, array $data): Anamnesis
     {
-        $this->assertVerticalMatch();
+        $anamnesis = Anamnesis::firstOrNew(['patient_id' => $patient->id]);
+
+        $extra = $data['extra'] ?? [];
+        unset($data['extra']);
 
         $data = $this->normalizeBlankText($data);
 
-        $detail = $patient->anamnesis;
+        $activeFields = $this->anamnesisFieldService->definitionsForActiveClinic();
+        $filteredExtra = $this->anamnesisFieldService->filterExtra($extra, $activeFields);
 
-        if ($detail === null) {
-            $detail = PodiatryAnamnesis::create([]);
-            $patient->anamnesis()->associate($detail);
-            $patient->save();
-        }
+        // Merge over the stored bag so a partial submit does not wipe untouched keys, then drop
+        // any key filterExtra() explicitly nulled out — a submitted-but-blank field clears the
+        // previously stored answer instead of being re-filled by the merge.
+        $merged = array_merge($anamnesis->extra ?? [], $filteredExtra);
+        $data['extra'] = array_filter($merged, fn ($value): bool => $value !== null);
 
-        $detail->fill($data)->save();
+        $anamnesis->fill($data)->save();
 
-        return $detail;
+        return $anamnesis;
     }
 
     /**
@@ -83,22 +83,5 @@ class AnamnesisService
         }
 
         return $data;
-    }
-
-    /**
-     * Assert the active clinic's vertical slug matches the podiatry anamnesis morph slug.
-     * Mirrors TreatmentService::assertVerticalMatch (cases-treatments domain rule).
-     *
-     * @throws ValidationException
-     */
-    private function assertVerticalMatch(): void
-    {
-        $clinic = Clinic::with('vertical')->findOrFail($this->clinicContext->id());
-
-        if ($clinic->vertical?->slug !== self::PODIATRY_ANAMNESIS_SLUG) {
-            throw ValidationException::withMessages([
-                'anamnesis' => [__('health.errors.vertical_mismatch')],
-            ]);
-        }
     }
 }

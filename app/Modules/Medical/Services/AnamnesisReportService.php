@@ -2,9 +2,12 @@
 
 namespace App\Modules\Medical\Services;
 
+use App\Enums\AnamnesisFieldType;
+use App\Models\Anamnesis;
+use App\Models\AnamnesisField;
 use App\Models\Clinic;
 use App\Models\Patient;
-use App\Models\PodiatryAnamnesis;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Spatie\LaravelPdf\Enums\Format;
 use Spatie\LaravelPdf\Facades\Pdf;
@@ -24,7 +27,32 @@ class AnamnesisReportService
     /**
      * @var list<string>
      */
-    private const BOOLEAN_FIELDS = ['hypertension', 'cardiovascular', 'blood_thinners', 'diabetic_foot_history'];
+    private const BOOLEAN_FIELDS = [
+        'hypertension', 'cardiovascular', 'respiratory', 'kidney_liver', 'thyroid',
+        'epilepsy', 'blood_thinners', 'bleeding_disorder', 'infectious_disease',
+    ];
+
+    /**
+     * Fixed core section groups, in display order. `bmi` is derived, never a real column.
+     *
+     * @var array<string, list<string>>
+     */
+    private const CORE_GROUPS = [
+        'general' => ['blood_type', 'height_cm', 'weight_kg', 'bmi', 'smoking', 'alcohol'],
+        'systemic' => [
+            'diabetes', 'hypertension', 'cardiovascular', 'respiratory', 'kidney_liver',
+            'thyroid', 'epilepsy', 'bleeding_disorder', 'blood_thinners', 'infectious_disease',
+            'infectious_disease_note', 'regular_medications', 'other_chronic',
+        ],
+        'allergy' => ['allergies'],
+        'history' => ['surgery_history', 'family_history'],
+        'women' => ['pregnancy', 'menstrual_notes'],
+        'physician' => ['physician_name', 'physician_phone'],
+    ];
+
+    public function __construct(
+        private AnamnesisFieldService $anamnesisFieldService,
+    ) {}
 
     public function build(Patient $patient): PdfBuilder
     {
@@ -47,7 +75,7 @@ class AnamnesisReportService
         $lang = strtolower(explode('_', $clinic->locale)[0]);
         $documentDate = now()->setTimezone($clinic->timezone);
 
-        /** @var ?PodiatryAnamnesis $anamnesis */
+        /** @var ?Anamnesis $anamnesis */
         $anamnesis = $patient->anamnesis;
 
         return [
@@ -69,27 +97,30 @@ class AnamnesisReportService
     /**
      * @return list<array{title: string, fields: list<array{label: string, value: string}>}>
      */
-    private function buildGroups(?PodiatryAnamnesis $anamnesis): array
+    private function buildGroups(?Anamnesis $anamnesis): array
     {
         if ($anamnesis === null) {
             return [];
         }
 
-        $groups = [
-            'general' => ['blood_type', 'height_cm', 'weight_kg', 'smoking', 'alcohol'],
-            'systemic' => ['diabetes', 'hypertension', 'cardiovascular', 'blood_thinners', 'regular_medications', 'other_chronic'],
-            'allergy' => ['allergies'],
-            'women' => ['pregnancy'],
-            'podiatry' => ['foot_surgery_history', 'diabetic_foot_history', 'current_foot_complaint'],
-        ];
+        $result = $this->buildCoreGroups($anamnesis);
 
+        return [...$result, ...$this->buildDynamicGroups($anamnesis)];
+    }
+
+    /**
+     * @return list<array{title: string, fields: list<array{label: string, value: string}>}>
+     */
+    private function buildCoreGroups(Anamnesis $anamnesis): array
+    {
         $result = [];
 
-        foreach ($groups as $groupKey => $fields) {
+        foreach (self::CORE_GROUPS as $groupKey => $fields) {
             $renderedFields = [];
 
             foreach ($fields as $field) {
-                $value = $this->formatFieldValue($field, $anamnesis->{$field});
+                $rawValue = $field === 'bmi' ? $anamnesis->bmi() : $anamnesis->{$field};
+                $value = $this->formatCoreFieldValue($field, $rawValue);
 
                 if ($value === null) {
                     continue;
@@ -112,14 +143,58 @@ class AnamnesisReportService
         return $result;
     }
 
-    private function formatFieldValue(string $field, mixed $value): ?string
+    /**
+     * Dynamic (vertical-specific) groups, inactive definitions included, grouped in
+     * first-encounter order over the sort-ordered definition list.
+     *
+     * @return list<array{title: string, fields: list<array{label: string, value: string}>}>
+     */
+    private function buildDynamicGroups(Anamnesis $anamnesis): array
+    {
+        $extra = $anamnesis->extra ?? [];
+
+        if ($extra === []) {
+            return [];
+        }
+
+        $fields = $this->anamnesisFieldService->definitionsForActiveClinic(includeInactive: true);
+
+        /** @var array<string, array{title: string, fields: list<array{label: string, value: string}>}> $groups */
+        $groups = [];
+
+        foreach ($fields as $field) {
+            if (! array_key_exists($field->key, $extra) || $extra[$field->key] === null) {
+                continue;
+            }
+
+            $value = $this->formatDynamicFieldValue($field, $extra[$field->key]);
+
+            if ($value === null) {
+                continue;
+            }
+
+            $groupTitle = __($field->group);
+
+            $groups[$groupTitle] ??= ['title' => $groupTitle, 'fields' => []];
+            $groups[$groupTitle]['fields'][] = [
+                'label' => __($field->label),
+                'value' => $value,
+            ];
+        }
+
+        return array_values($groups);
+    }
+
+    private function formatCoreFieldValue(string $field, mixed $value): ?string
     {
         if ($value === null) {
             return null;
         }
 
         if (in_array($field, self::BOOLEAN_FIELDS, true)) {
-            return $value ? __('health.yes') : __('health.no');
+            // A false flag is omitted, same as an unfilled field — nine risk flags always
+            // printing "Hayır" would bury the positive findings a clinician needs to see.
+            return $value ? __('health.yes') : null;
         }
 
         if (in_array($field, self::SELECT_FIELDS, true)) {
@@ -134,7 +209,37 @@ class AnamnesisReportService
             return $value.' '.__('health.units.kg');
         }
 
+        if ($field === 'bmi') {
+            return $value.' '.__('health.units.bmi');
+        }
+
         return (string) $value;
+    }
+
+    private function formatDynamicFieldValue(AnamnesisField $field, mixed $value): ?string
+    {
+        return match ($field->type) {
+            AnamnesisFieldType::Boolean => $value ? __('health.yes') : __('health.no'),
+            AnamnesisFieldType::Select => $this->optionLabel($field, (string) $value),
+            AnamnesisFieldType::Multiselect => is_array($value)
+                ? implode(', ', array_filter(array_map(fn ($v) => $this->optionLabel($field, (string) $v), $value)))
+                : null,
+            AnamnesisFieldType::Date => Carbon::parse($value)->format('d.m.Y'),
+            default => (string) $value,
+        };
+    }
+
+    private function optionLabel(AnamnesisField $field, string $value): ?string
+    {
+        $options = $field->options ?? [];
+
+        foreach ($options as $option) {
+            if ($option['value'] === $value) {
+                return __($option['label']);
+            }
+        }
+
+        return $value;
     }
 
     private function formatClinicAddress(Clinic $clinic): string

@@ -13,7 +13,9 @@ return [
         'general' => 'General',
         'systemic' => 'Systemic / Chronic',
         'allergy' => 'Allergy',
+        'history' => 'History',
         'women' => 'Women',
+        'physician' => 'Physician Info',
         'podiatry' => 'Podiatry',
     ],
 
@@ -21,16 +23,29 @@ return [
         'blood_type' => 'Blood Type',
         'height_cm' => 'Height',
         'weight_kg' => 'Weight',
+        'bmi' => 'BMI',
         'smoking' => 'Smoking',
         'alcohol' => 'Alcohol',
         'diabetes' => 'Diabetes',
         'hypertension' => 'Hypertension',
         'cardiovascular' => 'Cardiovascular Disease',
+        'respiratory' => 'Respiratory Disease',
+        'kidney_liver' => 'Kidney / Liver Disease',
+        'thyroid' => 'Thyroid Disease',
+        'epilepsy' => 'Epilepsy',
         'blood_thinners' => 'Blood Thinner Use',
+        'bleeding_disorder' => 'Bleeding Disorder',
+        'infectious_disease' => 'Infectious Disease',
+        'infectious_disease_note' => 'Infectious Disease Note',
         'regular_medications' => 'Regular Medications',
         'other_chronic' => 'Other Chronic Conditions',
         'allergies' => 'Known Allergies',
+        'surgery_history' => 'Surgery History',
+        'family_history' => 'Family History',
         'pregnancy' => 'Pregnancy / Breastfeeding',
+        'menstrual_notes' => 'Menstrual Notes',
+        'physician_name' => 'Physician Name',
+        'physician_phone' => 'Physician Phone',
         'foot_surgery_history' => 'Foot Surgery / Injury History',
         'diabetic_foot_history' => 'Diabetic Foot History',
         'current_foot_complaint' => 'Current Foot Complaint',
@@ -49,8 +64,8 @@ return [
         ],
         'smoking' => [
             'none' => 'Non-smoker',
-            'former' => 'Former smoker',
-            'active' => 'Smoker',
+            'occasional' => 'Occasional',
+            'regular' => 'Regular',
         ],
         'alcohol' => [
             'none' => 'Never',
@@ -58,10 +73,12 @@ return [
             'regular' => 'Regular',
         ],
         'diabetes' => [
+            'none' => 'None',
             'type1' => 'Type 1',
             'type2' => 'Type 2',
         ],
         'pregnancy' => [
+            'none' => 'None',
             'pregnant' => 'Pregnant',
             'breastfeeding' => 'Breastfeeding',
         ],
@@ -70,10 +87,7 @@ return [
     'units' => [
         'cm' => 'cm',
         'kg' => 'kg',
-    ],
-
-    'errors' => [
-        'vertical_mismatch' => "The clinic's vertical is not compatible with this anamnesis type.",
+        'bmi' => 'kg/m²',
     ],
 
     'pdf' => [

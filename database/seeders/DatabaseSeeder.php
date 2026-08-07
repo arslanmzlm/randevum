@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Modules\Verticals\Podiatry\Database\Seeders\PodiatryAnamnesisFieldsSeeder;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -23,6 +24,9 @@ class DatabaseSeeder extends Seeder
             CountrySeeder::class,
             CitySeeder::class,
             VerticalSeeder::class,
+            // Baseline data, not demo data: definitions must exist for every environment,
+            // including tests.
+            PodiatryAnamnesisFieldsSeeder::class,
             // Idempotent backfill for clinics that predate the ClinicRegistered provisioning
             // listener; no-op (firstOrCreate) for clinics that already have their types.
             FollowUpTypeSeeder::class,

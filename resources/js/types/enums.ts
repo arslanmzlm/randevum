@@ -105,3 +105,16 @@ export type ReportTab =
     | 'product'
     | 'appointment_type'
     | 'expense_owner';
+
+/**
+ * Mirrors `App\Enums\AnamnesisFieldType`; the dynamic anamnesis section branches on it to pick
+ * which control a field definition renders.
+ */
+export type AnamnesisFieldType =
+    | 'text'
+    | 'textarea'
+    | 'boolean'
+    | 'select'
+    | 'multiselect'
+    | 'number'
+    | 'date';

@@ -14,11 +14,15 @@ import { useCan } from '@/composables/useCan';
 import { pdf, update } from '@/routes/patients/anamnesis';
 import type {
     Anamnesis,
+    AnamnesisExtraFormValue,
+    AnamnesisFieldDefinition,
     AnamnesisFormData,
     AnamnesisPatient,
 } from '@/types/anamnesis';
+import { parseDateString, toDateString } from '@/utils/datetime';
+import AnamnesisCoreFields from './AnamnesisCoreFields.vue';
+import AnamnesisDynamicFields from './AnamnesisDynamicFields.vue';
 import { provideAnamnesisForm } from './formContext';
-import PodiatryAnamnesisFields from './PodiatryAnamnesisFields.vue';
 
 // `collapsible` is for screens where the anamnesis is context rather than the task at hand (the
 // treatment Process page): the section starts closed and the header carries a one-line summary of
@@ -27,6 +31,8 @@ const props = withDefaults(
     defineProps<{
         patient: AnamnesisPatient;
         anamnesis: Anamnesis | null;
+        /** Active field definitions for the clinic's vertical; drives the dynamic section. */
+        fields: AnamnesisFieldDefinition[];
         collapsible?: boolean;
     }>(),
     { collapsible: false },
@@ -50,7 +56,8 @@ const riskSummary = computed<string[]>(() => {
 
     const parts: string[] = [];
 
-    if (a.diabetes) {
+    // 'none' is an answer ("asked, no diabetes"), not a risk — only a positive value belongs here.
+    if (a.diabetes && a.diabetes !== 'none') {
         parts.push(
             `${t('health.fields.diabetes')} ${t(`health.options.diabetes.${a.diabetes}`)}`,
         );
@@ -64,18 +71,67 @@ const riskSummary = computed<string[]>(() => {
         parts.push(t('health.fields.blood_thinners'));
     }
 
+    if (a.bleeding_disorder) {
+        parts.push(t('health.fields.bleeding_disorder'));
+    }
+
     if (a.cardiovascular) {
         parts.push(t('health.fields.cardiovascular'));
     }
 
-    if (a.pregnancy) {
+    if (a.infectious_disease) {
+        parts.push(
+            a.infectious_disease_note
+                ? `${t('health.fields.infectious_disease')}: ${a.infectious_disease_note}`
+                : t('health.fields.infectious_disease'),
+        );
+    }
+
+    if (a.pregnancy && a.pregnancy !== 'none') {
         parts.push(t(`health.options.pregnancy.${a.pregnancy}`));
     }
 
     return parts;
 });
 
-function seed(a: Anamnesis | null): AnamnesisFormData {
+/** One editable slot per active definition, pre-filled from the stored bag. */
+function seedExtra(
+    a: Anamnesis | null,
+    fields: AnamnesisFieldDefinition[],
+): Record<string, AnamnesisExtraFormValue> {
+    const stored = a?.extra ?? {};
+    const out: Record<string, AnamnesisExtraFormValue> = {};
+
+    fields.forEach((field) => {
+        const value = stored[field.key] ?? null;
+
+        out[field.key] = (() => {
+            switch (field.type) {
+                case 'boolean':
+                    return value === true;
+                case 'multiselect':
+                    return Array.isArray(value) ? [...value] : [];
+                case 'number':
+                    return typeof value === 'number' ? value : null;
+                case 'date':
+                    return typeof value === 'string'
+                        ? parseDateString(value)
+                        : null;
+                case 'select':
+                    return typeof value === 'string' ? value : null;
+                default:
+                    return typeof value === 'string' ? value : '';
+            }
+        })();
+    });
+
+    return out;
+}
+
+function seed(
+    a: Anamnesis | null,
+    fields: AnamnesisFieldDefinition[],
+): AnamnesisFormData {
     return {
         blood_type: a?.blood_type ?? null,
         height_cm: a?.height_cm ?? null,
@@ -83,20 +139,41 @@ function seed(a: Anamnesis | null): AnamnesisFormData {
         smoking: a?.smoking ?? null,
         alcohol: a?.alcohol ?? null,
         diabetes: a?.diabetes ?? null,
+        pregnancy: a?.pregnancy ?? null,
         hypertension: a?.hypertension ?? false,
         cardiovascular: a?.cardiovascular ?? false,
+        respiratory: a?.respiratory ?? false,
+        kidney_liver: a?.kidney_liver ?? false,
+        thyroid: a?.thyroid ?? false,
+        epilepsy: a?.epilepsy ?? false,
         blood_thinners: a?.blood_thinners ?? false,
+        bleeding_disorder: a?.bleeding_disorder ?? false,
+        infectious_disease: a?.infectious_disease ?? false,
+        infectious_disease_note: a?.infectious_disease_note ?? '',
         regular_medications: a?.regular_medications ?? '',
         other_chronic: a?.other_chronic ?? '',
         allergies: a?.allergies ?? '',
-        pregnancy: a?.pregnancy ?? null,
-        foot_surgery_history: a?.foot_surgery_history ?? '',
-        diabetic_foot_history: a?.diabetic_foot_history ?? false,
-        current_foot_complaint: a?.current_foot_complaint ?? '',
+        surgery_history: a?.surgery_history ?? '',
+        family_history: a?.family_history ?? '',
+        menstrual_notes: a?.menstrual_notes ?? '',
+        physician_name: a?.physician_name ?? '',
+        physician_phone: a?.physician_phone ?? '',
+        extra: seedExtra(a, fields),
     };
 }
 
-const form = useForm<AnamnesisFormData>(seed(props.anamnesis));
+const form = useForm<AnamnesisFormData>(seed(props.anamnesis, props.fields));
+
+// A `date` definition binds a Date for the picker; the server expects 'YYYY-MM-DD'.
+form.transform((data) => ({
+    ...data,
+    extra: Object.fromEntries(
+        Object.entries(data.extra).map(([key, value]) => [
+            key,
+            value instanceof Date ? toDateString(value) : value,
+        ]),
+    ),
+}));
 
 provideAnamnesisForm(form);
 
@@ -165,11 +242,16 @@ function save(): void {
         </template>
 
         <div v-show="open" class="flex flex-col gap-6">
-            <PodiatryAnamnesisFields
-                v-if="canManage || hasData"
-                :patient="patient"
-                :disabled="!canManage"
-            />
+            <template v-if="canManage || hasData">
+                <AnamnesisCoreFields
+                    :patient="patient"
+                    :disabled="!canManage"
+                />
+                <AnamnesisDynamicFields
+                    :fields="fields"
+                    :disabled="!canManage"
+                />
+            </template>
             <p v-else class="text-sm text-surface-400">
                 {{ t('health.empty') }}
             </p>

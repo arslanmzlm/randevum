@@ -10,8 +10,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Propaganistas\LaravelPhone\Casts\E164PhoneNumberCast;
 
@@ -52,7 +52,6 @@ class Patient extends Model
             'gender' => Gender::class,
             'notification_enabled' => 'boolean',
             'is_legacy' => 'boolean',
-            'anamnesis_id' => 'integer',
         ];
     }
 
@@ -97,10 +96,10 @@ class Patient extends Model
     }
 
     /**
-     * @return MorphTo<Model, $this>
+     * @return HasOne<Anamnesis, $this>
      */
-    public function anamnesis(): MorphTo
+    public function anamnesis(): HasOne
     {
-        return $this->morphTo();
+        return $this->hasOne(Anamnesis::class);
     }
 }

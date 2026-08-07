@@ -1,13 +1,15 @@
 <?php
 
+use App\Models\Anamnesis;
 use App\Models\Clinic;
 use App\Models\Doctor;
 use App\Models\Patient;
-use App\Models\PodiatryAnamnesis;
 use App\Models\User;
 use App\Models\Vertical;
+use App\Modules\Verticals\Podiatry\Database\Seeders\PodiatryAnamnesisFieldsSeeder;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
+use Database\Seeders\VerticalSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -27,12 +29,12 @@ use Spatie\Permission\PermissionRegistrar;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    $this->seed([RoleSeeder::class, PermissionSeeder::class]);
+    $this->seed([RoleSeeder::class, PermissionSeeder::class, VerticalSeeder::class, PodiatryAnamnesisFieldsSeeder::class]);
     app(PermissionRegistrar::class)->setPermissionsTeamId(null);
 });
 
 it('renders the patient show page with the Anamnesis section and no JS errors', function (): void {
-    $vertical = Vertical::factory()->podiatry()->create();
+    $vertical = Vertical::where('slug', 'podiatry')->firstOrFail();
     $clinic = Clinic::factory()->create(['vertical_id' => $vertical->id]);
 
     $ownerUser = User::factory()->create();
@@ -45,11 +47,12 @@ it('renders the patient show page with the Anamnesis section and no JS errors', 
 
     // The PDF action only renders once the form holds data (an empty anamnesis PDF is noise),
     // so the patient needs a filled record for the action assertions below.
-    $anamnesis = PodiatryAnamnesis::create(['blood_type' => 'A+', 'height_cm' => 172]);
-    $patient->forceFill([
-        'anamnesis_type' => 'podiatry_anamnesis',
-        'anamnesis_id' => $anamnesis->id,
-    ])->save();
+    Anamnesis::factory()->create([
+        'clinic_id' => $clinic->id,
+        'patient_id' => $patient->id,
+        'blood_type' => 'A+',
+        'height_cm' => 172,
+    ]);
 
     $this->actingAs($ownerUser);
 

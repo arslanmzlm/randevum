@@ -17,6 +17,7 @@ use App\Modules\Medical\Http\Requests\UpdatePatientRequest;
 use App\Modules\Medical\Http\Resources\AnamnesisResource;
 use App\Modules\Medical\Http\Resources\PatientResource;
 use App\Modules\Medical\Http\Resources\PatientSearchResource;
+use App\Modules\Medical\Services\AnamnesisFieldService;
 use App\Modules\Medical\Services\AnamnesisService;
 use App\Modules\Medical\Services\CaseService;
 use App\Modules\Medical\Services\PatientService;
@@ -45,6 +46,7 @@ class PatientController extends Controller
         private TagService $tagService,
         private SegmentService $segmentService,
         private AnamnesisService $anamnesisService,
+        private AnamnesisFieldService $anamnesisFieldService,
     ) {}
 
     public function index(Request $request): Response
@@ -184,6 +186,14 @@ class PatientController extends Controller
             'anamnesis' => ($anamnesis = $this->anamnesisService->read($patient)) !== null
                 ? (new AnamnesisResource($anamnesis))->resolve()
                 : null,
+            'anamnesisFields' => $this->anamnesisFieldService->toPropArray(
+                $this->anamnesisFieldService->definitionsForActiveClinic()
+            ),
+            // Active + inactive, so a retired definition's stored value still labels a row in
+            // the summary card (it already renders in the PDF via allForVertical()).
+            'anamnesisFieldsAll' => $this->anamnesisFieldService->toPropArray(
+                $this->anamnesisFieldService->definitionsForActiveClinic(includeInactive: true)
+            ),
         ];
 
         if ($user->can('transactions.viewAny')) {

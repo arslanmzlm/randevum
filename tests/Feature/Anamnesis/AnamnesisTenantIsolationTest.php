@@ -1,8 +1,8 @@
 <?php
 
+use App\Models\Anamnesis;
 use App\Models\Clinic;
 use App\Models\Patient;
-use App\Models\PodiatryAnamnesis;
 use App\Models\User;
 use App\Support\ClinicContext;
 use Database\Seeders\PermissionSeeder;
@@ -32,19 +32,21 @@ function atiRole(User $user, string $role, int $clinicId): void
 
 /**
  * A clinic + patient with a filled anamnesis. Vertical is irrelevant here — every
- * assertion in this file is a cross-clinic 404 via route-model-binding ClinicScope,
- * resolved before the PUT handler's vertical guard ever runs.
+ * assertion in this file is a cross-clinic 404 via route-model-binding ClinicScope.
  *
- * @return array{clinic: Clinic, patient: Patient, anamnesis: PodiatryAnamnesis}
+ * @return array{clinic: Clinic, patient: Patient, anamnesis: Anamnesis}
  */
 function atiSetup(): array
 {
     $clinic = Clinic::factory()->create();
     $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
 
-    $anamnesis = PodiatryAnamnesis::create(['blood_type' => 'A+', 'allergies' => 'Penisilin']);
-    $patient->anamnesis()->associate($anamnesis);
-    $patient->save();
+    $anamnesis = Anamnesis::factory()->create([
+        'clinic_id' => $clinic->id,
+        'patient_id' => $patient->id,
+        'blood_type' => 'A+',
+        'allergies' => 'Penisilin',
+    ]);
 
     return compact('clinic', 'patient', 'anamnesis');
 }
@@ -72,7 +74,7 @@ it('cross-clinic PUT does not mutate the target patient anamnesis', function ():
         ->put(route('patients.anamnesis.update', $setupA['patient']), ['blood_type' => 'B-'])
         ->assertNotFound();
 
-    expect($setupA['patient']->anamnesis->fresh()->blood_type)->toBe('A+');
+    expect($setupA['anamnesis']->fresh()->blood_type)->toBe('A+');
 });
 
 it('clinic A user cannot GET clinic B patient anamnesis PDF (404)', function (): void {
@@ -103,4 +105,25 @@ it("clinic A's patients.show read prop never exposes clinic B's anamnesis data",
     $this->actingAs($doctorA)
         ->get(route('patients.show', $setupB['patient']))
         ->assertNotFound();
+});
+
+it("Anamnesis::query() under clinic B's context never returns clinic A's row (ClinicScope)", function (): void {
+    $setupA = atiSetup();
+    $clinicB = Clinic::factory()->create();
+
+    app(ClinicContext::class)->set($clinicB->id);
+
+    expect(Anamnesis::query()->find($setupA['anamnesis']->id))->toBeNull()
+        ->and(Anamnesis::query()->count())->toBe(0);
+});
+
+it('a create under clinic A context stamps clinic_id = A even when the payload omits it', function (): void {
+    $clinicA = Clinic::factory()->create();
+    $patient = Patient::factory()->create(['clinic_id' => $clinicA->id]);
+
+    app(ClinicContext::class)->set($clinicA->id);
+
+    $anamnesis = Anamnesis::create(['patient_id' => $patient->id, 'blood_type' => 'A+']);
+
+    expect($anamnesis->clinic_id)->toBe($clinicA->id);
 });

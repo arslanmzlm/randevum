@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, router, usePage } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import {
     IconArrowLeft,
     IconCash,
@@ -42,15 +42,8 @@ const { t } = useI18n();
 const confirm = useConfirm();
 const { can } = useCan();
 
-const page = usePage();
-
 const canManage = computed(() => can('patients.update'));
 const canRecordPayment = computed(() => can('transactions.create'));
-
-// Anamnesis fields are podiatry-specific; other verticals would 422 on submit.
-const isPodiatry = computed(
-    () => page.props.activeClinic?.vertical.slug === 'podiatry',
-);
 
 const tabs = computed(() => [
     {
@@ -65,16 +58,12 @@ const tabs = computed(() => [
         label: t('patient.tabs.clinical'),
         icon: IconStethoscope,
     },
-    ...(isPodiatry.value
-        ? [
-              {
-                  id: 'patient-tab-anamnesis',
-                  value: 'anamnesis',
-                  label: t('patient.tabs.anamnesis'),
-                  icon: IconHeartbeat,
-              },
-          ]
-        : []),
+    {
+        id: 'patient-tab-anamnesis',
+        value: 'anamnesis',
+        label: t('patient.tabs.anamnesis'),
+        icon: IconHeartbeat,
+    },
     {
         id: 'patient-tab-finance',
         value: 'finance',
@@ -205,8 +194,8 @@ function removePatient(): void {
 
                     <!-- Read-only here; filling and editing live on the Anamnez tab. -->
                     <AnamnesisSummaryCard
-                        v-if="isPodiatry"
                         :anamnesis="anamnesis"
+                        :fields="anamnesisFieldsAll"
                         @edit="activeTab = 'anamnesis'"
                     />
                 </div>
@@ -232,8 +221,12 @@ function removePatient(): void {
                 </div>
             </TabPanel>
 
-            <TabPanel v-if="isPodiatry" value="anamnesis">
-                <AnamnesisSection :patient="patient" :anamnesis="anamnesis" />
+            <TabPanel value="anamnesis">
+                <AnamnesisSection
+                    :patient="patient"
+                    :anamnesis="anamnesis"
+                    :fields="anamnesisFields"
+                />
             </TabPanel>
 
             <TabPanel value="finance">

@@ -16,6 +16,7 @@ use App\Modules\Medical\Http\Resources\AnamnesisResource;
 use App\Modules\Medical\Http\Resources\TreatmentListResource;
 use App\Modules\Medical\Http\Resources\TreatmentProcessResource;
 use App\Modules\Medical\Http\Resources\TreatmentShowResource;
+use App\Modules\Medical\Services\AnamnesisFieldService;
 use App\Modules\Medical\Services\AnamnesisService;
 use App\Modules\Medical\Services\CaseService;
 use App\Modules\Medical\Services\TreatmentService;
@@ -37,6 +38,7 @@ class TreatmentController extends Controller
         private ClinicContext $clinicContext,
         private BalanceReaderContract $balanceReader,
         private AnamnesisService $anamnesisService,
+        private AnamnesisFieldService $anamnesisFieldService,
     ) {}
 
     /**
@@ -153,6 +155,12 @@ class TreatmentController extends Controller
             'defaultSlotDuration' => $clinic->default_slot_duration_minutes,
             'workingHours' => $clinic->working_hours,
             'anamnesis' => $anamnesis !== null ? (new AnamnesisResource($anamnesis))->resolve() : null,
+            'anamnesisFields' => $this->anamnesisFieldService->toPropArray(
+                $this->anamnesisFieldService->definitionsForActiveClinic()
+            ),
+            'anamnesisFieldsAll' => $this->anamnesisFieldService->toPropArray(
+                $this->anamnesisFieldService->definitionsForActiveClinic(includeInactive: true)
+            ),
         ]);
     }
 

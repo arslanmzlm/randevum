@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, useForm, usePage } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3';
 import {
     IconArrowLeft,
     IconCalendarEvent,
@@ -89,15 +89,8 @@ const form = useForm<TreatmentFormData>({
 
 provideTreatmentForm(form);
 
-const page = usePage();
-
 const canPay = can('transactions.create');
 const canScheduleFollowUp = can('appointments.create');
-
-// Anamnesis fields are podiatry-specific; other verticals would 422 on submit.
-const isPodiatry = computed(
-    () => page.props.activeClinic?.vertical.slug === 'podiatry',
-);
 
 // Client-side balance guard mirroring PaymentPlanCreateDialog's `canSubmit`: an unbalanced
 // installment plan can't be submitted (the server sum-check would only surface a toast otherwise).
@@ -390,9 +383,9 @@ function submit(): void {
              Collapsed here: the anamnesis is context for the treatment, not the task, and its risk
              fields stay visible in the header summary. -->
         <AnamnesisSection
-            v-if="isPodiatry"
             :patient="treatment.patient"
             :anamnesis="anamnesis"
+            :fields="anamnesisFields"
             collapsible
         />
 

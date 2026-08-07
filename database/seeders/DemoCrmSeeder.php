@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Models\Anamnesis;
 use App\Models\Clinic;
 use App\Models\Patient;
 use App\Models\PatientSegment;
-use App\Models\PodiatryAnamnesis;
 use App\Models\Tag;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
@@ -163,58 +163,89 @@ class DemoCrmSeeder extends Seeder
         $profiles = [
             [
                 'blood_type' => 'A+', 'height_cm' => 172, 'weight_kg' => 88.5,
-                'smoking' => 'active', 'alcohol' => 'occasional', 'diabetes' => 'type2',
-                'hypertension' => true, 'cardiovascular' => false, 'blood_thinners' => true,
+                'smoking' => 'regular', 'alcohol' => 'occasional', 'diabetes' => 'type2',
+                'hypertension' => true, 'cardiovascular' => false, 'respiratory' => false,
+                'kidney_liver' => false, 'thyroid' => false, 'epilepsy' => false,
+                'blood_thinners' => true, 'bleeding_disorder' => false,
+                'infectious_disease' => false, 'infectious_disease_note' => null,
                 'regular_medications' => 'Metformin 1000 mg, Ramipril 5 mg',
-                'other_chronic' => null, 'allergies' => 'Penisilin', 'pregnancy' => null,
-                'foot_surgery_history' => 'Sol ayak başparmak tırnak matriksektomisi (2021)',
-                'diabetic_foot_history' => true,
-                'current_foot_complaint' => 'Sağ topukta çatlak ve ağrı, yürürken artıyor.',
+                'other_chronic' => null, 'allergies' => 'Penisilin',
+                'surgery_history' => null, 'family_history' => 'Baba: tip 2 diyabet',
+                'pregnancy' => null, 'menstrual_notes' => null,
+                'physician_name' => null, 'physician_phone' => null,
+                'extra' => [
+                    'foot_surgery_history' => 'Sol ayak başparmak tırnak matriksektomisi (2021)',
+                    'diabetic_foot_history' => true,
+                    'current_foot_complaint' => 'Sağ topukta çatlak ve ağrı, yürürken artıyor.',
+                ],
             ],
             [
                 'blood_type' => '0+', 'height_cm' => 160, 'weight_kg' => 62.0,
                 'smoking' => 'none', 'alcohol' => 'none', 'diabetes' => null,
-                'hypertension' => false, 'cardiovascular' => false, 'blood_thinners' => false,
+                'hypertension' => false, 'cardiovascular' => false, 'respiratory' => false,
+                'kidney_liver' => false, 'thyroid' => true, 'epilepsy' => false,
+                'blood_thinners' => false, 'bleeding_disorder' => false,
+                'infectious_disease' => false, 'infectious_disease_note' => null,
                 'regular_medications' => null, 'other_chronic' => 'Hipotiroidi',
-                'allergies' => null, 'pregnancy' => 'pregnant',
-                'foot_surgery_history' => null, 'diabetic_foot_history' => false,
-                'current_foot_complaint' => 'İki ayakta da batık tırnak şikayeti.',
+                'allergies' => null, 'surgery_history' => null, 'family_history' => null,
+                'pregnancy' => 'pregnant', 'menstrual_notes' => null,
+                'physician_name' => 'Dr. Elif Kaya', 'physician_phone' => '0232 444 55 66',
+                'extra' => [
+                    'foot_surgery_history' => null,
+                    'diabetic_foot_history' => false,
+                    'current_foot_complaint' => 'İki ayakta da batık tırnak şikayeti.',
+                ],
             ],
             [
                 'blood_type' => 'B-', 'height_cm' => 181, 'weight_kg' => 95.2,
-                'smoking' => 'former', 'alcohol' => 'regular', 'diabetes' => 'type1',
-                'hypertension' => true, 'cardiovascular' => true, 'blood_thinners' => true,
+                'smoking' => 'none', 'alcohol' => 'regular', 'diabetes' => 'type1',
+                'hypertension' => true, 'cardiovascular' => true, 'respiratory' => true,
+                'kidney_liver' => false, 'thyroid' => false, 'epilepsy' => false,
+                'blood_thinners' => true, 'bleeding_disorder' => true,
+                'infectious_disease' => false, 'infectious_disease_note' => null,
                 'regular_medications' => 'İnsulin glarjin, Asetilsalisilik asit 100 mg',
                 'other_chronic' => 'KOAH', 'allergies' => 'Lateks, iyot',
-                'pregnancy' => null,
-                'foot_surgery_history' => 'Sağ ayak 2. parmak amputasyonu (2019)',
-                'diabetic_foot_history' => true,
-                'current_foot_complaint' => 'Sol ayak tabanında iyileşmeyen ülser, 3 haftadır mevcut.',
+                'surgery_history' => 'Sağ diz menisküs ameliyatı (2015)',
+                'family_history' => 'Anne: hipertansiyon, kardiyovasküler hastalık',
+                'pregnancy' => null, 'menstrual_notes' => null,
+                'physician_name' => 'Dr. Murat Şen', 'physician_phone' => '0232 333 22 11',
+                'extra' => [
+                    'foot_surgery_history' => 'Sağ ayak 2. parmak amputasyonu (2019)',
+                    'diabetic_foot_history' => true,
+                    'current_foot_complaint' => 'Sol ayak tabanında iyileşmeyen ülser, 3 haftadır mevcut.',
+                ],
             ],
             [
                 'blood_type' => 'AB+', 'height_cm' => 168, 'weight_kg' => 70.0,
                 'smoking' => 'none', 'alcohol' => 'occasional', 'diabetes' => null,
-                'hypertension' => false, 'cardiovascular' => false, 'blood_thinners' => false,
+                'hypertension' => false, 'cardiovascular' => false, 'respiratory' => false,
+                'kidney_liver' => false, 'thyroid' => false, 'epilepsy' => false,
+                'blood_thinners' => false, 'bleeding_disorder' => false,
+                'infectious_disease' => false, 'infectious_disease_note' => null,
                 'regular_medications' => null, 'other_chronic' => null, 'allergies' => null,
-                'pregnancy' => null, 'foot_surgery_history' => null,
-                'diabetic_foot_history' => false,
-                'current_foot_complaint' => 'Nasır şikayeti, ayakkabı vurması.',
+                'surgery_history' => null, 'family_history' => null,
+                'pregnancy' => null, 'menstrual_notes' => null,
+                'physician_name' => null, 'physician_phone' => null,
+                'extra' => [
+                    'foot_surgery_history' => null,
+                    'diabetic_foot_history' => false,
+                    'current_foot_complaint' => 'Nasır şikayeti, ayakkabı vurması.',
+                ],
             ],
         ];
 
         // Every 5th patient has a completed form; the rest stay empty so the "henüz doldurulmadı"
         // state is reviewable too.
         foreach ($patients as $index => $patient) {
-            if ($index % 5 !== 0 || $patient->anamnesis_id !== null) {
+            if ($index % 5 !== 0 || $patient->anamnesis()->exists()) {
                 continue;
             }
 
-            $anamnesis = PodiatryAnamnesis::create($profiles[$index % count($profiles)]);
-
-            $patient->forceFill([
-                'anamnesis_type' => 'podiatry_anamnesis',
-                'anamnesis_id' => $anamnesis->id,
-            ])->save();
+            Anamnesis::withoutGlobalScopes()->create([
+                'clinic_id' => $patient->clinic_id,
+                'patient_id' => $patient->id,
+                ...$profiles[$index % count($profiles)],
+            ]);
         }
     }
 }

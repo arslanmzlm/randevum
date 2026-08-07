@@ -1,5 +1,5 @@
 import type { InertiaForm } from '@inertiajs/vue3';
-import type { Anamnesis } from '@/types/anamnesis';
+import type { Anamnesis, AnamnesisFieldDefinition } from '@/types/anamnesis';
 import type { AppointmentTypeOption, WorkingHours } from '@/types/appointment';
 import type { TransactionItem } from '@/types/balance';
 import type { PaymentMethod, TreatmentStatus } from '@/types/enums';
@@ -85,6 +85,10 @@ export type TreatmentProcessProps = {
     workingHours: WorkingHours;
     /** The patient's structured health-intake record; null until first saved. */
     anamnesis: Anamnesis | null;
+    /** Active anamnesis field definitions for the clinic's vertical, in `sort` order. */
+    anamnesisFields: AnamnesisFieldDefinition[];
+    /** Active + inactive definitions — labels a retired field's stored value in the summary card. */
+    anamnesisFieldsAll: AnamnesisFieldDefinition[];
 };
 
 /** A service line in the Process form (`unit_price` prefilled from catalog, freely editable). */
