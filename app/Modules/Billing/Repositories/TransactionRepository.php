@@ -28,32 +28,40 @@ class TransactionRepository
     }
 
     /**
-     * Sum of all transaction amounts for a treatment (the derived "paid" balance).
+     * Sum of all settled transaction amounts for a treatment (the derived "paid" balance).
+     * Pending is excluded, same as the other "paid"/collected totals below — it hasn't
+     * settled yet, so it must not count toward the payment-cap check that reads this.
      * Returns a string to preserve decimal precision for bcmath comparisons.
      */
     public function paidTotalForTreatment(int $treatmentId): string
     {
-        $total = Transaction::where('treatment_id', $treatmentId)->sum('amount');
+        $total = Transaction::where('treatment_id', $treatmentId)
+            ->whereNot('status', TransactionStatus::Pending)
+            ->sum('amount');
 
         return number_format((float) $total, 2, '.', '');
     }
 
     /**
-     * Sum of all transaction amounts for a patient in the active clinic.
-     * BelongsToClinic global scope provides tenant isolation automatically.
-     * Filtered on patient_id, so a manual-income row (patient_id NULL) never counts here.
+     * Sum of all settled transaction amounts for a patient in the active clinic. Pending
+     * is excluded (see paidTotalForTreatment). BelongsToClinic global scope provides tenant
+     * isolation automatically. Filtered on patient_id, so a manual-income row (patient_id
+     * NULL) never counts here.
      */
     public function paidTotalForPatient(int $patientId): string
     {
-        $total = Transaction::where('patient_id', $patientId)->sum('amount');
+        $total = Transaction::where('patient_id', $patientId)
+            ->whereNot('status', TransactionStatus::Pending)
+            ->sum('amount');
 
         return number_format((float) $total, 2, '.', '');
     }
 
     /**
-     * Sum of all transaction amounts per patient, keyed by patient_id — the "paid" side of the
-     * derived balance, in one grouped query. Active-clinic scoped (ClinicScope); only the given
-     * patients are queried.
+     * Sum of all settled transaction amounts per patient, keyed by patient_id — the "paid" side
+     * of the derived balance, in one grouped query. Pending is excluded (see
+     * paidTotalForTreatment). Active-clinic scoped (ClinicScope); only the given patients are
+     * queried.
      *
      * @param  array<int, int>  $patientIds
      * @return array<int, string> patient_id => paid total (decimal string)
@@ -66,6 +74,7 @@ class TransactionRepository
 
         return Transaction::query()
             ->whereIn('patient_id', $patientIds)
+            ->whereNot('status', TransactionStatus::Pending)
             ->groupBy('patient_id')
             ->selectRaw('patient_id, sum(amount) as total')
             ->pluck('total', 'patient_id')

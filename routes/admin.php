@@ -8,6 +8,6 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 | Platform admin surface. Horizon / Pulse dashboards mount here too (admin-only).
 */
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'can:viewAdmin'])->group(function () {
     Route::inertia('/admin', 'Admin/Index')->name('admin');
 });

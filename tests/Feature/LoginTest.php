@@ -244,3 +244,24 @@ it('allows authenticated users to access the dashboard page', function (): void 
 
     $this->actingAs($user)->get(route('dashboard'))->assertOk();
 });
+
+it('allows the global admin roles to access the admin route', function (string $role): void {
+    $user = User::factory()->create();
+    loginTestGlobalRole($user, $role);
+
+    $this->actingAs($user)->get(route('admin'))->assertOk();
+})->with(['superadmin', 'admin', 'moderator']);
+
+it('blocks an authenticated user without an admin role from the admin route', function (): void {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)->get(route('admin'))->assertForbidden();
+});
+
+it('blocks a clinic-scoped role from the admin route', function (): void {
+    $clinic = Clinic::factory()->create();
+    $user = User::factory()->create();
+    loginTestClinicRole($user, 'owner', $clinic->id);
+
+    $this->actingAs($user)->get(route('admin'))->assertForbidden();
+});

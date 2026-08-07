@@ -85,6 +85,12 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::define('viewPulse', fn (User $user): bool => $user->hasRole('superadmin'));
 
+        // Platform admin surface (/admin): global roles only, same as viewHorizon/viewPulse.
+        // No permission model applies here (permissions are clinic-scoped feature abilities;
+        // superadmin/admin/moderator are global roles with no clinic context) — mirrors the
+        // role set PostLoginRedirector sends here.
+        Gate::define('viewAdmin', fn (User $user): bool => $user->hasRole(['superadmin', 'admin', 'moderator']));
+
         // Every policy registered explicitly so the model→policy map is auditable in one
         // place (auto-discovery would also resolve all but CaseRecord→CasePolicy, whose
         // names don't match).
