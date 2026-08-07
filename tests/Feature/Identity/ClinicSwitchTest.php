@@ -97,32 +97,38 @@ it("after switching, auth.permissions reflects the new clinic's role set (relati
         );
 });
 
-it('availableClinics is filtered by the switchTo predicate, not the raw membership set', function (): void {
-    // owner@A (switchable), receptionist@B (not switchable), receptionist@C (not switchable).
+it('availableClinics lists every membership and each one is switchable', function (): void {
     $clinicA = Clinic::factory()->create(['name' => 'Clinic A']);
     $clinicB = Clinic::factory()->create(['name' => 'Clinic B']);
     $clinicC = Clinic::factory()->create(['name' => 'Clinic C']);
+    $foreign = Clinic::factory()->create(['name' => 'Foreign']);
     $user = User::factory()->create();
     clinicSwitchTestAssignRole($user, 'owner', $clinicA->id);
     clinicSwitchTestAssignRole($user, 'receptionist', $clinicB->id);
     clinicSwitchTestAssignRole($user, 'receptionist', $clinicC->id);
 
-    // From A (switchable), switching to C is allowed — A's "or active clinic" leg.
+    // Every membership is a switch target, whatever the role there.
     $this->actingAs($user)
         ->post(route('clinics.switch'), ['clinic_id' => $clinicC->id])
         ->assertRedirect(route('dashboard'));
 
-    // Active is now C (not switchable), switchable = [A]. B must not be listed —
-    // it would 403 on click since neither B nor the active clinic C is switchable.
+    // And from a receptionist-only clinic the user is not locked in.
+    $this->actingAs($user)
+        ->post(route('clinics.switch'), ['clinic_id' => $clinicB->id])
+        ->assertRedirect(route('dashboard'));
+
     $this->actingAs($user)
         ->get(route('clinic.edit'))
         ->assertOk()
-        ->assertInertia(fn ($page) => $page->where('availableClinics', fn ($clinics) => collect($clinics)->pluck('id')->all() === [$clinicA->id]
+        ->assertInertia(fn ($page) => $page->where(
+            'availableClinics',
+            fn ($clinics) => collect($clinics)->pluck('id')->sort()->values()->all()
+                === collect([$clinicA->id, $clinicB->id, $clinicC->id])->sort()->values()->all(),
         ));
 
-    // And the server agrees: switching to B (not offered) is indeed forbidden.
+    // A clinic the user holds no role in stays forbidden.
     $this->actingAs($user)
-        ->post(route('clinics.switch'), ['clinic_id' => $clinicB->id])
+        ->post(route('clinics.switch'), ['clinic_id' => $foreign->id])
         ->assertForbidden();
 });
 
@@ -151,7 +157,7 @@ it('a manager@A / receptionist@B user can switch back from B to A (no lock-in)',
         ->assertInertia(fn ($page) => $page->where('activeClinic.id', $clinicA->id));
 });
 
-it('a user with two memberships but no clinics.switch cannot switch and sees no options', function (): void {
+it('a receptionist with two memberships can switch (membership is the right to switch)', function (): void {
     $clinicA = Clinic::factory()->create();
     $clinicB = Clinic::factory()->create();
     $user = User::factory()->create();
@@ -160,10 +166,10 @@ it('a user with two memberships but no clinics.switch cannot switch and sees no 
 
     $this->actingAs($user)
         ->post(route('clinics.switch'), ['clinic_id' => $clinicB->id])
-        ->assertForbidden();
+        ->assertRedirect(route('dashboard'));
 
     $this->actingAs($user)
         ->get(route('calendar.index'))
         ->assertOk()
-        ->assertInertia(fn ($page) => $page->where('availableClinics', []));
+        ->assertInertia(fn ($page) => $page->where('availableClinics', fn ($clinics) => count($clinics) === 2));
 });

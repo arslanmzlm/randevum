@@ -81,9 +81,9 @@ class HandleInertiaRequests extends Middleware
     }
 
     /**
-     * Clinics the user can switch into (branch switcher). [] for guests, users with a
-     * single membership, and users who hold clinics.switch nowhere — the switcher is
-     * hidden entirely in every one of those cases (single-branch behaviour unchanged).
+     * Clinics the user can switch into (branch switcher). [] for guests and for users with a
+     * single membership, so single-branch behaviour is unchanged. Switching is membership-
+     * driven: holding a role in a second clinic IS the right to work there.
      *
      * @return list<array{id: int, name: string}>
      */
@@ -98,13 +98,11 @@ class HandleInertiaRequests extends Middleware
         $membership = app(ClinicMembershipService::class);
         $clinics = $membership->clinicsFor($user);
 
-        if ($clinics->count() < 2 || $membership->switchableClinicIds($user) === []) {
+        if ($clinics->count() < 2) {
             return [];
         }
 
-        // Filtered by the same predicate ClinicPolicy::switchTo enforces, so a
-        // listed entry can never 403 on click (e.g. active=C not switchable,
-        // switchable=[A] only → B must not appear even though it's a membership).
+        // Same predicate ClinicPolicy::switchTo enforces, so a listed entry can never 403.
         $targetIds = $membership->switchTargetsFor($user, app(ClinicContext::class)->id());
 
         return $clinics->whereIn('id', $targetIds)

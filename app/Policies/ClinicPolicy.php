@@ -32,9 +32,10 @@ class ClinicPolicy
     }
 
     /**
-     * The user must genuinely belong to the target clinic AND hold clinics.switch
-     * either there or in the clinic they are currently in — the "or active clinic"
-     * leg prevents lock-in for a user who is e.g. manager at A / receptionist at B.
+     * Membership IS the right to switch: a user can only reach a clinic they already hold a
+     * role in, and once there they work with that clinic's role, so the switch opens no data
+     * the role assignment did not already grant. Restricting a person to one branch is done
+     * by not assigning them a role in the other one.
      */
     public function switchTo(User $user, Clinic $clinic): bool
     {

@@ -56,46 +56,15 @@ class ClinicMembershipService
     }
 
     /**
-     * Clinics the user holds `clinics.switch` in, among their memberships.
-     *
-     * @return list<int>
-     */
-    public function switchableClinicIds(User $user): array
-    {
-        $rows = DB::table('model_has_roles')
-            ->join('clinics', 'clinics.id', '=', 'model_has_roles.clinic_id')
-            ->join('role_has_permissions', 'role_has_permissions.role_id', '=', 'model_has_roles.role_id')
-            ->join('permissions', 'permissions.id', '=', 'role_has_permissions.permission_id')
-            ->where('model_has_roles.model_type', $user->getMorphClass())
-            ->where('model_has_roles.model_id', $user->getKey())
-            ->whereNotNull('model_has_roles.clinic_id')
-            ->whereNull('clinics.deleted_at')
-            ->where('permissions.name', 'clinics.switch')
-            ->distinct()
-            ->pluck('clinics.id');
-
-        return $rows->map(fn (mixed $id): int => (int) $id)->all();
-    }
-
-    /**
-     * Clinic ids the user may switch INTO right now, given the currently active
-     * clinic. Mirrors ClinicPolicy::switchTo's predicate exactly (single source of
-     * truth) so the shared switcher prop and the policy enforcement cannot drift:
-     * when the active clinic itself is switchable, every membership qualifies (the
-     * "or active clinic" leg that prevents lock-in); otherwise only clinics where
-     * the user directly holds clinics.switch.
+     * Clinic ids the user may switch INTO. Switching is membership-driven, NOT a permission:
+     * a user can only reach a clinic they already hold a role in, and once there they work
+     * with that clinic's role. So the switch itself opens no data the assignment did not.
      *
      * @return list<int>
      */
     public function switchTargetsFor(User $user, ?int $activeClinicId): array
     {
-        $switchable = $this->switchableClinicIds($user);
-
-        if ($activeClinicId !== null && in_array($activeClinicId, $switchable, true)) {
-            return $this->clinicIdsFor($user);
-        }
-
-        return $switchable;
+        return $this->clinicIdsFor($user);
     }
 
     public function belongsTo(User $user, int $clinicId): bool

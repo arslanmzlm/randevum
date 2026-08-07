@@ -25,7 +25,6 @@ class PermissionSeeder extends Seeder
         // Multi-branch (Dalga 9). Switching between the tenant's branches is owner +
         // manager, matching every other clinic-scoped edit ability; opening a new
         // branch is owner-only.
-        'clinics.switch' => ['owner', 'manager'],
         'clinics.create' => ['owner'],
         'doctors.viewAny' => ['owner', 'manager', 'doctor', 'receptionist', 'assistant'],
         'doctors.create' => ['owner', 'manager'],

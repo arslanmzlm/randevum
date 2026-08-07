@@ -22,7 +22,6 @@ it('grants the owner role the full clinic + doctor + service + product + patient
         ->toEqualCanonicalizing([
             'clinic.update',
             'clinics.create',
-            'clinics.switch',
             'doctors.viewAny',
             'doctors.create',
             'doctors.update',
@@ -100,7 +99,6 @@ it('grants the manager role full management except self-create', function (): vo
     expect($manager->permissions->pluck('name')->all())
         ->toEqualCanonicalizing([
             'clinic.update',
-            'clinics.switch',
             'doctors.viewAny',
             'doctors.create',
             'doctors.update',
