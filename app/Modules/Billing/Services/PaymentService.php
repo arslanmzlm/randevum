@@ -42,21 +42,25 @@ class PaymentService implements PaymentRecorderContract
     {
         $treatmentId = $data['treatment_id'] ?? null;
 
-        if ($treatmentId !== null) {
-            $cap = $this->treatmentReader->completedTotalCap($treatmentId);
+        return DB::transaction(function () use ($data, $treatmentId, $actor) {
+            // Cap check runs inside the transaction, locked on the treatment row (see
+            // TreatmentReaderContract::completedTotalCap): two concurrent payments on the same
+            // treatment must serialize here, so the second sees the first's already-committed
+            // paid total instead of both reading the same stale total and both passing the cap.
+            if ($treatmentId !== null) {
+                $cap = $this->treatmentReader->completedTotalCap($treatmentId);
 
-            if ($cap !== null) {
-                $existingPaid = $this->repository->paidTotalForTreatment($treatmentId);
+                if ($cap !== null) {
+                    $existingPaid = $this->repository->paidTotalForTreatment($treatmentId);
 
-                if (bccomp(bcadd($existingPaid, (string) $data['amount'], 2), $cap, 2) > 0) {
-                    throw ValidationException::withMessages([
-                        'amount' => __('treatment.errors.payments_exceed_total'),
-                    ]);
+                    if (bccomp(bcadd($existingPaid, (string) $data['amount'], 2), $cap, 2) > 0) {
+                        throw ValidationException::withMessages([
+                            'amount' => __('treatment.errors.payments_exceed_total'),
+                        ]);
+                    }
                 }
             }
-        }
 
-        return DB::transaction(function () use ($data, $treatmentId, $actor) {
             $transaction = $this->repository->create([
                 'patient_id' => $data['patient_id'],
                 'treatment_id' => $treatmentId,

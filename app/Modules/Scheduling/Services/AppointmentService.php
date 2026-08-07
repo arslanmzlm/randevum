@@ -10,6 +10,7 @@ use App\Models\Patient;
 use App\Models\User;
 use App\Modules\Core\Contracts\AppointmentCancellationContract;
 use App\Modules\Core\Contracts\AppointmentLifecycleContract;
+use App\Modules\Core\Contracts\DoctorLockContract;
 use App\Modules\Core\Contracts\PatientAppointmentsContract;
 use App\Modules\Core\Contracts\UpcomingAppointmentsContract;
 use App\Modules\Core\Services\StatusLogService;
@@ -45,6 +46,7 @@ class AppointmentService implements AppointmentCancellationContract, Appointment
         private ScheduleExceptionService $scheduleExceptionService,
         private ClinicContext $clinicContext,
         private AppointmentStatusSmsService $statusSms,
+        private DoctorLockContract $doctorLock,
     ) {}
 
     /**
@@ -153,9 +155,12 @@ class AppointmentService implements AppointmentCancellationContract, Appointment
         $startsAt = Carbon::parse($data['starts_at'], $clinic->timezone)->utc();
         $endsAt = $startsAt->copy()->addMinutes($duration);
 
-        $this->assertAvailable($clinic, $doctorId, $startsAt, $endsAt, $isWalkIn);
+        $appointment = DB::transaction(function () use ($clinic, $data, $actor, $startsAt, $endsAt, $isWalkIn, $doctorId): Appointment {
+            // Serialize bookings per doctor: without the lock two concurrent requests both pass
+            // assertAvailable() and both insert, and no DB constraint catches the overlap.
+            $this->doctorLock->lockForUpdate($doctorId);
+            $this->assertAvailable($clinic, $doctorId, $startsAt, $endsAt, $isWalkIn);
 
-        $appointment = DB::transaction(function () use ($data, $actor, $startsAt, $endsAt, $isWalkIn, $doctorId): Appointment {
             // New-patient booking registers the patient in the same transaction, so a failed
             // appointment never leaves an orphan patient behind.
             $patientId = $this->resolvePatientId($data);
@@ -243,11 +248,12 @@ class AppointmentService implements AppointmentCancellationContract, Appointment
         $startsAt = Carbon::parse($data['starts_at'], $clinic->timezone)->utc();
         $endsAt = $startsAt->copy()->addMinutes($duration);
 
-        $this->assertAvailable($clinic, (int) $data['doctor_id'], $startsAt, $endsAt, $appointment->is_walk_in, $appointment->id);
-
         $transitioned = false;
 
-        $appointment = DB::transaction(function () use ($appointment, $data, $actor, $startsAt, $endsAt, &$transitioned): Appointment {
+        $appointment = DB::transaction(function () use ($clinic, $appointment, $data, $actor, $startsAt, $endsAt, &$transitioned): Appointment {
+            $this->doctorLock->lockForUpdate((int) $data['doctor_id']);
+            $this->assertAvailable($clinic, (int) $data['doctor_id'], $startsAt, $endsAt, $appointment->is_walk_in, $appointment->id);
+
             $previousStartsAt = $appointment->starts_at->copy();
             $previousStatus = $appointment->status;
 

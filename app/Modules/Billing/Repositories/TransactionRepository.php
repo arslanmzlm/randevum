@@ -18,6 +18,16 @@ class TransactionRepository
     }
 
     /**
+     * Lock the transaction row for the rest of the caller's transaction (see
+     * RefundService::refund), so two concurrent refunds against the same original cannot
+     * both read the same stale refunded total and both pass the remaining-amount guard.
+     */
+    public function lockForUpdate(int $id): Transaction
+    {
+        return Transaction::query()->whereKey($id)->lockForUpdate()->firstOrFail();
+    }
+
+    /**
      * Sum of all transaction amounts for a treatment (the derived "paid" balance).
      * Returns a string to preserve decimal precision for bcmath comparisons.
      */

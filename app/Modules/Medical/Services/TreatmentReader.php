@@ -6,6 +6,7 @@ use App\Enums\TreatmentStatus;
 use App\Models\Treatment;
 use App\Models\User;
 use App\Modules\Medical\Contracts\TreatmentReaderContract;
+use App\Modules\Medical\Repositories\TreatmentRepository;
 use Illuminate\Support\Facades\Gate;
 
 /**
@@ -15,9 +16,15 @@ use Illuminate\Support\Facades\Gate;
  */
 class TreatmentReader implements TreatmentReaderContract
 {
+    public function __construct(private TreatmentRepository $repository) {}
+
     public function completedTotalCap(int $treatmentId): ?string
     {
-        $treatment = Treatment::find($treatmentId);
+        // Row-locked: PaymentService checks this cap inside its own DB transaction so a
+        // concurrent payment on the same treatment serializes here instead of both reading
+        // the same stale paid total and both passing the cap. Locking outside an open
+        // transaction is a harmless no-op.
+        $treatment = $this->repository->lockForUpdate($treatmentId);
 
         if ($treatment === null || $treatment->status !== TreatmentStatus::Completed) {
             return null;

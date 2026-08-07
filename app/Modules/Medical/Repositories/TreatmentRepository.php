@@ -20,6 +20,16 @@ class TreatmentRepository
     }
 
     /**
+     * Lock the treatment row for the rest of the caller's transaction (see
+     * TreatmentReader::completedTotalCap), so a concurrent payment against the same
+     * treatment cannot read the same stale paid total and both pass the overpayment cap.
+     */
+    public function lockForUpdate(int $treatmentId): ?Treatment
+    {
+        return Treatment::query()->whereKey($treatmentId)->lockForUpdate()->first();
+    }
+
+    /**
      * Server-side paginated list of treatments for the active clinic, applying
      * request-driven search/filter/sort via FilterHelper.
      *

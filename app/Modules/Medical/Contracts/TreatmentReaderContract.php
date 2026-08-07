@@ -14,6 +14,10 @@ interface TreatmentReaderContract
      * Overpayment cap for the given treatment: its total_amount (as a decimal string)
      * when the treatment is Completed, or null when there is no cap — the treatment is
      * a draft/prepayment (total not yet final) or it does not exist.
+     *
+     * Locks the treatment row for the caller's open DB transaction — call this from inside
+     * the same transaction that checks the cap and records the payment, so a concurrent
+     * payment on the same treatment serializes instead of both passing a stale check.
      */
     public function completedTotalCap(int $treatmentId): ?string;
 

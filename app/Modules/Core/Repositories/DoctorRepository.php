@@ -63,6 +63,16 @@ class DoctorRepository
      *
      * Returns null when the doctor does not exist in the active clinic.
      */
+    /**
+     * Row-lock the doctor for the rest of the transaction. Booking serializes on this row so
+     * two concurrent requests cannot both pass the availability check for the same slot.
+     * SQLite compiles the lock away, so the test suite is unaffected.
+     */
+    public function lockForUpdate(int $doctorId): ?Doctor
+    {
+        return Doctor::query()->whereKey($doctorId)->lockForUpdate()->first();
+    }
+
     public function findForClinic(int $doctorId): ?Doctor
     {
         return Doctor::with('user')
