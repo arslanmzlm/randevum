@@ -103,4 +103,10 @@ return [
         'deleted' => 'Segment silindi.',
     ],
 
+    'follow_up_type' => [
+        'created' => 'Takip türü oluşturuldu.',
+        'updated' => 'Takip türü güncellendi.',
+        'deleted' => 'Takip türü silindi.',
+    ],
+
 ];

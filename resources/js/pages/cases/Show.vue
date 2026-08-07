@@ -21,6 +21,7 @@ import { useCan } from '@/composables/useCan';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { index } from '@/routes/cases';
 import { update as updateStatus } from '@/routes/cases/status';
+import { unlink } from '@/routes/cases/treatments';
 import type { CaseShowProps } from '@/types/case';
 import type { CaseStatus } from '@/types/enums';
 
@@ -42,7 +43,17 @@ const canManage = computed(
         (can('cases.viewAll') || props.case.doctor.id === props.ownDoctorId),
 );
 
-const canLink = computed(() => canManage.value && props.case.status === 'open');
+// Linking and unlinking are open in every case status except `closed`.
+const canLink = computed(
+    () => canManage.value && props.case.status !== 'closed',
+);
+
+// Mirrors FollowUpPolicy::complete — the clinic-wide permission, or own-case ownership.
+const canCompleteFollowUp = computed(
+    () =>
+        can('followUps.dismiss') ||
+        (can('cases.update') && props.case.doctor.id === props.ownDoctorId),
+);
 
 const showFollowUpStatusDialog = ref(false);
 const showLinkDialog = ref(false);
@@ -80,6 +91,23 @@ function onTransition(target: CaseStatus): void {
             severity: CASE_ACTION_SEVERITY[target],
         },
         accept: () => submitStatus(target),
+    });
+}
+
+function confirmUnlink(treatmentId: number): void {
+    confirm.require({
+        header: t('common.confirm_title'),
+        message: t('case.link.remove_confirm'),
+        rejectProps: {
+            label: t('common.cancel'),
+            severity: 'secondary',
+            outlined: true,
+        },
+        acceptProps: { label: t('case.link.remove'), severity: 'danger' },
+        accept: () =>
+            router.delete(unlink([props.case.id, treatmentId]).url, {
+                preserveScroll: true,
+            }),
     });
 }
 </script>
@@ -133,6 +161,7 @@ function onTransition(target: CaseStatus): void {
                     :can-link="canLink"
                     :ungrouped-count="ungroupedTreatments.length"
                     @open-link="showLinkDialog = true"
+                    @unlink="confirmUnlink"
                 />
 
                 <CaseMediaCard
@@ -149,7 +178,8 @@ function onTransition(target: CaseStatus): void {
 
                 <CaseFollowUpCard
                     :case-record="caseRecord"
-                    :can-manage="canManage"
+                    :can-complete="canCompleteFollowUp"
+                    :follow-up-types="followUpTypes"
                 />
             </div>
         </div>
@@ -157,6 +187,7 @@ function onTransition(target: CaseStatus): void {
         <FollowUpStatusDialog
             v-model:visible="showFollowUpStatusDialog"
             :case-record="caseRecord"
+            :follow-up-types="followUpTypes"
         />
 
         <LinkTreatmentsDialog

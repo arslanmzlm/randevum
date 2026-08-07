@@ -35,6 +35,7 @@ class CaseService
         private TreatmentRepository $treatmentRepository,
         private StatusLogService $statusLogService,
         private ClinicContext $clinicContext,
+        private FollowUpService $followUpService,
     ) {}
 
     /**
@@ -79,6 +80,7 @@ class CaseService
      * Transition a case to a new status, set the relevant timestamps, and log to status_logs.
      *
      * @param  array<string, mixed>  $followUp  Optional; required when $to = FollowUp
+     *                                          (keys: due_date, note, follow_up_type_id)
      *
      * @throws ValidationException
      * @throws \Throwable
@@ -93,9 +95,9 @@ class CaseService
             ]);
         }
 
-        if ($to === CaseStatus::FollowUp && empty($followUp['follow_up_date'])) {
+        if ($to === CaseStatus::FollowUp && empty($followUp['due_date'])) {
             throw ValidationException::withMessages([
-                'follow_up_date' => [__('case.errors.follow_up_date_required')],
+                'due_date' => [__('follow_up.errors.due_date_required')],
             ]);
         }
 
@@ -107,24 +109,23 @@ class CaseService
             match ($to) {
                 CaseStatus::Closed => $updates['closed_at'] = now(),
                 CaseStatus::Suspended => $updates['suspended_at'] = now(),
-                CaseStatus::Open => array_merge($updates, ['closed_at' => null, 'suspended_at' => null]),
+                CaseStatus::Open => $updates += ['closed_at' => null, 'suspended_at' => null],
                 CaseStatus::FollowUp => null,
             };
-
-            // Clearing timestamps on → Open must be done explicitly
-            if ($to === CaseStatus::Open) {
-                $updates['closed_at'] = null;
-                $updates['suspended_at'] = null;
-            }
-
-            if ($to === CaseStatus::FollowUp && ! empty($followUp['follow_up_date'])) {
-                $updates['follow_up_date'] = $followUp['follow_up_date'];
-                $updates['follow_up_note'] = $followUp['follow_up_note'] ?? null;
-            }
 
             $case->fill($updates)->save();
 
             $this->statusLogService->record($case, $from, $to->value, $actor);
+
+            if ($to === CaseStatus::FollowUp && ! empty($followUp['due_date'])) {
+                $this->followUpService->create([
+                    'patient_id' => $case->patient_id,
+                    'case_id' => $case->id,
+                    'follow_up_type_id' => $followUp['follow_up_type_id'] ?? null,
+                    'due_date' => $followUp['due_date'],
+                    'note' => $followUp['note'] ?? null,
+                ], $actor);
+            }
         });
     }
 
@@ -134,18 +135,6 @@ class CaseService
     public function updateNotes(CaseRecord $case, ?string $notes): void
     {
         $case->notes = $notes;
-        $case->save();
-    }
-
-    /**
-     * Update the follow-up date and note, independently of status.
-     *
-     * A Closed case may still carry a follow-up reminder.
-     */
-    public function updateFollowUp(CaseRecord $case, mixed $followUpDate, ?string $followUpNote): void
-    {
-        $case->follow_up_date = $followUpDate;
-        $case->follow_up_note = $followUpNote;
         $case->save();
     }
 
@@ -239,14 +228,47 @@ class CaseService
      */
     public function linkTreatments(CaseRecord $case, array $treatmentIds, User $actor): void
     {
-        if ($case->status !== CaseStatus::Open) {
+        if ($case->status === CaseStatus::Closed) {
             throw ValidationException::withMessages([
-                'case_id' => [__('case.errors.case_not_open')],
+                'case_id' => [__('case.errors.case_closed')],
             ]);
         }
 
         DB::transaction(function () use ($case, $treatmentIds): void {
             $this->attachTreatments($case, $treatmentIds);
+        });
+    }
+
+    /**
+     * Unlink a treatment from its case, clearing both the treatment's and (when present)
+     * its appointment's case_id. The case's amount of linked treatments never blocks this:
+     * the case exists to make follow-up easier, so no large constraint is added.
+     *
+     * @throws ValidationException
+     * @throws \Throwable
+     */
+    public function unlinkTreatment(CaseRecord $case, Treatment $treatment): void
+    {
+        if ($case->status === CaseStatus::Closed) {
+            throw ValidationException::withMessages([
+                'case_id' => [__('case.errors.case_closed')],
+            ]);
+        }
+
+        if ($treatment->case_id !== $case->id) {
+            throw ValidationException::withMessages([
+                'treatment_id' => [__('case.errors.treatment_not_linked')],
+            ]);
+        }
+
+        DB::transaction(function () use ($treatment): void {
+            $treatment->case_id = null;
+            $treatment->save();
+
+            if ($treatment->appointment !== null) {
+                $treatment->appointment->case_id = null;
+                $treatment->appointment->save();
+            }
         });
     }
 
@@ -266,7 +288,7 @@ class CaseService
                 'status' => $c->status->value,
                 'treatments_count' => (int) $c->treatments_count,
                 'opened_at' => $c->opened_at->toIso8601String(),
-                'follow_up_date' => $c->follow_up_date?->format('Y-m-d'),
+                'follow_up_date' => $c->next_follow_up_date,
             ])
             ->values()
             ->all();

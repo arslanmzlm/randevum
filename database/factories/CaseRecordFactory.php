@@ -31,8 +31,6 @@ class CaseRecordFactory extends Factory
             'opened_at' => now(),
             'closed_at' => null,
             'suspended_at' => null,
-            'follow_up_date' => null,
-            'follow_up_note' => null,
         ];
     }
 

@@ -122,8 +122,16 @@ class PermissionSeeder extends Seeder
         // Follow-up call widget — front-desk ("Bugün aranacaklar").
         // Doctors are intentionally excluded: the widget is clinic-wide, desk-only.
         'followUps.view' => ['owner', 'manager', 'receptionist'],
-        // "Arandı" dismiss — clear a case's follow-up from the widget.
+        // "Arandı" / cancel a follow-up (front-desk clinic-wide branch; a doctor completing
+        // their OWN case's follow-up goes through the FollowUpPolicy ownership branch instead).
         'followUps.dismiss' => ['owner', 'manager', 'receptionist'],
+        // Manual follow-up creation — widget header + case panel. Doctor included: today a
+        // doctor already sets a case follow-up through cases.update; dropping it would remove
+        // an existing capability.
+        'followUps.create' => ['owner', 'manager', 'receptionist', 'doctor'],
+        // Follow-up type definitions (settings CRUD) — tags.manage precedent (curated,
+        // anti-drift list).
+        'followUpTypes.manage' => ['owner', 'manager'],
         // SMS settings — per-type send toggles.
         'smsSettings.view' => ['owner', 'manager', 'receptionist'],
         'smsSettings.update' => ['owner', 'manager'],

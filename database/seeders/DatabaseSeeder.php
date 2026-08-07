@@ -23,6 +23,9 @@ class DatabaseSeeder extends Seeder
             CountrySeeder::class,
             CitySeeder::class,
             VerticalSeeder::class,
+            // Idempotent backfill for clinics that predate the ClinicRegistered provisioning
+            // listener; no-op (firstOrCreate) for clinics that already have their types.
+            FollowUpTypeSeeder::class,
             // Skips silently while no platform superadmin exists to author the documents;
             // DemoDatabaseSeeder calls it again once it has created one.
             LegalDocumentSeeder::class,

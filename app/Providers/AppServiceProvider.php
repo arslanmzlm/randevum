@@ -9,6 +9,8 @@ use App\Models\Clinic;
 use App\Models\ClinicSmsSetting;
 use App\Models\Doctor;
 use App\Models\Expense;
+use App\Models\FollowUp;
+use App\Models\FollowUpType;
 use App\Models\Patient;
 use App\Models\PatientSegment;
 use App\Models\PaymentPlan;
@@ -30,6 +32,8 @@ use App\Policies\ClinicPolicy;
 use App\Policies\ClinicSmsSettingPolicy;
 use App\Policies\DoctorPolicy;
 use App\Policies\ExpensePolicy;
+use App\Policies\FollowUpPolicy;
+use App\Policies\FollowUpTypePolicy;
 use App\Policies\PatientPolicy;
 use App\Policies\PatientSegmentPolicy;
 use App\Policies\PaymentPlanPolicy;
@@ -86,6 +90,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(ClinicSmsSetting::class, ClinicSmsSettingPolicy::class);
         Gate::policy(Doctor::class, DoctorPolicy::class);
         Gate::policy(Expense::class, ExpensePolicy::class);
+        Gate::policy(FollowUp::class, FollowUpPolicy::class);
+        Gate::policy(FollowUpType::class, FollowUpTypePolicy::class);
         Gate::policy(Patient::class, PatientPolicy::class);
         Gate::policy(PatientSegment::class, PatientSegmentPolicy::class);
         Gate::policy(PaymentPlan::class, PaymentPlanPolicy::class);
@@ -116,6 +122,7 @@ class AppServiceProvider extends ServiceProvider
             'podiatry_anamnesis' => PodiatryAnamnesis::class,
             'payment_plan' => PaymentPlan::class,
             'payment_plan_installment' => PaymentPlanInstallment::class,
+            'follow_up' => FollowUp::class,
         ]);
     }
 

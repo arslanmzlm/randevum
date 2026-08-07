@@ -6,6 +6,8 @@ use App\Modules\Core\Http\Controllers\ClinicController;
 use App\Modules\Core\Http\Controllers\DoctorController;
 use App\Modules\Medical\Http\Controllers\AnamnesisController;
 use App\Modules\Medical\Http\Controllers\CaseController;
+use App\Modules\Medical\Http\Controllers\FollowUpController;
+use App\Modules\Medical\Http\Controllers\FollowUpTypeController;
 use App\Modules\Medical\Http\Controllers\PatientController;
 use App\Modules\Medical\Http\Controllers\SegmentController;
 use App\Modules\Medical\Http\Controllers\TagController;
@@ -151,10 +153,27 @@ Route::middleware('auth')->group(function () {
     Route::get('/cases/{case}', [CaseController::class, 'show'])->name('cases.show');
     Route::patch('/cases/{case}/status', [CaseController::class, 'changeStatus'])->name('cases.status.update');
     Route::patch('/cases/{case}/notes', [CaseController::class, 'updateNotes'])->name('cases.notes.update');
-    Route::patch('/cases/{case}/follow-up', [CaseController::class, 'updateFollowUp'])->name('cases.follow-up.update');
-    Route::delete('/cases/{case}/follow-up', [CaseController::class, 'dismissFollowUp'])->name('cases.follow-up.dismiss');
     Route::patch('/cases/{case}/title', [CaseController::class, 'updateTitle'])->name('cases.title.update');
     Route::post('/cases/{case}/treatments', [CaseController::class, 'linkTreatments'])->name('cases.treatments.link');
+    Route::delete('/cases/{case}/treatments/{treatment}', [CaseController::class, 'unlinkTreatment'])->name('cases.treatments.unlink');
+});
+
+// Follow-up records (call list + manual creation + completion). Literal segment (cases,
+// the case-picker JSON endpoint) declared BEFORE {followUp} so it is not captured as a
+// bound id.
+Route::middleware('auth')->group(function () {
+    Route::get('/follow-ups/cases', [FollowUpController::class, 'casesForPatient'])->middleware('throttle:60,1')->name('follow-ups.cases');
+    Route::post('/follow-ups', [FollowUpController::class, 'store'])->name('follow-ups.store');
+    Route::patch('/follow-ups/{followUp}/complete', [FollowUpController::class, 'complete'])->name('follow-ups.complete');
+    Route::patch('/follow-ups/{followUp}/cancel', [FollowUpController::class, 'cancel'])->name('follow-ups.cancel');
+});
+
+// Follow-up types (settings / CRUD).
+Route::middleware('auth')->group(function () {
+    Route::get('/follow-up-types', [FollowUpTypeController::class, 'index'])->name('follow-up-types.index');
+    Route::post('/follow-up-types', [FollowUpTypeController::class, 'store'])->name('follow-up-types.store');
+    Route::put('/follow-up-types/{followUpType}', [FollowUpTypeController::class, 'update'])->name('follow-up-types.update');
+    Route::delete('/follow-up-types/{followUpType}', [FollowUpTypeController::class, 'destroy'])->name('follow-up-types.destroy');
 });
 
 // Treatment lifecycle — collection route (index) before {treatment}, literal segments

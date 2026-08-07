@@ -36,8 +36,6 @@ class CaseRecord extends Model
         'opened_at',
         'closed_at',
         'suspended_at',
-        'follow_up_date',
-        'follow_up_note',
     ];
 
     /**
@@ -54,7 +52,6 @@ class CaseRecord extends Model
             'opened_at' => 'datetime',
             'closed_at' => 'datetime',
             'suspended_at' => 'datetime',
-            'follow_up_date' => 'date',
         ];
     }
 
@@ -88,6 +85,14 @@ class CaseRecord extends Model
     public function treatments(): HasMany
     {
         return $this->hasMany(Treatment::class, 'case_id');
+    }
+
+    /**
+     * @return HasMany<FollowUp, $this>
+     */
+    public function followUps(): HasMany
+    {
+        return $this->hasMany(FollowUp::class, 'case_id');
     }
 
     /**

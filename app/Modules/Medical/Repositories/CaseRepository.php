@@ -61,6 +61,7 @@ class CaseRepository
             ->when($doctorIds !== null, fn ($q) => $q->whereIn('doctor_id', $doctorIds))
             ->with(['patient:id,first_name,last_name', 'doctor.user'])
             ->withCount('treatments')
+            ->withMin(['followUps as next_follow_up_date' => fn ($q) => $q->where('status', 'open')], 'due_date')
             ->orderByDesc('opened_at');
 
         // Title + patient name are OR'd together so either field satisfies the search. Folded to
@@ -95,21 +96,6 @@ class CaseRepository
     }
 
     /**
-     * All cases in the active clinic with a follow-up date on or before $todayDate.
-     * Ordered oldest-due first. ClinicScope (via BelongsToClinic) isolates the tenant.
-     *
-     * @return Collection<int, CaseRecord>
-     */
-    public function dueFollowUps(string $todayDate): Collection
-    {
-        return CaseRecord::whereNotNull('follow_up_date')
-            ->whereDate('follow_up_date', '<=', $todayDate)
-            ->with(['patient:id,first_name,last_name,phone', 'doctor.user'])
-            ->orderBy('follow_up_date')
-            ->get();
-    }
-
-    /**
      * Cases for a patient's detail page, own/all scoped, with treatment counts.
      *
      * @return Collection<int, CaseRecord>
@@ -119,6 +105,7 @@ class CaseRepository
         return CaseRecord::where('patient_id', $patientId)
             ->when($doctorId !== null, fn ($q) => $q->forDoctor($doctorId))
             ->withCount('treatments')
+            ->withMin(['followUps as next_follow_up_date' => fn ($q) => $q->where('status', 'open')], 'due_date')
             ->orderByRaw("CASE status WHEN 'open' THEN 0 WHEN 'follow_up' THEN 1 WHEN 'suspended' THEN 2 ELSE 3 END")
             ->orderByDesc('opened_at')
             ->get();

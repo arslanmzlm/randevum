@@ -5,17 +5,19 @@ namespace App\Modules\Medical\Http\Controllers;
 use App\Enums\CaseStatus;
 use App\Http\Controllers\Controller;
 use App\Models\CaseRecord;
+use App\Models\Treatment;
 use App\Modules\Core\Contracts\DoctorDirectoryContract;
 use App\Modules\Core\Support\Toast;
 use App\Modules\Medical\Http\Requests\ChangeCaseStatusRequest;
 use App\Modules\Medical\Http\Requests\LinkCaseTreatmentsRequest;
 use App\Modules\Medical\Http\Requests\StoreCaseRequest;
-use App\Modules\Medical\Http\Requests\UpdateCaseFollowUpRequest;
 use App\Modules\Medical\Http\Requests\UpdateCaseNotesRequest;
 use App\Modules\Medical\Http\Requests\UpdateCaseTitleRequest;
 use App\Modules\Medical\Http\Resources\CaseListResource;
 use App\Modules\Medical\Http\Resources\CaseShowResource;
 use App\Modules\Medical\Services\CaseService;
+use App\Modules\Medical\Services\FollowUpService;
+use App\Modules\Medical\Services\FollowUpTypeService;
 use App\Modules\Medical\Support\MediaItemMapper;
 use App\Support\FilterHelper;
 use Illuminate\Http\RedirectResponse;
@@ -28,6 +30,8 @@ class CaseController extends Controller
     public function __construct(
         private CaseService $caseService,
         private DoctorDirectoryContract $doctorDirectory,
+        private FollowUpService $followUpService,
+        private FollowUpTypeService $followUpTypeService,
     ) {}
 
     public function index(Request $request): Response
@@ -81,6 +85,7 @@ class CaseController extends Controller
         ]);
 
         $data = (new CaseShowResource($case))->resolve();
+        $data['follow_ups'] = $this->followUpService->forCase($case);
 
         // Read-only rollup across the case's treatments — KVKK-min, doctor + assistant
         // only. No upload/delete affordance here (upload only on treatment Process).
@@ -108,6 +113,7 @@ class CaseController extends Controller
             'ungroupedTreatments' => $this->caseService->ungroupedTreatmentsForCase($case),
             'canEditTitle' => $this->caseService->canEditTitle($case),
             'ownDoctorId' => $request->user()->doctor?->id,
+            'followUpTypes' => $this->followUpTypeService->listActiveOptions(),
         ]);
     }
 
@@ -119,8 +125,9 @@ class CaseController extends Controller
         $to = CaseStatus::from($validated['status']);
 
         $this->caseService->changeStatus($case, $to, $request->user(), [
-            'follow_up_date' => $validated['follow_up_date'] ?? null,
-            'follow_up_note' => $validated['follow_up_note'] ?? null,
+            'due_date' => $validated['due_date'] ?? null,
+            'note' => $validated['note'] ?? null,
+            'follow_up_type_id' => $validated['follow_up_type_id'] ?? null,
         ]);
 
         Toast::success(__('case.status_updated'));
@@ -135,22 +142,6 @@ class CaseController extends Controller
         $this->caseService->updateNotes($case, $request->validated()['notes'] ?? null);
 
         Toast::success(__('case.notes_updated'));
-
-        return redirect()->route('cases.show', $case);
-    }
-
-    public function updateFollowUp(UpdateCaseFollowUpRequest $request, CaseRecord $case): RedirectResponse
-    {
-        $this->authorize('update', $case);
-
-        $validated = $request->validated();
-        $this->caseService->updateFollowUp(
-            $case,
-            $validated['follow_up_date'] ?? null,
-            $validated['follow_up_note'] ?? null,
-        );
-
-        Toast::success(__('case.follow_up_updated'));
 
         return redirect()->route('cases.show', $case);
     }
@@ -177,13 +168,13 @@ class CaseController extends Controller
         return redirect()->route('cases.show', $case);
     }
 
-    public function dismissFollowUp(CaseRecord $case): RedirectResponse
+    public function unlinkTreatment(CaseRecord $case, Treatment $treatment): RedirectResponse
     {
-        $this->authorize('dismissFollowUp', $case);
+        $this->authorize('update', $case);
 
-        $this->caseService->updateFollowUp($case, null, null);
+        $this->caseService->unlinkTreatment($case, $treatment);
 
-        Toast::success(__('case.follow_up_cleared'));
+        Toast::success(__('case.treatment_unlinked'));
 
         return back();
     }

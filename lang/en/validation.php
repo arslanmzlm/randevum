@@ -314,10 +314,13 @@ return [
         'follow_up.occurrences.*.appointment_type_id' => 'appointment type',
         'follow_up.service_id' => 'follow-up service',
         // cases
-        'follow_up_date' => 'follow-up date',
-        'follow_up_note' => 'follow-up note',
         'treatment_ids' => 'treatments',
         'treatment_ids.*' => 'treatment',
+        // follow-ups
+        'due_date' => 'follow-up date',
+        'result_note' => 'result note',
+        'follow_up_type_id' => 'follow-up type',
+        'follow_up_type_name' => 'follow-up type name',
         // payment recording
         'treatment_id' => 'treatment',
         'amount' => 'amount',
@@ -356,6 +359,7 @@ return [
     ],
 
     'tag_name_taken' => 'This tag name is already in use (case-insensitive).',
+    'follow_up_type_name_taken' => 'This follow-up type name is already in use (case-insensitive).',
 
     'sms_template_unknown_type' => ':attribute is not a valid customizable SMS type.',
     'sms_template_unknown_variable' => ':attribute contains a variable that is not allowed: :variable',

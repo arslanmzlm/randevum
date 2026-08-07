@@ -33,7 +33,8 @@ class CaseListResource extends JsonResource
             'treatments_count' => (int) $this->treatments_count,
             'opened_at' => $this->opened_at->toIso8601String(),
             'closed_at' => $this->closed_at?->toIso8601String(),
-            'follow_up_date' => $this->follow_up_date?->format('Y-m-d'),
+            // Earliest OPEN follow-up's due_date, from the paginateForActiveClinic() withMin aggregate.
+            'follow_up_date' => $this->next_follow_up_date,
         ];
     }
 }

@@ -3,6 +3,8 @@
 use App\Models\CaseRecord;
 use App\Models\Clinic;
 use App\Models\Doctor;
+use App\Models\FollowUp;
+use App\Models\FollowUpType;
 use App\Models\Patient;
 use App\Models\User;
 use App\Support\ClinicContext;
@@ -33,7 +35,7 @@ function fuwRole(User $user, string $role, int $clinicId): void
 }
 
 /**
- * Build a clinic with owner, a doctor, and a patient — no case by default.
+ * Build a clinic with owner, a doctor, and a patient — no follow-up by default.
  *
  * @return array{clinic: Clinic, owner: User, doctor: Doctor, patient: Patient}
  */
@@ -61,21 +63,30 @@ function fuwIstanbulToday(): string
     return Carbon::now('Europe/Istanbul')->toDateString();
 }
 
+/**
+ * An open follow-up due on $dueDate, optionally linked to a case.
+ */
+function fuwFollowUp(Clinic $clinic, Patient $patient, string $dueDate, ?int $caseId = null, array $overrides = []): FollowUp
+{
+    return FollowUp::factory()->open()->create(array_merge([
+        'clinic_id' => $clinic->id,
+        'patient_id' => $patient->id,
+        'case_id' => $caseId,
+        'due_date' => $dueDate,
+    ], $overrides));
+}
+
 // ---------------------------------------------------------------------------
 // Authorization — who sees follow-ups and who gets an empty array
 // ---------------------------------------------------------------------------
 
 it('owner sees due follow-ups in the followUps Inertia prop', function (): void {
     ['clinic' => $clinic, 'owner' => $owner, 'doctor' => $doctor, 'patient' => $patient] = fuwSetup();
-
-    CaseRecord::factory()->create([
-        'clinic_id' => $clinic->id,
-        'patient_id' => $patient->id,
-        'doctor_id' => $doctor->id,
-        'vertical_id' => $clinic->vertical_id,
-        'follow_up_date' => fuwIstanbulToday(),
-        'follow_up_note' => 'Due today',
+    $case = CaseRecord::factory()->open()->create([
+        'clinic_id' => $clinic->id, 'patient_id' => $patient->id,
+        'doctor_id' => $doctor->id, 'vertical_id' => $clinic->vertical_id,
     ]);
+    fuwFollowUp($clinic, $patient, fuwIstanbulToday(), $case->id);
 
     $this->actingAs($owner)
         ->get(route('dashboard'))
@@ -84,17 +95,11 @@ it('owner sees due follow-ups in the followUps Inertia prop', function (): void 
 });
 
 it('manager sees due follow-ups in the followUps Inertia prop', function (): void {
-    ['clinic' => $clinic, 'doctor' => $doctor, 'patient' => $patient] = fuwSetup();
+    ['clinic' => $clinic, 'patient' => $patient] = fuwSetup();
     $manager = User::factory()->create();
     fuwRole($manager, 'manager', $clinic->id);
 
-    CaseRecord::factory()->create([
-        'clinic_id' => $clinic->id,
-        'patient_id' => $patient->id,
-        'doctor_id' => $doctor->id,
-        'vertical_id' => $clinic->vertical_id,
-        'follow_up_date' => fuwIstanbulToday(),
-    ]);
+    fuwFollowUp($clinic, $patient, fuwIstanbulToday());
 
     $this->actingAs($manager)
         ->get(route('dashboard'))
@@ -103,17 +108,11 @@ it('manager sees due follow-ups in the followUps Inertia prop', function (): voi
 });
 
 it('receptionist sees due follow-ups in the followUps Inertia prop', function (): void {
-    ['clinic' => $clinic, 'doctor' => $doctor, 'patient' => $patient] = fuwSetup();
+    ['clinic' => $clinic, 'patient' => $patient] = fuwSetup();
     $receptionist = User::factory()->create();
     fuwRole($receptionist, 'receptionist', $clinic->id);
 
-    CaseRecord::factory()->create([
-        'clinic_id' => $clinic->id,
-        'patient_id' => $patient->id,
-        'doctor_id' => $doctor->id,
-        'vertical_id' => $clinic->vertical_id,
-        'follow_up_date' => fuwIstanbulToday(),
-    ]);
+    fuwFollowUp($clinic, $patient, fuwIstanbulToday());
 
     $this->actingAs($receptionist)
         ->get(route('dashboard'))
@@ -122,19 +121,13 @@ it('receptionist sees due follow-ups in the followUps Inertia prop', function ()
 });
 
 it('doctor (lacks followUps.view) gets followUps = [] in the Inertia prop', function (): void {
-    ['clinic' => $clinic, 'doctor' => $doctor, 'patient' => $patient] = fuwSetup();
+    ['clinic' => $clinic, 'patient' => $patient] = fuwSetup();
 
     $doctorUser = User::factory()->create();
     fuwRole($doctorUser, 'doctor', $clinic->id);
     Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
 
-    CaseRecord::factory()->create([
-        'clinic_id' => $clinic->id,
-        'patient_id' => $patient->id,
-        'doctor_id' => $doctor->id,
-        'vertical_id' => $clinic->vertical_id,
-        'follow_up_date' => fuwIstanbulToday(),
-    ]);
+    fuwFollowUp($clinic, $patient, fuwIstanbulToday());
 
     $this->actingAs($doctorUser)
         ->get(route('dashboard'))
@@ -143,17 +136,11 @@ it('doctor (lacks followUps.view) gets followUps = [] in the Inertia prop', func
 });
 
 it('assistant (lacks followUps.view) gets followUps = [] in the Inertia prop', function (): void {
-    ['clinic' => $clinic, 'doctor' => $doctor, 'patient' => $patient] = fuwSetup();
+    ['clinic' => $clinic, 'patient' => $patient] = fuwSetup();
     $assistant = User::factory()->create();
     fuwRole($assistant, 'assistant', $clinic->id);
 
-    CaseRecord::factory()->create([
-        'clinic_id' => $clinic->id,
-        'patient_id' => $patient->id,
-        'doctor_id' => $doctor->id,
-        'vertical_id' => $clinic->vertical_id,
-        'follow_up_date' => fuwIstanbulToday(),
-    ]);
+    fuwFollowUp($clinic, $patient, fuwIstanbulToday());
 
     $this->actingAs($assistant)
         ->get(route('dashboard'))
@@ -162,19 +149,41 @@ it('assistant (lacks followUps.view) gets followUps = [] in the Inertia prop', f
 });
 
 // ---------------------------------------------------------------------------
-// Filtering — which cases appear in the widget
+// followUpTypes prop — gated on followUps.create
 // ---------------------------------------------------------------------------
 
-it('includes a case with follow_up_date equal to clinic-local today', function (): void {
-    ['clinic' => $clinic, 'owner' => $owner, 'doctor' => $doctor, 'patient' => $patient] = fuwSetup();
+it('owner (has followUps.create) gets active types in the followUpTypes prop', function (): void {
+    ['clinic' => $clinic, 'owner' => $owner] = fuwSetup();
+    FollowUpType::factory()->create(['clinic_id' => $clinic->id, 'name' => 'Kontrol']);
+    FollowUpType::factory()->inactive()->create(['clinic_id' => $clinic->id, 'name' => 'Pasif']);
 
-    CaseRecord::factory()->create([
-        'clinic_id' => $clinic->id,
-        'patient_id' => $patient->id,
-        'doctor_id' => $doctor->id,
-        'vertical_id' => $clinic->vertical_id,
-        'follow_up_date' => fuwIstanbulToday(),
-    ]);
+    $this->actingAs($owner)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->has('followUpTypes', 1)
+            ->where('followUpTypes.0.name', 'Kontrol'));
+});
+
+it('assistant (lacks followUps.create) gets followUpTypes = []', function (): void {
+    ['clinic' => $clinic] = fuwSetup();
+    $assistant = User::factory()->create();
+    fuwRole($assistant, 'assistant', $clinic->id);
+
+    FollowUpType::factory()->create(['clinic_id' => $clinic->id]);
+
+    $this->actingAs($assistant)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('followUpTypes', []));
+});
+
+// ---------------------------------------------------------------------------
+// Filtering — which follow-ups appear in the widget
+// ---------------------------------------------------------------------------
+
+it('includes a follow-up with due_date equal to clinic-local today', function (): void {
+    ['clinic' => $clinic, 'owner' => $owner, 'patient' => $patient] = fuwSetup();
+    fuwFollowUp($clinic, $patient, fuwIstanbulToday());
 
     $this->actingAs($owner)
         ->get(route('dashboard'))
@@ -182,16 +191,9 @@ it('includes a case with follow_up_date equal to clinic-local today', function (
         ->assertInertia(fn ($page) => $page->has('followUps', 1));
 });
 
-it('includes overdue cases (follow_up_date in the past)', function (): void {
-    ['clinic' => $clinic, 'owner' => $owner, 'doctor' => $doctor, 'patient' => $patient] = fuwSetup();
-
-    CaseRecord::factory()->create([
-        'clinic_id' => $clinic->id,
-        'patient_id' => $patient->id,
-        'doctor_id' => $doctor->id,
-        'vertical_id' => $clinic->vertical_id,
-        'follow_up_date' => today()->subDays(3)->format('Y-m-d'),
-    ]);
+it('includes overdue follow-ups (due_date in the past)', function (): void {
+    ['clinic' => $clinic, 'owner' => $owner, 'patient' => $patient] = fuwSetup();
+    fuwFollowUp($clinic, $patient, today()->subDays(3)->format('Y-m-d'));
 
     $this->actingAs($owner)
         ->get(route('dashboard'))
@@ -199,16 +201,9 @@ it('includes overdue cases (follow_up_date in the past)', function (): void {
         ->assertInertia(fn ($page) => $page->has('followUps', 1));
 });
 
-it('excludes a case with a future follow_up_date', function (): void {
-    ['clinic' => $clinic, 'owner' => $owner, 'doctor' => $doctor, 'patient' => $patient] = fuwSetup();
-
-    CaseRecord::factory()->create([
-        'clinic_id' => $clinic->id,
-        'patient_id' => $patient->id,
-        'doctor_id' => $doctor->id,
-        'vertical_id' => $clinic->vertical_id,
-        'follow_up_date' => today()->addDays(3)->format('Y-m-d'),
-    ]);
+it('excludes a follow-up with a future due_date', function (): void {
+    ['clinic' => $clinic, 'owner' => $owner, 'patient' => $patient] = fuwSetup();
+    fuwFollowUp($clinic, $patient, today()->addDays(3)->format('Y-m-d'));
 
     $this->actingAs($owner)
         ->get(route('dashboard'))
@@ -216,16 +211,9 @@ it('excludes a case with a future follow_up_date', function (): void {
         ->assertInertia(fn ($page) => $page->where('followUps', []));
 });
 
-it('excludes a case with null follow_up_date', function (): void {
-    ['clinic' => $clinic, 'owner' => $owner, 'doctor' => $doctor, 'patient' => $patient] = fuwSetup();
-
-    CaseRecord::factory()->create([
-        'clinic_id' => $clinic->id,
-        'patient_id' => $patient->id,
-        'doctor_id' => $doctor->id,
-        'vertical_id' => $clinic->vertical_id,
-        'follow_up_date' => null,
-    ]);
+it('excludes a done follow-up even when its due_date is today or overdue', function (): void {
+    ['clinic' => $clinic, 'owner' => $owner, 'patient' => $patient] = fuwSetup();
+    fuwFollowUp($clinic, $patient, fuwIstanbulToday(), null, ['status' => 'done', 'completed_at' => now()]);
 
     $this->actingAs($owner)
         ->get(route('dashboard'))
@@ -237,16 +225,9 @@ it('excludes a case with null follow_up_date', function (): void {
 // is_overdue — strictly less than clinic-local today; today itself is NOT overdue
 // ---------------------------------------------------------------------------
 
-it('sets is_overdue=false for a case due on clinic-local today', function (): void {
-    ['clinic' => $clinic, 'owner' => $owner, 'doctor' => $doctor, 'patient' => $patient] = fuwSetup();
-
-    CaseRecord::factory()->create([
-        'clinic_id' => $clinic->id,
-        'patient_id' => $patient->id,
-        'doctor_id' => $doctor->id,
-        'vertical_id' => $clinic->vertical_id,
-        'follow_up_date' => fuwIstanbulToday(),
-    ]);
+it('sets is_overdue=false for a follow-up due on clinic-local today', function (): void {
+    ['clinic' => $clinic, 'owner' => $owner, 'patient' => $patient] = fuwSetup();
+    fuwFollowUp($clinic, $patient, fuwIstanbulToday());
 
     $this->actingAs($owner)
         ->get(route('dashboard'))
@@ -257,16 +238,9 @@ it('sets is_overdue=false for a case due on clinic-local today', function (): vo
         );
 });
 
-it('sets is_overdue=true for a case due two days ago', function (): void {
-    ['clinic' => $clinic, 'owner' => $owner, 'doctor' => $doctor, 'patient' => $patient] = fuwSetup();
-
-    CaseRecord::factory()->create([
-        'clinic_id' => $clinic->id,
-        'patient_id' => $patient->id,
-        'doctor_id' => $doctor->id,
-        'vertical_id' => $clinic->vertical_id,
-        'follow_up_date' => today()->subDays(2)->format('Y-m-d'),
-    ]);
+it('sets is_overdue=true for a follow-up due two days ago', function (): void {
+    ['clinic' => $clinic, 'owner' => $owner, 'patient' => $patient] = fuwSetup();
+    fuwFollowUp($clinic, $patient, today()->subDays(2)->format('Y-m-d'));
 
     $this->actingAs($owner)
         ->get(route('dashboard'))
@@ -282,31 +256,18 @@ it('sets is_overdue=true for a case due two days ago', function (): void {
 // ---------------------------------------------------------------------------
 
 it('returns follow-ups ordered oldest-due first', function (): void {
-    ['clinic' => $clinic, 'owner' => $owner, 'doctor' => $doctor, 'patient' => $patient] = fuwSetup();
+    ['clinic' => $clinic, 'owner' => $owner, 'patient' => $patient] = fuwSetup();
 
-    $oldest = CaseRecord::factory()->create([
-        'clinic_id' => $clinic->id,
-        'patient_id' => $patient->id,
-        'doctor_id' => $doctor->id,
-        'vertical_id' => $clinic->vertical_id,
-        'follow_up_date' => today()->subDays(5)->format('Y-m-d'),
-    ]);
-
-    $newest = CaseRecord::factory()->create([
-        'clinic_id' => $clinic->id,
-        'patient_id' => $patient->id,
-        'doctor_id' => $doctor->id,
-        'vertical_id' => $clinic->vertical_id,
-        'follow_up_date' => today()->subDays(2)->format('Y-m-d'),
-    ]);
+    $oldest = fuwFollowUp($clinic, $patient, today()->subDays(5)->format('Y-m-d'));
+    $newest = fuwFollowUp($clinic, $patient, today()->subDays(2)->format('Y-m-d'));
 
     $this->actingAs($owner)
         ->get(route('dashboard'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->has('followUps', 2)
-            ->where('followUps.0.case_id', $oldest->id)
-            ->where('followUps.1.case_id', $newest->id)
+            ->where('followUps.0.id', $oldest->id)
+            ->where('followUps.1.id', $newest->id)
         );
 });
 
@@ -322,14 +283,16 @@ it('followUps items carry the full Inertia prop contract shape', function (): vo
         'first_name' => 'Ayşe',
         'last_name' => 'Demir',
     ]);
+    $type = FollowUpType::factory()->create(['clinic_id' => $clinic->id, 'name' => 'Kontrol araması']);
 
-    $case = CaseRecord::factory()->create([
-        'clinic_id' => $clinic->id,
-        'patient_id' => $patient->id,
-        'doctor_id' => $doctor->id,
-        'vertical_id' => $clinic->vertical_id,
-        'follow_up_date' => today()->subDays(2)->format('Y-m-d'),
-        'follow_up_note' => 'Check progress',
+    $case = CaseRecord::factory()->open()->create([
+        'clinic_id' => $clinic->id, 'patient_id' => $patient->id,
+        'doctor_id' => $doctor->id, 'vertical_id' => $clinic->vertical_id,
+    ]);
+
+    $followUp = fuwFollowUp($clinic, $patient, today()->subDays(2)->format('Y-m-d'), $case->id, [
+        'follow_up_type_id' => $type->id,
+        'note' => 'Check progress',
     ]);
 
     $this->actingAs($owner)
@@ -337,6 +300,7 @@ it('followUps items carry the full Inertia prop contract shape', function (): vo
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->has('followUps', 1)
+            ->has('followUps.0.id')
             ->has('followUps.0.case_id')
             ->has('followUps.0.patient')
             ->has('followUps.0.patient.id')
@@ -345,57 +309,67 @@ it('followUps items carry the full Inertia prop contract shape', function (): vo
             ->has('followUps.0.doctor')
             ->has('followUps.0.doctor.id')
             ->has('followUps.0.doctor.display_name')
-            ->has('followUps.0.follow_up_date')
-            ->has('followUps.0.follow_up_note')
+            ->has('followUps.0.type')
+            ->has('followUps.0.type.id')
+            ->has('followUps.0.type.name')
+            ->has('followUps.0.due_date')
+            ->has('followUps.0.note')
             ->has('followUps.0.is_overdue')
+            ->where('followUps.0.id', $followUp->id)
             ->where('followUps.0.case_id', $case->id)
             ->where('followUps.0.patient.id', $patient->id)
             ->where('followUps.0.patient.full_name', 'Ayşe Demir')
-            ->where('followUps.0.follow_up_note', 'Check progress')
-            ->where('followUps.0.follow_up_date', today()->subDays(2)->format('Y-m-d'))
+            ->where('followUps.0.doctor.id', $doctor->id)
+            ->where('followUps.0.type.name', 'Kontrol araması')
+            ->where('followUps.0.note', 'Check progress')
+            ->where('followUps.0.due_date', today()->subDays(2)->format('Y-m-d'))
         );
 });
 
-it('case_id, patient.id, and doctor.id are integers (not strings)', function (): void {
+it('id, case_id, patient.id, and doctor.id are integers (not strings)', function (): void {
     ['clinic' => $clinic, 'owner' => $owner, 'doctor' => $doctor, 'patient' => $patient] = fuwSetup();
-
-    CaseRecord::factory()->create([
-        'clinic_id' => $clinic->id,
-        'patient_id' => $patient->id,
-        'doctor_id' => $doctor->id,
-        'vertical_id' => $clinic->vertical_id,
-        'follow_up_date' => fuwIstanbulToday(),
+    $case = CaseRecord::factory()->open()->create([
+        'clinic_id' => $clinic->id, 'patient_id' => $patient->id,
+        'doctor_id' => $doctor->id, 'vertical_id' => $clinic->vertical_id,
     ]);
+    fuwFollowUp($clinic, $patient, fuwIstanbulToday(), $case->id);
 
     // Postgres returns bigint as string via PDO — the service must cast to int.
     $this->actingAs($owner)
         ->get(route('dashboard'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
+            ->where('followUps.0.id', fn ($v) => is_int($v))
             ->where('followUps.0.case_id', fn ($v) => is_int($v))
             ->where('followUps.0.doctor.id', fn ($v) => is_int($v))
             ->where('followUps.0.patient.id', fn ($v) => is_int($v))
         );
 });
 
-it('follow_up_note is null when the case has no note', function (): void {
-    ['clinic' => $clinic, 'owner' => $owner, 'doctor' => $doctor, 'patient' => $patient] = fuwSetup();
-
-    CaseRecord::factory()->create([
-        'clinic_id' => $clinic->id,
-        'patient_id' => $patient->id,
-        'doctor_id' => $doctor->id,
-        'vertical_id' => $clinic->vertical_id,
-        'follow_up_date' => fuwIstanbulToday(),
-        'follow_up_note' => null,
-    ]);
+it('case_id, doctor, and type are null for a case-less follow-up', function (): void {
+    ['clinic' => $clinic, 'owner' => $owner, 'patient' => $patient] = fuwSetup();
+    fuwFollowUp($clinic, $patient, fuwIstanbulToday());
 
     $this->actingAs($owner)
         ->get(route('dashboard'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->has('followUps', 1)
-            ->where('followUps.0.follow_up_note', null)
+            ->where('followUps.0.case_id', null)
+            ->where('followUps.0.doctor', null)
+        );
+});
+
+it('note is null when the follow-up has no note', function (): void {
+    ['clinic' => $clinic, 'owner' => $owner, 'patient' => $patient] = fuwSetup();
+    fuwFollowUp($clinic, $patient, fuwIstanbulToday(), null, ['note' => null]);
+
+    $this->actingAs($owner)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('followUps', 1)
+            ->where('followUps.0.note', null)
         );
 });
 
@@ -407,46 +381,23 @@ it('clinic A user cannot see clinic B follow-ups in the followUps prop', functio
     $clinicA = Clinic::factory()->create();
     $ownerA = User::factory()->create();
     fuwRole($ownerA, 'owner', $clinicA->id);
-
-    $doctorUserA = User::factory()->create();
-    $doctorA = Doctor::factory()->create(['clinic_id' => $clinicA->id, 'user_id' => $doctorUserA->id]);
     $patientA = Patient::factory()->create(['clinic_id' => $clinicA->id]);
 
     $clinicB = Clinic::factory()->create();
-    $doctorUserB = User::factory()->create();
-    $doctorB = Doctor::factory()->create(['clinic_id' => $clinicB->id, 'user_id' => $doctorUserB->id]);
     $patientB = Patient::factory()->create(['clinic_id' => $clinicB->id]);
 
-    // Clinic A case — must appear for ownerA
-    $caseA = CaseRecord::factory()->create([
-        'clinic_id' => $clinicA->id,
-        'patient_id' => $patientA->id,
-        'doctor_id' => $doctorA->id,
-        'vertical_id' => $clinicA->vertical_id,
-        'follow_up_date' => fuwIstanbulToday(),
-    ]);
+    // Clinic A follow-up — must appear for ownerA.
+    $followUpA = fuwFollowUp($clinicA, $patientA, fuwIstanbulToday());
 
-    // Clinic B cases — must NOT bleed through to clinic A
-    CaseRecord::factory()->create([
-        'clinic_id' => $clinicB->id,
-        'patient_id' => $patientB->id,
-        'doctor_id' => $doctorB->id,
-        'vertical_id' => $clinicB->vertical_id,
-        'follow_up_date' => fuwIstanbulToday(),
-    ]);
-    CaseRecord::factory()->create([
-        'clinic_id' => $clinicB->id,
-        'patient_id' => $patientB->id,
-        'doctor_id' => $doctorB->id,
-        'vertical_id' => $clinicB->vertical_id,
-        'follow_up_date' => today()->subDays(2)->format('Y-m-d'),
-    ]);
+    // Clinic B follow-ups — must NOT bleed through to clinic A.
+    fuwFollowUp($clinicB, $patientB, fuwIstanbulToday());
+    fuwFollowUp($clinicB, $patientB, today()->subDays(2)->format('Y-m-d'));
 
     $this->actingAs($ownerA)
         ->get(route('dashboard'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->has('followUps', 1)
-            ->where('followUps.0.case_id', $caseA->id)
+            ->where('followUps.0.id', $followUpA->id)
         );
 });

@@ -47,6 +47,7 @@ const { can } = useCan();
         <FollowUpWidget
             v-if="can('followUps.view')"
             :follow-ups="props.followUps"
+            :types="props.followUpTypes"
         />
     </div>
 </template>

@@ -4,6 +4,8 @@ use App\Enums\CaseStatus;
 use App\Models\CaseRecord;
 use App\Models\Clinic;
 use App\Models\Doctor;
+use App\Models\FollowUp;
+use App\Models\FollowUpType;
 use App\Models\Patient;
 use App\Models\StatusLog;
 use App\Models\User;
@@ -72,7 +74,6 @@ function cstForceStatus(CaseRecord $case, string $status): void
         $updates['suspended_at'] = now();
         $updates['closed_at'] = null;
     } elseif ($status === 'follow_up') {
-        $updates['follow_up_date'] = today()->addWeek()->format('Y-m-d');
         $updates['closed_at'] = null;
         $updates['suspended_at'] = null;
     } elseif ($status === 'closed') {
@@ -93,7 +94,7 @@ function cstForceStatus(CaseRecord $case, string $status): void
 
 dataset('legal transitions', [
     'open → suspended' => ['open',      'suspended',  []],
-    'open → follow_up' => ['open',      'follow_up',  ['follow_up_date' => '2030-01-01']],
+    'open → follow_up' => ['open',      'follow_up',  ['due_date' => '2030-01-01']],
     'open → closed' => ['open',      'closed',     []],
     'suspended → open' => ['suspended', 'open',       []],
     'suspended → closed' => ['suspended', 'closed',     []],
@@ -102,12 +103,27 @@ dataset('legal transitions', [
     'closed → open' => ['closed',    'open',       []],
 ]);
 
+/**
+ * Merge the payload for a legal-transition dataset row, adding a valid
+ * follow_up_type_id when the target status is `follow_up` (required by the FormRequest).
+ */
+function cstPayload(CaseRecord $case, string $to, array $extra): array
+{
+    $payload = array_merge(['status' => $to], $extra);
+
+    if ($to === 'follow_up') {
+        $payload['follow_up_type_id'] = FollowUpType::factory()->create(['clinic_id' => $case->clinic_id])->id;
+    }
+
+    return $payload;
+}
+
 it('accepts legal status transition and persists the new status', function (string $from, string $to, array $extra) {
     ['owner' => $owner, 'case' => $case] = cstSetup();
     cstForceStatus($case, $from);
 
     $this->actingAs($owner)
-        ->patch(route('cases.status.update', $case), array_merge(['status' => $to], $extra))
+        ->patch(route('cases.status.update', $case), cstPayload($case, $to, $extra))
         ->assertRedirect(route('cases.show', $case));
 
     expect(CaseRecord::withoutGlobalScopes()->find($case->id)->status->value)->toBe($to);
@@ -118,7 +134,7 @@ it('writes exactly one status_log row per legal transition', function (string $f
     cstForceStatus($case, $from);
 
     $this->actingAs($owner)
-        ->patch(route('cases.status.update', $case), array_merge(['status' => $to], $extra));
+        ->patch(route('cases.status.update', $case), cstPayload($case, $to, $extra));
 
     $logCount = StatusLog::withoutGlobalScopes()
         ->where('loggable_type', 'case')
@@ -162,7 +178,8 @@ it('rejects an illegal status transition with 422', function (string $from, stri
 
     $payload = ['status' => $to];
     if ($to === 'follow_up') {
-        $payload['follow_up_date'] = '2030-01-01';
+        $payload['due_date'] = '2030-01-01';
+        $payload['follow_up_type_id'] = FollowUpType::factory()->create(['clinic_id' => $case->clinic_id])->id;
     }
 
     $this->actingAs($owner)
@@ -176,12 +193,23 @@ it('rejects an illegal status transition with 422', function (string $from, stri
 // Follow-up required validation
 // ---------------------------------------------------------------------------
 
-it('rejects open → follow_up without a follow_up_date', function (): void {
+it('rejects open → follow_up without a due_date', function (): void {
+    ['owner' => $owner, 'case' => $case] = cstSetup();
+    $type = FollowUpType::factory()->create(['clinic_id' => $case->clinic_id]);
+
+    $this->actingAs($owner)
+        ->patch(route('cases.status.update', $case), ['status' => 'follow_up', 'follow_up_type_id' => $type->id])
+        ->assertSessionHasErrors('due_date');
+
+    expect(CaseRecord::withoutGlobalScopes()->find($case->id)->status)->toBe(CaseStatus::Open);
+});
+
+it('rejects open → follow_up without a follow_up_type_id', function (): void {
     ['owner' => $owner, 'case' => $case] = cstSetup();
 
     $this->actingAs($owner)
-        ->patch(route('cases.status.update', $case), ['status' => 'follow_up'])
-        ->assertSessionHasErrors('follow_up_date');
+        ->patch(route('cases.status.update', $case), ['status' => 'follow_up', 'due_date' => '2030-01-01'])
+        ->assertSessionHasErrors('follow_up_type_id');
 
     expect(CaseRecord::withoutGlobalScopes()->find($case->id)->status)->toBe(CaseStatus::Open);
 });
@@ -233,20 +261,29 @@ it('clears suspended_at when returning from Suspended to Open', function (): voi
     expect($fresh->suspended_at)->toBeNull();
 });
 
-it('stores follow_up_date when transitioning to FollowUp', function (): void {
+it('creates a follow_ups row when transitioning to FollowUp', function (): void {
     ['owner' => $owner, 'case' => $case] = cstSetup();
+    $type = FollowUpType::factory()->create(['clinic_id' => $case->clinic_id]);
     $date = Carbon::now()->addDays(14)->format('Y-m-d');
 
     $this->actingAs($owner)
         ->patch(route('cases.status.update', $case), [
             'status' => 'follow_up',
-            'follow_up_date' => $date,
-            'follow_up_note' => 'Check back in two weeks',
+            'due_date' => $date,
+            'note' => 'Check back in two weeks',
+            'follow_up_type_id' => $type->id,
         ]);
 
-    $fresh = CaseRecord::withoutGlobalScopes()->find($case->id);
-    expect($fresh->follow_up_date->format('Y-m-d'))->toBe($date)
-        ->and($fresh->follow_up_note)->toBe('Check back in two weeks');
+    $followUp = FollowUp::withoutGlobalScopes()
+        ->where('case_id', $case->id)
+        ->where('status', 'open')
+        ->first();
+
+    expect($followUp)->not->toBeNull()
+        ->and($followUp->due_date->format('Y-m-d'))->toBe($date)
+        ->and($followUp->note)->toBe('Check back in two weeks')
+        ->and($followUp->follow_up_type_id)->toBe($type->id)
+        ->and($followUp->patient_id)->toBe($case->patient_id);
 });
 
 it('preserves opened_at when status changes', function (): void {

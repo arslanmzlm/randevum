@@ -1,14 +1,21 @@
 import type { AppointmentStatus } from '@/types/enums';
+import type { FollowUpTypeOption } from '@/types/followUp';
 
 /** One due follow-up surfaced in the dashboard "Bugün aranacaklar" widget. */
 export type FollowUpReminder = {
-    case_id: number;
+    /** follow_ups.id — the row key; a patient may have several open follow-ups. */
+    id: number;
+    /** null for a case-less follow-up (e.g. a payment reminder). */
+    case_id: number | null;
     patient: { id: number; full_name: string; phone: string | null };
-    doctor: { id: number; display_name: string };
+    /** Comes from the linked case; null when the follow-up has none. */
+    doctor: { id: number; display_name: string } | null;
+    /** null only when the type row was deleted. */
+    type: FollowUpTypeOption | null;
     /** ISO date (Y-m-d), tz-less calendar date. */
-    follow_up_date: string;
-    follow_up_note: string | null;
-    /** follow_up_date < today (clinic tz). */
+    due_date: string;
+    note: string | null;
+    /** due_date < today (clinic tz). */
     is_overdue: boolean;
 };
 
@@ -57,5 +64,7 @@ export type DashboardStats = {
 export type DashboardProps = {
     /** Empty when the user lacks followUps.view (widget hidden client-side). */
     followUps: FollowUpReminder[];
+    /** Active types for the create dialog; empty when the user lacks followUps.create. */
+    followUpTypes: FollowUpTypeOption[];
     stats: DashboardStats;
 };

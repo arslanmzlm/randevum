@@ -21,14 +21,10 @@ return new class extends Migration
             $table->timestampTz('opened_at');
             $table->timestampTz('closed_at')->nullable();
             $table->timestampTz('suspended_at')->nullable();
-            $table->date('follow_up_date')->nullable();
-            $table->text('follow_up_note')->nullable();
             $table->timestampsTz();
 
             $table->index(['clinic_id', 'patient_id']);
             $table->index(['clinic_id', 'doctor_id', 'status']);
-            // For follow-up date queries
-            $table->index(['clinic_id', 'status', 'follow_up_date']);
         });
     }
 

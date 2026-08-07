@@ -99,57 +99,6 @@ it('notes update succeeds even for a Closed case', function (): void {
 });
 
 // ---------------------------------------------------------------------------
-// Follow-up — independent of status
-// ---------------------------------------------------------------------------
-
-it('updates follow_up_date and follow_up_note', function (): void {
-    ['owner' => $owner, 'case' => $case] = cntSetup();
-    $date = Carbon::now()->addDays(7)->format('Y-m-d');
-
-    $this->actingAs($owner)
-        ->patch(route('cases.follow-up.update', $case), [
-            'follow_up_date' => $date,
-            'follow_up_note' => 'Weekly check',
-        ])
-        ->assertRedirect(route('cases.show', $case));
-
-    $fresh = CaseRecord::withoutGlobalScopes()->find($case->id);
-    expect($fresh->follow_up_date->format('Y-m-d'))->toBe($date)
-        ->and($fresh->follow_up_note)->toBe('Weekly check');
-});
-
-it('clears follow_up fields when null values are sent', function (): void {
-    ['owner' => $owner, 'case' => $case] = cntSetup();
-    $case->updateQuietly([
-        'follow_up_date' => today()->addWeek(),
-        'follow_up_note' => 'Old note',
-    ]);
-
-    $this->actingAs($owner)
-        ->patch(route('cases.follow-up.update', $case), [
-            'follow_up_date' => null,
-            'follow_up_note' => null,
-        ]);
-
-    $fresh = CaseRecord::withoutGlobalScopes()->find($case->id);
-    expect($fresh->follow_up_date)->toBeNull()
-        ->and($fresh->follow_up_note)->toBeNull();
-});
-
-it('follow_up update works on a Closed case (a closed case may still carry a reminder)', function (): void {
-    ['owner' => $owner, 'case' => $case] = cntSetup();
-    $case->updateQuietly(['status' => 'closed', 'closed_at' => now()]);
-    $date = Carbon::now()->addDays(30)->format('Y-m-d');
-
-    $this->actingAs($owner)
-        ->patch(route('cases.follow-up.update', $case), ['follow_up_date' => $date])
-        ->assertRedirect(route('cases.show', $case));
-
-    $fresh = CaseRecord::withoutGlobalScopes()->find($case->id);
-    expect($fresh->follow_up_date->format('Y-m-d'))->toBe($date);
-});
-
-// ---------------------------------------------------------------------------
 // Title edit window (deletion-retention rule: 48h from opened_at)
 // ---------------------------------------------------------------------------
 

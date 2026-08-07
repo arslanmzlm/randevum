@@ -26,8 +26,8 @@ class CaseShowResource extends JsonResource
             'opened_at' => $this->opened_at->toIso8601String(),
             'closed_at' => $this->closed_at?->toIso8601String(),
             'suspended_at' => $this->suspended_at?->toIso8601String(),
-            'follow_up_date' => $this->follow_up_date?->format('Y-m-d'),
-            'follow_up_note' => $this->follow_up_note,
+            // 'follow_ups' is added by the controller (FollowUpService::forCase) — it needs the
+            // clinic timezone for is_overdue, which this resource has no access to.
             'patient' => [
                 'id' => (int) $this->patient_id,
                 'full_name' => trim($this->patient->first_name.' '.$this->patient->last_name),

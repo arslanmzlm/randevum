@@ -21,6 +21,7 @@ class DashboardController extends Controller
 
         return Inertia::render('Dashboard', [
             'followUps' => $this->followUpReminders->dueFor($user),
+            'followUpTypes' => $this->followUpReminders->activeTypesFor($user),
             'stats' => $this->dashboardStats->statsFor($user),
         ]);
     }

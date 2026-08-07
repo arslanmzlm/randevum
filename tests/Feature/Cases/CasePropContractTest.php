@@ -3,6 +3,8 @@
 use App\Models\CaseRecord;
 use App\Models\Clinic;
 use App\Models\Doctor;
+use App\Models\FollowUp;
+use App\Models\FollowUpType;
 use App\Models\Patient;
 use App\Models\User;
 use App\Support\ClinicContext;
@@ -57,8 +59,6 @@ function cpcCase(string $status = 'open'): array
     $updates = ['status' => $status];
     if ($status === 'suspended') {
         $updates['suspended_at'] = now();
-    } elseif ($status === 'follow_up') {
-        $updates['follow_up_date'] = today()->addWeek()->format('Y-m-d');
     } elseif ($status === 'closed') {
         $updates['closed_at'] = now();
     }
@@ -115,4 +115,97 @@ it('passes canEditTitle=false once the 48h window has expired', function (): voi
         ->get(route('cases.show', $case))
         ->assertOk()
         ->assertInertia(fn ($page) => $page->where('canEditTitle', false));
+});
+
+// ---------------------------------------------------------------------------
+// case.follow_ups / followUpTypes — the props CaseFollowUpCard reads
+// (`props.caseRecord.follow_ups`, the type picker options). Locks the shape
+// FollowUpService::forCase()/FollowUpTypeService::listActiveOptions() hand the
+// page so a controller-side rename or dropped field breaks a test, not the UI.
+// ---------------------------------------------------------------------------
+
+it('passes case.follow_ups with the documented shape for an open and a done follow-up', function (): void {
+    ['owner' => $owner, 'case' => $case] = cpcCase();
+
+    $type = FollowUpType::factory()->create(['clinic_id' => $case->clinic_id]);
+
+    $open = FollowUp::factory()->open()->create([
+        'clinic_id' => $case->clinic_id,
+        'patient_id' => $case->patient_id,
+        'case_id' => $case->id,
+        'follow_up_type_id' => $type->id,
+        'due_date' => now()->addDays(2)->toDateString(),
+    ]);
+
+    $done = FollowUp::factory()->done()->create([
+        'clinic_id' => $case->clinic_id,
+        'patient_id' => $case->patient_id,
+        'case_id' => $case->id,
+        'follow_up_type_id' => null,
+        'completed_by_user_id' => $owner->id,
+        'result_note' => 'Hasta kontrole geldi.',
+    ]);
+
+    $this->actingAs($owner)
+        ->get(route('cases.show', $case))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('case.follow_ups', 2)
+            ->where('case.follow_ups.0', [
+                'id' => $open->id,
+                'status' => 'open',
+                'type' => ['id' => $type->id, 'name' => $type->name],
+                'due_date' => $open->due_date->format('Y-m-d'),
+                'note' => $open->note,
+                'completed_at' => null,
+                'completed_by' => null,
+                'result_note' => null,
+                'is_overdue' => false,
+            ])
+            ->where('case.follow_ups.1', [
+                'id' => $done->id,
+                'status' => 'done',
+                'type' => null,
+                'due_date' => $done->due_date->format('Y-m-d'),
+                'note' => $done->note,
+                'completed_at' => $done->completed_at->toIso8601String(),
+                'completed_by' => $owner->name,
+                'result_note' => 'Hasta kontrole geldi.',
+                'is_overdue' => false,
+            ])
+        );
+});
+
+it('passes case.follow_ups.*.is_overdue=true for an open follow-up past its due date', function (): void {
+    ['owner' => $owner, 'case' => $case] = cpcCase();
+
+    $overdue = FollowUp::factory()->open()->overdue()->create([
+        'clinic_id' => $case->clinic_id,
+        'patient_id' => $case->patient_id,
+        'case_id' => $case->id,
+    ]);
+
+    $this->actingAs($owner)
+        ->get(route('cases.show', $case))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('case.follow_ups.0.id', $overdue->id)
+            ->where('case.follow_ups.0.is_overdue', true)
+        );
+});
+
+it('passes followUpTypes with only the clinic\'s active types', function (): void {
+    ['owner' => $owner, 'case' => $case] = cpcCase();
+
+    $active = FollowUpType::factory()->create(['clinic_id' => $case->clinic_id, 'name' => 'Kontrol']);
+    FollowUpType::factory()->inactive()->create(['clinic_id' => $case->clinic_id]);
+    FollowUpType::factory()->create(); // another clinic's type
+
+    $this->actingAs($owner)
+        ->get(route('cases.show', $case))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('followUpTypes', 1)
+            ->where('followUpTypes.0', ['id' => $active->id, 'name' => $active->name])
+        );
 });

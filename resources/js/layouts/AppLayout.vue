@@ -18,6 +18,7 @@ import {
     IconMessage2,
     IconNotes,
     IconPackage,
+    IconPhoneCall,
     IconReceipt,
     IconReportMoney,
     IconSearch,
@@ -60,6 +61,7 @@ import { index as casesIndex } from '@/routes/cases';
 import { edit as clinicEdit } from '@/routes/clinic';
 import { index as doctorsIndex, mine as doctorsMine } from '@/routes/doctors';
 import { index as expensesIndex } from '@/routes/expenses';
+import { index as followUpTypesIndex } from '@/routes/follow-up-types';
 import { index as patientsIndex, show as patientShow } from '@/routes/patients';
 import { installments as paymentPlansIndex } from '@/routes/payment-plans';
 import { index as productsIndex } from '@/routes/products';
@@ -306,6 +308,16 @@ const navGroups = computed<NavGroup[]>(() =>
                               href: tagsIndex().url,
                               component: 'tags/Index',
                               icon: IconTag,
+                          },
+                      ]
+                    : []),
+                ...(can('followUpTypes.manage')
+                    ? [
+                          {
+                              label: t('nav.follow_up_types'),
+                              href: followUpTypesIndex().url,
+                              component: 'follow-up-types/Index',
+                              icon: IconPhoneCall,
                           },
                       ]
                     : []),

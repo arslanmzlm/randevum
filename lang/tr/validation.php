@@ -187,10 +187,13 @@ return [
         'follow_up.occurrences.*.appointment_type_id' => 'Randevu türü',
         'follow_up.service_id' => 'Takip hizmeti',
         // cases
-        'follow_up_date' => 'Takip tarihi',
-        'follow_up_note' => 'Takip notu',
         'treatment_ids' => 'Tedaviler',
         'treatment_ids.*' => 'Tedavi',
+        // follow-ups
+        'due_date' => 'Takip tarihi',
+        'result_note' => 'Sonuç notu',
+        'follow_up_type_id' => 'Takip türü',
+        'follow_up_type_name' => 'Takip türü adı',
         // payment recording
         'treatment_id' => 'Tedavi',
         'amount' => 'Tutar',
@@ -229,6 +232,7 @@ return [
     ],
 
     'tag_name_taken' => 'Bu etiket adı (büyük/küçük harf fark etmeksizin) zaten kullanılıyor.',
+    'follow_up_type_name_taken' => 'Bu takip türü adı (büyük/küçük harf fark etmeksizin) zaten kullanılıyor.',
 
     'working_hours_closed_conflict' => ':attribute kapalı olarak işaretlenmiş günlerde açılış/kapanış saati belirtilemez.',
     'working_hours_open_close_required' => ':attribute için açılış ve kapanış saati zorunludur.',

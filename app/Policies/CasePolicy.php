@@ -27,22 +27,13 @@ class CasePolicy
     }
 
     /**
-     * Used for: changeStatus, updateNotes, updateFollowUp, updateTitle, linkTreatments.
+     * Used for: changeStatus, updateNotes, updateTitle, linkTreatments, unlinkTreatment.
      * Treatment-level ownership is re-checked in the service.
      */
     public function update(User $user, CaseRecord $case): bool
     {
         return $user->can('cases.update')
             && ($user->can('cases.viewAll') || $this->ownsCase($user, $case));
-    }
-
-    /**
-     * Front-desk "Arandı" dismiss — clinic-wide, no ownership required.
-     * Tenant isolation is guaranteed by ClinicScope on route-model binding.
-     */
-    public function dismissFollowUp(User $user, CaseRecord $case): bool
-    {
-        return $user->can('followUps.dismiss');
     }
 
     /**

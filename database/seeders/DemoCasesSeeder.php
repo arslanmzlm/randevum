@@ -4,11 +4,14 @@ namespace Database\Seeders;
 
 use App\Enums\AppointmentStatus;
 use App\Enums\CaseStatus;
+use App\Enums\FollowUpStatus;
 use App\Enums\TreatmentStatus;
 use App\Models\Appointment;
 use App\Models\CaseRecord;
 use App\Models\Clinic;
 use App\Models\Doctor;
+use App\Models\FollowUp;
+use App\Models\FollowUpType;
 use App\Models\Patient;
 use App\Models\PodiatryTreatmentDetail;
 use App\Models\Service;
@@ -38,6 +41,9 @@ class DemoCasesSeeder extends Seeder
     /** @var list<int> */
     private array $serviceIds;
 
+    /** @var list<int> */
+    private array $followUpTypeIds;
+
     public function run(): void
     {
         $clinic = Clinic::where('slug', 'podosen-izmir')->first();
@@ -52,6 +58,11 @@ class DemoCasesSeeder extends Seeder
         $this->serviceIds = Service::withoutGlobalScopes()
             ->where('clinic_id', $clinic->id)
             ->where('is_active', true)
+            ->pluck('id')
+            ->all();
+        // Populated by FollowUpTypeSeeder (called earlier in the DatabaseSeeder chain).
+        $this->followUpTypeIds = FollowUpType::withoutGlobalScopes()
+            ->where('clinic_id', $clinic->id)
             ->pluck('id')
             ->all();
 
@@ -128,10 +139,12 @@ class DemoCasesSeeder extends Seeder
             //    flagged overdue. Staggered per doctor so the oldest-due-first ordering is visible.
             $patient = $patients[$p++];
             $case = $this->makeCase($doctor, $patient, $titles[4], CaseStatus::FollowUp, daysAgo: 50);
-            $case->update([
-                'follow_up_date' => Carbon::today($this->clinic->timezone)->subDays(2 + $d * 3),
-                'follow_up_note' => 'Kontrol randevusu için aranacak; topuk bölgesi fotoğrafla karşılaştırılacak.',
-            ]);
+            $this->makeFollowUp(
+                $patient, $case,
+                Carbon::today($this->clinic->timezone)->subDays(2 + $d * 3)->toDateString(),
+                'Kontrol randevusu için aranacak; topuk bölgesi fotoğrafla karşılaştırılacak.',
+                $doctor->user,
+            );
             $this->log($case, CaseStatus::Open, CaseStatus::FollowUp, daysAgo: 8, by: $doctor->user);
             $this->makeTreatment($doctor, $patient, daysAgo: 40, case: $case);
             $this->makeTreatment($doctor, $patient, daysAgo: 15, case: $case);
@@ -150,11 +163,13 @@ class DemoCasesSeeder extends Seeder
         // Closed case that still carries a follow-up reminder (allowed by the domain rules).
         $patient = $patients[$p++];
         $case = $this->makeCase($firstDoctor, $patient, 'Tırnak Protezi Uygulaması', CaseStatus::Closed, daysAgo: 70);
-        $case->update([
-            'closed_at' => $this->dayUtc(10),
-            'follow_up_date' => Carbon::today($this->clinic->timezone)->addDays(30),
-            'follow_up_note' => 'Protez kontrolü için 1 ay sonra hatırlat.',
-        ]);
+        $case->update(['closed_at' => $this->dayUtc(10)]);
+        $this->makeFollowUp(
+            $patient, $case,
+            Carbon::today($this->clinic->timezone)->addDays(30)->toDateString(),
+            'Protez kontrolü için 1 ay sonra hatırlat.',
+            $firstDoctor->user,
+        );
         $this->log($case, CaseStatus::Open, CaseStatus::Closed, daysAgo: 10, by: $firstDoctor->user);
         $this->makeTreatment($firstDoctor, $patient, daysAgo: 65, case: $case);
 
@@ -162,12 +177,38 @@ class DemoCasesSeeder extends Seeder
         // so the widget shows both an overdue and a same-day row.
         $patient = $patients[$p++];
         $case = $this->makeCase($secondDoctor, $patient, 'Nasır Kontrolü', CaseStatus::FollowUp, daysAgo: 18);
-        $case->update([
-            'follow_up_date' => Carbon::today($this->clinic->timezone),
-            'follow_up_note' => 'Bugün aranacak; nasır tekrarladı mı sorulacak.',
-        ]);
+        $this->makeFollowUp(
+            $patient, $case,
+            Carbon::today($this->clinic->timezone)->toDateString(),
+            'Bugün aranacak; nasır tekrarladı mı sorulacak.',
+            $secondDoctor->user,
+        );
         $this->log($case, CaseStatus::Open, CaseStatus::FollowUp, daysAgo: 5, by: $secondDoctor->user);
         $this->makeTreatment($secondDoctor, $patient, daysAgo: 12, case: $case);
+
+        // Completed follow-up with a result note → the case-panel history list has content.
+        $patient = $patients[$p++];
+        $case = $this->makeCase($firstDoctor, $patient, 'Mantar Enfeksiyonu Kontrolü', CaseStatus::Open, daysAgo: 25);
+        $this->makeFollowUp(
+            $patient, $case,
+            Carbon::today($this->clinic->timezone)->subDays(5)->toDateString(),
+            'Topikal tedavi sonrası kontrol araması.',
+            $firstDoctor->user,
+            status: FollowUpStatus::Done,
+            resultNote: 'Hasta ulaşıldı, şikayet gerilemiş; 2 hafta sonra tekrar kontrol önerildi.',
+            completedBy: $this->owner,
+            completedAt: $this->dayUtc(3),
+        );
+        $this->makeTreatment($firstDoctor, $patient, daysAgo: 25, case: $case);
+
+        // Patient-only follow-up (no case) → demoes the case-less manual-creation path.
+        $patient = $patients[$p++];
+        $this->makeFollowUp(
+            $patient, null,
+            Carbon::today($this->clinic->timezone)->addDays(3)->toDateString(),
+            'Ödeme hatırlatması için aranacak.',
+            $this->owner,
+        );
 
         // Open case with NO treatments yet — empty treatments list + linkable ungrouped ones.
         $patient = $patients[$p++];
@@ -392,6 +433,60 @@ class DemoCasesSeeder extends Seeder
             'transitioned_at' => $this->dayUtc($daysAgo),
             'by_user_id' => $by->id,
         ]);
+    }
+
+    /**
+     * A follow-up row (replacing the old cases.follow_up_date/note columns), with its
+     * null → open status_log and, when $status !== Open, the open → $status transition too.
+     */
+    private function makeFollowUp(
+        Patient $patient,
+        ?CaseRecord $case,
+        string $dueDate,
+        string $note,
+        User $by,
+        FollowUpStatus $status = FollowUpStatus::Open,
+        ?string $resultNote = null,
+        ?User $completedBy = null,
+        ?Carbon $completedAt = null,
+    ): FollowUp {
+        $followUp = FollowUp::create([
+            'clinic_id' => $this->clinic->id,
+            'patient_id' => $patient->id,
+            'case_id' => $case?->id,
+            'follow_up_type_id' => $this->followUpTypeIds !== [] ? fake()->randomElement($this->followUpTypeIds) : null,
+            'due_date' => $dueDate,
+            'note' => $note,
+            'status' => $status->value,
+            'created_by_user_id' => $by->id,
+            'completed_by_user_id' => $completedBy?->id,
+            'completed_at' => $completedAt,
+            'result_note' => $resultNote,
+        ]);
+
+        StatusLog::create([
+            'clinic_id' => $this->clinic->id,
+            'loggable_type' => $followUp->getMorphClass(),
+            'loggable_id' => $followUp->id,
+            'from_status' => null,
+            'to_status' => FollowUpStatus::Open->value,
+            'transitioned_at' => $followUp->created_at,
+            'by_user_id' => $by->id,
+        ]);
+
+        if ($status !== FollowUpStatus::Open) {
+            StatusLog::create([
+                'clinic_id' => $this->clinic->id,
+                'loggable_type' => $followUp->getMorphClass(),
+                'loggable_id' => $followUp->id,
+                'from_status' => FollowUpStatus::Open->value,
+                'to_status' => $status->value,
+                'transitioned_at' => $completedAt ?? now(),
+                'by_user_id' => ($completedBy ?? $by)->id,
+            ]);
+        }
+
+        return $followUp;
     }
 
     /** Clinic-local moment N days back, shifted off weekends, stored as UTC. */

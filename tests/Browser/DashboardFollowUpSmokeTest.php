@@ -1,8 +1,7 @@
 <?php
 
-use App\Models\CaseRecord;
 use App\Models\Clinic;
-use App\Models\Doctor;
+use App\Models\FollowUp;
 use App\Models\Patient;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
@@ -37,12 +36,6 @@ it('renders the dashboard follow-up widget with a due row and no JS errors', fun
     $owner->unsetRelation('roles');
     $owner->unsetRelation('permissions');
 
-    $doctorUser = User::factory()->create();
-    $doctor = Doctor::factory()->create([
-        'clinic_id' => $clinic->id,
-        'user_id' => $doctorUser->id,
-    ]);
-
     $patient = Patient::factory()->create([
         'clinic_id' => $clinic->id,
         'first_name' => 'Fatma',
@@ -50,13 +43,12 @@ it('renders the dashboard follow-up widget with a due row and no JS errors', fun
     ]);
 
     // Seed an overdue follow-up (2 days ago) so the widget renders a real row.
-    CaseRecord::factory()->create([
+    // Feature 1.65 moved follow-ups off cases.follow_up_date/note into their own table.
+    FollowUp::factory()->open()->create([
         'clinic_id' => $clinic->id,
-        'doctor_id' => $doctor->id,
         'patient_id' => $patient->id,
-        'vertical_id' => $clinic->vertical_id,
-        'follow_up_date' => now()->subDays(2)->toDateString(),
-        'follow_up_note' => 'Kontrol randevusu için aranacak.',
+        'due_date' => now()->subDays(2)->toDateString(),
+        'note' => 'Kontrol randevusu için aranacak.',
     ]);
 
     $this->actingAs($owner);

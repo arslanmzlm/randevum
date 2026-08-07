@@ -31,6 +31,11 @@ class DemoDatabaseSeeder extends Seeder
             // baseline in rather than failing on a missing role. Everything below is idempotent.
             DatabaseSeeder::class,
             DemoSeeder::class,
+            // Re-run after DemoSeeder: DatabaseSeeder's earlier call is a no-op with no clinics
+            // yet. Real clinics get their follow-up types from the registration event
+            // (ProvisionDefaultFollowUpTypes); the demo clinic needs this explicit backfill,
+            // same reasoning as PodiatryAppointmentTypesSeeder below.
+            FollowUpTypeSeeder::class,
             DemoStaffSeeder::class,
             // Re-run after DemoSeeder: the platform superadmin it creates is the author the legal
             // documents need, and DatabaseSeeder's earlier call is a no-op on an empty user table.

@@ -315,7 +315,47 @@ it('rejects linkTreatments when the treatment belongs to a different doctor', fu
 });
 
 // ---------------------------------------------------------------------------
-// Guard: rejected when the target case is not Open
+// Linking is allowed on any non-closed case (R1) — not just Open
+// ---------------------------------------------------------------------------
+
+it('links treatments to a Suspended case', function (): void {
+    ['clinic' => $clinic, 'owner' => $owner, 'doctor' => $doctor, 'patient' => $patient] = cltSetup();
+
+    $case = CaseRecord::factory()->open()->create([
+        'clinic_id' => $clinic->id, 'patient_id' => $patient->id,
+        'doctor_id' => $doctor->id, 'vertical_id' => $clinic->vertical_id,
+    ]);
+    $case->updateQuietly(['status' => 'suspended', 'suspended_at' => now()]);
+
+    $treatment = cltCompletedTreatment($clinic, $doctor, $patient, $owner);
+
+    $this->actingAs($owner)
+        ->post(route('cases.treatments.link', $case), ['treatment_ids' => [$treatment->id]])
+        ->assertRedirect(route('cases.show', $case));
+
+    expect(Treatment::withoutGlobalScopes()->find($treatment->id)->case_id)->toBe($case->id);
+});
+
+it('links treatments to a follow_up-status case', function (): void {
+    ['clinic' => $clinic, 'owner' => $owner, 'doctor' => $doctor, 'patient' => $patient] = cltSetup();
+
+    $case = CaseRecord::factory()->open()->create([
+        'clinic_id' => $clinic->id, 'patient_id' => $patient->id,
+        'doctor_id' => $doctor->id, 'vertical_id' => $clinic->vertical_id,
+    ]);
+    $case->updateQuietly(['status' => 'follow_up']);
+
+    $treatment = cltCompletedTreatment($clinic, $doctor, $patient, $owner);
+
+    $this->actingAs($owner)
+        ->post(route('cases.treatments.link', $case), ['treatment_ids' => [$treatment->id]])
+        ->assertRedirect(route('cases.show', $case));
+
+    expect(Treatment::withoutGlobalScopes()->find($treatment->id)->case_id)->toBe($case->id);
+});
+
+// ---------------------------------------------------------------------------
+// Guard: rejected when the target case is Closed
 // ---------------------------------------------------------------------------
 
 it('rejects linkTreatments when the case is Closed', function (): void {

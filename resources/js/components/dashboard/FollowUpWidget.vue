@@ -1,29 +1,34 @@
 <script setup lang="ts">
-import { Link, router } from '@inertiajs/vue3';
+import { Link } from '@inertiajs/vue3';
 import {
     IconNote,
     IconPhone,
     IconPhoneOff,
     IconPhoneCheck,
+    IconPlus,
 } from '@tabler/icons-vue';
-import { useConfirm } from 'primevue/useconfirm';
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import DashboardPanel from '@/components/dashboard/DashboardPanel.vue';
+import FollowUpCompleteDialog from '@/components/follow-ups/FollowUpCompleteDialog.vue';
+import FollowUpFormDialog from '@/components/follow-ups/FollowUpFormDialog.vue';
 import { useCan } from '@/composables/useCan';
 import { useDateTime } from '@/composables/useDateTime';
-import { dismiss } from '@/routes/cases/follow-up';
 import { show as patientShow } from '@/routes/patients';
 import type { FollowUpReminder } from '@/types/dashboard';
+import type { FollowUpTypeOption } from '@/types/followUp';
 
-const props = defineProps<{ followUps: FollowUpReminder[] }>();
+const props = defineProps<{
+    followUps: FollowUpReminder[];
+    types: FollowUpTypeOption[];
+}>();
 
 const { t } = useI18n();
 const { can } = useCan();
 const { formatDateOnly } = useDateTime();
-const confirm = useConfirm();
 
 const canDismiss = () => can('followUps.dismiss');
+const canCreate = () => can('followUps.create');
 
 // Notes can run long; keep the cell to a one-line preview and reveal the full text in a single
 // reused Popover anchored to the clicked trigger (works on touch, scrolls for very long notes).
@@ -35,21 +40,13 @@ function showNote(event: Event, note: string): void {
     notePopover.value?.show(event);
 }
 
+const showCompleteDialog = ref(false);
+const showCreateDialog = ref(false);
+const completing = ref<FollowUpReminder | null>(null);
+
 function markCalled(row: FollowUpReminder): void {
-    confirm.require({
-        header: t('common.confirm_title'),
-        message: t('dashboard.follow_ups.dismiss_confirm', {
-            name: row.patient.full_name,
-        }),
-        rejectProps: {
-            label: t('common.cancel'),
-            severity: 'secondary',
-            outlined: true,
-        },
-        acceptProps: { label: t('dashboard.follow_ups.dismiss') },
-        accept: () =>
-            router.delete(dismiss(row.case_id).url, { preserveScroll: true }),
-    });
+    completing.value = row;
+    showCompleteDialog.value = true;
 }
 </script>
 
@@ -67,6 +64,22 @@ function markCalled(row: FollowUpReminder): void {
             />
         </template>
 
+        <template #actions>
+            <Button
+                v-if="canCreate()"
+                type="button"
+                severity="secondary"
+                outlined
+                size="small"
+                :label="t('dashboard.follow_ups.add')"
+                @click="showCreateDialog = true"
+            >
+                <template #icon>
+                    <IconPlus class="size-4" />
+                </template>
+            </Button>
+        </template>
+
         <div
             v-if="!props.followUps.length"
             class="flex flex-col items-center justify-center gap-2 px-5 py-10 text-center"
@@ -80,7 +93,7 @@ function markCalled(row: FollowUpReminder): void {
         <div v-else>
             <DataTable
                 :value="props.followUps"
-                data-key="case_id"
+                data-key="id"
                 size="small"
                 class="text-sm"
             >
@@ -111,11 +124,27 @@ function markCalled(row: FollowUpReminder): void {
                     </template>
                 </Column>
 
+                <Column
+                    :header="t('dashboard.follow_ups.columns.type')"
+                    class="w-44"
+                >
+                    <template #body="{ data }">
+                        <Tag
+                            v-if="data.type"
+                            :value="data.type.name"
+                            severity="secondary"
+                            class="whitespace-nowrap"
+                        />
+                        <span v-else class="text-surface-400">—</span>
+                    </template>
+                </Column>
+
                 <Column :header="t('dashboard.follow_ups.columns.doctor')">
                     <template #body="{ data }">
-                        <span class="text-surface-700">
+                        <span v-if="data.doctor" class="text-surface-700">
                             {{ data.doctor.display_name }}
                         </span>
+                        <span v-else class="text-surface-400">—</span>
                     </template>
                 </Column>
 
@@ -132,7 +161,7 @@ function markCalled(row: FollowUpReminder): void {
                                         : 'text-surface-700'
                                 "
                             >
-                                {{ formatDateOnly(data.follow_up_date) }}
+                                {{ formatDateOnly(data.due_date) }}
                             </span>
                             <Tag
                                 v-if="data.is_overdue"
@@ -146,17 +175,15 @@ function markCalled(row: FollowUpReminder): void {
                 <Column :header="t('dashboard.follow_ups.columns.note')">
                     <template #body="{ data }">
                         <button
-                            v-if="data.follow_up_note"
+                            v-if="data.note"
                             type="button"
                             class="flex max-w-[14rem] cursor-pointer items-center gap-1 text-left text-surface-600 transition-colors hover:text-primary-600"
-                            @click="showNote($event, data.follow_up_note)"
+                            @click="showNote($event, data.note)"
                         >
                             <IconNote
                                 class="size-4 shrink-0 text-surface-400"
                             />
-                            <span class="truncate">{{
-                                data.follow_up_note
-                            }}</span>
+                            <span class="truncate">{{ data.note }}</span>
                         </button>
                         <span v-else class="text-surface-400">—</span>
                     </template>
@@ -185,5 +212,17 @@ function markCalled(row: FollowUpReminder): void {
                 {{ activeNote }}
             </p>
         </Popover>
+
+        <FollowUpCompleteDialog
+            v-model:visible="showCompleteDialog"
+            :follow-up-id="completing?.id ?? null"
+            :patient-name="completing?.patient.full_name"
+        />
+
+        <FollowUpFormDialog
+            v-if="canCreate()"
+            v-model:visible="showCreateDialog"
+            :types="props.types"
+        />
     </DashboardPanel>
 </template>

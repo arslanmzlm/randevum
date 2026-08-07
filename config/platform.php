@@ -113,6 +113,27 @@ return [
     |
     */
 
+    /*
+    |--------------------------------------------------------------------------
+    | Follow-ups
+    |--------------------------------------------------------------------------
+    |
+    | Default follow-up types provisioned for every clinic (new registration, and
+    | idempotently for existing ones via FollowUpTypeSeeder). Type names are clinic
+    | DATA (editable rows), not lang keys — same as the appointment-types precedent.
+    |
+    */
+
+    'follow_ups' => [
+        'default_types' => [
+            'Kontrol araması',
+            'Tedavi takibi',
+            'Ödeme hatırlatması',
+            'Randevu hatırlatması',
+            'Memnuniyet araması',
+        ],
+    ],
+
     'map' => [
         'default_center' => [
             'lat' => (float) env('PLATFORM_MAP_DEFAULT_LAT', 39.0),

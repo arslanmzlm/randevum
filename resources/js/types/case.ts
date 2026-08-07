@@ -1,4 +1,5 @@
 import type { CaseStatus, TreatmentStatus } from '@/types/enums';
+import type { CaseFollowUpItem, FollowUpTypeOption } from '@/types/followUp';
 import type { CaseMediaItem } from '@/types/media';
 import type { Paginated, TableState } from '@/types/table';
 
@@ -61,11 +62,11 @@ export type CaseDetail = {
     opened_at: string;
     closed_at: string | null;
     suspended_at: string | null;
-    follow_up_date: string | null;
-    follow_up_note: string | null;
     patient: { id: number; full_name: string };
     doctor: { id: number; display_name: string };
     treatments: CaseTreatmentItem[];
+    /** Open rows first (due_date asc), then done/cancelled newest-completed-first. */
+    follow_ups: CaseFollowUpItem[];
     /** Read-only rollup of media across all the case's treatments. Absent when the
      *  user lacks `treatments.media.view` (server omits it). No upload here. */
     media?: CaseMediaItem[];
@@ -89,6 +90,8 @@ export type CaseShowProps = {
     /** Within config('platform.edit_windows.case') of opened_at. */
     canEditTitle: boolean;
     ownDoctorId: number | null;
+    /** Active follow-up types for the add + → follow_up transition dialogs. */
+    followUpTypes: FollowUpTypeOption[];
 };
 
 /** Payload for the inline case-notes quick-edit endpoint. */
@@ -96,11 +99,12 @@ export type CaseNotesFormData = {
     notes: string;
 };
 
-/** Payload for the case follow-up panel. */
+/** Payload of the → follow_up case-status transition (creates a follow-up row server-side). */
 export type CaseFollowUpFormData = {
+    follow_up_type_id: number | null;
     /** Holds a Date for the PrimeVue DatePicker; serialized to Y-m-d before submit. */
-    follow_up_date: Date | null;
-    follow_up_note: string;
+    due_date: Date | null;
+    note: string;
 };
 
 /** Payload for the inline case-title quick-edit endpoint. */

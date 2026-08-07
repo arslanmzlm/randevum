@@ -38,6 +38,7 @@ export const tr = {
         products: 'Ürünler',
         appointment_types: 'Randevu Türleri',
         tags: 'Etiketler',
+        follow_up_types: 'Takip Türleri',
         finance: 'Finans',
         expenses: 'Giderler',
         payment_plans: 'Taksitler',
@@ -122,13 +123,13 @@ export const tr = {
             title: 'Bugün aranacaklar',
             empty: 'Aranacak takip kaydı yok.',
             dismiss: 'Arandı',
-            dismiss_confirm:
-                '{name} için takip kaydını listeden kaldırmak istediğinize emin misiniz?',
+            add: 'Takip ekle',
             overdue: 'Gecikmiş',
             no_phone: 'Telefon yok',
             columns: {
                 patient: 'Hasta',
                 phone: 'Telefon',
+                type: 'Tür',
                 doctor: 'Doktor',
                 date: 'Takip tarihi',
                 note: 'Not',
@@ -1186,14 +1187,13 @@ export const tr = {
         save: 'Kaydet',
         edit_title: 'Başlığı düzenle',
         notes_edit: 'Notu düzenle',
-        follow_up_edit: 'Takibi düzenle',
         no_notes: 'Bu vaka için not eklenmemiş.',
         no_treatments: 'Bu vakaya bağlı tedavi yok.',
         no_follow_up: 'Takip planlanmamış.',
         notes_placeholder:
             'Vaka ile ilgili genel not — seyir, plan, dikkat edilecekler…',
         follow_up_status_hint:
-            'Vakayı takibe almak için bir takip tarihi belirleyin.',
+            'Vakayı takibe almak için bir takip türü ve tarihi belirleyin. Yeni bir takip kaydı oluşturulur.',
         status: {
             open: 'Açık',
             suspended: 'Askıda',
@@ -1219,8 +1219,6 @@ export const tr = {
             opened_at: 'Açılış tarihi',
             suspended_at: 'Askıya alınma',
             closed_at: 'Kapanış tarihi',
-            follow_up_date: 'Takip tarihi',
-            follow_up_note: 'Takip notu',
         },
         confirm: {
             status_title: 'Vaka durumunu değiştir',
@@ -1234,6 +1232,81 @@ export const tr = {
             hint: 'Bu vakaya eklenecek tamamlanmış tedavileri seçin.',
             add: 'Tedavi ekle',
             submit: 'Vakaya Ekle',
+            remove: 'Vakadan çıkar',
+            remove_confirm:
+                'Bu tedavinin vaka bağını kaldırmak istediğinize emin misiniz? Tedavi silinmez, yalnızca vakadan çıkarılır.',
+        },
+    },
+    follow_up: {
+        status: {
+            open: 'Açık',
+            done: 'Tamamlandı',
+            cancelled: 'İptal edildi',
+        },
+        sections: {
+            history: 'Geçmiş ({count})',
+        },
+        actions: {
+            add: 'Takip Ekle',
+            create: 'Takibi Oluştur',
+            complete: 'Tamamla',
+            cancel: 'İptal Et',
+        },
+        fields: {
+            patient: 'Hasta',
+            case: 'Vaka',
+            type: 'Takip türü',
+            due_date: 'Takip tarihi',
+            note: 'Not',
+            result_note: 'Sonuç notu',
+        },
+        hints: {
+            case: 'Boş bırakılırsa takip yalnızca hastaya bağlanır.',
+            result_note: 'İsteğe bağlı — görüşmede konuşulanları not edin.',
+        },
+        confirm: {
+            cancel: 'Bu takip kaydı iptal edilecek. Devam etmek istiyor musunuz?',
+        },
+        complete_title: 'Takibi tamamla',
+        complete_hint: 'Takip tamamlanacak. İsterseniz bir sonuç notu ekleyin.',
+        complete_hint_named:
+            '{name} için takip tamamlanacak. İsterseniz bir sonuç notu ekleyin.',
+        completed_meta: '{name} · {date}',
+        no_type: 'Tür belirtilmemiş',
+        no_types: 'Tanımlı takip türü yok.',
+        no_cases: 'Bu hastaya ait vaka yok.',
+    },
+    follow_up_type: {
+        title: 'Takip Türleri',
+        subtitle:
+            'Arama ve takip kayıtlarını sınıflandıran türleri yönetin (kontrol araması, ödeme hatırlatması).',
+        add: 'Tür Ekle',
+        edit: 'Düzenle',
+        remove: 'Kaldır',
+        remove_confirm:
+            '{name} adlı takip türünü kaldırmak istediğinize emin misiniz?',
+        active: 'Aktif',
+        passive: 'Pasif',
+        system: 'Sistem',
+        empty: 'Henüz takip türü eklenmemiş.',
+        empty_filtered: 'Aramayla eşleşen takip türü yok.',
+        search_placeholder: 'Takip türü ara...',
+        filter_status: 'Durum',
+        create_title: 'Takip Türü Ekle',
+        create_submit: 'Türü Ekle',
+        edit_title: 'Takip Türünü Düzenle',
+        save: 'Kaydet',
+        columns: {
+            name: 'Tür',
+            status: 'Durum',
+            actions: 'İşlemler',
+        },
+        fields: {
+            name: 'Tür adı',
+            is_active: 'Aktif',
+        },
+        hints: {
+            is_active: 'Pasif türler yeni takip kayıtlarında seçilemez.',
         },
     },
     date_filter: {

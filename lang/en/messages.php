@@ -103,4 +103,10 @@ return [
         'deleted' => 'Segment deleted.',
     ],
 
+    'follow_up_type' => [
+        'created' => 'Follow-up type created.',
+        'updated' => 'Follow-up type updated.',
+        'deleted' => 'Follow-up type removed.',
+    ],
+
 ];
