@@ -2,6 +2,7 @@
 
 namespace App\Modules\Core\Services;
 
+use App\Enums\ClinicRole;
 use App\Models\Doctor;
 use App\Models\User;
 use App\Modules\Core\Contracts\AppointmentCancellationContract;
@@ -18,6 +19,7 @@ class DoctorProfileService
         private DoctorRepository $repository,
         private ClinicContext $clinicContext,
         private AppointmentCancellationContract $cancellation,
+        private RoleResolver $roleResolver,
     ) {}
 
     /**
@@ -58,9 +60,10 @@ class DoctorProfileService
             $user->email_verified_at = now();
             $user->saveQuietly();
 
-            // SetClinicContext already called setPermissionsTeamId($clinicId),
-            // so assignRole scopes the role to the active clinic.
-            $user->assignRole('doctor');
+            // SetClinicContext already called setPermissionsTeamId($clinicId); the resolver
+            // picks the clinic's own copy of 'doctor' if one exists, the global template
+            // otherwise.
+            $user->assignRole($this->roleResolver->resolve(ClinicRole::Doctor->value));
 
             return $this->repository->create([
                 'user_id' => $user->id,
@@ -122,9 +125,10 @@ class DoctorProfileService
     public function remove(Doctor $doctor): void
     {
         DB::transaction(function () use ($doctor): void {
-            // SetClinicContext already set the Spatie team context to the active clinic,
-            // so removeRole revokes only the clinic-scoped assignment.
-            $doctor->user->removeRole('doctor');
+            // SetClinicContext already set the Spatie team context to the active clinic; the
+            // resolver picks the clinic's own copy of 'doctor' if one exists, so removeRole
+            // revokes the assignment against the row it actually lives on.
+            $doctor->user->removeRole($this->roleResolver->resolve(ClinicRole::Doctor->value));
             $this->repository->delete($doctor);
         });
     }
@@ -168,9 +172,10 @@ class DoctorProfileService
 
             $this->repository->update($doctor, ['is_active' => false, 'left_at' => now()]);
 
-            // SetClinicContext already set the Spatie team context to the active clinic,
-            // so removeRole revokes only the clinic-scoped assignment.
-            $doctor->user->removeRole('doctor');
+            // SetClinicContext already set the Spatie team context to the active clinic; the
+            // resolver picks the clinic's own copy of 'doctor' if one exists, so removeRole
+            // revokes the assignment against the row it actually lives on.
+            $doctor->user->removeRole($this->roleResolver->resolve(ClinicRole::Doctor->value));
 
             return $count;
         });

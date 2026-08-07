@@ -2,11 +2,13 @@
 
 namespace App\Modules\Identity\Services;
 
+use App\Enums\ClinicRole;
 use App\Models\Clinic;
 use App\Models\Country;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Modules\Compliance\Contracts\ConsentRecorderContract;
+use App\Modules\Core\Services\RoleResolver;
 use App\Modules\Identity\Events\ClinicRegistered;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -19,7 +21,10 @@ use Spatie\Permission\PermissionRegistrar;
  */
 class ClinicRegistrationService
 {
-    public function __construct(private ConsentRecorderContract $consentRecorder) {}
+    public function __construct(
+        private ConsentRecorderContract $consentRecorder,
+        private RoleResolver $roleResolver,
+    ) {}
 
     /**
      * @param  array<string, mixed>  $data
@@ -50,7 +55,7 @@ class ClinicRegistrationService
             ]);
 
             app(PermissionRegistrar::class)->setPermissionsTeamId($clinic->id);
-            $user->assignRole('owner');
+            $user->assignRole($this->roleResolver->resolveForClinic($clinic->id, ClinicRole::Owner->value));
 
             // Record the owner's acceptance of the platform legal documents (Terms, Privacy,
             // DPA) atomically — the signup rolls back if a required document is missing.

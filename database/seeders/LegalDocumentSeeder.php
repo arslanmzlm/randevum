@@ -3,11 +3,11 @@
 namespace Database\Seeders;
 
 use App\Models\LegalDocument;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
-use Spatie\Permission\Models\Role;
 
 class LegalDocumentSeeder extends Seeder
 {

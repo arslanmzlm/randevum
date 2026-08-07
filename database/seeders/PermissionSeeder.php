@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Models\Role;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 class PermissionSeeder extends Seeder
@@ -13,6 +13,10 @@ class PermissionSeeder extends Seeder
      * Permission => the baseline roles that hold it. Only the abilities the app
      * actually enforces today; this grows feature by feature, not as a full
      * up-front matrix (permission-management UI is Faz 3).
+     *
+     * Only ever touches GLOBAL role rows (clinic_id null) — a clinic's copy-on-write
+     * role customization (RoleCustomizationService) is never synced here, so re-seeding
+     * can never overwrite a clinic's customization.
      *
      * @var array<string, list<string>>
      */
@@ -146,6 +150,10 @@ class PermissionSeeder extends Seeder
         // Saved segment (filter preset) create/delete. Applying one / the list's tag +
         // last-visit filters need no permission — read-only over patients.viewAny.
         'segments.manage' => ['owner', 'manager'],
+        // Opens the read-only permission matrix page (this wave).
+        'roles.viewAny' => ['owner', 'manager'],
+        // Seeded now; enforced in Dalga 8b (matrix editing / custom roles).
+        'roles.manage' => ['owner', 'manager'],
     ];
 
     public function run(): void
@@ -165,9 +173,12 @@ class PermissionSeeder extends Seeder
             }
         }
 
-        // syncPermissions is authoritative — re-running heals any drift.
+        // syncPermissions is authoritative — re-running heals any drift. Explicit global
+        // lookup (never Role::findByName, which could resolve a clinic's copy) so a clinic
+        // customization is never touched by re-seeding.
         foreach ($permissionsByRole as $role => $permissions) {
-            Role::findByName($role, 'web')->syncPermissions($permissions);
+            Role::query()->where('name', $role)->where('guard_name', 'web')->whereNull('clinic_id')
+                ->firstOrFail()->syncPermissions($permissions);
         }
     }
 }

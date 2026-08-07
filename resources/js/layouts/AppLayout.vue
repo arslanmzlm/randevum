@@ -24,6 +24,7 @@ import {
     IconReportMoney,
     IconSearch,
     IconSettings,
+    IconShieldLock,
     IconStethoscope,
     IconTag,
     IconTags,
@@ -70,6 +71,7 @@ import { index as productsIndex } from '@/routes/products';
 import { index as reportsIndex } from '@/routes/reports';
 import { index as availabilityIndex } from '@/routes/schedule-exceptions';
 import { index as servicesIndex } from '@/routes/services';
+import { index as rolesIndex } from '@/routes/settings/roles';
 import { index as smsLogsIndex } from '@/routes/sms-logs';
 import { index as tagsIndex } from '@/routes/tags';
 import { index as treatmentsIndex } from '@/routes/treatments';
@@ -320,6 +322,16 @@ const navGroups = computed<NavGroup[]>(() =>
                               href: followUpTypesIndex().url,
                               component: 'follow-up-types/Index',
                               icon: IconPhoneCall,
+                          },
+                      ]
+                    : []),
+                ...(can('roles.viewAny')
+                    ? [
+                          {
+                              label: t('nav.roles'),
+                              href: rolesIndex().url,
+                              component: 'settings/roles/Index',
+                              icon: IconShieldLock,
                           },
                       ]
                     : []),

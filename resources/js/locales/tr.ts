@@ -39,6 +39,7 @@ export const tr = {
         appointment_types: 'Randevu Türleri',
         tags: 'Etiketler',
         follow_up_types: 'Takip Türleri',
+        roles: 'Roller',
         finance: 'Finans',
         reports: 'Raporlar',
         expenses: 'Giderler',
@@ -1359,6 +1360,21 @@ export const tr = {
         },
         hints: {
             is_active: 'Pasif türler yeni takip kayıtlarında seçilemez.',
+        },
+    },
+    role: {
+        title: 'Roller ve Yetkiler',
+        subtitle:
+            'Kliniğinizdeki rollerin hangi izinlere sahip olduğunu görüntüleyin.',
+        read_only_note:
+            'Bu sayfa salt okunurdur. İzinleri düzenleme özelliği ilerleyen sürümde eklenecek.',
+        customized_badge: 'Özelleştirilmiş',
+        table_caption: 'Rol ve izin matrisi',
+        granted: 'Yetkili',
+        not_granted: 'Yetkisiz',
+        empty: 'Gösterilecek rol veya izin yok.',
+        columns: {
+            permission: 'İzin',
         },
     },
     date_filter: {
