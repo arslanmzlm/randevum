@@ -52,3 +52,20 @@ it('omits permissions the user does not hold', function (): void {
                 && $p->contains('patients.viewAny'),
         ));
 });
+
+it('gives a doctor doctors.viewAny (drives the sidebar Doktorlar entry) without doctors.create', function (): void {
+    $clinic = Clinic::factory()->create();
+    $doctorUser = User::factory()->create();
+    spRole($doctorUser, 'doctor', $clinic->id);
+
+    // AppLayout.vue gates the "Doktorlar" nav entry on doctors.viewAny (matching
+    // DoctorController::index's authorize call) — not doctors.create, which only owner/manager
+    // hold. A doctor who can open the page server-side must also see the nav entry to it.
+    $this->actingAs($doctorUser)
+        ->get(route('dashboard'))
+        ->assertInertia(fn ($page) => $page->where(
+            'auth.permissions',
+            fn ($p) => $p->contains('doctors.viewAny')
+                && ! $p->contains('doctors.create'),
+        ));
+});

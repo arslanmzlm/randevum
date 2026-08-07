@@ -23,6 +23,7 @@ import type { MapDefaults } from '@/components/map/types';
 import PageHeader from '@/components/PageHeader.vue';
 import PillTabs from '@/components/PillTabs.vue';
 import SectionCard from '@/components/SectionCard.vue';
+import { useCan } from '@/composables/useCan';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { update } from '@/routes/clinic';
 import {
@@ -47,13 +48,13 @@ const props = defineProps<{
     cities: ClinicCity[];
     /** Null when the viewer lacks smsSettings.view — the SMS tab is then not rendered. */
     sms: ClinicSmsPanel | null;
-    /** clinic.update — false for a viewer who only holds the SMS permission. */
-    canEditClinic: boolean;
     /** Where the location picker opens when the clinic has no saved coordinates. */
     mapDefaults: MapDefaults;
 }>();
 
 const { t, te } = useI18n();
+const { can } = useCan();
+const canEditClinic = computed(() => can('clinic.update'));
 
 const form = useForm({
     name: props.clinic.name,
@@ -87,7 +88,7 @@ const verticalLabel = te(verticalKey) ? t(verticalKey) : props.vertical.name;
 
 // Deep-linkable so the sidebar can point straight at a tab (?tab=sms) and so a reader can share
 // the tab they are looking at.
-const validTabs = props.canEditClinic
+const validTabs = canEditClinic.value
     ? ['clinic', 'contact', 'appointments', 'sms']
     : ['sms'];
 const requestedTab = new URLSearchParams(window.location.search).get('tab');
@@ -100,7 +101,7 @@ const activeTab = ref(
 // The first three tabs edit ONE clinic form, so the save row belongs to them; the SMS tab carries
 // its own form and its own submit.
 const tabs = computed(() => [
-    ...(props.canEditClinic
+    ...(canEditClinic.value
         ? [
               {
                   id: 'clinic-tab-clinic',
@@ -145,7 +146,7 @@ watch(activeTab, (tab) => {
 });
 
 const showClinicSubmit = computed(
-    () => props.canEditClinic && activeTab.value !== 'sms',
+    () => canEditClinic.value && activeTab.value !== 'sms',
 );
 
 function submit(): void {

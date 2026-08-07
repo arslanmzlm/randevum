@@ -405,7 +405,7 @@ function submit(): void {
                     :appointment-types="appointmentTypes"
                 />
                 <MediaSection
-                    v-if="can('treatments.media.upload')"
+                    v-if="can('treatments.media.view')"
                     :treatment-id="treatment.id"
                     :items="treatment.media ?? []"
                 />

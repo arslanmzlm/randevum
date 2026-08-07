@@ -63,7 +63,6 @@ class ClinicController extends Controller
             // SMS preferences are a tab on this page rather than a separate screen. Null when the
             // viewer lacks smsSettings.view — the tab is then not rendered at all.
             'sms' => $sms,
-            'canEditClinic' => $canEditClinic,
             'mapDefaults' => [
                 'lat' => (float) config('platform.map.default_center.lat'),
                 'lng' => (float) config('platform.map.default_center.lng'),

@@ -35,6 +35,7 @@ function deleteUrlFor(item: MediaItem): string {
             :accept="ACCEPT"
             :max-size-mb="MAX_SIZE_MB"
             :items="items"
+            :can-upload="can('treatments.media.upload')"
             :can-delete="can('treatments.media.delete')"
             :delete-url-for="deleteUrlFor"
         />

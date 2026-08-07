@@ -9,6 +9,7 @@ import PillTabs from '@/components/PillTabs.vue';
 import ReportBreakdownTable from '@/components/reports/ReportBreakdownTable.vue';
 import ReportFinanceTab from '@/components/reports/ReportFinanceTab.vue';
 import SectionCard from '@/components/SectionCard.vue';
+import { useCan } from '@/composables/useCan';
 import { useDateWindowList } from '@/composables/useDateWindowList';
 import AppLayout from '@/layouts/AppLayout.vue';
 import {
@@ -32,6 +33,13 @@ defineOptions({ layout: AppLayout });
 const props = defineProps<ReportIndexProps>();
 
 const { t } = useI18n();
+const { can } = useCan();
+
+// Finance/branch/expense-owner tabs report expense figures, so the server also requires
+// expenses.viewAny (ReportController::index) on top of reports.revenue — a role customization
+// can revoke the former while leaving the latter, so hide the tabs rather than let the click 403.
+const EXPENSE_GATED_TABS: ReportTab[] = ['finance', 'branch', 'expense_owner'];
+const canViewExpenses = computed(() => can('expenses.viewAny'));
 
 // The tab lives on the server (`?tab=`) because the rows come from it; the local ref only keeps
 // the pill highlighted while the visit is in flight, and follows the prop once it lands.
@@ -68,7 +76,13 @@ watch(activeTab, (tab) => {
 const tabs = computed(() =>
     REPORT_TABS.filter(
         (tab) => tab.value !== 'branch' || props.multiBranch,
-    ).map((tab) => ({
+    )
+        .filter(
+            (tab) =>
+                canViewExpenses.value ||
+                !EXPENSE_GATED_TABS.includes(tab.value),
+        )
+        .map((tab) => ({
         value: tab.value,
         label: t(`report.tabs.${tab.value}`),
         icon: tab.icon,

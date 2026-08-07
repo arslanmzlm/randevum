@@ -42,7 +42,8 @@ const { t } = useI18n();
 const confirm = useConfirm();
 const { can } = useCan();
 
-const canManage = computed(() => can('patients.update'));
+const canUpdate = computed(() => can('patients.update'));
+const canDelete = computed(() => can('patients.delete'));
 const canRecordPayment = computed(() => can('transactions.create'));
 
 const tabs = computed(() => [
@@ -146,7 +147,7 @@ function removePatient(): void {
                     </template>
                 </Button>
                 <ButtonLink
-                    v-if="canManage"
+                    v-if="canUpdate"
                     :href="edit(patient.id).url"
                     :label="t('patient.edit')"
                 >
@@ -155,7 +156,7 @@ function removePatient(): void {
                     </template>
                 </ButtonLink>
                 <Button
-                    v-if="canManage"
+                    v-if="canDelete"
                     type="button"
                     severity="danger"
                     outlined

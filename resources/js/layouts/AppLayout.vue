@@ -254,7 +254,7 @@ const navGroups = computed<NavGroup[]>(() =>
                           },
                       ]
                     : []),
-                ...(can('doctors.create')
+                ...(can('doctors.viewAny')
                     ? [
                           {
                               label: t('nav.doctors'),
@@ -311,7 +311,7 @@ const navGroups = computed<NavGroup[]>(() =>
                           },
                       ]
                     : []),
-                ...(can('appointmentTypes.create')
+                ...(can('appointmentTypes.viewAny')
                     ? [
                           {
                               label: t('nav.appointment_types'),

@@ -58,11 +58,15 @@ const categoryModel = computed({
     set: (value: string | null) => emit('update:category', value ?? null),
 });
 
+// Mirrors TransactionPolicy::delete: only an untouched, still-completed original row (never a
+// refund counter-entry, never one that's been refunded itself) inside the immutability window.
 function canRemoveRow(income: ManualIncome): boolean {
     const elapsed =
         (now.value.getTime() - new Date(income.created_at).getTime()) / 1000;
 
     return (
+        income.original_transaction_id === null &&
+        income.status === 'completed' &&
         elapsed <= props.deleteWindowSeconds &&
         (income.created_by === userId.value || can('transactions.refund'))
     );

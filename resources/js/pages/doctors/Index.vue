@@ -28,7 +28,9 @@ const { t } = useI18n();
 const confirm = useConfirm();
 const { can } = useCan();
 const { formatDate } = useDateTime();
-const canManage = computed(() => can('doctors.update'));
+const canCreate = computed(() => can('doctors.create'));
+const canUpdate = computed(() => can('doctors.update'));
+const canDelete = computed(() => can('doctors.delete'));
 
 const ownForm = useForm({});
 
@@ -120,7 +122,7 @@ function removeDoctor(doctor: Doctor): void {
                 </Button>
 
                 <ButtonLink
-                    v-if="canManage"
+                    v-if="canCreate"
                     :href="create().url"
                     :label="t('doctor.add')"
                 >
@@ -217,7 +219,7 @@ function removeDoctor(doctor: Doctor): void {
                         </div>
 
                         <ButtonLink
-                            v-if="canManage || doctor.is_self"
+                            v-if="canUpdate || doctor.is_self"
                             :href="edit(doctor.id).url"
                             :label="t('doctor.edit')"
                             severity="secondary"
@@ -226,7 +228,7 @@ function removeDoctor(doctor: Doctor): void {
                         />
 
                         <Button
-                            v-if="canManage"
+                            v-if="canDelete"
                             type="button"
                             severity="danger"
                             text

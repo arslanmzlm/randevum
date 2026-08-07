@@ -153,10 +153,15 @@ it('a manager can GET /clinic and edit the profile', function (): void {
     $manager = User::factory()->create();
     clinicRole($manager, 'manager', $clinic->id);
 
+    // The page no longer ships an ad-hoc canEditClinic prop — the frontend derives edit
+    // access from the shared auth.permissions set (clinic.update), same as the sidebar gate.
     $this->actingAs($manager)
         ->get(route('clinic.edit'))
         ->assertOk()
-        ->assertInertia(fn ($page) => $page->where('canEditClinic', true));
+        ->assertInertia(fn ($page) => $page->where(
+            'auth.permissions',
+            fn ($p) => $p->contains('clinic.update'),
+        ));
 });
 
 // ---------------------------------------------------------------------------

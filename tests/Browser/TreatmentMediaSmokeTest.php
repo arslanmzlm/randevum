@@ -92,7 +92,7 @@ it('renders the treatment media uploader on the process page with no JS errors',
 
     visit("/treatments/{$treatment->id}/process")
         ->assertNoJavascriptErrors()
-        // MediaSection's SectionCard title — in-body, only mounted for treatments.media.upload.
+        // MediaSection's SectionCard title — in-body, only mounted for treatments.media.view.
         ->assertSee('Dosyalar')
         // MediaUploader's drop zone (also the picker) — proves the uploader itself rendered.
         ->assertSee('Dosyaları buraya sürükleyin veya seçmek için tıklayın')
