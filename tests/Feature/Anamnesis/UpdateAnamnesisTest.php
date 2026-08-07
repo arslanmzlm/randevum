@@ -201,7 +201,7 @@ it('a second PUT updates the same row rather than creating a new one', function 
         ->and(Anamnesis::count())->toBe(1);
 });
 
-it('the widened core round-trips: bleeding_disorder vs blood_thinners independent, infectious_disease_note, physician fields', function (): void {
+it('the widened core round-trips: bleeding_disorder vs blood_thinners independent, infectious_disease_note', function (): void {
     $setup = uaSetup();
     $doctor = User::factory()->create();
     anamAssignRole($doctor, 'doctor', $setup['clinic']->id);
@@ -212,8 +212,6 @@ it('the widened core round-trips: bleeding_disorder vs blood_thinners independen
             'blood_thinners' => false,
             'infectious_disease' => true,
             'infectious_disease_note' => 'Hepatit B',
-            'physician_name' => 'Dr. Mehmet Öz',
-            'physician_phone' => '0212 555 00 00',
         ])
         ->assertRedirect();
 
@@ -222,9 +220,7 @@ it('the widened core round-trips: bleeding_disorder vs blood_thinners independen
     expect($anamnesis->bleeding_disorder)->toBeTrue()
         ->and($anamnesis->blood_thinners)->toBeFalse()
         ->and($anamnesis->infectious_disease)->toBeTrue()
-        ->and($anamnesis->infectious_disease_note)->toBe('Hepatit B')
-        ->and($anamnesis->physician_name)->toBe('Dr. Mehmet Öz')
-        ->and($anamnesis->physician_phone)->toBe('0212 555 00 00');
+        ->and($anamnesis->infectious_disease_note)->toBe('Hepatit B');
 });
 
 // ---------------------------------------------------------------------------
@@ -528,6 +524,32 @@ it('an inactive definition is neither required nor present in the props, but its
         ->get(route('patients.show', $setup['patient']))
         ->assertInertia(fn ($page) => $page
             ->where('anamnesisFields', fn ($fields) => collect($fields)->pluck('key')->doesntContain('retired_note')));
+});
+
+it('submitting a blank value clears a stored extra field', function (): void {
+    $setup = uaFieldsSetup();
+    $doctor = User::factory()->create();
+    anamAssignRole($doctor, 'doctor', $setup['clinic']->id);
+
+    $this->actingAs($doctor)
+        ->put(route('patients.anamnesis.update', $setup['patient']), [
+            'extra' => ['note_text' => 'ilk değer', 'required_note' => 'zorunlu'],
+        ])
+        ->assertRedirect();
+
+    expect($setup['patient']->fresh()->anamnesis->extra['note_text'])->toBe('ilk değer');
+
+    // An explicit blank must erase the stored value, not be treated as "not submitted".
+    $this->actingAs($doctor)
+        ->put(route('patients.anamnesis.update', $setup['patient']), [
+            'extra' => ['note_text' => '', 'required_note' => 'zorunlu'],
+        ])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect();
+
+    $extra = $setup['patient']->fresh()->anamnesis->extra;
+
+    expect($extra['note_text'] ?? null)->toBeNull();
 });
 
 it('extra values fail 422 per type: select outside options, number non-numeric, date malformed', function (): void {

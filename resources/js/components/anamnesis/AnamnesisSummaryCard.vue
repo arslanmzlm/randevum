@@ -129,8 +129,6 @@ const rows = computed<Row[]>(() => {
     push('surgery_history', a.surgery_history);
     push('family_history', a.family_history);
     push('menstrual_notes', a.menstrual_notes);
-    push('physician_name', a.physician_name);
-    push('physician_phone', a.physician_phone);
 
     props.fields.forEach((field) => {
         const value = extraText(field, a.extra?.[field.key]);

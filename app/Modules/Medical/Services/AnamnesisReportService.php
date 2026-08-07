@@ -47,7 +47,6 @@ class AnamnesisReportService
         'allergy' => ['allergies'],
         'history' => ['surgery_history', 'family_history'],
         'women' => ['pregnancy', 'menstrual_notes'],
-        'physician' => ['physician_name', 'physician_phone'],
     ];
 
     public function __construct(
@@ -219,7 +218,9 @@ class AnamnesisReportService
     private function formatDynamicFieldValue(AnamnesisField $field, mixed $value): ?string
     {
         return match ($field->type) {
-            AnamnesisFieldType::Boolean => $value ? __('health.yes') : __('health.no'),
+            // Same rule as the core flags: a false flag is omitted rather than printed as
+            // "Hayır", so the positive findings stay visible.
+            AnamnesisFieldType::Boolean => $value ? __('health.yes') : null,
             AnamnesisFieldType::Select => $this->optionLabel($field, (string) $value),
             AnamnesisFieldType::Multiselect => is_array($value)
                 ? implode(', ', array_filter(array_map(fn ($v) => $this->optionLabel($field, (string) $v), $value)))

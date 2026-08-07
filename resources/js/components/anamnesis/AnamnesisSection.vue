@@ -156,8 +156,6 @@ function seed(
         surgery_history: a?.surgery_history ?? '',
         family_history: a?.family_history ?? '',
         menstrual_notes: a?.menstrual_notes ?? '',
-        physician_name: a?.physician_name ?? '',
-        physician_phone: a?.physician_phone ?? '',
         extra: seedExtra(a, fields),
     };
 }

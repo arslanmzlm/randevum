@@ -59,8 +59,6 @@ export type Anamnesis = {
     surgery_history: string | null;
     family_history: string | null;
     menstrual_notes: string | null;
-    physician_name: string | null;
-    physician_phone: string | null;
     /** Vertical-specific answers, keyed by `AnamnesisFieldDefinition.key`. */
     extra: Record<string, AnamnesisExtraValue>;
     /** ISO 8601, or null when never filled. */
@@ -92,8 +90,6 @@ export type AnamnesisFormData = {
     surgery_history: string;
     family_history: string;
     menstrual_notes: string;
-    physician_name: string;
-    physician_phone: string;
     extra: Record<string, AnamnesisExtraFormValue>;
 };
 

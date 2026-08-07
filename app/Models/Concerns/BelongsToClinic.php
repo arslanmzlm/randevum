@@ -17,9 +17,23 @@ trait BelongsToClinic
         static::addGlobalScope(new ClinicScope);
 
         static::creating(function (Model $model): void {
+            if (! $model->autoFillsClinicId()) {
+                return;
+            }
+
             if (is_null($model->getAttribute('clinic_id')) && ($clinicId = app(ClinicContext::class)->id())) {
                 $model->setAttribute('clinic_id', $clinicId);
             }
         });
+    }
+
+    /**
+     * Platform-level rows whose clinic_id is null BY DESIGN (definition/reference tables that
+     * still want the read scope) override this and return false, so a create that happens to
+     * run inside a clinic-scoped request is not silently stamped.
+     */
+    public function autoFillsClinicId(): bool
+    {
+        return true;
     }
 }

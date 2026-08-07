@@ -43,8 +43,6 @@ class AnamnesisFactory extends Factory
             'family_history' => null,
             'pregnancy' => 'none',
             'menstrual_notes' => null,
-            'physician_name' => null,
-            'physician_phone' => null,
             'extra' => [],
         ];
     }

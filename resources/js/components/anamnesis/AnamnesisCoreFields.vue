@@ -19,7 +19,7 @@ const form = useAnamnesisForm();
 // Allowed values mirrored by hand from the Anamnesis model consts (frontend-components rule
 // — validated clinical strings, not branched-on enums). Labels resolve from health.options.*.
 const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', '0+', '0-'];
-const smoking = ['none', 'occasional', 'regular'];
+const smoking = ['none', 'former', 'occasional', 'regular'];
 const alcohol = ['none', 'occasional', 'regular'];
 const diabetes = ['none', 'type1', 'type2'];
 const pregnancy = ['none', 'pregnant', 'breastfeeding'];
@@ -309,37 +309,6 @@ const booleanFlags = [
                     fluid
                 />
             </FormField>
-        </div>
-
-        <div class="flex flex-col gap-5">
-            <h3 class="text-sm font-semibold text-surface-500">
-                {{ t('health.groups.physician') }}
-            </h3>
-            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                <FormField
-                    :label="t('health.fields.physician_name')"
-                    :error="fieldError('physician_name')"
-                >
-                    <InputText
-                        v-model="form.physician_name"
-                        :maxlength="150"
-                        :disabled="disabled"
-                        fluid
-                    />
-                </FormField>
-                <FormField
-                    :label="t('health.fields.physician_phone')"
-                    :error="fieldError('physician_phone')"
-                >
-                    <InputText
-                        v-model="form.physician_phone"
-                        :maxlength="30"
-                        inputmode="tel"
-                        :disabled="disabled"
-                        fluid
-                    />
-                </FormField>
-            </div>
         </div>
     </div>
 </template>

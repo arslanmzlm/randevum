@@ -19,6 +19,16 @@ class AnamnesisField extends Model
     /** @use HasFactory<AnamnesisFieldFactory> */
     use BelongsToClinic, HasFactory;
 
+    /**
+     * Definitions are vertical-wide (clinic_id null) this wave; the column exists so a clinic
+     * can own a field later. Never stamp the active clinic automatically — that would turn a
+     * global definition into a clinic-scoped duplicate the vertical unique index does not catch.
+     */
+    public function autoFillsClinicId(): bool
+    {
+        return false;
+    }
+
     protected $table = 'anamnesis_fields';
 
     /**

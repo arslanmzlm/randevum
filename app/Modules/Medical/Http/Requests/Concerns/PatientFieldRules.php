@@ -3,6 +3,7 @@
 namespace App\Modules\Medical\Http\Requests\Concerns;
 
 use App\Enums\Gender;
+use App\Enums\MaritalStatus;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Unique;
 
@@ -24,6 +25,8 @@ trait PatientFieldRules
             'email' => ['nullable', 'email', 'max:255'],
             'birth_date' => ['nullable', 'date', 'before:today'],
             'gender' => ['nullable', Rule::enum(Gender::class)],
+            'occupation' => ['nullable', 'string', 'max:100'],
+            'marital_status' => ['nullable', Rule::enum(MaritalStatus::class)],
             'notification_enabled' => ['boolean'],
             'is_legacy' => ['boolean'],
             'notes' => ['nullable', 'string', 'max:5000'],

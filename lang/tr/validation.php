@@ -126,6 +126,8 @@ return [
         'contact_phone' => 'Acil telefon numarası',
         'birth_date' => 'Doğum tarihi',
         'gender' => 'Cinsiyet',
+        'occupation' => 'Meslek',
+        'marital_status' => 'Medeni hal',
         'notification_enabled' => 'SMS bildirimleri',
         'is_legacy' => 'Sistem öncesi hasta',
         'notes' => 'Notlar',

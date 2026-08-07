@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\Gender;
+use App\Enums\MaritalStatus;
 use App\Models\Concerns\BelongsToClinic;
 use Database\Factories\PatientFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -33,6 +34,8 @@ class Patient extends Model
         'email',
         'birth_date',
         'gender',
+        'occupation',
+        'marital_status',
         'notification_enabled',
         'is_legacy',
         'notes',
@@ -50,6 +53,7 @@ class Patient extends Model
             'contact_phone' => E164PhoneNumberCast::class.':TR',
             'birth_date' => 'date',
             'gender' => Gender::class,
+            'marital_status' => MaritalStatus::class,
             'notification_enabled' => 'boolean',
             'is_legacy' => 'boolean',
         ];

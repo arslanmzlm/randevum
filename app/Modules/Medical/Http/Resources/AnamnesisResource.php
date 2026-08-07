@@ -43,8 +43,6 @@ class AnamnesisResource extends JsonResource
             'surgery_history' => $this->surgery_history,
             'family_history' => $this->family_history,
             'menstrual_notes' => $this->menstrual_notes,
-            'physician_name' => $this->physician_name,
-            'physician_phone' => $this->physician_phone,
             'extra' => $this->extra ?? [],
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];

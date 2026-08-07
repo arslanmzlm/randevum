@@ -15,7 +15,6 @@ return [
         'allergy' => 'Allergy',
         'history' => 'History',
         'women' => 'Women',
-        'physician' => 'Physician Info',
         'podiatry' => 'Podiatry',
     ],
 
@@ -44,8 +43,6 @@ return [
         'family_history' => 'Family History',
         'pregnancy' => 'Pregnancy / Breastfeeding',
         'menstrual_notes' => 'Menstrual Notes',
-        'physician_name' => 'Physician Name',
-        'physician_phone' => 'Physician Phone',
         'foot_surgery_history' => 'Foot Surgery / Injury History',
         'diabetic_foot_history' => 'Diabetic Foot History',
         'current_foot_complaint' => 'Current Foot Complaint',

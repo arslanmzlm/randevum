@@ -22,7 +22,7 @@ class Anamnesis extends Model
 
     public const BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', '0+', '0-'];
 
-    public const SMOKING = ['none', 'occasional', 'regular'];
+    public const SMOKING = ['none', 'former', 'occasional', 'regular'];
 
     public const ALCOHOL = ['none', 'occasional', 'regular'];
 
@@ -59,8 +59,6 @@ class Anamnesis extends Model
         'family_history',
         'pregnancy',
         'menstrual_notes',
-        'physician_name',
-        'physician_phone',
         'extra',
     ];
 

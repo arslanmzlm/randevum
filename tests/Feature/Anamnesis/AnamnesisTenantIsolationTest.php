@@ -1,9 +1,11 @@
 <?php
 
 use App\Models\Anamnesis;
+use App\Models\AnamnesisField;
 use App\Models\Clinic;
 use App\Models\Patient;
 use App\Models\User;
+use App\Models\Vertical;
 use App\Support\ClinicContext;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
@@ -126,4 +128,34 @@ it('a create under clinic A context stamps clinic_id = A even when the payload o
     $anamnesis = Anamnesis::create(['patient_id' => $patient->id, 'blood_type' => 'A+']);
 
     expect($anamnesis->clinic_id)->toBe($clinicA->id);
+});
+
+it('a clinic-scoped field definition is invisible to another clinic of the same vertical', function (): void {
+    $vertical = Vertical::factory()->create();
+    $clinicA = Clinic::factory()->create(['vertical_id' => $vertical->id]);
+    $clinicB = Clinic::factory()->create(['vertical_id' => $vertical->id]);
+    $patientB = Patient::factory()->create(['clinic_id' => $clinicB->id]);
+
+    $ownerB = User::factory()->create();
+    atiRole($ownerB, 'owner', $clinicB->id);
+
+    // Global (vertical-wide) definition — both clinics see it.
+    AnamnesisField::factory()->text()->create(['vertical_id' => $vertical->id, 'key' => 'shared_note']);
+
+    // Clinic A's own definition. activeForVertical() reapplies tenancy by hand
+    // (whereNull(clinic_id) OR clinic_id = current), so this branch needs its own guard.
+    AnamnesisField::factory()->text()->create([
+        'vertical_id' => $vertical->id,
+        'clinic_id' => $clinicA->id,
+        'key' => 'clinic_a_only',
+    ]);
+
+    $this->actingAs($ownerB)
+        ->get(route('patients.show', $patientB))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('anamnesisFields', function ($fields) {
+            $keys = collect($fields)->pluck('key');
+
+            return $keys->contains('shared_note') && $keys->doesntContain('clinic_a_only');
+        }));
 });

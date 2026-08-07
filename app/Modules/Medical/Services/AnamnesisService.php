@@ -21,8 +21,6 @@ class AnamnesisService
         'surgery_history',
         'family_history',
         'menstrual_notes',
-        'physician_name',
-        'physician_phone',
     ];
 
     public function __construct(

@@ -22,6 +22,8 @@ return new class extends Migration
             $table->string('email')->nullable();
             $table->date('birth_date')->nullable();
             $table->string('gender')->nullable(); // App\Enums\Gender (cast + Rule::enum = source of truth)
+            $table->string('occupation', 100)->nullable(); // anamnez formlarının çoğu sorar; yük bindiren meslekler klinik olarak anlamlı
+            $table->string('marital_status')->nullable(); // App\Enums\MaritalStatus
             $table->boolean('notification_enabled')->default(true);
             $table->boolean('is_legacy')->default(false); // sistem öncesi / migrate edilmiş kayıt
             $table->text('notes')->nullable(); // klinik-seviyesi gözlem

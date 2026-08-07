@@ -253,6 +253,8 @@ return [
         'contact_phone' => 'emergency phone number',
         'birth_date' => 'date of birth',
         'gender' => 'gender',
+        'occupation' => 'Occupation',
+        'marital_status' => 'Marital status',
         'notification_enabled' => 'SMS notifications',
         'is_legacy' => 'legacy patient',
         'notes' => 'notes',

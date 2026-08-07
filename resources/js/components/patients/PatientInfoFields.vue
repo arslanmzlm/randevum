@@ -14,6 +14,13 @@ const genderOptions = computed(() => [
     { label: t('patient.gender.other'), value: 'other' as const },
 ]);
 
+const maritalOptions = computed(() =>
+    (['single', 'married', 'divorced', 'widowed'] as const).map((value) => ({
+        label: t(`patient.marital_status.${value}`),
+        value,
+    })),
+);
+
 const maxBirthDate = new Date();
 </script>
 
@@ -49,18 +56,41 @@ const maxBirthDate = new Date();
             />
         </FormField>
 
+        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            <FormField
+                :label="t('patient.fields.gender')"
+                :error="form.errors.gender"
+            >
+                <Select
+                    v-model="form.gender"
+                    :options="genderOptions"
+                    option-label="label"
+                    option-value="value"
+                    show-clear
+                    fluid
+                />
+            </FormField>
+
+            <FormField
+                :label="t('patient.fields.marital_status')"
+                :error="form.errors.marital_status"
+            >
+                <Select
+                    v-model="form.marital_status"
+                    :options="maritalOptions"
+                    option-label="label"
+                    option-value="value"
+                    show-clear
+                    fluid
+                />
+            </FormField>
+        </div>
+
         <FormField
-            :label="t('patient.fields.gender')"
-            :error="form.errors.gender"
+            :label="t('patient.fields.occupation')"
+            :error="form.errors.occupation"
         >
-            <Select
-                v-model="form.gender"
-                :options="genderOptions"
-                option-label="label"
-                option-value="value"
-                show-clear
-                fluid
-            />
+            <InputText v-model="form.occupation" :maxlength="100" fluid />
         </FormField>
     </div>
 </template>

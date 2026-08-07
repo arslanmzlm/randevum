@@ -92,16 +92,23 @@ function setValue(key: string, value: unknown): void {
             </h3>
 
             <template v-for="field in group.fields" :key="field.key">
-                <SettingRow
+                <!-- SettingRow has no error slot, so a required-boolean error would be
+                     invisible; render it under the row. -->
+                <div
                     v-if="field.type === 'boolean'"
-                    :label="field.label"
+                    class="flex flex-col gap-1"
                 >
-                    <ToggleSwitch
-                        :model-value="booleanValue(field.key)"
-                        :disabled="disabled"
-                        @update:model-value="setValue(field.key, $event)"
-                    />
-                </SettingRow>
+                    <SettingRow :label="field.label">
+                        <ToggleSwitch
+                            :model-value="booleanValue(field.key)"
+                            :disabled="disabled"
+                            @update:model-value="setValue(field.key, $event)"
+                        />
+                    </SettingRow>
+                    <p v-if="errorFor(field.key)" class="text-xs text-red-500">
+                        {{ errorFor(field.key) }}
+                    </p>
+                </div>
 
                 <FormField
                     v-else

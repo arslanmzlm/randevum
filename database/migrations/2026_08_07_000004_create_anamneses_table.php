@@ -23,7 +23,7 @@ return new class extends Migration
             $table->string('blood_type', 5)->nullable();
             $table->unsignedSmallInteger('height_cm')->nullable();
             $table->decimal('weight_kg', 5, 2)->nullable();
-            $table->string('smoking')->nullable(); // none / occasional / regular
+            $table->string('smoking')->nullable(); // none / former / occasional / regular
             $table->string('alcohol')->nullable(); // none / occasional / regular
 
             // Systemic / chronic
@@ -49,10 +49,6 @@ return new class extends Migration
             // Women
             $table->string('pregnancy')->nullable(); // none / pregnant / breastfeeding
             $table->text('menstrual_notes')->nullable();
-
-            // Referring physician
-            $table->string('physician_name', 150)->nullable();
-            $table->string('physician_phone', 30)->nullable(); // plain string — third-party contact, not the patient's
 
             // Vertical/clinic-specific answers, keyed by anamnesis_fields.key.
             $table->jsonb('extra')->nullable();

@@ -32,6 +32,8 @@ class PatientResource extends JsonResource
             'birth_date' => $this->birth_date?->toDateString(),
             'age' => $this->birth_date ? (int) Carbon::parse($this->birth_date)->age : null,
             'gender' => $this->gender?->value,
+            'occupation' => $this->occupation,
+            'marital_status' => $this->marital_status?->value,
             'notification_enabled' => (bool) $this->notification_enabled,
             'is_legacy' => (bool) $this->is_legacy,
             'notes' => $this->notes,

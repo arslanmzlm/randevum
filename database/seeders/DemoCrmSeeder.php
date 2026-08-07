@@ -172,7 +172,6 @@ class DemoCrmSeeder extends Seeder
                 'other_chronic' => null, 'allergies' => 'Penisilin',
                 'surgery_history' => null, 'family_history' => 'Baba: tip 2 diyabet',
                 'pregnancy' => null, 'menstrual_notes' => null,
-                'physician_name' => null, 'physician_phone' => null,
                 'extra' => [
                     'foot_surgery_history' => 'Sol ayak başparmak tırnak matriksektomisi (2021)',
                     'diabetic_foot_history' => true,
@@ -189,7 +188,6 @@ class DemoCrmSeeder extends Seeder
                 'regular_medications' => null, 'other_chronic' => 'Hipotiroidi',
                 'allergies' => null, 'surgery_history' => null, 'family_history' => null,
                 'pregnancy' => 'pregnant', 'menstrual_notes' => null,
-                'physician_name' => 'Dr. Elif Kaya', 'physician_phone' => '0232 444 55 66',
                 'extra' => [
                     'foot_surgery_history' => null,
                     'diabetic_foot_history' => false,
@@ -208,7 +206,6 @@ class DemoCrmSeeder extends Seeder
                 'surgery_history' => 'Sağ diz menisküs ameliyatı (2015)',
                 'family_history' => 'Anne: hipertansiyon, kardiyovasküler hastalık',
                 'pregnancy' => null, 'menstrual_notes' => null,
-                'physician_name' => 'Dr. Murat Şen', 'physician_phone' => '0232 333 22 11',
                 'extra' => [
                     'foot_surgery_history' => 'Sağ ayak 2. parmak amputasyonu (2019)',
                     'diabetic_foot_history' => true,
@@ -225,7 +222,6 @@ class DemoCrmSeeder extends Seeder
                 'regular_medications' => null, 'other_chronic' => null, 'allergies' => null,
                 'surgery_history' => null, 'family_history' => null,
                 'pregnancy' => null, 'menstrual_notes' => null,
-                'physician_name' => null, 'physician_phone' => null,
                 'extra' => [
                     'foot_surgery_history' => null,
                     'diabetic_foot_history' => false,

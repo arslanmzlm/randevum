@@ -49,8 +49,6 @@ class UpdateAnamnesisRequest extends FormRequest
             'surgery_history' => ['nullable', 'string', 'max:2000'],
             'family_history' => ['nullable', 'string', 'max:2000'],
             'menstrual_notes' => ['nullable', 'string', 'max:2000'],
-            'physician_name' => ['nullable', 'string', 'max:150'],
-            'physician_phone' => ['nullable', 'string', 'max:30'],
             'extra' => ['nullable', 'array'],
             ...$anamnesisFieldService->validationRules($activeFields),
         ];

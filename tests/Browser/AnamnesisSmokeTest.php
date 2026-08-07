@@ -65,6 +65,10 @@ it('renders the patient show page with the Anamnesis section and no JS errors', 
         ->assertSee(trim($patient->first_name.' '.$patient->last_name))
         // The PDF download action's label — in-body, part of SectionCard's #actions slot.
         ->assertSee('Anamnez (PDF)')
+        // The seeded vertical group and one of its field labels: a broken
+        // AnamnesisDynamicFields render would still pass every assertion above.
+        ->assertSee(__('health.groups.podiatry'))
+        ->assertSee(__('health.fields.foot_surgery_history'))
         // Guard against the silent-blank-body false green: <main> must be non-empty.
         ->assertScript(
             '() => (document.querySelector("main")?.innerText.trim().length ?? 0) > 0',

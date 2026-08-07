@@ -33,6 +33,8 @@ const form = useForm<PatientFormData>({
     email: '',
     birth_date: null,
     gender: null,
+    occupation: '',
+    marital_status: null,
     notification_enabled: true,
     is_legacy: false,
     notes: '',

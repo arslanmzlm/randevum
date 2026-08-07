@@ -11,6 +11,9 @@ import type { PatientTreatmentHistoryItem } from '@/types/treatment';
 
 export type PatientGender = 'male' | 'female' | 'other';
 
+/** Mirrors App\Enums\MaritalStatus. */
+export type MaritalStatus = 'single' | 'married' | 'divorced' | 'widowed';
+
 /** Canonical patient shape emitted by PatientResource (index + show + edit). */
 export type Patient = {
     id: number;
@@ -24,6 +27,8 @@ export type Patient = {
     birth_date: string | null;
     age: number | null;
     gender: PatientGender | null;
+    occupation: string | null;
+    marital_status: MaritalStatus | null;
     notification_enabled: boolean;
     is_legacy: boolean;
     notes: string | null;
@@ -104,6 +109,8 @@ export type PatientFormData = {
     email: string;
     birth_date: Date | null;
     gender: PatientGender | null;
+    occupation: string;
+    marital_status: MaritalStatus | null;
     notification_enabled: boolean;
     is_legacy: boolean;
     notes: string;

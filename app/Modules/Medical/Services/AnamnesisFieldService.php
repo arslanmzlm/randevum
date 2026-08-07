@@ -11,6 +11,9 @@ use Illuminate\Validation\Rule;
 
 class AnamnesisFieldService
 {
+    /** @var array<string, Collection<int, AnamnesisField>> */
+    private array $definitionCache = [];
+
     public function __construct(
         private AnamnesisFieldRepository $anamnesisFieldRepository,
         private ClinicContext $clinicContext,
@@ -25,9 +28,20 @@ class AnamnesisFieldService
      */
     public function definitionsForActiveClinic(bool $includeInactive = false): Collection
     {
-        $clinic = $this->clinicContext->clinicOrFail();
+        // No active clinic (superadmin / patient-role session) means no vertical to resolve
+        // definitions from. Return empty instead of throwing: FormRequest::rules() runs BEFORE
+        // the controller's authorize(), so throwing here turns a clean 403 into a 500.
+        $clinic = $this->clinicContext->clinic();
 
-        return $includeInactive
+        if ($clinic === null) {
+            return new Collection;
+        }
+
+        $cacheKey = $clinic->id.':'.($includeInactive ? 'all' : 'active');
+
+        // Memoized per request: rules(), the service update and the PDF path each ask for the
+        // same set within one request.
+        return $this->definitionCache[$cacheKey] ??= $includeInactive
             ? $this->anamnesisFieldRepository->allForVertical($clinic->vertical_id, $clinic->id)
             : $this->anamnesisFieldRepository->activeForVertical($clinic->vertical_id, $clinic->id);
     }

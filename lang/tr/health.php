@@ -15,7 +15,6 @@ return [
         'allergy' => 'Alerji',
         'history' => 'Geçmiş',
         'women' => 'Kadın',
-        'physician' => 'Hekim Bilgileri',
         'podiatry' => 'Podoloji',
     ],
 
@@ -44,8 +43,6 @@ return [
         'family_history' => 'Aile Öyküsü',
         'pregnancy' => 'Hamilelik / Emzirme',
         'menstrual_notes' => 'Adet / Regl Notları',
-        'physician_name' => 'Hekim Adı',
-        'physician_phone' => 'Hekim Telefonu',
         'foot_surgery_history' => 'Ayak Ameliyatı / Yaralanma Geçmişi',
         'diabetic_foot_history' => 'Diyabetik Ayak Öyküsü',
         'current_foot_complaint' => 'Mevcut Ayak Şikayeti',

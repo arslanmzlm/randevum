@@ -46,6 +46,8 @@ const form = useForm<PatientFormData>({
         ? parseDateString(props.patient.birth_date)
         : null,
     gender: props.patient.gender,
+    occupation: props.patient.occupation ?? '',
+    marital_status: props.patient.marital_status,
     notification_enabled: props.patient.notification_enabled,
     is_legacy: props.patient.is_legacy,
     notes: props.patient.notes ?? '',
