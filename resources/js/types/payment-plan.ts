@@ -18,8 +18,12 @@ export type PendingInstallment = {
     due_date: string;
     /** Decimal string. */
     amount: string;
+    /** Derived from the installment's transactions (refunds netted out); "0.00" when untouched. */
+    collected_amount: string;
+    /** amount − collected, never negative. */
+    remaining_amount: string;
     status: InstallmentStatus;
-    /** Derived (pending + past due) — no stored overdue status. */
+    /** Derived (still open + past due) — no stored overdue status. */
     is_overdue: boolean;
     plan_total: string;
     plan_status: PaymentPlanStatus;
@@ -61,6 +65,10 @@ export type PatientPlanInstallment = {
     /** Y-m-d. */
     due_date: string;
     amount: string;
+    /** Derived from the installment's transactions (refunds netted out). */
+    collected_amount: string;
+    /** amount − collected, never negative. */
+    remaining_amount: string;
     status: InstallmentStatus;
     /** ISO 8601 or null. */
     paid_at: string | null;

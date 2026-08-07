@@ -31,6 +31,7 @@ class TransactionRepository
     /**
      * Sum of all transaction amounts for a patient in the active clinic.
      * BelongsToClinic global scope provides tenant isolation automatically.
+     * Filtered on patient_id, so a manual-income row (patient_id NULL) never counts here.
      */
     public function paidTotalForPatient(int $patientId): string
     {
@@ -146,7 +147,8 @@ class TransactionRepository
      * range, carrying only the columns revenue aggregation needs. Negative refund
      * counter-entries are included so callers net them. Day/method bucketing is done
      * in PHP against the clinic timezone (DB-agnostic: sqlite tests + pgsql prod), so
-     * rows are returned rather than grouped in SQL.
+     * rows are returned rather than grouped in SQL. patient_id/category let the report
+     * split patient collections from manual income (patient_id NULL).
      *
      * BelongsToClinic global scope provides tenant isolation automatically.
      *
@@ -157,7 +159,7 @@ class TransactionRepository
         return Transaction::whereBetween('paid_at', [$startUtc, $endUtc])
             ->whereNot('status', TransactionStatus::Pending)
             ->orderBy('paid_at')
-            ->get(['paid_at', 'amount', 'payment_method']);
+            ->get(['paid_at', 'amount', 'payment_method', 'patient_id', 'category']);
     }
 
     /**
@@ -174,6 +176,6 @@ class TransactionRepository
     {
         return Transaction::whereNot('status', TransactionStatus::Pending)
             ->orderBy('paid_at')
-            ->get(['paid_at', 'amount', 'payment_method']);
+            ->get(['paid_at', 'amount', 'payment_method', 'patient_id', 'category']);
     }
 }

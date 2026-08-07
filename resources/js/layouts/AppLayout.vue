@@ -9,6 +9,7 @@ import {
     IconCalendarOff,
     IconCalendarPlus,
     IconCalendarWeek,
+    IconCashBanknote,
     IconClipboardList,
     IconFolders,
     IconHome,
@@ -62,6 +63,7 @@ import { edit as clinicEdit } from '@/routes/clinic';
 import { index as doctorsIndex, mine as doctorsMine } from '@/routes/doctors';
 import { index as expensesIndex } from '@/routes/expenses';
 import { index as followUpTypesIndex } from '@/routes/follow-up-types';
+import { index as incomesIndex } from '@/routes/incomes';
 import { index as patientsIndex, show as patientShow } from '@/routes/patients';
 import { installments as paymentPlansIndex } from '@/routes/payment-plans';
 import { index as productsIndex } from '@/routes/products';
@@ -345,6 +347,16 @@ const navGroups = computed<NavGroup[]>(() =>
                               href: expensesIndex().url,
                               component: 'expenses/Index',
                               icon: IconReceipt,
+                          },
+                      ]
+                    : []),
+                ...(can('transactions.viewAny')
+                    ? [
+                          {
+                              label: t('nav.incomes'),
+                              href: incomesIndex().url,
+                              component: 'incomes/Index',
+                              icon: IconCashBanknote,
                           },
                       ]
                     : []),

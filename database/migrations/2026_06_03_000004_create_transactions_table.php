@@ -11,7 +11,8 @@ return new class extends Migration
         Schema::create('transactions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('clinic_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('patient_id')->constrained()->cascadeOnDelete();
+            // Nullable: NULL = clinic income with no patient (manuel gelir).
+            $table->foreignId('patient_id')->nullable()->constrained()->cascadeOnDelete();
             // Nullable: a transaction need not be tied to a specific treatment
             $table->foreignId('treatment_id')->nullable()->constrained('treatments')->nullOnDelete();
             $table->decimal('amount', 12, 2);
@@ -19,6 +20,8 @@ return new class extends Migration
             $table->string('status')->default('completed');
             $table->timestampTz('paid_at');
             $table->text('note')->nullable();
+            // Free-text manual-income category (expenses.category pattern); null for patient payments.
+            $table->string('category', 100)->nullable();
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             // Links a refund counter-entry back to the payment it reverses; null on normal payments.
             $table->foreignId('original_transaction_id')->nullable()->constrained('transactions')->nullOnDelete();
@@ -32,6 +35,7 @@ return new class extends Migration
             $table->index(['clinic_id', 'patient_id', 'paid_at']);
             $table->index(['clinic_id', 'original_transaction_id']);
             $table->index(['clinic_id', 'payment_plan_installment_id']);
+            $table->index(['clinic_id', 'category']);
         });
     }
 

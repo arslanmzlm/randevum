@@ -92,6 +92,20 @@ it('clinic A owner gets 404 collecting a clinic B installment (scoped route bind
     expect($installmentB->fresh()->status)->toBe(InstallmentStatus::Pending);
 });
 
+it('clinic A owner gets 404 partially collecting a clinic B installment (scoped route binding)', function (): void {
+    ['ownerA' => $ownerA, 'installmentB' => $installmentB] = pplTiTwoClinicFixture();
+
+    $this->actingAs($ownerA)
+        ->post(route('payment-plans.installments.collect', $installmentB), ['payment_method' => 'cash', 'amount' => '30.00'])
+        ->assertNotFound();
+
+    expect(
+        Transaction::withoutGlobalScopes()->where('payment_plan_installment_id', $installmentB->id)->exists()
+    )->toBeFalse();
+
+    expect($installmentB->fresh()->status)->toBe(InstallmentStatus::Pending);
+});
+
 // ---------------------------------------------------------------------------
 // Cancel — cross-clinic 404
 // ---------------------------------------------------------------------------

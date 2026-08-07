@@ -78,7 +78,8 @@ interface BalanceReaderContract
      *   created_at: string,
      *   installments: array<int, array{
      *     id: int, sequence: int, due_date: string, amount: string,
-     *     status: string, paid_at: string|null, is_overdue: bool,
+     *     status: string, paid_at: string|null,
+     *     collected_amount: string, remaining_amount: string, is_overdue: bool,
      *   }>,
      * }>
      */

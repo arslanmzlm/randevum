@@ -48,7 +48,39 @@ class DemoBillingSeeder extends Seeder
         $this->seedRefund();
         $this->seedExpenses();
         $this->seedPaymentPlans();
+        $this->seedManualIncome();
         $this->seedTodaysPayments();
+    }
+
+    /**
+     * Manuel gelir: clinic income with no patient (patient_id NULL), spread over the current
+     * month so the finance page's income breakdown is non-empty in the demo.
+     */
+    private function seedManualIncome(): void
+    {
+        if (Transaction::withoutGlobalScopes()->where('clinic_id', $this->clinic->id)->whereNull('patient_id')->exists()) {
+            return;
+        }
+
+        $rows = [
+            ['Kira geliri', PaymentMethod::Transfer, 4500, 3],
+            ['Ürün toptan satışı', PaymentMethod::Cash, 1200, 10],
+            ['Kurs geliri', PaymentMethod::Card, 2800, 17],
+        ];
+
+        foreach ($rows as [$category, $method, $amount, $dayOfMonth]) {
+            Transaction::create([
+                'clinic_id' => $this->clinic->id,
+                'patient_id' => null,
+                'treatment_id' => null,
+                'amount' => $amount,
+                'payment_method' => $method,
+                'status' => TransactionStatus::Completed,
+                'paid_at' => Carbon::today()->startOfMonth()->addDays($dayOfMonth - 1),
+                'category' => $category,
+                'created_by' => $this->owner->id,
+            ]);
+        }
     }
 
     /**

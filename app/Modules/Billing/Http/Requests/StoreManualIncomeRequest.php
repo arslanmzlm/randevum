@@ -7,7 +7,7 @@ use App\Support\ValidationRules;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class CollectInstallmentRequest extends FormRequest
+class StoreManualIncomeRequest extends FormRequest
 {
     /**
      * Authorization is handled by the controller via $this->authorize('create', Transaction::class).
@@ -18,18 +18,15 @@ class CollectInstallmentRequest extends FormRequest
     }
 
     /**
-     * An omitted amount collects the whole remaining (full-installment collection, the v1
-     * behaviour); the remaining cap is enforced in the Service, which has the derived
-     * remaining — this request has no cheap access to it.
-     *
      * @return array<string, mixed>
      */
     public function rules(): array
     {
         return [
+            'paid_at' => ['required', 'date', 'before_or_equal:now'],
+            'amount' => ['required', ...ValidationRules::money(0.01)],
             'payment_method' => ['required', Rule::enum(PaymentMethod::class)],
-            'amount' => ['nullable', ...ValidationRules::money(0.01)],
-            'paid_at' => ['nullable', 'date', 'before_or_equal:now'],
+            'category' => ['nullable', 'string', 'max:100'],
             'note' => ['nullable', 'string', 'max:1000'],
         ];
     }

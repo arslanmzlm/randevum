@@ -23,11 +23,12 @@ export type CrudResource<TForm extends object, TItem extends { id: number }> = {
     /** Dialog width utility classes; defaults to a single-column form width. */
     width?: string;
     store: () => RouteUrl;
-    update: (id: number) => RouteUrl;
+    /** Omitted for an immutable resource (no edit route) — the dialog then only ever creates. */
+    update?: (id: number) => RouteUrl;
     /** Blank form for create. */
     empty: () => TForm;
-    /** Form seeded from the row being edited. */
-    toForm: (item: TItem) => TForm;
+    /** Form seeded from the row being edited; omitted alongside `update`. */
+    toForm?: (item: TItem) => TForm;
     /** Payload shaping before submit (dates → strings, empty → null). */
     transform?: (data: TForm) => Record<string, unknown>;
     /** The entity's own field markup; reads the form through `useCrudForm()`. */

@@ -4,22 +4,26 @@ import type {
     DataTableSortEvent,
 } from 'primevue/datatable';
 import { computed, reactive, ref } from 'vue';
-import type { ExpenseFilters, ExpenseQuery } from '@/types/expense';
-import type { SortOrderString } from '@/types/table';
+import type {
+    DateWindowFilters,
+    SortOrderString,
+    TableState,
+} from '@/types/table';
 
 /**
- * Shared list-state driver for the expense list, including the own/clinic scope switch.
+ * Shared list-state driver for the money lists that filter by a clinic-local date window
+ * (expenses, manual income), including the own/clinic scope switch.
  *
- * Unlike `useTableFilters`, the expense/finance backend reads its window (start/end/entire)
- * and category as FLAT query params (not `filter[...]`), so this serializes flat and never
- * uses `only` — a filter change reloads the whole page, which is exactly what the finance
- * page needs (the date window drives the revenue/expense/net cards too, not just the list).
+ * Unlike `useTableFilters`, those backends read their window (start/end/entire) and category
+ * as FLAT query params (not `filter[...]`), so this serializes flat and never uses `only` —
+ * a filter change reloads the whole page, which is exactly what the finance page needs (the
+ * date window drives the revenue/expense/net cards too, not just the list).
  */
-interface UseExpenseListOptions {
+interface UseDateWindowListOptions {
     /** Index route URL the reload targets. */
     url: string;
-    filters: ExpenseFilters;
-    query: ExpenseQuery;
+    filters: DateWindowFilters;
+    query: TableState;
     /** `current_page` echoed by the paginator meta. */
     currentPage: number;
     /** 'own' or 'all' — only meaningful for viewers holding expenses.viewAny. */
@@ -32,7 +36,7 @@ export interface DateWindow {
     end: string | null;
 }
 
-export function useExpenseList(options: UseExpenseListOptions) {
+export function useDateWindowList(options: UseDateWindowListOptions) {
     const { url, filters, query, currentPage } = options;
 
     const sortToken = query.sort || '';

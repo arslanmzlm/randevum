@@ -78,6 +78,16 @@ function frExpense(Clinic $clinic, string $amount, string $expenseDate, ?string 
     ]);
 }
 
+function frManualIncome(Clinic $clinic, string $amount, string $paidAtUtc, ?string $category = null): Transaction
+{
+    return Transaction::factory()->manual()->create([
+        'clinic_id' => $clinic->id,
+        'amount' => $amount,
+        'category' => $category,
+        'paid_at' => CarbonImmutable::parse($paidAtUtc, 'UTC'),
+    ]);
+}
+
 // ---------------------------------------------------------------------------
 // Authorization
 // ---------------------------------------------------------------------------
@@ -321,6 +331,72 @@ it('an expense recorded after caching is still reflected live (expense side is n
     $this->actingAs($owner)
         ->get(route('reports.finance'))
         ->assertInertia(fn ($page) => $page->where('expense.total', '30.00'));
+});
+
+// ---------------------------------------------------------------------------
+// Manual income — split from patient collections, by-category breakdown
+// ---------------------------------------------------------------------------
+
+it('income total is patient collections plus manual income, split apart in the range', function (): void {
+    ['clinic' => $clinic, 'owner' => $owner, 'patient' => $patient] = frSetup();
+
+    frPayment($clinic, $patient, '500.00', PaymentMethod::Cash, '2026-06-10 09:00:00');
+    frManualIncome($clinic, '150.00', '2026-06-10 09:00:00', 'Kira geliri');
+    frManualIncome($clinic, '50.00', '2026-06-10 09:00:00', 'Kurs geliri');
+
+    $this->actingAs($owner)
+        ->get(route('reports.finance', ['start' => '2026-06-10', 'end' => '2026-06-10']))
+        ->assertInertia(fn ($page) => $page
+            ->where('revenue.range.total', '700.00')
+            ->where('revenue.range.patient_total', '500.00')
+            ->where('revenue.range.manual_total', '200.00')
+        );
+});
+
+it('breaks manual income down by category, largest first, uncategorized mapped to null', function (): void {
+    ['clinic' => $clinic, 'owner' => $owner] = frSetup();
+
+    frManualIncome($clinic, '100.00', '2026-06-10 09:00:00', 'Kira geliri');
+    frManualIncome($clinic, '250.00', '2026-06-11 09:00:00', 'Kurs geliri');
+    frManualIncome($clinic, '30.00', '2026-06-11 09:00:00', null);
+
+    $this->actingAs($owner)
+        ->get(route('reports.finance', ['start' => '2026-06-10', 'end' => '2026-06-11']))
+        ->assertInertia(fn ($page) => $page
+            ->has('revenue.range.manual_by_category', 3)
+            ->where('revenue.range.manual_by_category.0.category', 'Kurs geliri')
+            ->where('revenue.range.manual_by_category.0.total', '250.00')
+            ->where('revenue.range.manual_by_category.2.category', null)
+            ->where('revenue.range.manual_by_category.2.total', '30.00')
+        );
+});
+
+it('honours the date window for the patient/manual split', function (): void {
+    ['clinic' => $clinic, 'owner' => $owner, 'patient' => $patient] = frSetup();
+
+    frPayment($clinic, $patient, '100.00', PaymentMethod::Cash, '2026-06-05 09:00:00');
+    frManualIncome($clinic, '900.00', '2026-06-05 09:00:00', 'Dışında');
+
+    $this->actingAs($owner)
+        ->get(route('reports.finance', ['start' => '2026-06-18', 'end' => '2026-06-25']))
+        ->assertInertia(fn ($page) => $page
+            ->where('revenue.range.patient_total', '0.00')
+            ->where('revenue.range.manual_total', '0.00')
+        );
+});
+
+it('never counts another clinic\'s manual income toward the split or the cache', function (): void {
+    ['clinic' => $clinic, 'owner' => $owner, 'patient' => $patient] = frSetup();
+    frPayment($clinic, $patient, '100.00', PaymentMethod::Cash, '2026-06-15 09:00:00');
+
+    $otherClinic = Clinic::factory()->create();
+    frManualIncome($otherClinic, '9999.00', '2026-06-15 09:00:00');
+
+    $this->actingAs($owner)
+        ->get(route('reports.finance'))
+        ->assertInertia(fn ($page) => $page
+            ->where('revenue.summary.today', '100.00')
+        );
 });
 
 // ---------------------------------------------------------------------------

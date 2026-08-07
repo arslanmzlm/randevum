@@ -31,6 +31,9 @@ class RevenueReportService
      *     entire: bool,
      *     granularity: 'day'|'month',
      *     total: string,
+     *     patient_total: string,
+     *     manual_total: string,
+     *     manual_by_category: array<int, array{category: ?string, total: string}>,
      *     by_method: array<int, array{method: string, total: string}>,
      *     by_period: array<int, array{period: string, total: string}>,
      *   },
@@ -61,7 +64,7 @@ class RevenueReportService
             ? 'month'
             : 'day';
 
-        [$total, $byMethod, $byPeriod] = $this->bucket($rows, $timezone, $granularity);
+        [$total, $patientTotal, $manualTotal, $manualByCategory, $byMethod, $byPeriod] = $this->bucket($rows, $timezone, $granularity);
 
         return [
             'summary' => $summary,
@@ -71,6 +74,9 @@ class RevenueReportService
                 'entire' => $entire,
                 'granularity' => $granularity,
                 'total' => $total,
+                'patient_total' => $patientTotal,
+                'manual_total' => $manualTotal,
+                'manual_by_category' => $manualByCategory,
                 'by_method' => $this->orderedMethods($byMethod),
                 'by_period' => $byPeriod,
             ],
@@ -114,21 +120,41 @@ class RevenueReportService
     }
 
     /**
-     * Net total, per-method totals and per-period totals, all bucketed in PHP against the
-     * clinic timezone. Period key is Y-m-d (daily) or Y-m (monthly).
+     * Net total, patient/manual split, manual-by-category, per-method totals and per-period
+     * totals, all bucketed in PHP against the clinic timezone. Period key is Y-m-d (daily) or
+     * Y-m (monthly). `total`/`by_method`/`by_period` stay ALL revenue (patient + manual) — the
+     * split is additive, on top.
      *
      * @param  Collection<int, Transaction>  $rows
-     * @return array{0: string, 1: array<string, string>, 2: array<int, array{period: string, total: string}>}
+     * @return array{
+     *   0: string,
+     *   1: string,
+     *   2: string,
+     *   3: array<int, array{category: ?string, total: string}>,
+     *   4: array<string, string>,
+     *   5: array<int, array{period: string, total: string}>,
+     * }
      */
     private function bucket(Collection $rows, string $timezone, string $granularity): array
     {
         $byPeriod = [];
         $byMethod = [];
+        $byManualCategory = [];
         $total = '0.00';
+        $patientTotal = '0.00';
+        $manualTotal = '0.00';
 
         foreach ($rows as $row) {
             $amount = (string) $row->amount;
             $total = bcadd($total, $amount, 2);
+
+            if ($row->patient_id !== null) {
+                $patientTotal = bcadd($patientTotal, $amount, 2);
+            } else {
+                $manualTotal = bcadd($manualTotal, $amount, 2);
+                $categoryKey = $row->category ?? '';
+                $byManualCategory[$categoryKey] = bcadd($byManualCategory[$categoryKey] ?? '0.00', $amount, 2);
+            }
 
             $local = CarbonImmutable::parse($row->paid_at)->setTimezone($timezone);
             $period = $local->format($granularity === 'month' ? 'Y-m' : 'Y-m-d');
@@ -146,7 +172,15 @@ class RevenueReportService
             array_values($byPeriod),
         );
 
-        return [$total, $byMethod, $periods];
+        arsort($byManualCategory);
+
+        $manualByCategory = array_map(
+            static fn (string $category, string $sum): array => ['category' => $category === '' ? null : $category, 'total' => $sum],
+            array_keys($byManualCategory),
+            array_values($byManualCategory),
+        );
+
+        return [$total, $patientTotal, $manualTotal, $manualByCategory, $byMethod, $periods];
     }
 
     /**

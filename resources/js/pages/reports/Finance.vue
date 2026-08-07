@@ -15,10 +15,11 @@ import StatCard from '@/components/dashboard/StatCard.vue';
 import DateRangeFilter from '@/components/DateRangeFilter.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import SectionCard from '@/components/SectionCard.vue';
-import type { DateWindow } from '@/composables/useExpenseList';
+import type { DateWindow } from '@/composables/useDateWindowList';
 import { useMoney } from '@/composables/useMoney';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { index as expensesIndex } from '@/routes/expenses';
+import { index as incomesIndex } from '@/routes/incomes';
 import { finance } from '@/routes/reports';
 import type { FinanceReportProps } from '@/types/revenue';
 import { formatDateOnly, formatMonthYear } from '@/utils/datetime';
@@ -35,6 +36,9 @@ const hasRangeRevenue = computed(
 );
 const hasExpenseBreakdown = computed(
     () => props.expense.by_category.length > 0,
+);
+const hasManualBreakdown = computed(
+    () => props.revenue.range.manual_by_category.length > 0,
 );
 const netAccent = computed(() => (Number(props.net) < 0 ? 'rose' : 'primary'));
 
@@ -203,6 +207,63 @@ function clearReportCache(): void {
                 </p>
             </SectionCard>
         </div>
+
+        <SectionCard :icon="IconCash" :title="t('finance.income_breakdown')">
+            <ul class="flex flex-col gap-2">
+                <li
+                    class="flex items-center justify-between rounded-lg border border-surface-100 px-3 py-2 text-sm"
+                >
+                    <span class="text-surface-600">
+                        {{ t('finance.income_patient') }}
+                    </span>
+                    <span class="font-medium text-surface-900">
+                        {{ formatMoney(revenue.range.patient_total) }}
+                    </span>
+                </li>
+                <li
+                    class="flex items-center justify-between rounded-lg border border-surface-100 px-3 py-2 text-sm"
+                >
+                    <span class="text-surface-600">
+                        {{ t('finance.income_manual') }}
+                    </span>
+                    <span class="font-medium text-surface-900">
+                        {{ formatMoney(revenue.range.manual_total) }}
+                    </span>
+                </li>
+            </ul>
+
+            <!-- The category split only concerns manual income; patient collections are broken
+                 down by payment method above. -->
+            <div v-if="hasManualBreakdown" class="mt-4 flex flex-col gap-2">
+                <h3 class="text-sm font-medium text-surface-700">
+                    {{ t('finance.income_manual_by_category') }}
+                </h3>
+                <ul class="flex flex-col gap-2">
+                    <li
+                        v-for="row in revenue.range.manual_by_category"
+                        :key="row.category ?? '__none__'"
+                        class="flex items-center justify-between rounded-lg border border-surface-100 px-3 py-2 text-sm"
+                    >
+                        <span class="text-surface-600">
+                            {{ categoryLabel(row.category) }}
+                        </span>
+                        <span class="font-medium text-surface-900">
+                            {{ formatMoney(row.total) }}
+                        </span>
+                    </li>
+                </ul>
+            </div>
+
+            <template #footer>
+                <Link
+                    :href="incomesIndex().url"
+                    class="inline-flex items-center gap-1 text-sm font-medium text-primary-600 transition-colors hover:text-primary-700 hover:underline"
+                >
+                    {{ t('finance.go_to_incomes') }}
+                    <IconChevronRight class="size-4" />
+                </Link>
+            </template>
+        </SectionCard>
 
         <SectionCard
             :icon="IconReceipt"

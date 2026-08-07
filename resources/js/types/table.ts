@@ -40,3 +40,15 @@ export type TableState<F = Record<string, never>> = {
     sort: string;
     per_page: number;
 };
+
+/**
+ * The money lists (expenses, manual income) filter by a clinic-local date window plus a
+ * free-text category, sent as FLAT query params rather than a `filter` bag. One shape for
+ * both, driven by `useDateWindowList`.
+ */
+export type DateWindowFilters = {
+    start: string | null;
+    end: string | null;
+    entire: boolean;
+    category: string | null;
+};

@@ -33,6 +33,7 @@ import type {
     PendingInstallment,
 } from '@/types/payment-plan';
 import { parseDateString, toDateString } from '@/utils/datetime';
+import { isInstallmentOpen } from '@/utils/installmentStatus';
 
 defineOptions({ layout: AppLayout });
 
@@ -42,7 +43,7 @@ const { t } = useI18n();
 const { can } = useCan();
 const confirm = useConfirm();
 const { formatDateOnly, formatRange } = useDateTime();
-const { formatMoney } = useMoney();
+const { currency, formatMoney } = useMoney();
 
 const canCollect = computed(() => can('transactions.create'));
 const canRemind = computed(() => can('paymentPlans.sendReminder'));
@@ -78,7 +79,14 @@ const patientSearch = ref('');
 const loading = ref(false);
 
 const statusOptions = computed(() =>
-    (['pending', 'paid', 'cancelled'] as InstallmentStatus[]).map((value) => ({
+    (
+        [
+            'pending',
+            'partially_paid',
+            'paid',
+            'cancelled',
+        ] as InstallmentStatus[]
+    ).map((value) => ({
         value,
         label: t(`payment_plan.installment_status.${value}`),
     })),
@@ -143,10 +151,12 @@ const collectTarget = ref<PendingInstallment | null>(null);
 const showCollect = ref(false);
 
 const collectForm = useForm<{
+    amount: number | null;
     payment_method: PaymentMethod | null;
     paid_at: Date | null;
     note: string;
 }>({
+    amount: null,
     payment_method: null,
     paid_at: null,
     note: '',
@@ -163,10 +173,22 @@ const methodOptions = computed(() =>
 
 const today = new Date();
 
+// Pre-filled with the remaining so the common case (collect it all) is one click, while a smaller
+// figure records a partial collection. The server caps it at the same remaining.
+const collectMax = computed(() =>
+    Number(collectTarget.value?.remaining_amount),
+);
+
 function openCollect(row: PendingInstallment): void {
     collectTarget.value = row;
-    collectForm.reset();
     collectForm.clearErrors();
+    collectForm.defaults({
+        amount: Number(row.remaining_amount),
+        payment_method: null,
+        paid_at: null,
+        note: '',
+    });
+    collectForm.reset();
     showCollect.value = true;
 }
 
@@ -356,12 +378,26 @@ function remind(row: PendingInstallment): void {
                     field="amount"
                     :header="t('payment_plan.columns.amount')"
                     sortable
-                    class="w-32"
+                    class="w-40"
                 >
                     <template #body="{ data }">
-                        <span class="font-medium text-surface-800">
-                            {{ formatMoney(data.amount) }}
-                        </span>
+                        <div class="flex flex-col">
+                            <span class="font-medium text-surface-800">
+                                {{ formatMoney(data.amount) }}
+                            </span>
+                            <span
+                                v-if="Number(data.collected_amount) > 0"
+                                class="text-xs text-surface-500"
+                            >
+                                {{
+                                    t('payment_plan.remaining_label', {
+                                        amount: formatMoney(
+                                            data.remaining_amount,
+                                        ),
+                                    })
+                                }}
+                            </span>
+                        </div>
                     </template>
                 </Column>
 
@@ -384,7 +420,7 @@ function remind(row: PendingInstallment): void {
                 >
                     <template #body="{ data }">
                         <div
-                            v-if="data.status === 'pending'"
+                            v-if="isInstallmentOpen(data.status)"
                             class="flex items-center gap-1"
                         >
                             <Button
@@ -438,14 +474,55 @@ function remind(row: PendingInstallment): void {
                 class="flex flex-col gap-5 pt-2"
                 @submit.prevent="submitCollect"
             >
-                <p class="text-sm text-surface-500">
-                    {{
-                        t('payment_plan.collect_hint', {
-                            name: collectTarget.patient_name,
-                            amount: formatMoney(collectTarget.amount),
+                <div class="flex flex-col gap-1">
+                    <p class="text-sm text-surface-500">
+                        {{
+                            t('payment_plan.collect_hint', {
+                                name: collectTarget.patient_name,
+                                amount: formatMoney(
+                                    collectTarget.remaining_amount,
+                                ),
+                            })
+                        }}
+                    </p>
+                    <p
+                        v-if="Number(collectTarget.collected_amount) > 0"
+                        class="text-xs text-surface-400"
+                    >
+                        {{
+                            t('payment_plan.collect_breakdown', {
+                                total: formatMoney(collectTarget.amount),
+                                collected: formatMoney(
+                                    collectTarget.collected_amount,
+                                ),
+                                remaining: formatMoney(
+                                    collectTarget.remaining_amount,
+                                ),
+                            })
+                        }}
+                    </p>
+                </div>
+
+                <FormField
+                    :label="t('payment_plan.collect_amount')"
+                    :error="collectForm.errors.amount"
+                    :hint="
+                        t('payment_plan.collect_remaining', {
+                            amount: formatMoney(collectTarget.remaining_amount),
                         })
-                    }}
-                </p>
+                    "
+                    required
+                >
+                    <InputNumber
+                        v-model="collectForm.amount"
+                        mode="currency"
+                        :currency="currency"
+                        :min="0"
+                        :max="collectMax"
+                        :max-fraction-digits="2"
+                        fluid
+                    />
+                </FormField>
 
                 <FormField
                     :label="t('payment.method_label')"

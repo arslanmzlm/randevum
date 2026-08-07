@@ -9,7 +9,7 @@ import PageHeader from '@/components/PageHeader.vue';
 import SectionCard from '@/components/SectionCard.vue';
 import { useCan } from '@/composables/useCan';
 import { useCrudDialog } from '@/composables/useCrudDialog';
-import { useExpenseList } from '@/composables/useExpenseList';
+import { useDateWindowList } from '@/composables/useDateWindowList';
 import { expenseResource } from '@/crud/expense';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { index } from '@/routes/expenses';
@@ -22,7 +22,7 @@ const props = defineProps<ExpenseIndexProps>();
 const { t } = useI18n();
 const { can } = useCan();
 
-const list = useExpenseList({
+const list = useDateWindowList({
     url: index().url,
     filters: props.filters,
     query: props.query,

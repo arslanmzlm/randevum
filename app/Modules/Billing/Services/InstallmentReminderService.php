@@ -20,6 +20,7 @@ class InstallmentReminderService
         private PaymentPlanRepository $repository,
         private SmsDispatcherContract $dispatcher,
         private SmsTemplateRendererContract $renderer,
+        private InstallmentSettlementService $settlement,
     ) {}
 
     /**
@@ -55,12 +56,12 @@ class InstallmentReminderService
      *              it (e.g. the clinic disabled installment reminders) — the controller
      *              uses this to show a truthful toast instead of always "sent".
      *
-     * @throws ValidationException when the installment is not Pending (already
+     * @throws ValidationException when the installment is not open (already fully
      *                             collected or cancelled — nothing left to remind about).
      */
     public function sendManual(PaymentPlanInstallment $installment): bool
     {
-        if ($installment->status !== InstallmentStatus::Pending) {
+        if (! in_array($installment->status, [InstallmentStatus::Pending, InstallmentStatus::PartiallyPaid], true)) {
             throw ValidationException::withMessages([
                 'installment' => [__('payment_plan.errors.not_pending')],
             ]);
@@ -111,7 +112,9 @@ class InstallmentReminderService
         $body = $this->renderer->resolve($clinic, $type, [
             'clinic' => $clinic->name,
             'patient' => trim("{$patient->first_name} {$patient->last_name}"),
-            'amount' => (string) $installment->amount,
+            // The remaining amount, not the full installment — a partially-collected
+            // installment reminds for what is actually due.
+            'amount' => $this->settlement->remaining($installment),
             'date' => $installment->due_date->locale($lang)->translatedFormat('d F Y'),
         ]);
 

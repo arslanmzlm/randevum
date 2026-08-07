@@ -45,7 +45,11 @@ export type PaymentPlanStatus = 'active' | 'completed' | 'cancelled';
  * "Overdue" is NOT a stored status — it is derived (`is_overdue`) and rendered as a distinct
  * visual on top of `pending`.
  */
-export type InstallmentStatus = 'pending' | 'paid' | 'cancelled';
+export type InstallmentStatus =
+    | 'pending'
+    | 'partially_paid'
+    | 'paid'
+    | 'cancelled';
 
 /**
  * Mirrors `App\Enums\SmsType`. The SMS-settings page keys its toggle map off the

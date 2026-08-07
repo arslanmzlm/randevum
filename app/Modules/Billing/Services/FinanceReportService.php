@@ -23,7 +23,10 @@ class FinanceReportService
 
     /**
      * @return array{
-     *   revenue: array{summary: array{today: string, this_month: string}, range: array<string, mixed>},
+     *   revenue: array{
+     *     summary: array{today: string, this_month: string},
+     *     range: array<string, mixed>,
+     *   },
      *   expense: array{total: string, by_category: array<int, array{category: ?string, total: string}>},
      *   net: string,
      * }
@@ -62,13 +65,17 @@ class FinanceReportService
         );
     }
 
+    /**
+     * Prefix bumped to v2: the cached array shape changed (patient/manual split), so a stale v1
+     * entry would be missing the new keys. Bumping the tag drops old entries too — no manual flush.
+     */
     private function cacheTag(int $clinicId): string
     {
-        return "revenue-report:{$clinicId}";
+        return "revenue-report:v2:{$clinicId}";
     }
 
     private function cacheKey(int $clinicId, bool $entire, ?string $startDate, ?string $endDate): string
     {
-        return "revenue-report:{$clinicId}:".($entire ? 'all' : "{$startDate}:{$endDate}");
+        return "revenue-report:v2:{$clinicId}:".($entire ? 'all' : "{$startDate}:{$endDate}");
     }
 }

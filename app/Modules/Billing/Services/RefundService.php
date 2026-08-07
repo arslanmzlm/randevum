@@ -15,6 +15,7 @@ class RefundService
     public function __construct(
         private TransactionRepository $repository,
         private StatusLogService $statusLogService,
+        private InstallmentSettlementService $settlement,
     ) {}
 
     /**
@@ -52,11 +53,13 @@ class RefundService
                 ]);
             }
 
-            // Counter-entry: negative amount, status Refunded, linked to original.
+            // Counter-entry: negative amount, status Refunded, linked to original. Carries the
+            // installment link too, so a refunded collection's derived remaining stays correct.
             $counterEntry = $this->repository->create([
                 'patient_id' => $original->patient_id,
                 'treatment_id' => $original->treatment_id,
                 'original_transaction_id' => $original->id,
+                'payment_plan_installment_id' => $original->payment_plan_installment_id,
                 'amount' => bcsub('0', $refundAmount, 2),
                 'payment_method' => $original->payment_method->value,
                 'status' => TransactionStatus::Refunded->value,
@@ -90,6 +93,14 @@ class RefundService
                 $actor,
                 $reason,
             );
+
+            if ($original->payment_plan_installment_id !== null) {
+                $installment = $original->installment()->first();
+
+                if ($installment !== null) {
+                    $this->settlement->sync($installment, $actor);
+                }
+            }
 
             return $counterEntry;
         });

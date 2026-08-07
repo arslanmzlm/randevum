@@ -2,6 +2,7 @@
 
 use App\Modules\Billing\Http\Controllers\ExpenseController;
 use App\Modules\Billing\Http\Controllers\FinanceController;
+use App\Modules\Billing\Http\Controllers\ManualIncomeController;
 use App\Modules\Billing\Http\Controllers\PaymentController;
 use App\Modules\Billing\Http\Controllers\PaymentPlanController;
 use App\Modules\Billing\Http\Controllers\RefundController;
@@ -26,4 +27,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/expenses', [ExpenseController::class, 'store'])->name('expenses.store');
     Route::put('/expenses/{expense}', [ExpenseController::class, 'update'])->name('expenses.update');
     Route::delete('/expenses/{expense}', [ExpenseController::class, 'destroy'])->name('expenses.destroy');
+    // Manuel gelir — hastasız klinik geliri; transactions içinde patient_id null satır.
+    Route::get('/incomes', [ManualIncomeController::class, 'index'])->name('incomes.index');
+    Route::post('/incomes', [ManualIncomeController::class, 'store'])->name('incomes.store');
+    Route::delete('/incomes/{transaction}', [ManualIncomeController::class, 'destroy'])->name('incomes.destroy');
 });

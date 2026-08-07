@@ -21,6 +21,7 @@ class PaymentPlanService implements PaymentPlanCreatorContract
         private PaymentPlanRepository $repository,
         private PaymentRecorderContract $paymentRecorder,
         private StatusLogService $statusLogService,
+        private InstallmentSettlementService $settlement,
     ) {}
 
     /**
@@ -62,16 +63,16 @@ class PaymentPlanService implements PaymentPlanCreatorContract
     }
 
     /**
-     * Collect a pending installment (v1: full-installment only, no partial). Records the
+     * Collect a Pending or PartiallyPaid installment, in full or in part. Records the
      * transaction via the existing PaymentRecorderContract (linked via
-     * payment_plan_installment_id), flips the installment to Paid, and auto-completes the
-     * plan once every installment is Paid.
+     * payment_plan_installment_id), then re-derives the installment's (and plan's) status
+     * from its collected total — never stored (payments-stock: always derive it).
      *
-     * @param  array{payment_method: string, paid_at?: string|\DateTimeInterface|null, note?: string|null}  $data
+     * @param  array{payment_method: string, amount?: float|string|null, paid_at?: string|\DateTimeInterface|null, note?: string|null}  $data
      */
     public function collect(PaymentPlanInstallment $installment, array $data, User $actor): Transaction
     {
-        if ($installment->status !== InstallmentStatus::Pending) {
+        if (! in_array($installment->status, [InstallmentStatus::Pending, InstallmentStatus::PartiallyPaid], true)) {
             throw ValidationException::withMessages([
                 'installment' => [__('payment_plan.errors.not_pending')],
             ]);
@@ -80,13 +81,22 @@ class PaymentPlanService implements PaymentPlanCreatorContract
         $installment->loadMissing('plan');
         $plan = $installment->plan;
 
+        $remaining = $this->settlement->remaining($installment);
+        $amount = (string) ($data['amount'] ?? $remaining);
+
+        if (bccomp($amount, '0', 2) <= 0 || bccomp($amount, $remaining, 2) > 0) {
+            throw ValidationException::withMessages([
+                'amount' => [__('payment_plan.errors.amount_exceeds_remaining')],
+            ]);
+        }
+
         // Resolve once so a backdated collection shows the same date on the transaction
         // and the installment row (PaymentPlanCard reads installment.paid_at).
         $paidAt = $data['paid_at'] ?? now();
 
-        return DB::transaction(function () use ($installment, $plan, $data, $actor, $paidAt): Transaction {
+        return DB::transaction(function () use ($installment, $plan, $data, $actor, $paidAt, $amount): Transaction {
             $transaction = $this->paymentRecorder->record([
-                'amount' => $installment->amount,
+                'amount' => $amount,
                 'payment_method' => $data['payment_method'],
                 'patient_id' => $plan->patient_id,
                 'treatment_id' => $plan->treatment_id,
@@ -95,29 +105,7 @@ class PaymentPlanService implements PaymentPlanCreatorContract
                 'payment_plan_installment_id' => $installment->id,
             ], $actor);
 
-            $installment->status = InstallmentStatus::Paid;
-            $installment->paid_at = $paidAt;
-            $installment->save();
-
-            $this->statusLogService->record(
-                $installment,
-                InstallmentStatus::Pending->value,
-                InstallmentStatus::Paid->value,
-                $actor,
-            );
-
-            if ($this->repository->allPaid($plan->id)) {
-                $fromStatus = $plan->status->value;
-                $plan->status = PaymentPlanStatus::Completed;
-                $plan->save();
-
-                $this->statusLogService->record(
-                    $plan,
-                    $fromStatus,
-                    PaymentPlanStatus::Completed->value,
-                    $actor,
-                );
-            }
+            $this->settlement->sync($installment, $actor, $paidAt);
 
             return $transaction;
         });
@@ -136,17 +124,18 @@ class PaymentPlanService implements PaymentPlanCreatorContract
 
             $this->statusLogService->record($plan, $fromStatus, PaymentPlanStatus::Cancelled->value, $actor);
 
-            $pendingInstallments = $plan->installments()
-                ->where('status', InstallmentStatus::Pending->value)
+            $openInstallments = $plan->installments()
+                ->whereIn('status', [InstallmentStatus::Pending->value, InstallmentStatus::PartiallyPaid->value])
                 ->get();
 
-            foreach ($pendingInstallments as $installment) {
+            foreach ($openInstallments as $installment) {
+                $fromStatus = $installment->status->value;
                 $installment->status = InstallmentStatus::Cancelled;
                 $installment->save();
 
                 $this->statusLogService->record(
                     $installment,
-                    InstallmentStatus::Pending->value,
+                    $fromStatus,
                     InstallmentStatus::Cancelled->value,
                     $actor,
                 );

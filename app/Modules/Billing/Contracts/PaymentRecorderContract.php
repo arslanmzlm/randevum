@@ -19,11 +19,12 @@ interface PaymentRecorderContract
      * @param  array{
      *     amount: float|string,
      *     payment_method: string,
-     *     patient_id: int,
+     *     patient_id: int|null,
      *     treatment_id: int|null,
      *     note?: string|null,
      *     paid_at?: string|\DateTimeInterface|null,
      *     payment_plan_installment_id?: int|null,
+     *     category?: string|null,
      * }  $data
      */
     public function record(array $data, User $actor): Transaction;

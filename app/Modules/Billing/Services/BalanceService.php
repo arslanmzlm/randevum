@@ -20,6 +20,7 @@ class BalanceService implements BalanceReaderContract
         private TransactionRepository $repository,
         private PaymentPlanRepository $paymentPlanRepository,
         private ClinicContext $clinicContext,
+        private InstallmentSettlementService $settlement,
     ) {}
 
     public function paidTotalForPatient(int $patientId): string
@@ -75,16 +76,24 @@ class BalanceService implements BalanceReaderContract
                 'treatment_id' => $plan->treatment_id,
                 'created_at' => $plan->created_at->toIso8601String(),
                 'installments' => $plan->installments
-                    ->map(fn (PaymentPlanInstallment $installment) => [
-                        'id' => $installment->id,
-                        'sequence' => $installment->sequence,
-                        'due_date' => $installment->due_date->toDateString(),
-                        'amount' => (string) $installment->amount,
-                        'status' => $installment->status->value,
-                        'paid_at' => $installment->paid_at?->toIso8601String(),
-                        'is_overdue' => $installment->status === InstallmentStatus::Pending
-                            && $installment->due_date->toDateString() < $today,
-                    ])
+                    ->map(function (PaymentPlanInstallment $installment) use ($today) {
+                        $collected = $this->settlement->collectedFromLoaded($installment);
+                        $remaining = bcsub((string) $installment->amount, $collected, 2);
+                        $remaining = bccomp($remaining, '0', 2) > 0 ? $remaining : '0.00';
+
+                        return [
+                            'id' => $installment->id,
+                            'sequence' => $installment->sequence,
+                            'due_date' => $installment->due_date->toDateString(),
+                            'amount' => (string) $installment->amount,
+                            'status' => $installment->status->value,
+                            'paid_at' => $installment->paid_at?->toIso8601String(),
+                            'collected_amount' => $collected,
+                            'remaining_amount' => $remaining,
+                            'is_overdue' => in_array($installment->status, [InstallmentStatus::Pending, InstallmentStatus::PartiallyPaid], true)
+                                && $installment->due_date->toDateString() < $today,
+                        ];
+                    })
                     ->all(),
             ])
             ->all();

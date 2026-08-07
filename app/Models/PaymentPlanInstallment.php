@@ -66,8 +66,9 @@ class PaymentPlanInstallment extends Model
     }
 
     /**
-     * Collections that settle this installment. Normally at most one (v1 is full-installment
-     * collection only), but the relation stays HasMany like Transaction's own refund lines.
+     * Collections that settle this installment — possibly several partial collections plus a
+     * refund counter-entry. The collected total is always derived as SUM(amount) over this
+     * relation (never stored); see InstallmentSettlementService.
      *
      * @return HasMany<Transaction, $this>
      */

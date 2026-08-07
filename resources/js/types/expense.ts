@@ -1,4 +1,4 @@
-import type { Paginated, TableState } from '@/types/table';
+import type { DateWindowFilters, Paginated, TableState } from '@/types/table';
 
 /** Canonical expense shape emitted by ExpenseResource (both list surfaces). */
 export type Expense = {
@@ -17,12 +17,7 @@ export type Expense = {
 };
 
 /** Clinic-local date window + all-time toggle, plus the list-only category filter. */
-export type ExpenseFilters = {
-    start: string | null;
-    end: string | null;
-    entire: boolean;
-    category: string | null;
-};
+export type ExpenseFilters = DateWindowFilters;
 
 /** Server-side list state echoed back (expenses carry no search/custom filters). */
 export type ExpenseQuery = TableState;

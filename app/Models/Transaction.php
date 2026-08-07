@@ -31,6 +31,7 @@ class Transaction extends Model
         'status',
         'paid_at',
         'note',
+        'category',
         'created_by',
     ];
 

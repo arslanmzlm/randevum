@@ -32,10 +32,11 @@ const canCancel = computed(
 );
 
 // A plan with money against it is cancelled, never deleted: the payment records would lose the
-// schedule they belong to. The server enforces the same rule.
+// schedule they belong to. A partially collected installment counts — it already holds a payment.
+// The server enforces the same rule.
 const hasCollected = computed(() =>
     props.plan.installments.some(
-        (installment) => installment.status === 'paid',
+        (installment) => Number(installment.collected_amount) > 0,
     ),
 );
 
@@ -164,6 +165,9 @@ function cancelPlan(): void {
                             {{ t('payment_plan.builder.amount') }}
                         </th>
                         <th class="py-1 pr-3 font-medium">
+                            {{ t('payment_plan.columns.remaining') }}
+                        </th>
+                        <th class="py-1 pr-3 font-medium">
                             {{ t('payment_plan.columns.status') }}
                         </th>
                         <th class="py-1 font-medium">
@@ -185,6 +189,14 @@ function cancelPlan(): void {
                         </td>
                         <td class="py-2 pr-3 font-medium text-surface-800">
                             {{ formatMoney(installment.amount) }}
+                        </td>
+                        <td class="py-2 pr-3 text-surface-600">
+                            <template
+                                v-if="Number(installment.collected_amount) > 0"
+                            >
+                                {{ formatMoney(installment.remaining_amount) }}
+                            </template>
+                            <span v-else class="text-surface-400">—</span>
                         </td>
                         <td class="py-2 pr-3">
                             <InstallmentStatusTag

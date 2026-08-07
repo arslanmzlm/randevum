@@ -31,4 +31,14 @@ class TransactionFactory extends Factory
             'created_by' => null,
         ];
     }
+
+    /** Manual income (owner brief): clinic income with no patient, patient_id/treatment_id NULL. */
+    public function manual(): static
+    {
+        return $this->state(fn (): array => [
+            'patient_id' => null,
+            'treatment_id' => null,
+            'category' => fake()->word(),
+        ]);
+    }
 }

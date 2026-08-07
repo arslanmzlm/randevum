@@ -40,21 +40,27 @@ class PaymentPlanRepository
      * `plan` relation since it isn't a column on this table, which plain FilterHelper::exact()
      * can't express, so it's applied here by hand instead.
      *
-     * Defaults to Pending only (the screen's stated purpose); `filter[status]` broadens it
-     * to review Paid/Cancelled history too.
+     * Defaults to Pending + PartiallyPaid (the open receivables); `filter[status]` narrows to
+     * a single status to review Paid/Cancelled history too. `collected_total` is a withSum so
+     * the controller can emit collected/remaining without an N+1.
      *
      * @return Collection<int, PaymentPlanInstallment>
      */
     public function pendingInstallmentsForClinic(): Collection
     {
-        $status = request()->enum('filter.status', InstallmentStatus::class) ?? InstallmentStatus::Pending;
+        $status = request()->enum('filter.status', InstallmentStatus::class);
         $patientId = request()->integer('filter.patient_id') ?: null;
         $dueAfter = rescue(fn () => request()->date('filter.due_after'), null, report: false);
         $dueBefore = rescue(fn () => request()->date('filter.due_before'), null, report: false);
 
         return PaymentPlanInstallment::query()
             ->with('plan.patient')
-            ->where('status', $status->value)
+            ->withSum('transactions as collected_total', 'amount')
+            ->when(
+                $status !== null,
+                fn ($query) => $query->where('status', $status->value),
+                fn ($query) => $query->whereIn('status', [InstallmentStatus::Pending->value, InstallmentStatus::PartiallyPaid->value]),
+            )
             ->when($patientId, fn ($query) => $query->whereHas(
                 'plan',
                 fn ($planQuery) => $planQuery->where('patient_id', $patientId)
@@ -66,36 +72,47 @@ class PaymentPlanRepository
     }
 
     /**
-     * Overdue/due-soon counts + totals for the active clinic's Pending installments,
-     * ignoring the screen's own filters (a dashboard summary reads the true totals).
+     * Overdue/due-soon counts + totals for the active clinic's open (Pending + PartiallyPaid)
+     * installments, ignoring the screen's own filters (a dashboard summary reads the true
+     * totals). Totals sum the REMAINING amount, not the full installment amount, since a
+     * partially-collected installment already has money against it.
      *
      * @return array{overdue_count: int, overdue_total: string, due_soon_count: int, due_soon_total: string}
      */
     public function pendingStatsForClinic(string $today, string $dueSoonEnd): array
     {
-        $base = PaymentPlanInstallment::where('status', InstallmentStatus::Pending->value);
+        $base = PaymentPlanInstallment::whereIn('status', [InstallmentStatus::Pending->value, InstallmentStatus::PartiallyPaid->value])
+            ->withSum('transactions as collected_total', 'amount');
 
-        $overdue = (clone $base)->whereDate('due_date', '<', $today);
-        $dueSoon = (clone $base)->whereDate('due_date', '>=', $today)->whereDate('due_date', '<=', $dueSoonEnd);
+        $overdue = (clone $base)->whereDate('due_date', '<', $today)->get();
+        $dueSoon = (clone $base)->whereDate('due_date', '>=', $today)->whereDate('due_date', '<=', $dueSoonEnd)->get();
+
+        $remainingOf = static fn (PaymentPlanInstallment $installment): string => bcsub(
+            (string) $installment->amount,
+            bcadd('0', (string) ($installment->collected_total ?? '0'), 2),
+            2,
+        );
 
         return [
-            'overdue_count' => (int) $overdue->count(),
-            'overdue_total' => number_format((float) $overdue->sum('amount'), 2, '.', ''),
-            'due_soon_count' => (int) $dueSoon->count(),
-            'due_soon_total' => number_format((float) $dueSoon->sum('amount'), 2, '.', ''),
+            'overdue_count' => $overdue->count(),
+            'overdue_total' => $overdue->reduce(fn (string $carry, PaymentPlanInstallment $i) => bcadd($carry, $remainingOf($i), 2), '0.00'),
+            'due_soon_count' => $dueSoon->count(),
+            'due_soon_total' => $dueSoon->reduce(fn (string $carry, PaymentPlanInstallment $i) => bcadd($carry, $remainingOf($i), 2), '0.00'),
         ];
     }
 
     /**
      * A patient's payment plans in the active clinic, newest first, with installments eager
-     * loaded (already sequence-ordered by the model relation).
+     * loaded (already sequence-ordered by the model relation) and their collected total
+     * pre-summed (`collected_total`) so the caller can derive collected/remaining without an
+     * N+1 (mirrors pendingInstallmentsForClinic()'s withSum).
      *
      * @return Collection<int, PaymentPlan>
      */
     public function plansForPatient(int $patientId): Collection
     {
         return PaymentPlan::where('patient_id', $patientId)
-            ->with('installments')
+            ->with(['installments' => fn ($query) => $query->withSum('transactions as collected_total', 'amount')])
             ->orderByDesc('id')
             ->get();
     }
@@ -111,7 +128,7 @@ class PaymentPlanRepository
     {
         return PaymentPlanInstallment::withoutGlobalScope(ClinicScope::class)
             ->whereDate('due_date', $onDate)
-            ->where('status', InstallmentStatus::Pending->value)
+            ->whereIn('status', [InstallmentStatus::Pending->value, InstallmentStatus::PartiallyPaid->value])
             ->where($flagColumn, false)
             ->with(['plan.clinic', 'plan.patient'])
             ->get();

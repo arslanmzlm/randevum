@@ -58,7 +58,11 @@ const form = (httpForm ??
 provideCrudForm(form);
 provideCrudContext(computed(() => props.context));
 
-const isEdit = computed(() => props.item !== null);
+// A resource without `update` is immutable (transactions), so an item passed in can only ever be
+// displayed as a create — the frame is shared rather than forked into a second dialog component.
+const isEdit = computed(
+    () => props.item !== null && props.resource.update !== undefined,
+);
 
 provideCrudIsEdit(isEdit);
 
@@ -77,10 +81,12 @@ watch(visible, (open) => {
         return;
     }
 
+    const toForm = props.resource.toForm;
+
     form.clearErrors();
     form.defaults(
-        (props.item
-            ? props.resource.toForm(props.item)
+        (props.item && toForm
+            ? toForm(props.item)
             : props.resource.empty()) as unknown as CrudFormValues,
     );
     form.reset();
@@ -95,9 +101,11 @@ function submit(): void {
         );
     }
 
-    const url = props.item
-        ? props.resource.update(props.item.id).url
-        : props.resource.store().url;
+    const update = props.resource.update;
+    const url =
+        props.item && update
+            ? update(props.item.id).url
+            : props.resource.store().url;
 
     if (httpForm) {
         // This path is a plain XHR, so nothing else surfaces its failures: a 422 lands on the
@@ -122,7 +130,7 @@ function submit(): void {
             },
         };
 
-        const request = props.item
+        const request = isEdit.value
             ? httpForm.put(url, options)
             : httpForm.post(url, options);
 
@@ -149,7 +157,7 @@ function submit(): void {
         return;
     }
 
-    form[props.item ? 'put' : 'post'](url, {
+    form[isEdit.value ? 'put' : 'post'](url, {
         preserveScroll: true,
         onSuccess: (): void => {
             visible.value = false;

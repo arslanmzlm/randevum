@@ -2,6 +2,7 @@
 
 namespace App\Modules\Billing\Http\Controllers;
 
+use App\Enums\InstallmentStatus;
 use App\Http\Controllers\Controller;
 use App\Models\PaymentPlan;
 use App\Models\PaymentPlanInstallment;
@@ -45,6 +46,10 @@ class PaymentPlanController extends Controller
             ->map(function (PaymentPlanInstallment $installment) use ($today) {
                 $plan = $installment->plan;
 
+                $collected = bcadd('0', (string) ($installment->collected_total ?? '0'), 2);
+                $remaining = bcsub((string) $installment->amount, $collected, 2);
+                $remaining = bccomp($remaining, '0', 2) > 0 ? $remaining : '0.00';
+
                 return [
                     'id' => $installment->id,
                     'plan_id' => $plan->id,
@@ -57,8 +62,11 @@ class PaymentPlanController extends Controller
                     'installment_count' => $plan->installment_count,
                     'due_date' => $installment->due_date->toDateString(),
                     'amount' => (string) $installment->amount,
+                    'collected_amount' => $collected,
+                    'remaining_amount' => $remaining,
                     'status' => $installment->status->value,
-                    'is_overdue' => $installment->status->value === 'pending' && $installment->due_date->toDateString() < $today,
+                    'is_overdue' => in_array($installment->status, [InstallmentStatus::Pending, InstallmentStatus::PartiallyPaid], true)
+                        && $installment->due_date->toDateString() < $today,
                     'plan_total' => (string) $plan->total_amount,
                     'plan_status' => $plan->status->value,
                     'reminder_7d_sent' => $installment->reminder_7d_sent,

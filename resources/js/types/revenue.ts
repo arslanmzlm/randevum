@@ -18,7 +18,14 @@ export interface RevenueRange {
     entire: boolean;
     /** Daily for spans up to ~3 months, monthly beyond — keeps the breakdown bounded. */
     granularity: 'day' | 'month';
+    /** ALL revenue in the window: patient collections + manual (patient-less) income. */
     total: string;
+    /** The patient-collection share of `total`. */
+    patient_total: string;
+    /** The manual-income share of `total`. */
+    manual_total: string;
+    /** Manual income split by its free-text category (null = uncategorized), desc by total. */
+    manual_by_category: CategoryTotal[];
     by_method: RevenueMethodTotal[];
     by_period: RevenuePeriodTotal[];
 }
@@ -32,7 +39,8 @@ export interface RevenueReport {
     range: RevenueRange;
 }
 
-export interface ExpenseCategoryTotal {
+/** One free-text category bucket (null = uncategorized) — shared by the expense and income splits. */
+export interface CategoryTotal {
     category: string | null;
     total: string;
 }
@@ -40,7 +48,7 @@ export interface ExpenseCategoryTotal {
 /** ExpenseReportService window output. */
 export interface ExpenseReport {
     total: string;
-    by_category: ExpenseCategoryTotal[];
+    by_category: CategoryTotal[];
 }
 
 /** Unified finance page (revenue + expense + net) — owner/manager. */
