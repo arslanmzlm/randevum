@@ -140,12 +140,13 @@ class TreatmentService
             $this->writeServiceLines($treatment, $data['services'] ?? []);
             $this->writeProductLines($treatment, $data['products'] ?? []);
 
-            [$subtotal, $total] = $this->computeTotals($treatment, (float) ($data['discount_amount'] ?? 0));
+            $discountAmount = (string) ($data['discount_amount'] ?? 0);
+            [$subtotal, $total] = $this->computeTotals($treatment, $discountAmount);
 
             // 4. Draft → Completed
             $this->treatmentRepository->update($treatment, [
                 'subtotal_amount' => $subtotal,
-                'discount_amount' => (float) ($data['discount_amount'] ?? 0),
+                'discount_amount' => $discountAmount,
                 'total_amount' => $total,
                 'notes' => $data['notes'] ?? null,
                 'case_id' => $caseId,
@@ -191,12 +192,14 @@ class TreatmentService
             } else {
                 $payments = $data['payments'] ?? [];
 
-                $paidTotal = array_sum(array_map(
-                    fn (array $payment): float => (float) $payment['amount'],
+                // bcmath — matches Billing's overshoot checks, avoids float drift on a hard cap.
+                $paidTotal = array_reduce(
                     $payments,
-                ));
+                    fn (string $carry, array $payment): string => bcadd($carry, (string) $payment['amount'], 2),
+                    '0.00',
+                );
 
-                if (round($paidTotal, 2) > round($total, 2)) {
+                if (bccomp($paidTotal, $total, 2) > 0) {
                     throw ValidationException::withMessages([
                         'payments' => [__('treatment.errors.payments_exceed_total')],
                     ]);
@@ -369,9 +372,16 @@ class TreatmentService
 
         foreach ($lines as $index => $line) {
             $qty = (int) $line['quantity'];
-            $unitPrice = (float) $line['unit_price'];
-            $discount = (float) ($line['discount_amount'] ?? 0);
-            $subtotal = max(0, ($qty * $unitPrice) - $discount);
+            $unitPrice = (string) $line['unit_price'];
+            $discount = (string) ($line['discount_amount'] ?? 0);
+
+            // bcmath end-to-end (decimal(12,2) columns) — avoids float rounding drift, matching Billing.
+            $lineTotal = bcmul((string) $qty, $unitPrice, 2);
+            $subtotal = bcsub($lineTotal, $discount, 2);
+
+            if (bccomp($subtotal, '0', 2) < 0) {
+                $subtotal = '0.00';
+            }
 
             $relation->create([
                 $foreignKey => (int) $line[$foreignKey],
@@ -392,18 +402,25 @@ class TreatmentService
      * subtotal = sum of all line subtotals
      * total    = max(0, subtotal − treatment-level discount)
      *
-     * @return array{float, float} [subtotal, total]
+     * bcmath end-to-end (decimal(12,2) columns) — avoids float rounding drift, matching Billing.
+     *
+     * @return array{string, string} [subtotal, total]
      */
-    private function computeTotals(Treatment $treatment, float $treatmentDiscount): array
+    private function computeTotals(Treatment $treatment, string $treatmentDiscount): array
     {
         $treatment->load('serviceLines', 'productLines');
 
-        $subtotal = $treatment->serviceLines->sum('subtotal')
-            + $treatment->productLines->sum('subtotal');
+        $subtotal = $treatment->serviceLines
+            ->concat($treatment->productLines)
+            ->reduce(fn (string $carry, $line): string => bcadd($carry, (string) $line->subtotal, 2), '0.00');
 
-        $total = max(0, $subtotal - $treatmentDiscount);
+        $total = bcsub($subtotal, $treatmentDiscount, 2);
 
-        return [(float) $subtotal, (float) $total];
+        if (bccomp($total, '0', 2) < 0) {
+            $total = '0.00';
+        }
+
+        return [$subtotal, $total];
     }
 
     /**

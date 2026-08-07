@@ -218,3 +218,20 @@ it("clinic A owner cannot create a case for clinic B's patient", function (): vo
         ])
         ->assertSessionHasErrors('patient_id');
 });
+
+// ---------------------------------------------------------------------------
+// POST /cases — cannot open a case with clinic B's doctor_id
+// ---------------------------------------------------------------------------
+
+it("clinic A owner cannot create a case for own patient with clinic B's doctor", function (): void {
+    $setupA = ctiClinicSetup();
+    $setupB = ctiClinicSetup();
+
+    $this->actingAs($setupA['owner'])
+        ->post(route('cases.store'), [
+            'patient_id' => $setupA['patient']->id,
+            'title' => 'Cross-clinic Doctor Attempt',
+            'doctor_id' => $setupB['doctor']->id,
+        ])
+        ->assertSessionHasErrors('doctor_id');
+});

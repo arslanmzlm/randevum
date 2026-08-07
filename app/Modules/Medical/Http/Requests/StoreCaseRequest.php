@@ -23,7 +23,7 @@ class StoreCaseRequest extends FormRequest
         return [
             'title' => ['required', 'string', 'max:255'],
             'patient_id' => ['required', 'integer', Rule::exists('patients', 'id')->where('clinic_id', $clinicId)],
-            'doctor_id' => ['nullable', 'integer'],
+            'doctor_id' => ['nullable', 'integer', Rule::exists('doctors', 'id')->where('clinic_id', $clinicId)],
             'treatment_ids' => ['nullable', 'array'],
             'treatment_ids.*' => ['integer'],
         ];
