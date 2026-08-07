@@ -2,6 +2,7 @@ import type { SidebarMode } from '@/composables/useSidebar';
 import type { UpcomingAppointmentDto } from '@/types/appointment';
 import type { Auth } from '@/types/auth';
 import type { SharedClinic, SwitchableClinic } from '@/types/clinic';
+import type { Flash } from '@/types/flash';
 
 // Extend ImportMeta interface for Vite...
 declare module 'vite/client' {
@@ -26,6 +27,7 @@ declare module '@inertiajs/core' {
             availableClinics: SwitchableClinic[];
             /** Next N upcoming appointments for the viewer's scope; [] for guests / no permission. */
             upcomingAppointments: UpcomingAppointmentDto[];
+            flash: Flash;
             [key: string]: unknown;
         };
         layoutProps: {

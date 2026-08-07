@@ -1,5 +1,9 @@
 import type { InertiaForm } from '@inertiajs/vue3';
-import type { AnamnesisFieldType } from '@/types/enums';
+import type {
+    AnamnesisDiabetes,
+    AnamnesisFieldType,
+    AnamnesisPregnancy,
+} from '@/types/enums';
 import type { PatientGender } from '@/types/patient';
 
 /** A stored answer in the `extra` bag, keyed by its definition's `key`. */
@@ -30,8 +34,9 @@ export type AnamnesisFieldDefinition = {
 
 /**
  * Flat anamnesis shape emitted by AnamnesisResource; the whole object is `null` until the record
- * is first saved. The select strings (blood_type/smoking/alcohol/diabetes/pregnancy) are typed
- * loosely — the FE does not branch on them, so no enum unions (frontend-components rule).
+ * is first saved. `blood_type`/`smoking`/`alcohol` stay loosely typed — the FE does not branch on
+ * them. `diabetes`/`pregnancy` DO get branched on (AnamnesisSection's risk summary), so they mirror
+ * their backend constants as unions (frontend-components rule).
  */
 export type Anamnesis = {
     blood_type: string | null;
@@ -41,8 +46,8 @@ export type Anamnesis = {
     bmi: number | null;
     smoking: string | null;
     alcohol: string | null;
-    diabetes: string | null;
-    pregnancy: string | null;
+    diabetes: AnamnesisDiabetes | null;
+    pregnancy: AnamnesisPregnancy | null;
     hypertension: boolean;
     cardiovascular: boolean;
     respiratory: boolean;
@@ -72,8 +77,8 @@ export type AnamnesisFormData = {
     weight_kg: number | null;
     smoking: string | null;
     alcohol: string | null;
-    diabetes: string | null;
-    pregnancy: string | null;
+    diabetes: AnamnesisDiabetes | null;
+    pregnancy: AnamnesisPregnancy | null;
     hypertension: boolean;
     cardiovascular: boolean;
     respiratory: boolean;

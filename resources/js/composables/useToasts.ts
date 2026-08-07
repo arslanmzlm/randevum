@@ -3,13 +3,6 @@ import { useToast } from 'primevue/usetoast';
 import { nextTick, onMounted, onUnmounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-interface FlashToast {
-    severity?: 'success' | 'info' | 'warn' | 'error';
-    summary: string;
-    detail?: string | null;
-    life?: number;
-}
-
 /**
  * Bridges server-flashed toasts (`flash.toasts`), validation errors, and
  * non-Inertia error responses (429/419) to PrimeVue's Toast. Call once from a
@@ -24,14 +17,12 @@ export function useToasts(): void {
     const { t } = useI18n();
 
     function showFlashToasts(): void {
-        const flash = page.props.flash as { toasts?: FlashToast[] } | undefined;
-
-        for (const item of flash?.toasts ?? []) {
+        for (const item of page.props.flash.toasts) {
             toast.add({
-                severity: item.severity ?? 'info',
+                severity: item.severity,
                 summary: item.summary,
                 detail: item.detail ?? undefined,
-                life: item.life ?? 4000,
+                life: item.life,
             });
         }
     }

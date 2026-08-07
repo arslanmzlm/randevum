@@ -1,5 +1,9 @@
 import type { InertiaForm } from '@inertiajs/vue3';
-import type { CustomizableSmsType, SmsType } from '@/types/enums';
+import type {
+    CustomizableSmsType,
+    SmsTemplateVariable,
+    SmsType,
+} from '@/types/enums';
 
 export const WEEK_DAYS = [
     'monday',
@@ -99,8 +103,8 @@ export type ClinicSmsPanel = {
     settings: Record<SmsType, boolean>;
     templates: Record<CustomizableSmsType, string | null>;
     defaults: Record<CustomizableSmsType, string>;
-    variables: string[];
-    sample: Record<string, string>;
+    variables: SmsTemplateVariable[];
+    sample: Record<SmsTemplateVariable, string>;
     quota: {
         used: number;
         allowance: number;

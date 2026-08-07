@@ -10,7 +10,11 @@ import SmsTemplateField from '@/components/sms-settings/SmsTemplateField.vue';
 import SmsTypeToggleRow from '@/components/sms-settings/SmsTypeToggleRow.vue';
 import { useCan } from '@/composables/useCan';
 import { update } from '@/routes/clinic/sms-settings';
-import type { CustomizableSmsType, SmsType } from '@/types/enums';
+import type {
+    CustomizableSmsType,
+    SmsTemplateVariable,
+    SmsType,
+} from '@/types/enums';
 import { countSegments, MAX_SEGMENTS } from '@/utils/smsSegments';
 
 // The SMS preferences tab of the clinic profile. Owns its own form and endpoint: the toggles and
@@ -20,8 +24,8 @@ const props = defineProps<{
     settings: Record<SmsType, boolean>;
     templates: Record<CustomizableSmsType, string | null>;
     defaults: Record<CustomizableSmsType, string>;
-    variables: string[];
-    sample: Record<string, string>;
+    variables: SmsTemplateVariable[];
+    sample: Record<SmsTemplateVariable, string>;
     quota: {
         used: number;
         allowance: number;
@@ -46,7 +50,7 @@ const customizableTypes: CustomizableSmsType[] = [
 
 // Soft-warning recommended variables per type (never a hard block). Cancelled
 // recommends none; every other type recommends :date + :time.
-const recommendedVariables: Record<CustomizableSmsType, string[]> = {
+const recommendedVariables: Record<CustomizableSmsType, SmsTemplateVariable[]> = {
     appointment_created: ['date', 'time'],
     appointment_cancelled: [],
     appointment_rescheduled: ['date', 'time'],

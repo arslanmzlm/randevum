@@ -121,6 +121,7 @@ return [
     'not_in' => 'The selected :attribute is invalid.',
     'not_regex' => 'The :attribute field format is invalid.',
     'numeric' => 'The :attribute field must be a number.',
+    'phone' => 'The :attribute field must be a valid phone number.',
     'password' => [
         'letters' => 'The :attribute field must contain at least one letter.',
         'mixed' => 'The :attribute field must contain at least one uppercase and one lowercase letter.',
@@ -237,6 +238,8 @@ return [
         'district' => 'district',
         'address' => 'address',
         'postal_code' => 'postal code',
+        'latitude' => 'latitude',
+        'longitude' => 'longitude',
         'default_slot_duration_minutes' => 'default appointment duration',
         'auto_no_show_enabled' => 'automatic no-show marking',
         'auto_no_show_grace_hours' => 'no-show grace period',

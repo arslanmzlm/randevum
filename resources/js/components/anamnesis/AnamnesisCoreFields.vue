@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n';
 import FormField from '@/components/FormField.vue';
 import SettingRow from '@/components/SettingRow.vue';
 import type { AnamnesisPatient } from '@/types/anamnesis';
+import type { AnamnesisDiabetes, AnamnesisPregnancy } from '@/types/enums';
 import { useAnamnesisForm } from './formContext';
 
 const props = defineProps<{
@@ -16,13 +17,15 @@ const { t } = useI18n();
 
 const form = useAnamnesisForm();
 
-// Allowed values mirrored by hand from the Anamnesis model consts (frontend-components rule
-// — validated clinical strings, not branched-on enums). Labels resolve from health.options.*.
+// blood_type/smoking/alcohol: allowed values mirrored by hand from the Anamnesis model consts
+// (frontend-components rule — validated clinical strings, not branched-on). Labels resolve from
+// health.options.*. diabetes/pregnancy ARE branched on (AnamnesisSection's risk summary), so
+// their values come from the mirrored enum unions instead of a hand-typed string array.
 const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', '0+', '0-'];
 const smoking = ['none', 'former', 'occasional', 'regular'];
 const alcohol = ['none', 'occasional', 'regular'];
-const diabetes = ['none', 'type1', 'type2'];
-const pregnancy = ['none', 'pregnant', 'breastfeeding'];
+const diabetes: AnamnesisDiabetes[] = ['none', 'type1', 'type2'];
+const pregnancy: AnamnesisPregnancy[] = ['none', 'pregnant', 'breastfeeding'];
 
 function options(field: string, values: string[]) {
     return values.map((value) => ({

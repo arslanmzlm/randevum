@@ -58,9 +58,7 @@ const restoreVisible = ref(false);
 const restorable = ref<RestorablePatient | null>(null);
 
 watch(
-    () =>
-        (page.props.flash as { restorable_patient?: RestorablePatient | null })
-            ?.restorable_patient,
+    () => page.props.flash.restorable_patient,
     (value) => {
         if (value) {
             restorable.value = value;

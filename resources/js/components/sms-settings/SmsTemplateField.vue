@@ -2,17 +2,17 @@
 import { IconRestore } from '@tabler/icons-vue';
 import { computed, nextTick, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import type { CustomizableSmsType } from '@/types/enums';
+import type { CustomizableSmsType, SmsTemplateVariable } from '@/types/enums';
 import { countSegments, MAX_SEGMENTS } from '@/utils/smsSegments';
 
 const props = defineProps<{
     type: CustomizableSmsType;
     label: string;
     hint: string;
-    variables: string[];
-    sample: Record<string, string>;
+    variables: SmsTemplateVariable[];
+    sample: Record<SmsTemplateVariable, string>;
     defaultBody: string;
-    recommended?: string[];
+    recommended?: SmsTemplateVariable[];
     error?: string;
     disabled?: boolean;
 }>();
@@ -37,10 +37,12 @@ const multiSegment = computed(
     () => segmentInfo.value.segments > 1 && !overLimit.value,
 );
 
+// `token` is parsed out of free-typed template text, so it is an arbitrary string until
+// checked against the allowed variable list — the casts below narrow it after that check.
 const preview = computed(() =>
     effectiveBody.value.replace(/:([a-z_]+)/g, (match, token: string) =>
-        props.variables.includes(token)
-            ? (props.sample[token] ?? match)
+        (props.variables as string[]).includes(token)
+            ? (props.sample[token as SmsTemplateVariable] ?? match)
             : match,
     ),
 );

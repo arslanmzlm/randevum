@@ -102,8 +102,6 @@ export const tr = {
         logout: 'Çıkış Yap',
         status: {
             'otp-sent': 'Doğrulama kodu telefon numaranıza gönderildi.',
-            'passwords.sent':
-                'Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.',
         },
     },
     dashboard: {

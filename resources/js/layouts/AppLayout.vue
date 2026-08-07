@@ -533,11 +533,7 @@ const showPasswordReminder = ref(false);
 let stopNavListener: (() => void) | undefined;
 
 onMounted(() => {
-    const flash = page.props.flash as
-        | { password_reminder?: boolean }
-        | undefined;
-
-    if (flash?.password_reminder) {
+    if (page.props.flash.password_reminder) {
         showPasswordReminder.value = true;
     }
 

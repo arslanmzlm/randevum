@@ -12,6 +12,10 @@ return [
     |
     */
 
+    'failed' => 'These credentials do not match our records.',
+    'password' => 'The provided password is incorrect.',
+    'throttle' => 'Too many login attempts. Please try again in :seconds seconds.',
+
     'otp' => [
         'sms_body' => 'Your Randevum login code is: :code. The code is valid for :ttl seconds.',
         'invalid_code' => 'The code you entered is incorrect, has expired, or too many attempts have been made.',

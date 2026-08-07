@@ -1,8 +1,8 @@
 /**
  * String-backed backend enums mirrored as TS unions — ONLY the ones the frontend
  * actually branches on (status colors/labels, availability messages, settings keys).
- * Values must match the corresponding `app/Enums/*.php` exactly. Don't mirror enums
- * the FE never reasons about (SmsStatus, LegalDocumentType, …) — no payoff.
+ * Values must match the corresponding `app/Enums/*.php` (or model constant) exactly.
+ * Don't mirror enums the FE never reasons about (LegalDocumentType, …) — no payoff.
  */
 
 /** Mirrors `App\Enums\AppointmentStatus`. */
@@ -119,3 +119,22 @@ export type AnamnesisFieldType =
     | 'multiselect'
     | 'number'
     | 'date';
+
+/**
+ * Mirrors `App\Models\Anamnesis::DIABETES`; the anamnesis section branches on it
+ * ('none' is excluded from the summary card's risk list, unlike a real answer).
+ */
+export type AnamnesisDiabetes = 'none' | 'type1' | 'type2';
+
+/**
+ * Mirrors `App\Models\Anamnesis::PREGNANCY`; the anamnesis section branches on it
+ * the same way as `AnamnesisDiabetes`.
+ */
+export type AnamnesisPregnancy = 'none' | 'pregnant' | 'breastfeeding';
+
+/**
+ * Mirrors `App\Modules\Messaging\Support\SmsTemplateVariables::ALLOWED`; the SMS
+ * template editor branches on it (insert buttons, i18n label lookup, preview
+ * substitution) and the settings form keys its recommended-variable map off it.
+ */
+export type SmsTemplateVariable = 'clinic' | 'date' | 'time' | 'patient' | 'doctor';
