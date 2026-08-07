@@ -5,6 +5,12 @@
  * Don't mirror enums the FE never reasons about (LegalDocumentType, …) — no payoff.
  */
 
+/** Mirrors `App\Enums\Gender`. */
+export type PatientGender = 'male' | 'female' | 'other';
+
+/** Mirrors `App\Enums\MaritalStatus`. */
+export type MaritalStatus = 'single' | 'married' | 'divorced' | 'widowed';
+
 /** Mirrors `App\Enums\AppointmentStatus`. */
 export type AppointmentStatus =
     | 'pending'

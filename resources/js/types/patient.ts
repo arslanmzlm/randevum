@@ -2,17 +2,12 @@ import type { InertiaForm } from '@inertiajs/vue3';
 import type { Anamnesis, AnamnesisFieldDefinition } from '@/types/anamnesis';
 import type { PatientBalance, TransactionItem } from '@/types/balance';
 import type { PatientCaseItem } from '@/types/case';
-import type { AppointmentStatus } from '@/types/enums';
+import type { AppointmentStatus, MaritalStatus, PatientGender } from '@/types/enums';
 import type { PatientPaymentPlan } from '@/types/payment-plan';
 import type { SmsLogItem } from '@/types/smsLog';
 import type { Paginated, TableState } from '@/types/table';
 import type { Tag } from '@/types/tag';
 import type { PatientTreatmentHistoryItem } from '@/types/treatment';
-
-export type PatientGender = 'male' | 'female' | 'other';
-
-/** Mirrors App\Enums\MaritalStatus. */
-export type MaritalStatus = 'single' | 'married' | 'divorced' | 'widowed';
 
 /** Canonical patient shape emitted by PatientResource (index + show + edit). */
 export type Patient = {

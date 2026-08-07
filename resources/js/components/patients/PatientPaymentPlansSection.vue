@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { IconCalendarDollar, IconPlus } from '@tabler/icons-vue';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import PaymentPlanCard from '@/components/payment-plans/PaymentPlanCard.vue';
 import PaymentPlanCreateDialog from '@/components/payment-plans/PaymentPlanCreateDialog.vue';
@@ -22,7 +22,7 @@ const { can } = useCan();
 
 const showCreate = ref(false);
 
-const canCreate = can('paymentPlans.create');
+const canCreate = computed(() => can('paymentPlans.create'));
 </script>
 
 <template>

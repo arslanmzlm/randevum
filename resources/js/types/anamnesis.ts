@@ -3,8 +3,8 @@ import type {
     AnamnesisDiabetes,
     AnamnesisFieldType,
     AnamnesisPregnancy,
+    PatientGender,
 } from '@/types/enums';
-import type { PatientGender } from '@/types/patient';
 
 /** A stored answer in the `extra` bag, keyed by its definition's `key`. */
 export type AnamnesisExtraValue = string | number | boolean | string[] | null;

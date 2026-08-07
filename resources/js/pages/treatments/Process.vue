@@ -89,8 +89,8 @@ const form = useForm<TreatmentFormData>({
 
 provideTreatmentForm(form);
 
-const canPay = can('transactions.create');
-const canScheduleFollowUp = can('appointments.create');
+const canPay = computed(() => can('transactions.create'));
+const canScheduleFollowUp = computed(() => can('appointments.create'));
 
 // Client-side balance guard mirroring PaymentPlanCreateDialog's `canSubmit`: an unbalanced
 // installment plan can't be submitted (the server sum-check would only surface a toast otherwise).

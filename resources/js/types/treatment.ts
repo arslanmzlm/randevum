@@ -2,9 +2,8 @@ import type { InertiaForm } from '@inertiajs/vue3';
 import type { Anamnesis, AnamnesisFieldDefinition } from '@/types/anamnesis';
 import type { AppointmentTypeOption, WorkingHours } from '@/types/appointment';
 import type { TransactionItem } from '@/types/balance';
-import type { PaymentMethod, TreatmentStatus } from '@/types/enums';
+import type { PatientGender, PaymentMethod, TreatmentStatus } from '@/types/enums';
 import type { MediaItem } from '@/types/media';
-import type { PatientGender } from '@/types/patient';
 import type { InstallmentPlanForm } from '@/types/payment-plan';
 import type { Paginated, TableState } from '@/types/table';
 
