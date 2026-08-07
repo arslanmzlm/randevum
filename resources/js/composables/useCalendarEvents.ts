@@ -1,5 +1,5 @@
-import { watchDebounced } from '@vueuse/core';
-import { ref, watch } from 'vue';
+import { ref } from 'vue';
+import { useDebouncedFetch } from '@/composables/useDebouncedFetch';
 import { events as calendarEvents } from '@/routes/calendar';
 import type {
     CalendarEventDto,
@@ -33,89 +33,72 @@ export function useCalendarEvents(params: () => CalendarEventsParams | null) {
     const data = ref<CalendarEventDto[]>([]);
     const exceptions = ref<CalendarExceptionDto[]>([]);
 
-    let activeRequest: AbortController | undefined;
     let lastParams: CalendarEventsParams | null = null;
 
-    async function run(current: CalendarEventsParams): Promise<void> {
-        lastParams = current;
-        activeRequest?.abort();
-        activeRequest = new AbortController();
-
-        try {
-            const url = calendarEvents({
-                query: {
-                    start: current.start,
-                    end: current.end,
-                    ...(current.doctorIds.length
-                        ? { doctor_id: current.doctorIds.join(',') }
-                        : {}),
-                    ...(current.clinicIds.length
-                        ? { clinic_id: current.clinicIds }
-                        : {}),
-                    statuses: current.statuses,
-                },
-            }).url;
-
-            const response = await fetch(url, {
-                headers: { Accept: 'application/json' },
-                signal: activeRequest.signal,
-            });
-
-            if (!response.ok) {
-                data.value = [];
-                exceptions.value = [];
-                state.value = 'error';
-
-                return;
-            }
-
-            const body = (await response.json()) as CalendarEventsResponse;
-            data.value = body.data;
-            exceptions.value = body.exceptions;
-            state.value = 'loaded';
-        } catch (error) {
-            if ((error as Error).name !== 'AbortError') {
-                data.value = [];
-                exceptions.value = [];
-                state.value = 'error';
-            }
-        }
-    }
-
-    // Reflect pending/idle the moment params change, before the debounced fetch fires, so the
-    // spinner reacts instantly to navigation/filter changes.
-    watch(
+    const { trigger } = useDebouncedFetch({
         params,
-        (current) => {
-            if (!current) {
-                activeRequest?.abort();
-                data.value = [];
-                exceptions.value = [];
-                state.value = 'idle';
-
-                return;
-            }
-
+        debounceMs: DEBOUNCE_MS,
+        // Reflect pending/idle the moment params change, before the debounced fetch fires, so the
+        // spinner reacts instantly to navigation/filter changes.
+        onPending: () => {
             state.value = 'loading';
         },
-        { deep: true, immediate: true },
-    );
+        onIdle: () => {
+            data.value = [];
+            exceptions.value = [];
+            state.value = 'idle';
+        },
+        immediate: true,
+        async run(current, signal) {
+            lastParams = current;
 
-    watchDebounced(
-        params,
-        (current) => {
-            if (current) {
-                void run(current);
+            try {
+                const url = calendarEvents({
+                    query: {
+                        start: current.start,
+                        end: current.end,
+                        ...(current.doctorIds.length
+                            ? { doctor_id: current.doctorIds.join(',') }
+                            : {}),
+                        ...(current.clinicIds.length
+                            ? { clinic_id: current.clinicIds }
+                            : {}),
+                        statuses: current.statuses,
+                    },
+                }).url;
+
+                const response = await fetch(url, {
+                    headers: { Accept: 'application/json' },
+                    signal,
+                });
+
+                if (!response.ok) {
+                    data.value = [];
+                    exceptions.value = [];
+                    state.value = 'error';
+
+                    return;
+                }
+
+                const body = (await response.json()) as CalendarEventsResponse;
+                data.value = body.data;
+                exceptions.value = body.exceptions;
+                state.value = 'loaded';
+            } catch (error) {
+                if ((error as Error).name !== 'AbortError') {
+                    data.value = [];
+                    exceptions.value = [];
+                    state.value = 'error';
+                }
             }
         },
-        { debounce: DEBOUNCE_MS, deep: true, immediate: true },
-    );
+    });
 
     // Re-fetch the current range without waiting for a param change — used after a mutation (cancel/
     // delete from the event popover) since calendar events come from JSON, not reloaded Inertia props.
     function refresh(): void {
         if (lastParams) {
-            void run(lastParams);
+            trigger(lastParams);
         }
     }
 

@@ -87,8 +87,6 @@ it('owner can access GET /appointments/create and the Create component is render
             ->has('doctors')
             ->has('services')
             ->has('defaultSlotDuration')
-            ->has('workingHours')
-            ->has('timezone')
             ->has('preselectedPatient')
         );
 });
@@ -133,9 +131,8 @@ it('assistant gets 403 on GET /appointments/create (no appointments.create permi
         ->assertForbidden();
 });
 
-it('create page props include clinic timezone and default slot duration', function (): void {
+it('create page props include the clinic default slot duration', function (): void {
     $clinic = Clinic::factory()->create([
-        'timezone' => 'Europe/Istanbul',
         'default_slot_duration_minutes' => 45,
     ]);
     $owner = User::factory()->create();
@@ -144,7 +141,6 @@ it('create page props include clinic timezone and default slot duration', functi
     $this->actingAs($owner)
         ->get(route('appointments.create'))
         ->assertInertia(fn ($page) => $page
-            ->where('timezone', 'Europe/Istanbul')
             ->where('defaultSlotDuration', 45)
         );
 });

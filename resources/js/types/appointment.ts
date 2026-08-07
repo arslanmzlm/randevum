@@ -126,8 +126,6 @@ export type AppointmentCreateProps = {
     services: AppointmentServiceOption[];
     appointmentTypes: AppointmentTypeOption[];
     defaultSlotDuration: number;
-    workingHours: WorkingHours;
-    timezone: string;
     preselectedPatient: PatientSearchResult | null;
     /** The user's own doctors.id (auto-selected); null when they have no doctor profile. */
     ownDoctorId: number | null;
@@ -156,8 +154,6 @@ export type AppointmentEditProps = {
     services: AppointmentServiceOption[];
     appointmentTypes: AppointmentTypeOption[];
     defaultSlotDuration: number;
-    workingHours: WorkingHours;
-    timezone: string;
     /** The user's own doctors.id (locks the doctor select when they can't assign others). */
     ownDoctorId: number | null;
     appointment: EditAppointment;
@@ -252,7 +248,6 @@ export type BulkCreateProps = {
     services: AppointmentServiceOption[];
     appointmentTypes: AppointmentTypeOption[];
     defaultSlotDuration: number;
-    timezone: string;
     preselectedPatient: PatientSearchResult | null;
     /** The user's own doctors.id (auto-selected); null when they have no doctor profile. */
     ownDoctorId: number | null;

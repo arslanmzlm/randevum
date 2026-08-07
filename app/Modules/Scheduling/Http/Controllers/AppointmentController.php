@@ -116,8 +116,6 @@ class AppointmentController extends Controller
             'services' => $services,
             'appointmentTypes' => $appointmentTypes,
             'defaultSlotDuration' => $clinic->default_slot_duration_minutes,
-            'workingHours' => $clinic->working_hours,
-            'timezone' => $clinic->timezone,
             'preselectedPatient' => $preselectedPatient,
             'ownDoctorId' => $user->doctor?->id,
             // Set by store() right before it redirects back here, so the fresh render can show
@@ -199,7 +197,6 @@ class AppointmentController extends Controller
             'services' => $services,
             'appointmentTypes' => $appointmentTypes,
             'defaultSlotDuration' => $clinic->default_slot_duration_minutes,
-            'timezone' => $clinic->timezone,
             'preselectedPatient' => $preselectedPatient,
             'ownDoctorId' => $user->doctor?->id,
             'result' => $request->session()->get('bulk_appointment_result'),
@@ -312,8 +309,6 @@ class AppointmentController extends Controller
             'services' => $services,
             'appointmentTypes' => $appointmentTypes,
             'defaultSlotDuration' => $clinic->default_slot_duration_minutes,
-            'workingHours' => $clinic->working_hours,
-            'timezone' => $clinic->timezone,
             'ownDoctorId' => $user->doctor?->id,
             'appointment' => [
                 'id' => $appointment->id,

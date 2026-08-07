@@ -3,10 +3,10 @@ import type {
     DataTablePageEvent,
     DataTableSortEvent,
 } from 'primevue/datatable';
-import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import DataTableWrapper from '@/components/DataTableWrapper.vue';
 import { useMoney } from '@/composables/useMoney';
+import { usePercent } from '@/composables/usePercent';
 import type {
     BreakdownColumn,
     BreakdownPayload,
@@ -36,17 +36,9 @@ const emit = defineEmits<{
     sort: [event: DataTableSortEvent];
 }>();
 
-const { t, locale } = useI18n();
+const { t } = useI18n();
 const { formatMoney } = useMoney();
-
-// Rates arrive as 0–100; Intl takes a fraction and places the sign per locale (tr: %12,5).
-const percentFormatter = computed(
-    () =>
-        new Intl.NumberFormat(locale.value, {
-            style: 'percent',
-            maximumFractionDigits: 1,
-        }),
-);
+const { formatPercent } = usePercent();
 
 function cell(row: BreakdownRow, column: BreakdownColumn): string {
     const value = row[column.field];
@@ -55,7 +47,7 @@ function cell(row: BreakdownRow, column: BreakdownColumn): string {
         case 'money':
             return formatMoney(value as string);
         case 'percent':
-            return percentFormatter.value.format(Number(value ?? 0) / 100);
+            return formatPercent(value as number | string | null);
         case 'number':
             return String(value ?? 0);
         default:

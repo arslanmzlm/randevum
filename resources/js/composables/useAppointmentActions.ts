@@ -107,17 +107,6 @@ export function useAppointmentActions(
         );
     }
 
-    function hasActions(row: ActionableAppointment): boolean {
-        return (
-            canCheckIn(row) ||
-            canMarkNoShow(row) ||
-            canReschedule(row) ||
-            canCancel(row) ||
-            canDelete(row) ||
-            canSendReminder(row)
-        );
-    }
-
     function goToEdit(row: ActionableAppointment): void {
         router.visit(edit(row.id).url);
     }
@@ -220,14 +209,12 @@ export function useAppointmentActions(
     return {
         canViewAll,
         cancelReason,
-        canAct,
         canCheckIn,
         canMarkNoShow,
         canReschedule,
         canCancel,
         canDelete,
         canSendReminder,
-        hasActions,
         goToEdit,
         checkIn,
         confirmMarkNoShow,

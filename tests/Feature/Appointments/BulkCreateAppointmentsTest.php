@@ -95,7 +95,6 @@ it('owner can access GET /appointments/bulk-create and the BulkCreate component 
             ->has('doctors')
             ->has('services')
             ->has('appointmentTypes')
-            ->has('timezone')
             ->has('ownDoctorId')
             ->where('result', null)
         );

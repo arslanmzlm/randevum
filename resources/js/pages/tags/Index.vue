@@ -8,6 +8,7 @@ import DataTableWrapper from '@/components/DataTableWrapper.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import TagChip from '@/components/TagChip.vue';
+import { useCan } from '@/composables/useCan';
 import { useCrudDialog } from '@/composables/useCrudDialog';
 import { useTableFilters } from '@/composables/useTableFilters';
 import { tagResource } from '@/crud/tag';
@@ -20,12 +21,19 @@ defineOptions({ layout: AppLayout });
 const props = defineProps<TagIndexProps>();
 
 const { t } = useI18n();
+const { can } = useCan();
+
+// viewAny and create share the same coarse `tags.manage` permission today (TagPolicy), so this
+// is a no-op in practice — kept explicit so the `?new=1` deep link stays correct if the two are
+// ever split, matching the useCrudDialog contract every other CRUD list follows.
+const canCreate = computed(() => can('tags.manage'));
 
 const { visible, item, openCreate, openEdit, confirmDelete } =
     useCrudDialog<TagWithCount>({
         lang: tagResource.lang,
         destroy,
         editing: () => props.editing,
+        canCreate: () => canCreate.value,
     });
 
 // Same server-side list contract as the appointment types screen, so both behave alike.

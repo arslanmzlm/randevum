@@ -37,10 +37,16 @@ const scopeOptions = computed(() => [
     { label: t('expense.scope.own'), value: 'own' },
 ]);
 
+// index() authorizes on `expenses.create` today, so this is a no-op in practice — but
+// viewAny/create are separate permissions (ExpensePolicy), so gate the `?new=1` deep link
+// explicitly rather than relying on that coupling holding forever.
+const canCreate = computed(() => can('expenses.create'));
+
 // Deletion stays in ExpenseList: it gates each row on ownership and has its own confirmation.
 const { visible, item, openCreate, openEdit } = useCrudDialog<Expense>({
     lang: expenseResource.lang,
     editing: () => props.editing,
+    canCreate: () => canCreate.value,
 });
 </script>
 

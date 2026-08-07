@@ -1,5 +1,6 @@
-import { ref, watch } from 'vue';
+import { ref } from 'vue';
 import { availability } from '@/actions/App/Modules/Scheduling/Http/Controllers/AppointmentController';
+import { useDebouncedFetch } from '@/composables/useDebouncedFetch';
 import type {
     AvailabilityCheckResponse,
     AvailabilityReason,
@@ -38,61 +39,44 @@ export function useAvailabilityCheck(
     const state = ref<AvailabilityState>('idle');
     const reason = ref<AvailabilityReason | null>(null);
 
-    let debounceTimer: ReturnType<typeof setTimeout> | undefined;
-    let activeRequest: AbortController | undefined;
-
-    async function run(current: AvailabilityCheckParams): Promise<void> {
-        // Cancel any in-flight probe so a slow earlier response can't clobber a newer slot.
-        activeRequest?.abort();
-        activeRequest = new AbortController();
-
-        try {
-            const response = await fetch(
-                availability({ query: { ...current } }).url,
-                {
-                    headers: { Accept: 'application/json' },
-                    signal: activeRequest.signal,
-                },
-            );
-
-            if (!response.ok) {
-                state.value = 'idle';
-                reason.value = null;
-
-                return;
-            }
-
-            const body = (await response.json()) as AvailabilityCheckResponse;
-            reason.value = body.reason;
-            state.value = body.available ? 'available' : 'unavailable';
-        } catch (error) {
-            if ((error as Error).name !== 'AbortError') {
-                state.value = 'idle';
-                reason.value = null;
-            }
-        }
-    }
-
-    watch(
+    useDebouncedFetch({
         params,
-        (current) => {
-            if (debounceTimer) {
-                clearTimeout(debounceTimer);
-            }
-
-            if (!current) {
-                activeRequest?.abort();
-                state.value = 'idle';
-                reason.value = null;
-
-                return;
-            }
-
+        debounceMs: DEBOUNCE_MS,
+        onPending: () => {
             state.value = 'checking';
-            debounceTimer = setTimeout(() => void run(current), DEBOUNCE_MS);
         },
-        { deep: true },
-    );
+        onIdle: () => {
+            state.value = 'idle';
+            reason.value = null;
+        },
+        async run(current, signal) {
+            try {
+                const response = await fetch(
+                    availability({ query: { ...current } }).url,
+                    {
+                        headers: { Accept: 'application/json' },
+                        signal,
+                    },
+                );
+
+                if (!response.ok) {
+                    state.value = 'idle';
+                    reason.value = null;
+
+                    return;
+                }
+
+                const body = (await response.json()) as AvailabilityCheckResponse;
+                reason.value = body.reason;
+                state.value = body.available ? 'available' : 'unavailable';
+            } catch (error) {
+                if ((error as Error).name !== 'AbortError') {
+                    state.value = 'idle';
+                    reason.value = null;
+                }
+            }
+        },
+    });
 
     return { state, reason };
 }

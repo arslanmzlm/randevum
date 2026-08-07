@@ -114,8 +114,6 @@ it('owner can access GET /appointments/{appointment}/edit and the Edit component
             ->has('services')
             ->has('appointmentTypes')
             ->has('defaultSlotDuration')
-            ->has('workingHours')
-            ->has('timezone')
             ->has('ownDoctorId')
         );
 });
