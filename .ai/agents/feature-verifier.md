@@ -73,7 +73,10 @@ Keep it short — this is a "does it work and look right" pass, not an E2E suite
 3. Walk the feature's **main path once**: open its screen, use the control the feature adds, confirm
    the result appears (the row lands in the list, the value reaches the field, the dialog closes).
    Read the console for errors and look at the rendered result rather than assuming.
-4. Screenshot the finished state.
+4. Screenshot the finished state. Pass an explicit path under the ignored screenshot dir —
+   `tests/Browser/Screenshots/<feature-slug>-live.png`. A bare filename lands in the project
+   root, which is NOT ignored, so it pollutes `git status` and blocks the next feature's
+   "clean tree" precondition.
 
 Rules that keep this cheap:
 - **Don't clean up.** This is a local dev database; rows you create while walking the feature are
