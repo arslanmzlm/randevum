@@ -26,6 +26,33 @@ return [
         'no_show_rate' => 'No-show rate (%)',
     ],
 
+    // Per-tab overrides for the shared label/amount/count columns: the same cell means a
+    // different thing per tab (the service tab reports sold value, not collected money).
+    // Mirrors resources/js/locales/en.ts; falls back to `columns`.
+    'label_header' => [
+        'doctor' => 'Doctor',
+        'service' => 'Service',
+        'product' => 'Product',
+        'appointment_type' => 'Appointment type',
+        'expense_owner' => 'User',
+    ],
+
+    'amount_header' => [
+        'doctor' => 'Collected',
+        'service' => 'Sold value',
+        'product' => 'Sold value',
+        'appointment_type' => 'Collected',
+        'expense_owner' => 'Total expense',
+    ],
+
+    'count_header' => [
+        'doctor' => 'Completed treatments',
+        'service' => 'Units sold',
+        'product' => 'Units sold',
+        'appointment_type' => 'Appointments',
+        'expense_owner' => 'Expense count',
+    ],
+
     'finance' => [
         'item' => 'Item',
         'amount' => 'Amount',

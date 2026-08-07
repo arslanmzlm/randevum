@@ -4,7 +4,9 @@ namespace App\Modules\Core\Services;
 
 use App\Enums\ReportTab;
 use App\Modules\Core\Repositories\ReportBreakdownRepository;
+use App\Support\ClinicContext;
 use Carbon\CarbonImmutable;
+use Collator;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use InvalidArgumentException;
@@ -25,6 +27,7 @@ class ReportBreakdownService
 
     public function __construct(
         private ReportBreakdownRepository $repository,
+        private ClinicContext $clinicContext,
     ) {}
 
     /**
@@ -278,14 +281,20 @@ class ReportBreakdownService
      */
     private function sortRows(array &$rows, string $field, string $direction): void
     {
-        usort($rows, function (array $a, array $b) use ($field, $direction): int {
-            $cmp = $this->compare($a, $b, $field);
+        $collator = collator_create($this->clinicContext->locale());
 
-            if ($cmp === 0 && $field !== 'label') {
-                $cmp = strcoll((string) $a['label'], (string) $b['label']);
+        usort($rows, function (array $a, array $b) use ($field, $direction, $collator): int {
+            $cmp = $this->compare($a, $b, $field, $collator);
+
+            if ($cmp !== 0) {
+                return $direction === 'desc' ? -$cmp : $cmp;
             }
 
-            return $direction === 'desc' ? -$cmp : $cmp;
+            // The label tie-break only stabilizes equal rows, so it stays ascending in
+            // both directions — negating it too would flip equal-amount rows to Z→A.
+            return $field === 'label'
+                ? 0
+                : $this->compareLabels((string) $a['label'], (string) $b['label'], $collator);
         });
     }
 
@@ -293,13 +302,30 @@ class ReportBreakdownService
      * @param  array<string, mixed>  $a
      * @param  array<string, mixed>  $b
      */
-    private function compare(array $a, array $b, string $field): int
+    private function compare(array $a, array $b, string $field, ?Collator $collator): int
     {
         return match ($field) {
-            'label' => strcoll((string) $a['label'], (string) $b['label']),
+            'label' => $this->compareLabels((string) $a['label'], (string) $b['label'], $collator),
             'amount', 'average' => bccomp((string) $a[$field], (string) $b[$field], 2),
             default => ($a[$field] ?? 0) <=> ($b[$field] ?? 0),
         };
+    }
+
+    /**
+     * Locale-aware label comparison. strcoll() would honour LC_COLLATE, but Laravel never
+     * calls setlocale(), so the process stays in "C" and Ç/Ğ/İ/Ö/Ş/Ü sort after Z.
+     */
+    private function compareLabels(string $a, string $b, ?Collator $collator): int
+    {
+        if ($collator instanceof Collator) {
+            $result = $collator->compare($a, $b);
+
+            if ($result !== false) {
+                return $result;
+            }
+        }
+
+        return strcasecmp($a, $b);
     }
 
     /**

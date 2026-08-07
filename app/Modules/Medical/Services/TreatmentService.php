@@ -161,8 +161,10 @@ class TreatmentService
                 $actor,
             );
 
-            // 5. Stock deduction (negative allowed per domain rules)
-            foreach ($treatment->productLines as $line) {
+            // 5. Stock deduction (negative allowed per domain rules). Locks are taken in
+            // product_id order so two completions sharing products can't deadlock by
+            // acquiring the same rows in opposite submission order.
+            foreach ($treatment->productLines->sortBy('product_id') as $line) {
                 $this->stockAdjuster->adjust(
                     $line->product_id,
                     -$line->quantity,

@@ -8,7 +8,6 @@ use App\Modules\Catalog\Http\Resources\ProductResource;
 use App\Modules\Catalog\Http\Resources\StockMovementResource;
 use App\Modules\Catalog\Services\StockMovementService;
 use App\Support\FilterHelper;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -16,7 +15,7 @@ class StockMovementController extends Controller
 {
     public function __construct(private StockMovementService $stockMovementService) {}
 
-    public function index(Request $request, Product $product): Response
+    public function index(Product $product): Response
     {
         $this->authorize('viewMovements', $product);
 

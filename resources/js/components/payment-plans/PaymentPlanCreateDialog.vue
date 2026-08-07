@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n';
 import FormField from '@/components/FormField.vue';
 import InstallmentBuilder from '@/components/payment-plans/InstallmentBuilder.vue';
 import { useMoney } from '@/composables/useMoney';
+import { usePaymentMethodOptions } from '@/composables/usePaymentMethodOptions';
 import { store } from '@/routes/payment-plans';
 import type { PaymentMethod } from '@/types/enums';
 import type { InstallmentRowForm } from '@/types/payment-plan';
@@ -27,13 +28,7 @@ const emit = defineEmits<{ 'update:visible': [value: boolean] }>();
 const { t } = useI18n();
 const { currency } = useMoney();
 
-const methods: PaymentMethod[] = ['cash', 'card', 'transfer', 'cheque'];
-const methodOptions = computed(() =>
-    methods.map((method) => ({
-        value: method,
-        label: t(`payment.method.${method}`),
-    })),
-);
+const methodOptions = usePaymentMethodOptions();
 
 const treatmentOptions = computed(() =>
     props.treatments.map((item) => ({

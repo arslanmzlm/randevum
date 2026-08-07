@@ -43,9 +43,17 @@ class ReportBreakdownRepository
      */
     public function collectedByDoctor(?CarbonInterface $startUtc, ?CarbonInterface $endUtc): array
     {
+        $clinicId = $this->clinicContext->id();
+
+        // The joined table is filtered by hand (ClinicScope only covers the root model), and
+        // a null id would silently become `where clinic_id is null`. Fail closed instead.
+        if ($clinicId === null) {
+            return [];
+        }
+
         $rows = Transaction::query()
             ->join('treatments', 'treatments.id', '=', 'transactions.treatment_id')
-            ->where('treatments.clinic_id', $this->clinicContext->id())
+            ->where('treatments.clinic_id', $clinicId)
             ->whereNot('transactions.status', TransactionStatus::Pending)
             ->when($startUtc, fn ($query) => $query->where('transactions.paid_at', '>=', $startUtc))
             ->when($endUtc, fn ($query) => $query->where('transactions.paid_at', '<=', $endUtc))
@@ -199,6 +207,10 @@ class ReportBreakdownRepository
     public function collectedByAppointmentType(?CarbonInterface $startUtc, ?CarbonInterface $endUtc): array
     {
         $clinicId = $this->clinicContext->id();
+
+        if ($clinicId === null) {
+            return [];
+        }
 
         $rows = Transaction::query()
             ->join('treatments', 'treatments.id', '=', 'transactions.treatment_id')

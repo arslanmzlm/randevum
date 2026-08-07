@@ -422,7 +422,27 @@ it('an unknown sort field falls back to the -amount default', function (): void 
         ->get(route('reports.index', [
             'tab' => 'service', 'start' => '2026-06-01', 'end' => '2026-06-30', 'sort' => 'not_a_field',
         ]))
-        ->assertInertia(fn ($page) => $page->where('breakdown.data.0.label', 'High'));
+        ->assertInertia(fn ($page) => $page
+            ->where('breakdown.data.0.label', 'High')
+            // The echoed sort must report the resolved default, not the rejected input.
+            ->where('query.sort', '-amount')
+            ->etc());
+});
+
+it('falls back to the default page size when per_page is out of the allow-list', function (): void {
+    ['clinic' => $clinic, 'owner' => $owner] = rbSetup();
+
+    $this->actingAs($owner)
+        ->get(route('reports.index', ['tab' => 'service', 'per_page' => 999]))
+        ->assertInertia(fn ($page) => $page->where('query.per_page', 20)->etc());
+});
+
+it('sorts the doctor tab by a doctor-only field', function (): void {
+    ['clinic' => $clinic, 'owner' => $owner] = rbSetup();
+
+    $this->actingAs($owner)
+        ->get(route('reports.index', ['tab' => 'doctor', 'sort' => 'cancelled_rate']))
+        ->assertInertia(fn ($page) => $page->where('query.sort', 'cancelled_rate')->etc());
 });
 
 // ---------------------------------------------------------------------------

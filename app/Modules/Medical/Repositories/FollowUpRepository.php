@@ -46,7 +46,9 @@ class FollowUpRepository
         return FollowUp::where('case_id', $caseId)
             ->with(['type:id,name', 'completedBy'])
             ->orderByRaw("CASE WHEN status = 'open' THEN 0 ELSE 1 END")
-            ->orderBy('due_date')
+            // due_date orders the OPEN rows only; applying it to every row would make it the
+            // primary key for the history too, leaving completed_at as a mere tie-break.
+            ->orderByRaw("CASE WHEN status = 'open' THEN due_date END ASC NULLS LAST")
             ->orderByDesc('completed_at')
             ->get();
     }

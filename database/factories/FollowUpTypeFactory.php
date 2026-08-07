@@ -18,7 +18,7 @@ class FollowUpTypeFactory extends Factory
     {
         return [
             'clinic_id' => Clinic::factory(),
-            'name' => fake()->words(2, true),
+            'name' => fake()->unique()->words(2, true),
             'is_system' => false,
             'is_active' => true,
         ];

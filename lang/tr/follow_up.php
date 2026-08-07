@@ -18,7 +18,6 @@ return [
         'case_patient_mismatch' => 'Seçilen vaka bu hastaya ait değil.',
         'not_open' => 'Bu takip kaydı zaten tamamlanmış veya iptal edilmiş.',
         'due_date_required' => 'Takip tarihi, "Takipte" durumu için zorunludur.',
-        'type_required' => 'Takip türü seçimi zorunludur.',
     ],
 
 ];

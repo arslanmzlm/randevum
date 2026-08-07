@@ -93,7 +93,6 @@ function footer(column: BreakdownColumn): string {
             :loading="loading"
             :sort-field="sortField"
             :sort-order="sortOrder"
-            data-key="label"
             @page="emit('page', $event)"
             @sort="emit('sort', $event)"
         >

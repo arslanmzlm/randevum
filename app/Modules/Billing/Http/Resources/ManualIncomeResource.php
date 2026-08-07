@@ -28,7 +28,9 @@ class ManualIncomeResource extends JsonResource
             'created_at' => $this->created_at->toIso8601String(),
             'status' => $this->status->value,
             'original_transaction_id' => $this->original_transaction_id,
-            'refundable_amount' => $this->refundable_amount,
+            // Only paginate() sets this on the model; a freshly created row has no refunds,
+            // so the store() JSON branch reports the full amount as refundable.
+            'refundable_amount' => $this->refundable_amount ?? $this->amount,
         ];
     }
 }

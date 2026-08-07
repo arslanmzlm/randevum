@@ -3,6 +3,7 @@
 namespace App\Modules\Billing\Exports;
 
 use App\Enums\ReportTab;
+use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithColumnFormatting;
@@ -42,7 +43,18 @@ class ReportSheet implements FromArray, WithColumnFormatting, WithColumnWidths, 
      */
     public function headings(): array
     {
-        return array_map(fn (string $column): string => __('report.columns.'.$column), $this->columns());
+        return array_map(fn (string $column): string => $this->heading($column), $this->columns());
+    }
+
+    /**
+     * label/amount/count mean something different per tab, so the sheet uses the same
+     * per-tab headers the screen shows; the rest fall back to the generic column names.
+     */
+    private function heading(string $column): string
+    {
+        $perTab = 'report.'.$column.'_header.'.$this->tab->value;
+
+        return Lang::has($perTab) ? __($perTab) : __('report.columns.'.$column);
     }
 
     /**

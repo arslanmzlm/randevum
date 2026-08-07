@@ -204,6 +204,7 @@ function submit(): void {
                                             t('clinic.media.remove_confirm')
                                         "
                                         aspect-class="aspect-square"
+                                        fit="contain"
                                     />
                                     <ImageUploadField
                                         :url="clinic.logo_dark_url"
@@ -219,6 +220,7 @@ function submit(): void {
                                             t('clinic.media.remove_confirm')
                                         "
                                         aspect-class="aspect-square"
+                                        fit="contain"
                                         tile-class="bg-surface-900"
                                     />
                                     <ImageUploadField
@@ -235,6 +237,7 @@ function submit(): void {
                                             t('clinic.media.remove_confirm')
                                         "
                                         aspect-class="aspect-square"
+                                        fit="contain"
                                     />
                                 </div>
                             </div>

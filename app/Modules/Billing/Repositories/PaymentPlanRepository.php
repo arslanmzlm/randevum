@@ -131,6 +131,12 @@ class PaymentPlanRepository
             ->whereIn('status', [InstallmentStatus::Pending->value, InstallmentStatus::PartiallyPaid->value])
             ->where($flagColumn, false)
             ->with(['plan.clinic', 'plan.patient'])
+            // This wave spans every clinic, so the collected sum drops ClinicScope too —
+            // otherwise a caller with an active clinic would read 0.00 for every other
+            // clinic's installment and the reminder would quote the full amount as remaining.
+            ->withSum([
+                'transactions as collected_total' => fn ($query) => $query->withoutGlobalScope(ClinicScope::class),
+            ], 'amount')
             ->get();
     }
 

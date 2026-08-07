@@ -7,10 +7,13 @@ use App\Models\Clinic;
 use App\Models\Product;
 use App\Models\StockMovement;
 use App\Models\Vertical;
+use App\Modules\Catalog\Contracts\StockAdjusterContract;
 use Illuminate\Database\Seeder;
 
 class PodiatryProductsSeeder extends Seeder
 {
+    public function __construct(private StockAdjusterContract $stockMovements) {}
+
     /**
      * Default products for podiatry clinics. Idempotent — safe to re-run.
      *
@@ -49,19 +52,15 @@ class PodiatryProductsSeeder extends Seeder
                     ]),
                 );
 
-                // Idempotent: only write the initial movement the first time this product
-                // is seeded, so re-running doesn't duplicate ledger rows.
-                if ($product->wasRecentlyCreated) {
-                    StockMovement::withoutGlobalScopes()->create([
-                        'clinic_id' => $clinic->id,
-                        'product_id' => $product->id,
-                        'quantity' => $productData['current_stock'],
-                        'balance_after' => $productData['current_stock'],
-                        'reason' => StockMovementReason::Initial,
-                        'treatment_id' => null,
-                        'note' => null,
-                        'created_by' => null,
-                    ]);
+                // Keyed on the product + `initial` reason rather than wasRecentlyCreated, so a
+                // database seeded before the ledger existed gets its opening movement too.
+                $hasInitial = StockMovement::withoutGlobalScopes()
+                    ->where('product_id', $product->id)
+                    ->where('reason', StockMovementReason::Initial)
+                    ->exists();
+
+                if (! $hasInitial) {
+                    $this->stockMovements->recordInitial($product, $productData['current_stock']);
                 }
             }
         }

@@ -19,7 +19,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/payment-plans/installments/{installment}/remind', [PaymentPlanController::class, 'sendReminder'])->name('payment-plans.installments.remind');
     Route::post('/payment-plans/{paymentPlan}/cancel', [PaymentPlanController::class, 'cancel'])->name('payment-plans.cancel');
     Route::delete('/payment-plans/{paymentPlan}', [PaymentPlanController::class, 'destroy'])->name('payment-plans.destroy');
-    // Tek sekmeli rapor sayfası (finans + kırılımlar) — owner/manager, reports.revenue ile korunur.
+    // Single tabbed report page (finance + breakdowns), gated on reports.revenue.
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
     Route::post('/reports/clear-cache', [ReportController::class, 'clearCache'])->name('reports.clear-cache');

@@ -34,7 +34,7 @@ class ManualIncomeRepository
                 ->whereNull('patient_id')
                 ->with('creator:id,first_name,last_name')
                 ->withSum('refunds as refunded_total', 'amount')
-                ->when($ownerUserId, fn ($query) => $query->where('created_by', $ownerUserId))
+                ->when($ownerUserId !== null, fn ($query) => $query->where('created_by', $ownerUserId))
                 ->when(
                     $startDate,
                     fn ($query) => $query->where('paid_at', '>=', CarbonImmutable::parse($startDate, $timezone)->startOfDay()->utc()),
@@ -57,17 +57,11 @@ class ManualIncomeRepository
         return Transaction::query()
             ->whereNull('patient_id')
             ->whereNotNull('category')
-            ->when($ownerUserId, fn ($query) => $query->where('created_by', $ownerUserId))
+            ->when($ownerUserId !== null, fn ($query) => $query->where('created_by', $ownerUserId))
             ->distinct()
             ->orderBy('category')
             ->pluck('category')
             ->all();
-    }
-
-    /** Scoped find so a patient payment can never be reached through the manual-income routes. */
-    public function find(int $id): ?Transaction
-    {
-        return Transaction::query()->whereNull('patient_id')->with('creator')->find($id);
     }
 
     public function delete(Transaction $transaction): void

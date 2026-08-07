@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useCrudContext, useCrudForm } from '@/components/crud/crudFormContext';
 import FormField from '@/components/FormField.vue';
 import { useMoney } from '@/composables/useMoney';
-import type { PaymentMethod } from '@/types/enums';
+import { usePaymentMethodOptions } from '@/composables/usePaymentMethodOptions';
 import type { ManualIncomeFormData } from '@/types/manualIncome';
 
 const { t } = useI18n();
@@ -15,11 +15,7 @@ const { currency } = useMoney();
 
 const today = new Date();
 
-const methodOptions = computed(() =>
-    (['cash', 'card', 'transfer', 'cheque'] as PaymentMethod[]).map(
-        (method) => ({ value: method, label: t(`payment.method.${method}`) }),
-    ),
-);
+const methodOptions = usePaymentMethodOptions();
 
 // Free-text AutoComplete (no forceSelection): suggest the clinic's existing categories, but a
 // typed-in new value is kept and submitted as-is (the expense pattern).

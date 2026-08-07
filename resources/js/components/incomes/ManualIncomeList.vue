@@ -15,6 +15,7 @@ import { useDateTime } from '@/composables/useDateTime';
 import { useMoney } from '@/composables/useMoney';
 import type { ManualIncome } from '@/types/manualIncome';
 import type { Paginated } from '@/types/table';
+import { isRefundable } from '@/utils/refund';
 
 // Manual (patient-less) income table: server-side paginated/sorted, with a category filter.
 // A row is immutable — the only mutating action is a hard delete inside the immutability
@@ -70,13 +71,6 @@ function canRemoveRow(income: ManualIncome): boolean {
 const canRefund = computed(() => can('transactions.refund'));
 
 // A row is refundable while it still has positive remaining and isn't itself a counter-entry.
-function isRefundable(income: ManualIncome): boolean {
-    return (
-        (income.status === 'completed' ||
-            income.status === 'partially_refunded') &&
-        Number(income.refundable_amount) > 0
-    );
-}
 
 const selected = ref<ManualIncome | null>(null);
 const dialogVisible = ref(false);

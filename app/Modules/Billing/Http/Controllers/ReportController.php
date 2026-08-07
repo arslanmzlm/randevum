@@ -102,6 +102,12 @@ class ReportController extends Controller
         $tabParam = (string) $request->string('tab');
         $tabs = $tabParam === 'all' ? ReportTab::cases() : [ReportTab::tryFrom($tabParam) ?? ReportTab::Finance];
 
+        // The finance sheet carries the expense total and the expense-by-category block,
+        // so exporting it needs the same gate index() applies before rendering that tab.
+        if (in_array(ReportTab::Finance, $tabs, true)) {
+            $this->authorize('viewAny', Expense::class);
+        }
+
         $windowStart = $entire ? null : $start;
         $windowEnd = $entire ? null : $end;
 

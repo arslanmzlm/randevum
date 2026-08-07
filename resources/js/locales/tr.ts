@@ -1356,7 +1356,8 @@ export const tr = {
         title: 'Raporlar',
         subtitle:
             'Seçili dönem için finans özeti ve doktor, hizmet, ürün, randevu türü ile gider sahibi kırılımları.',
-        export: "Excel'e aktar",
+        export: 'Seçili sekmeyi indir',
+        export_all: 'Tüm raporu indir',
         empty: 'Bu dönemde veri yok.',
         total: 'Toplam',
         tabs: {

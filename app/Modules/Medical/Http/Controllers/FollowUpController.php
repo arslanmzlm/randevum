@@ -55,7 +55,8 @@ class FollowUpController extends Controller
 
     /**
      * Cases for the picked patient, for the manual create-follow-up dialog's case select.
-     * Own/all scoped, matching the case list/panel visibility rules.
+     * Doctors are narrowed to their own cases; anyone else who may create a follow-up sees
+     * the patient's full case list (same behaviour as PatientController::show).
      */
     public function casesForPatient(Request $request): JsonResponse
     {

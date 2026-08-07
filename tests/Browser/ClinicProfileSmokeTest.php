@@ -66,9 +66,10 @@ it('renders the map location picker on the contact tab', function (): void {
         ->assertScript(
             '() => (document.querySelector("main")?.innerText.trim().length ?? 0) > 0',
         )
-        // Leaflet stamps this class on its host once the map actually mounts. OSM
-        // tiles may fail to load in the test network — that's a failed image
-        // request, not a JS error, so this assertion stays valid regardless.
-        ->assertScript('() => !!document.querySelector(".leaflet-container")')
+        // Leaflet stamps this class on its host once the map actually mounts. The canvas is
+        // a dynamic import, so wait for the chunk instead of asserting once — assertScript
+        // evaluates a single time and would flake on a cold chunk. OSM tiles may fail to
+        // load in the test network; that's a failed image request, not a JS error.
+        ->assertVisible('.leaflet-container')
         ->screenshot();
 });

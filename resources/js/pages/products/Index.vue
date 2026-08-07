@@ -16,6 +16,7 @@ import DataTableWrapper from '@/components/DataTableWrapper.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import AdjustStockDialog from '@/components/products/AdjustStockDialog.vue';
+import StockLevelTag from '@/components/products/StockLevelTag.vue';
 import { useCan } from '@/composables/useCan';
 import { useCrudDialog } from '@/composables/useCrudDialog';
 import { useMoney } from '@/composables/useMoney';
@@ -209,14 +210,10 @@ function openStockDialog(product: Product): void {
                         v-else-if="col.key === 'current_stock'"
                         class="flex items-center gap-2"
                     >
-                        <Tag
-                            v-if="data.current_stock < 0"
-                            severity="danger"
-                            :value="`${data.current_stock} ${data.unit}`"
+                        <StockLevelTag
+                            :stock="data.current_stock"
+                            :unit="data.unit"
                         />
-                        <span v-else class="text-surface-700">
-                            {{ data.current_stock }} {{ data.unit }}
-                        </span>
                         <Button
                             v-if="canManageStock"
                             type="button"

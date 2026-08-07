@@ -15,6 +15,8 @@ const props = defineProps<{
     aspectClass: string;
     /** Preview-tile background; a dark-surface logo is invisible on the default light tile. */
     tileClass?: string;
+    /** `contain` keeps a wide wordmark whole in a square tile; `cover` (default) crops to fill. */
+    fit?: 'cover' | 'contain';
     /** POST endpoint that stores the uploaded image (multipart). */
     uploadUrl: string;
     /** DELETE endpoint that clears the image. */
@@ -104,7 +106,8 @@ function remove(): void {
                 v-if="url"
                 :src="url"
                 :alt="label"
-                class="size-full object-cover"
+                class="size-full"
+                :class="fit === 'contain' ? 'object-contain' : 'object-cover'"
             />
             <div
                 v-else

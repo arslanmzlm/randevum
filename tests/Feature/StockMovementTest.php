@@ -237,6 +237,28 @@ it('owner can view the movements page and gets the prop shape, newest-first', fu
         );
 });
 
+it('paginates the movements list at 20 rows per page', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    smTestRole($owner, 'owner', $clinic->id);
+
+    $product = Product::factory()->create(['clinic_id' => $clinic->id, 'vertical_id' => $clinic->vertical_id]);
+
+    StockMovement::factory()->count(21)->create([
+        'clinic_id' => $clinic->id,
+        'product_id' => $product->id,
+    ]);
+
+    $this->actingAs($owner)
+        ->get(route('products.movements.index', $product))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('movements.data', 20)
+            ->where('movements.meta.total', 21)
+            ->etc()
+        );
+});
+
 it('doctor role (has products.viewAny, not products.manageStock) can view movements, but the manual stock-adjust endpoint still 403s', function (): void {
     $clinic = Clinic::factory()->create();
     $doctorUser = User::factory()->create();

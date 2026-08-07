@@ -51,14 +51,6 @@ class ManualIncomeService
         return ['categories' => $this->repository->distinctCategories($ownerUserId)];
     }
 
-    /** The active clinic's manual income row by id, or null. */
-    public function findForActiveClinic(?int $id): ?Transaction
-    {
-        return $id === null || $id <= 0
-            ? null
-            : $this->repository->find($id);
-    }
-
     /**
      * @param  array{paid_at: string, amount: float|string, payment_method: string, category?: string|null, note?: string|null}  $data
      */
@@ -84,7 +76,7 @@ class ManualIncomeService
     {
         if ($transaction->patient_id !== null) {
             throw ValidationException::withMessages([
-                'transaction' => [__('transactions.errors.delete_window_passed')],
+                'transaction' => [__('transactions.errors.not_manual_income')],
             ]);
         }
 

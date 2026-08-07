@@ -10,6 +10,7 @@ import { useDateTime } from '@/composables/useDateTime';
 import { useMoney } from '@/composables/useMoney';
 import { show as treatmentShow } from '@/routes/treatments';
 import type { TransactionItem } from '@/types/balance';
+import { isRefundable } from '@/utils/refund';
 
 withDefaults(
     defineProps<{
@@ -27,14 +28,6 @@ const { can } = useCan();
 
 // Refund is owner-only; gate the whole action column on the same permission the server enforces.
 const canRefund = computed(() => can('transactions.refund'));
-
-// A row is refundable while it still has positive remaining and isn't itself a counter-entry.
-function isRefundable(item: TransactionItem): boolean {
-    return (
-        (item.status === 'completed' || item.status === 'partially_refunded') &&
-        Number(item.refundable_amount) > 0
-    );
-}
 
 const selected = ref<TransactionItem | null>(null);
 const dialogVisible = ref(false);

@@ -77,18 +77,22 @@ const columns = computed<BreakdownColumn[]>(() =>
         : REPORT_BREAKDOWN_COLUMNS[props.tab as BreakdownTab],
 );
 
-const exportUrl = computed(
-    () =>
-        exportReport({
-            query: {
-                tab: props.tab,
-                start: props.filters.entire ? null : props.filters.start,
-                end: props.filters.entire ? null : props.filters.end,
-                entire: props.filters.entire ? 1 : null,
-                sort: props.query.sort,
-            },
-        }).url,
-);
+function exportUrlFor(tab: string): string {
+    return exportReport({
+        query: {
+            tab,
+            start: props.filters.entire ? null : props.filters.start,
+            end: props.filters.entire ? null : props.filters.end,
+            entire: props.filters.entire ? 1 : null,
+            sort: props.query.sort,
+        },
+    }).url;
+}
+
+const exportUrl = computed(() => exportUrlFor(props.tab));
+
+// tab=all puts every tab in one workbook, one worksheet each.
+const exportAllUrl = computed(() => exportUrlFor('all'));
 
 function clearReportCache(): void {
     router.post(
@@ -128,7 +132,21 @@ function clearReportCache(): void {
                     :href="exportUrl"
                     target="_blank"
                     rel="noopener"
+                    severity="secondary"
+                    outlined
                     :label="t('report.export')"
+                >
+                    <template #icon>
+                        <IconFileSpreadsheet />
+                    </template>
+                </Button>
+
+                <Button
+                    as="a"
+                    :href="exportAllUrl"
+                    target="_blank"
+                    rel="noopener"
+                    :label="t('report.export_all')"
                 >
                     <template #icon>
                         <IconFileSpreadsheet />

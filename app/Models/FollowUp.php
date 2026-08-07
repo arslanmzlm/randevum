@@ -108,12 +108,4 @@ class FollowUp extends Model
     {
         $query->where('status', FollowUpStatus::Open->value);
     }
-
-    /**
-     * @param  Builder<FollowUp>  $query
-     */
-    public function scopeDueOn(Builder $query, string $date): void
-    {
-        $query->open()->whereDate('due_date', '<=', $date);
-    }
 }

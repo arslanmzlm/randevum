@@ -3,11 +3,14 @@
 namespace App\Modules\Catalog\Contracts;
 
 use App\Enums\StockMovementReason;
+use App\Models\Product;
+use App\Models\StockMovement;
 use App\Models\User;
 
 /**
- * Atomic stock adjustment seam used by the Medical module on treatment completion/void.
- * Medical imports this contract; never the concrete StockMovementService.
+ * Stock ledger seam for other modules: Medical adjusts on treatment completion/void, a
+ * vertical's product seeder writes the opening balance. They import this contract; never
+ * the concrete StockMovementService.
  */
 interface StockAdjusterContract
 {
@@ -23,4 +26,10 @@ interface StockAdjusterContract
         ?string $note = null,
         ?User $actor = null,
     ): void;
+
+    /**
+     * Record the opening `initial` movement for a product whose row already carries the stock
+     * value, so balance_after equals $quantity verbatim (adjust() would apply it a second time).
+     */
+    public function recordInitial(Product $product, int $quantity, ?User $actor = null): StockMovement;
 }

@@ -4,8 +4,8 @@ import { computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import FormField from '@/components/FormField.vue';
 import { useMoney } from '@/composables/useMoney';
+import { usePaymentMethodOptions } from '@/composables/usePaymentMethodOptions';
 import { store } from '@/routes/payments';
-import type { PaymentMethod } from '@/types/enums';
 import type {
     PaymentTreatmentOption,
     RecordPaymentFormData,
@@ -33,13 +33,7 @@ const { currency, formatMoney } = useMoney();
 // presets a fixed treatment and shows the remaining-balance hint instead.
 const standalone = computed(() => Array.isArray(props.treatments));
 
-const methods: PaymentMethod[] = ['cash', 'card', 'transfer', 'cheque'];
-const methodOptions = computed(() =>
-    methods.map((method) => ({
-        value: method,
-        label: t(`payment.method.${method}`),
-    })),
-);
+const methodOptions = usePaymentMethodOptions();
 
 const treatmentOptions = computed(() =>
     (props.treatments ?? []).map((item) => ({

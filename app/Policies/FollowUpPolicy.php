@@ -8,14 +8,6 @@ use App\Models\User;
 class FollowUpPolicy
 {
     /**
-     * The clinic-wide "Bugün aranacaklar" widget.
-     */
-    public function viewAny(User $user): bool
-    {
-        return $user->can('followUps.view');
-    }
-
-    /**
      * Manual follow-up creation, from the widget and the case panel.
      */
     public function create(User $user): bool

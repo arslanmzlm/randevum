@@ -20,6 +20,7 @@ import SectionCard from '@/components/SectionCard.vue';
 import { useCan } from '@/composables/useCan';
 import { useDateTime } from '@/composables/useDateTime';
 import { useMoney } from '@/composables/useMoney';
+import { usePaymentMethodOptions } from '@/composables/usePaymentMethodOptions';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { show as patientShow } from '@/routes/patients';
 import { installments as installmentsRoute } from '@/routes/payment-plans';
@@ -162,14 +163,7 @@ const collectForm = useForm<{
     note: '',
 });
 
-const methodOptions = computed(() =>
-    (['cash', 'card', 'transfer', 'cheque'] as PaymentMethod[]).map(
-        (method) => ({
-            value: method,
-            label: t(`payment.method.${method}`),
-        }),
-    ),
-);
+const methodOptions = usePaymentMethodOptions();
 
 const today = new Date();
 

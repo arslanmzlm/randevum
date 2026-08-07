@@ -54,6 +54,18 @@ class InstallmentSettlementService
     }
 
     /**
+     * Remaining from a preloaded `collected_total` when the caller batched the sum; falls back
+     * to remaining(). Read-only callers (reminders, listings) use this — a caller that is about
+     * to WRITE money must stay on remaining(), which always re-reads under the row lock.
+     */
+    public function remainingFromLoaded(PaymentPlanInstallment $installment): string
+    {
+        $remaining = bcsub((string) $installment->amount, $this->collectedFromLoaded($installment), 2);
+
+        return bccomp($remaining, '0', 2) > 0 ? $remaining : '0.00';
+    }
+
+    /**
      * Recompute the installment's status from its derived collected/remaining, log the
      * transition when it actually changes, and re-sync the parent plan. A Cancelled
      * installment is left untouched — cancelling is a separate, explicit transition.

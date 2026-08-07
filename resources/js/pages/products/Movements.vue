@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n';
 import DataTableWrapper from '@/components/DataTableWrapper.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import StockLevelTag from '@/components/products/StockLevelTag.vue';
 import StockMovementReasonTag from '@/components/products/StockMovementReasonTag.vue';
 import { useCan } from '@/composables/useCan';
 import { useDateTime } from '@/composables/useDateTime';
@@ -113,9 +114,9 @@ function signedQuantity(quantity: number): string {
                 <span class="text-sm text-surface-500">
                     {{ t('stock_movement.current_stock') }}
                 </span>
-                <Tag
-                    :severity="product.current_stock < 0 ? 'danger' : 'success'"
-                    :value="`${product.current_stock} ${product.unit}`"
+                <StockLevelTag
+                    :stock="product.current_stock"
+                    :unit="product.unit"
                 />
             </template>
         </PageHeader>

@@ -6,7 +6,7 @@ import ModeSelectRow from '@/components/ModeSelectRow.vue';
 import InstallmentBuilder from '@/components/payment-plans/InstallmentBuilder.vue';
 import SectionCard from '@/components/SectionCard.vue';
 import { useMoney } from '@/composables/useMoney';
-import type { PaymentMethod } from '@/types/enums';
+import { usePaymentMethodOptions } from '@/composables/usePaymentMethodOptions';
 import type { PaymentEntryMode } from '@/types/treatment';
 import { treatmentTotal } from '@/utils/treatmentTotals';
 import { useTreatmentForm } from './formContext';
@@ -38,14 +38,7 @@ const modeOptions = computed(() =>
     })),
 );
 
-const methods: PaymentMethod[] = ['cash', 'card', 'transfer', 'cheque'];
-
-const methodOptions = computed(() =>
-    methods.map((method) => ({
-        value: method,
-        label: t(`payment.method.${method}`),
-    })),
-);
+const methodOptions = usePaymentMethodOptions();
 
 const total = computed(() =>
     treatmentTotal(form.services, form.products, form.discount_amount),

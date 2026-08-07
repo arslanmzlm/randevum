@@ -95,7 +95,9 @@ onMounted(() => {
     // Attribution is required by the OpenStreetMap tile usage policy — keep the control on.
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
-        attribution: t('clinic.map.attribution'),
+        // The policy wants the credit to link back to the licence page; the text itself
+        // stays in the locale file, only the anchor is built here.
+        attribution: `<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">${t('clinic.map.attribution')}</a>`,
     }).addTo(map);
 
     if (point) {

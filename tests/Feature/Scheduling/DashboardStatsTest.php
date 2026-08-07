@@ -738,9 +738,18 @@ it('today_collected excludes manual income (patient_id null) but still includes 
         'paid_at' => now(),
     ]);
 
-    Transaction::factory()->manual()->create([
+    $manual = Transaction::factory()->manual()->create([
         'clinic_id' => $clinic->id,
         'amount' => '999.00',
+        'paid_at' => now(),
+    ]);
+
+    // Its refund counter-entry is patient-less too: a filter that only dropped positive
+    // manual rows would leave this negative one in and under-report the tile.
+    Transaction::factory()->manual()->create([
+        'clinic_id' => $clinic->id,
+        'amount' => '-99.00',
+        'original_transaction_id' => $manual->id,
         'paid_at' => now(),
     ]);
 

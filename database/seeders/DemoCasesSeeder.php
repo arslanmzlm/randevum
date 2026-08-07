@@ -88,7 +88,11 @@ class DemoCasesSeeder extends Seeder
             ->take(30)
             ->get();
 
-        if ($doctors->isEmpty() || $patients->count() < 12 || $this->serviceIds === []) {
+        // Five patients per doctor in the loop below, plus seven fixed ones after it —
+        // derived rather than hardcoded so adding a scenario can't outgrow the guard.
+        $patientsNeeded = $doctors->count() * 5 + 7;
+
+        if ($doctors->isEmpty() || $patients->count() < $patientsNeeded || $this->serviceIds === []) {
             return;
         }
 

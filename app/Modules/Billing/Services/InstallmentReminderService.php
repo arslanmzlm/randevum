@@ -114,7 +114,7 @@ class InstallmentReminderService
             'patient' => trim("{$patient->first_name} {$patient->last_name}"),
             // The remaining amount, not the full installment — a partially-collected
             // installment reminds for what is actually due.
-            'amount' => $this->settlement->remaining($installment),
+            'amount' => $this->settlement->remainingFromLoaded($installment),
             'date' => $installment->due_date->locale($lang)->translatedFormat('d F Y'),
         ]);
 
