@@ -187,6 +187,39 @@ it('sort ignores a field not in the allowed list (falls back to id desc)', funct
     expect($result->items()[0]->id)->toBe($second->id);
 });
 
+it('sort appends id as a secondary key so paging stays deterministic on a tied column', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+
+    // All 25 rows tie on first_name, so first_name alone is not a total order:
+    // without an id tie-breaker, SQLite's LIMIT/OFFSET is free to return the ties
+    // in a different arrangement per query, repeating or dropping rows across pages.
+    $ids = Patient::factory()->count(25)->create([
+        'clinic_id' => $clinic->id,
+        'first_name' => 'Aynı',
+    ])->pluck('id')->sort()->values()->all();
+
+    request()->replace(['sort' => 'first_name']);
+
+    $page1 = FilterHelper::for(Patient::class)->sort('first_name')->paginate(10);
+    request()->replace(['sort' => 'first_name', 'page' => '2']);
+    $page2 = FilterHelper::for(Patient::class)->sort('first_name')->paginate(10);
+    request()->replace(['sort' => 'first_name', 'page' => '3']);
+    $page3 = FilterHelper::for(Patient::class)->sort('first_name')->paginate(10);
+
+    $seen = collect($page1->items())
+        ->concat($page2->items())
+        ->concat($page3->items())
+        ->pluck('id')
+        ->sort()
+        ->values()
+        ->all();
+
+    expect($seen)->toBe($ids)
+        // id ascending, matching the (ascending) primary sort direction.
+        ->and(collect($page1->items())->pluck('id')->values()->all())->toBe(array_slice($ids, 0, 10));
+});
+
 // ---------------------------------------------------------------------------
 // exact() — reads filter[<column>]; `_id` columns get a numeric guard
 // ---------------------------------------------------------------------------

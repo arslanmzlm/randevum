@@ -146,6 +146,12 @@ class FilterHelper
      * Apply sorting from the `sort` param (`name` asc, `-name` desc), restricted to
      * the allowed columns. Falls back to `orderByDesc('id')` otherwise.
      *
+     * `id` is always appended as a secondary key, same direction as the primary column
+     * (mirrors the id tie-breaker repositories already hand-roll for their default
+     * ordering, e.g. TreatmentRepository/TransactionRepository): the primary column alone
+     * is not a total order (repeated `first_name`, low-cardinality `is_active`, …), so
+     * without it LIMIT/OFFSET paging can repeat or skip rows across pages.
+     *
      * @return self<TModel>
      */
     public function sort(string ...$allowed): self
@@ -156,7 +162,9 @@ class FilterHelper
             $field = ltrim($sort, '-');
 
             if (in_array($field, $allowed, true)) {
-                $this->query->orderBy($field, str_starts_with($sort, '-') ? 'desc' : 'asc');
+                $direction = str_starts_with($sort, '-') ? 'desc' : 'asc';
+
+                $this->query->orderBy($field, $direction)->orderBy('id', $direction);
 
                 return $this;
             }
