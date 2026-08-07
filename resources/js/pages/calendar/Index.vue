@@ -148,10 +148,11 @@ const timeTo = computed(() =>
         : workingTo.value,
 );
 
-// Week/day place events on a single clinic's time axis, and events of several branches carry
-// different timezones — only the month summary is meaningful across branches.
-watch(multiBranch, (multi) => {
-    if (multi) {
+// Week/day place events on a single clinic's time axis (working hours, closed bands, now-line,
+// doctor columns), all taken from the ACTIVE clinic. That axis is wrong for any cross-branch
+// read, including a single branch that is not the active one, so month is the only view there.
+watch(crossBranch, (cross) => {
+    if (cross) {
         activeView.value = 'month';
     }
 });
@@ -425,18 +426,18 @@ const statusOptions = computed(() =>
 const branchOptions = computed(() =>
     props.clinics.map((c) => ({ label: c.name, value: c.id })),
 );
-// Week/day are unavailable while several branches are selected (see the multiBranch watcher).
+// Week/day are unavailable for any cross-branch read (see the crossBranch watcher).
 const viewOptions = computed(() => [
     { label: t('calendar.views.month'), value: 'month' as const },
     {
         label: t('calendar.views.week'),
         value: 'week' as const,
-        disabled: multiBranch.value,
+        disabled: crossBranch.value,
     },
     {
         label: t('calendar.views.day'),
         value: 'day' as const,
-        disabled: multiBranch.value,
+        disabled: crossBranch.value,
     },
 ]);
 

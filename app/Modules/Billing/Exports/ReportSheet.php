@@ -132,6 +132,9 @@ class ReportSheet implements FromArray, WithColumnFormatting, WithColumnWidths, 
             'label' => __('report.total'),
             'amount' => (float) $this->totals['amount'],
             'count' => $this->totals['count'],
+            // Branch (umbrella) sheet only; every other tab's totals payload omits these.
+            'expense' => isset($this->totals['expense']) ? (float) $this->totals['expense'] : null,
+            'net' => isset($this->totals['net']) ? (float) $this->totals['net'] : null,
             default => null,
         }, $this->columns());
     }

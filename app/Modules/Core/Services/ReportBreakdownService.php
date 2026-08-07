@@ -379,12 +379,24 @@ class ReportBreakdownService
     {
         $amount = '0.00';
         $count = 0;
+        // Only the branch (umbrella) rows carry expense/net; the tenant-wide net is that
+        // report's headline number, so the totals row has to carry it too.
+        $hasExpense = $rows !== [] && array_key_exists('expense', $rows[0]);
+        $expense = '0.00';
+        $net = '0.00';
 
         foreach ($rows as $row) {
             $amount = bcadd($amount, (string) $row['amount'], 2);
             $count += (int) $row['count'];
+
+            if ($hasExpense) {
+                $expense = bcadd($expense, (string) $row['expense'], 2);
+                $net = bcadd($net, (string) $row['net'], 2);
+            }
         }
 
-        return ['amount' => $amount, 'count' => $count];
+        return $hasExpense
+            ? ['amount' => $amount, 'count' => $count, 'expense' => $expense, 'net' => $net]
+            : ['amount' => $amount, 'count' => $count];
     }
 }

@@ -40,7 +40,7 @@ class BranchController extends Controller
                     : null,
                 'is_active' => $clinic->is_active,
                 'is_current' => $clinic->id === $activeClinic->id,
-                'created_at' => $clinic->created_at?->toIso8601String(),
+                'created_at' => $clinic->created_at->toIso8601String(),
             ])
             ->values();
 

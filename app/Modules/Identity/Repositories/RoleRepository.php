@@ -64,12 +64,12 @@ class RoleRepository
             ->where('guard_name', 'web')
             ->get()
             ->map(function (Permission $permission) use ($permissionIdsByRole): Permission {
-                $roleIds = $permissionIdsByRole->get($permission->id, collect())
+                $heldByRoleIds = $permissionIdsByRole->get($permission->id, collect())
                     ->pluck('role_id')
                     ->map(fn ($id): int => (int) $id)
                     ->all();
 
-                $permission->setAttribute('role_ids', $roleIds);
+                $permission->setAttribute('role_ids', $heldByRoleIds);
 
                 return $permission;
             });

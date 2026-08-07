@@ -175,3 +175,38 @@ it('a single-clinic request is byte-identical to today\'s payload shape plus the
         ->and($event['clinic_id'])->toBe($clinic->id)
         ->and($event['clinic_name'])->toBe($clinic->name);
 });
+
+it('each event is formatted in its OWN clinic timezone, not the active clinic one', function (): void {
+    // Berlin is one hour behind Istanbul: an appointment stored at 09:00 UTC is 12:00 in
+    // Istanbul and 11:00 in Berlin. A regression to the active clinic's timezone would
+    // report 12:00 for both rows.
+    $clinicA = Clinic::factory()->create(['timezone' => 'Europe/Istanbul', 'name' => 'Şube A']);
+    $clinicB = Clinic::factory()->create([
+        'tenant_id' => $clinicA->tenant_id,
+        'timezone' => 'Europe/Berlin',
+        'name' => 'Şube B',
+    ]);
+    $owner = User::factory()->create();
+    cmbRole($owner, 'owner', $clinicA->id);
+    cmbRole($owner, 'owner', $clinicB->id);
+
+    $doctorA = Doctor::factory()->create(['clinic_id' => $clinicA->id]);
+    $doctorB = Doctor::factory()->create(['clinic_id' => $clinicB->id]);
+    $patientA = Patient::factory()->create(['clinic_id' => $clinicA->id]);
+    $patientB = Patient::factory()->create(['clinic_id' => $clinicB->id]);
+
+    // Same wall clock in each clinic's own zone → different UTC instants.
+    cmbAppointment($clinicA, $doctorA, $patientA, 12, 13);
+    cmbAppointment($clinicB, $doctorB, $patientB, 12, 13);
+
+    $data = $this->actingAs($owner)
+        ->getJson(cmbEventsUrl(['clinic_id' => [$clinicA->id, $clinicB->id]]))
+        ->assertOk()
+        ->json('data');
+
+    $byClinic = collect($data)->keyBy('clinic_id');
+    $date = cmbDate();
+
+    expect($byClinic[$clinicA->id]['start'])->toBe("{$date} 12:00")
+        ->and($byClinic[$clinicB->id]['start'])->toBe("{$date} 12:00");
+});

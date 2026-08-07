@@ -16,9 +16,25 @@ use Illuminate\Support\Facades\DB;
 class ClinicMembershipService
 {
     /**
+     * Per-request memo: a single request asks for the membership set from SetClinicContext,
+     * the Inertia share and then the controller/service layer.
+     *
+     * @var array<int, Collection<int, Clinic>>
+     */
+    private array $cache = [];
+
+    /**
      * @return Collection<int, Clinic>
      */
     public function clinicsFor(User $user): Collection
+    {
+        return $this->cache[$user->getKey()] ??= $this->queryClinicsFor($user);
+    }
+
+    /**
+     * @return Collection<int, Clinic>
+     */
+    private function queryClinicsFor(User $user): Collection
     {
         return Clinic::query()
             ->join('model_has_roles', 'model_has_roles.clinic_id', '=', 'clinics.id')

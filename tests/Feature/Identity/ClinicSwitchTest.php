@@ -64,6 +64,8 @@ it('a stale/invalid session id is ignored, forgotten, and falls back to the firs
         ->actingAs($owner)
         ->get(route('clinic.edit'))
         ->assertOk()
+        // Without this the test passes whether the stale id was forgotten or merely ignored.
+        ->assertSessionMissing('active_clinic_id')
         ->assertInertia(fn ($page) => $page->where('clinic.id', $clinicA->id));
 
     // The stale id must have been forgotten — a subsequent request (fresh session
@@ -147,4 +149,21 @@ it('a manager@A / receptionist@B user can switch back from B to A (no lock-in)',
         ->get(route('calendar.index'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page->where('activeClinic.id', $clinicA->id));
+});
+
+it('a user with two memberships but no clinics.switch cannot switch and sees no options', function (): void {
+    $clinicA = Clinic::factory()->create();
+    $clinicB = Clinic::factory()->create();
+    $user = User::factory()->create();
+    clinicSwitchTestAssignRole($user, 'receptionist', $clinicA->id);
+    clinicSwitchTestAssignRole($user, 'receptionist', $clinicB->id);
+
+    $this->actingAs($user)
+        ->post(route('clinics.switch'), ['clinic_id' => $clinicB->id])
+        ->assertForbidden();
+
+    $this->actingAs($user)
+        ->get(route('calendar.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('availableClinics', []));
 });

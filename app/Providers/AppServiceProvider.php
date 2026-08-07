@@ -25,6 +25,7 @@ use App\Models\Tag;
 use App\Models\Transaction;
 use App\Models\Treatment;
 use App\Models\User;
+use App\Modules\Core\Services\ClinicMembershipService;
 use App\Policies\AppointmentPolicy;
 use App\Policies\AppointmentTypePolicy;
 use App\Policies\CasePolicy;
@@ -62,6 +63,9 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(ClinicContext::class);
+        // Scoped, not transient: the membership set is asked for by SetClinicContext, the
+        // Inertia share and the controller layer within one request, and the service memoizes it.
+        $this->app->scoped(ClinicMembershipService::class);
     }
 
     /**

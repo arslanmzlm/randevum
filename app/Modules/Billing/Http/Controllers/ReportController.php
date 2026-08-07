@@ -67,9 +67,14 @@ class ReportController extends Controller
         $breakdown = null;
         $resolvedSort = self::DEFAULT_SORT;
 
-        if ($tab->isFinance()) {
+        // The branch (umbrella) and expense-owner tabs both report expense figures, so they
+        // need the same gate the finance tab applies — role customization can now revoke
+        // expenses.viewAny from a manager who still holds reports.revenue.
+        if (in_array($tab, [ReportTab::Finance, ReportTab::Branch, ReportTab::ExpenseOwner], true)) {
             $this->authorize('viewAny', Expense::class);
+        }
 
+        if ($tab->isFinance()) {
             $report = $this->financeReportService->build($clinic->id, $clinic->timezone, $windowStart, $windowEnd);
             $revenue = $report['revenue'];
             $expense = $report['expense'];
@@ -125,9 +130,12 @@ class ReportController extends Controller
                 : array_map(fn (ReportTab $t): ReportTab => $t === ReportTab::Branch ? ReportTab::Finance : $t, $tabs);
         }
 
-        // The finance sheet carries the expense total and the expense-by-category block,
-        // so exporting it needs the same gate index() applies before rendering that tab.
-        if (in_array(ReportTab::Finance, $tabs, true)) {
+        // Same gate index() applies: the finance sheet carries the expense total and the
+        // expense-by-category block, and the branch/expense-owner sheets report expenses too.
+        $expenseTabs = [ReportTab::Finance, ReportTab::Branch, ReportTab::ExpenseOwner];
+        $needsExpenseGate = array_filter($tabs, fn (ReportTab $tab): bool => in_array($tab, $expenseTabs, true));
+
+        if ($needsExpenseGate !== []) {
             $this->authorize('viewAny', Expense::class);
         }
 

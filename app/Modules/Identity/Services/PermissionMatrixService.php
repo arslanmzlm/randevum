@@ -65,7 +65,7 @@ class PermissionMatrixService
      * @param  list<int>  $columnIds
      * @return list<array{key: string, label: string, permissions: list<array{name: string, label: string, role_ids: list<int>, locked_role_ids: list<int>}>}>
      */
-    private function buildGroups($permissions, array $ownRoleIds, array $columnIds): array
+    private function buildGroups(Collection $permissions, array $ownRoleIds, array $columnIds): array
     {
         $permissionLabels = trans('permission.names');
         $groupLabels = trans('permission.groups');

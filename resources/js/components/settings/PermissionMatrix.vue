@@ -71,6 +71,13 @@ function groupState(
     };
 }
 
+// Every permission in the group locked for this column (the acting user's own role in the
+// `roles` group) means the toggle can never change anything: leave it disabled, otherwise
+// PrimeVue writes its own local state and the box renders checked with nothing revoked.
+function isGroupLocked(role: RoleColumn, group: PermissionGroup): boolean {
+    return group.permissions.every((permission) => isLocked(role, permission));
+}
+
 function deleteTooltip(role: RoleColumn): string {
     if (role.is_own) {
         return t('role.delete_blocked_own');
@@ -169,6 +176,7 @@ function deleteTooltip(role: RoleColumn): string {
                                         :model-value="
                                             groupState(role, group).all
                                         "
+                                        :disabled="isGroupLocked(role, group)"
                                         :indeterminate="
                                             groupState(role, group).some
                                         "

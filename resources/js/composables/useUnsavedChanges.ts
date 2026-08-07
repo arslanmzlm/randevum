@@ -12,6 +12,12 @@ import { onMounted, onUnmounted } from 'vue';
 export function useUnsavedChanges(
     isDirty: () => boolean,
     message: string,
+    /**
+     * URLs whose non-GET visit IS the save (never guarded). Every other mutating visit —
+     * creating a role, deleting one, reverting to defaults — remounts the page and would
+     * silently discard the draft, so those are guarded like a navigation.
+     */
+    saveUrls: () => string[] = () => [],
 ): void {
     function onBeforeUnload(event: BeforeUnloadEvent): void {
         if (isDirty()) {
@@ -25,8 +31,12 @@ export function useUnsavedChanges(
         window.addEventListener('beforeunload', onBeforeUnload);
 
         stopBefore = router.on('before', (event) => {
-            // The page's own save/delete/revert are non-GET visits — never guard those.
-            if (event.detail.visit.method !== 'get') {
+            const { method, url } = event.detail.visit;
+
+            if (
+                method !== 'get' &&
+                saveUrls().some((saveUrl) => url.toString().endsWith(saveUrl))
+            ) {
                 return;
             }
 

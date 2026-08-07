@@ -2,6 +2,7 @@
 
 namespace App\Modules\Identity\Http\Requests;
 
+use App\Enums\ClinicRole;
 use App\Support\ClinicContext;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -56,11 +57,14 @@ class StoreRoleRequest extends FormRequest
 
                 // A clinic role sharing a global name would re-create the resolution
                 // ambiguity RoleResolver exists to remove.
-                $reserved = DB::table('roles')
-                    ->whereNull('clinic_id')
-                    ->where('guard_name', 'web')
-                    ->whereRaw('lower(name) = ?', [$name])
-                    ->exists();
+                // ClinicRole first: a missing/partially seeded global row must not let a clinic
+                // claim a baseline name, which RoleResolver would then prefer over the template.
+                $reserved = ClinicRole::tryFrom($name) !== null
+                    || DB::table('roles')
+                        ->whereNull('clinic_id')
+                        ->where('guard_name', 'web')
+                        ->whereRaw('lower(name) = ?', [$name])
+                        ->exists();
 
                 if ($reserved) {
                     $validator->errors()->add('name', __('validation.role_name_reserved'));

@@ -45,6 +45,19 @@ class RoleCustomizationService
         }
 
         $copy = DB::transaction(function () use ($role, $clinicId): Role {
+            // A caller that resolved the baseline explicitly (whereNull('clinic_id')) can reach
+            // here with the copy already present; returning it keeps the documented no-op
+            // instead of violating UNIQUE(clinic_id, name, guard_name).
+            $existing = Role::query()
+                ->where('name', $role->name)
+                ->where('guard_name', $role->guard_name)
+                ->where('clinic_id', $clinicId)
+                ->first();
+
+            if ($existing !== null) {
+                return $existing;
+            }
+
             // Role::query()->create(), NOT Role::create() — Spatie's static create() runs its
             // own findByParam() duplicate-check first ("team IS NULL OR team = X", unordered
             // first()) and throws RoleAlreadyExists as soon as a global role of this name

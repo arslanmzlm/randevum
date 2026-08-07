@@ -19,12 +19,17 @@ class SelfLockoutGuard
 
     public function __construct(private RoleRepository $repository) {}
 
+    /** @var array<string, list<int>> */
+    private array $ownRoleCache = [];
+
     /**
      * @return list<int> role ids the user holds in this clinic
      */
     public function ownRoleIds(User $user, ?int $clinicId): array
     {
-        return $this->repository->roleIdsForUser($user, $clinicId);
+        // Called once per submitted role in RolePermissionService's loop and again per copy on
+        // revert; the answer cannot change within a request.
+        return $this->ownRoleCache[$user->getKey().':'.$clinicId] ??= $this->repository->roleIdsForUser($user, $clinicId);
     }
 
     /**

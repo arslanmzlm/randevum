@@ -36,8 +36,9 @@ it('renders the permission matrix page with body content and no JS errors', func
 
     visit('/settings/roles')
         ->assertNoJavascriptErrors()
-        // Group header label — page body content, not app shell.
-        ->assertSee('Klinik')
+        // Page title: the sidebar renders 'Klinik' as a nav group too, so that string would
+        // pass even on a blank page body.
+        ->assertSee('Roller ve Yetkiler')
         // Role column header label.
         ->assertSee('Sahip')
         // Guard against silent-blank-body false green: <main> must be non-empty.

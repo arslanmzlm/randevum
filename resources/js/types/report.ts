@@ -42,7 +42,8 @@ export interface BreakdownPayload {
     data: BreakdownRow[];
     meta: Paginated<BreakdownRow>['meta'];
     /** Computed over the whole window, so pagination never moves it. */
-    totals: { amount: string; count: number };
+    /** `expense`/`net` are present on the branch (umbrella) tab only. */
+    totals: { amount: string; count: number; expense?: string; net?: string };
 }
 
 /** `reports/Index` props — only one tab's data is populated per request. */

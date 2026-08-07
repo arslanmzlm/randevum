@@ -115,7 +115,7 @@ return [
         'deleted' => 'Rol silindi.',
         'reverted' => 'Varsayılan rol izinlerine dönüldü.',
         'no_customizations' => 'Geri alınacak bir özelleştirme yok.',
-        'self_lockout' => 'Kendi rolünüzden bu izni kaldıramazsınız — erişiminizi kaybedersiniz.',
+        'self_lockout' => 'Kendi rolünüzden bu izni kaldıramazsınız; erişiminizi kaybedersiniz.',
         'cannot_delete_own_role' => 'Kendi rolünüzü silemezsiniz.',
         'has_assigned_users' => 'Bu role atanmış kullanıcı olduğu için silinemez.',
         'revert_locks_out' => 'Bu geri alma işlemi kendi rolünüzden bir izni kaldıracağı için yapılamaz.',

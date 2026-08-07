@@ -140,11 +140,18 @@ function save(): void {
 
     form.put(updatePermissions().url, {
         preserveScroll: true,
-        preserveState: false,
+        // Remount on success (copy-on-write hands back new role ids), but keep the page — and
+        // with it the user's unsaved ticks — whenever the server rejected the save.
+        preserveState: (page) =>
+            Object.keys(page.props.errors ?? {}).length > 0,
     });
 }
 
-useUnsavedChanges(() => isDirty.value, t('role.unsaved_warning'));
+useUnsavedChanges(
+    () => isDirty.value,
+    t('role.unsaved_warning'),
+    () => [updatePermissions().url],
+);
 
 const { visible, item, openCreate, confirmDelete } = useCrudDialog<RoleColumn>({
     lang: roleResource.lang,

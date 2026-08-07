@@ -77,6 +77,15 @@ function footer(column: BreakdownColumn): string {
         return String(props.totals.count);
     }
 
+    // Branch (umbrella) tab: gider and net are window-wide too, and net is its headline figure.
+    if (column.field === 'expense' && props.totals.expense !== undefined) {
+        return formatMoney(props.totals.expense);
+    }
+
+    if (column.field === 'net' && props.totals.net !== undefined) {
+        return formatMoney(props.totals.net);
+    }
+
     return '';
 }
 </script>

@@ -19,11 +19,9 @@ class Role extends SpatieRole
         ];
     }
 
-    /**
-     * Deliberately NOT BelongsToClinic. A ClinicScope on `roles` would hide the global
-     * baseline rows (clinic_id null) from Spatie's own role/permission lookups and break
-     * every can() check in the app — global rows must stay visible to every query.
-     */
+    // Deliberately NOT BelongsToClinic. A ClinicScope on `roles` would hide the global
+    // baseline rows (clinic_id null) from Spatie's own role/permission lookups and break
+    // every can() check in the app — global rows must stay visible to every query.
 
     /**
      * @return BelongsTo<Clinic, $this>
