@@ -450,12 +450,17 @@ const isEmpty = computed(
 
 function onMonthCellClick(date: Date): void {
     viewDate.value = date;
-    activeView.value = 'day';
+
+    // Same axis guard as onSummaryClick below: a bare cell click carries no branch/doctor
+    // narrowing, so in cross-branch mode there is no single clinic to key a day view off of —
+    // stay on month.
+    if (!crossBranch.value) {
+        activeView.value = 'day';
+    }
 }
 
-// Month summary click: drill into that day filtered to the clicked chip — the branch in
-// multi-branch mode (which also drops back to a single branch, re-enabling the day view), the
-// doctor otherwise.
+// Month summary click: narrow to the clicked chip's dimension — the branch in multi-branch mode,
+// the doctor otherwise — and land on that day.
 function onSummaryClick(date: string, key: number): void {
     if (multiBranch.value) {
         branchFilter.value = [key];
@@ -464,7 +469,15 @@ function onSummaryClick(date: string, key: number): void {
     }
 
     viewDate.value = parseDateString(date);
-    activeView.value = 'day';
+
+    // Only THEN open day view, and only if the narrowed selection lands on the active clinic's
+    // axis. Reading crossBranch here (after the writes above) re-evaluates it against the new
+    // branchFilter/doctorFilter, so a chip for another branch — or a doctor chip while a
+    // non-active branch is still selected — correctly stays crossBranch and stays on month,
+    // instead of opening a day view keyed to the wrong clinic's working hours.
+    if (!crossBranch.value) {
+        activeView.value = 'day';
+    }
 }
 
 // Shared lifecycle actions — same gating the list uses, so the popover never drifts. Pair with the
