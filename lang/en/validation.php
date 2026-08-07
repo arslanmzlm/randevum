@@ -323,6 +323,9 @@ return [
         'result_note' => 'result note',
         'follow_up_type_id' => 'follow-up type',
         'follow_up_type_name' => 'follow-up type name',
+        // roles
+        'role_name' => 'role name',
+        'role_permissions' => 'permissions',
         // payment recording
         'treatment_id' => 'treatment',
         'amount' => 'amount',
@@ -362,6 +365,8 @@ return [
 
     'tag_name_taken' => 'This tag name is already in use (case-insensitive).',
     'follow_up_type_name_taken' => 'This follow-up type name is already in use (case-insensitive).',
+    'role_name_taken' => 'This role name is already in use (case-insensitive).',
+    'role_name_reserved' => 'This role name is reserved and cannot be used.',
 
     'sms_template_unknown_type' => ':attribute is not a valid customizable SMS type.',
     'sms_template_unknown_variable' => ':attribute contains a variable that is not allowed: :variable',

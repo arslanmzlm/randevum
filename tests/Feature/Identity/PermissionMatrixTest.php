@@ -95,3 +95,48 @@ it('reports is_customized true for a clinic that customized one of its baseline 
             return $manager['id'] === $copy->id && $manager['is_customized'] === true;
         }));
 });
+
+it("sets is_own true only for the viewing user's own column, and locked_role_ids on the protected permissions for it", function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    pmRole($owner, 'owner', $clinic->id);
+
+    $this->actingAs($owner)
+        ->get(route('settings.roles.index'))
+        ->assertOk()
+        ->assertInertia(function ($page) {
+            $page->where('roles', function ($roles) {
+                $byName = collect($roles)->keyBy('name');
+
+                return $byName['owner']['is_own'] === true
+                    && $byName['manager']['is_own'] === false
+                    && $byName['doctor']['is_own'] === false;
+            })->where('groups', function ($groups) {
+                $flat = collect($groups)->flatMap(fn (array $g) => $g['permissions']);
+                $manage = $flat->firstWhere('name', 'roles.manage');
+                $viewAny = $flat->firstWhere('name', 'roles.viewAny');
+                $other = $flat->firstWhere('name', 'clinic.update');
+
+                return $manage['locked_role_ids'] !== [] && $viewAny['locked_role_ids'] !== []
+                    && $other['locked_role_ids'] === [];
+            });
+        });
+});
+
+it('reports can_delete false for baseline columns (global and customized copy alike)', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    pmRole($owner, 'owner', $clinic->id);
+
+    app(ClinicContext::class)->set($clinic->id);
+    $globalManager = Role::query()->where('name', 'manager')->whereNull('clinic_id')->firstOrFail();
+    app(RoleCustomizationService::class)->customizeForActiveClinic($globalManager);
+    app(ClinicContext::class)->forget();
+
+    $this->actingAs($owner)
+        ->get(route('settings.roles.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('roles', function ($roles) {
+            return collect($roles)->every(fn (array $role) => $role['can_delete'] === false);
+        }));
+});

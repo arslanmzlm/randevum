@@ -109,4 +109,16 @@ return [
         'deleted' => 'Follow-up type removed.',
     ],
 
+    'role' => [
+        'permissions_updated' => 'Role permissions updated.',
+        'created' => 'Role created.',
+        'deleted' => 'Role deleted.',
+        'reverted' => 'Reverted to default role permissions.',
+        'no_customizations' => 'There is nothing to revert.',
+        'self_lockout' => 'You cannot remove this permission from your own role — you would lose access.',
+        'cannot_delete_own_role' => 'You cannot delete your own role.',
+        'has_assigned_users' => 'This role cannot be deleted while users are assigned to it.',
+        'revert_locks_out' => 'This revert cannot proceed because it would remove a permission from your own role.',
+    ],
+
 ];

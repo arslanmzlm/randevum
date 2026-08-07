@@ -196,6 +196,9 @@ return [
         'result_note' => 'Sonuç notu',
         'follow_up_type_id' => 'Takip türü',
         'follow_up_type_name' => 'Takip türü adı',
+        // roles
+        'role_name' => 'Rol adı',
+        'role_permissions' => 'İzinler',
         // payment recording
         'treatment_id' => 'Tedavi',
         'amount' => 'Tutar',
@@ -235,6 +238,8 @@ return [
 
     'tag_name_taken' => 'Bu etiket adı (büyük/küçük harf fark etmeksizin) zaten kullanılıyor.',
     'follow_up_type_name_taken' => 'Bu takip türü adı (büyük/küçük harf fark etmeksizin) zaten kullanılıyor.',
+    'role_name_taken' => 'Bu rol adı (büyük/küçük harf fark etmeksizin) zaten kullanılıyor.',
+    'role_name_reserved' => 'Bu rol adı sistem tarafından kullanılıyor, seçilemez.',
 
     'working_hours_closed_conflict' => ':attribute kapalı olarak işaretlenmiş günlerde açılış/kapanış saati belirtilemez.',
     'working_hours_open_close_required' => ':attribute için açılış ve kapanış saati zorunludur.',

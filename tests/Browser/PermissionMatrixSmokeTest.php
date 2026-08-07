@@ -8,8 +8,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\PermissionRegistrar;
 
 /**
- * Browser smoke — Feature 1.71 (Rol özelleştirme modeli + matris). Real Chromium via
- * pest-plugin-browser: the read-only permission matrix page must mount, render
+ * Browser smoke — Feature 1.72 (Rol yönetimi arayüzü). Real Chromium via
+ * pest-plugin-browser: the editable permission matrix page must mount, render
  * page-body content (not just the app shell), and produce no JS errors.
  *
  * Hardened against Vue setup-error false greens: assertNoJavascriptErrors() only

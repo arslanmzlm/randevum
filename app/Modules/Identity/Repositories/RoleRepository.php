@@ -4,6 +4,7 @@ namespace App\Modules\Identity\Repositories;
 
 use App\Enums\ClinicRole;
 use App\Models\Role;
+use App\Models\User;
 use App\Modules\Core\Services\RoleResolver;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -72,5 +73,79 @@ class RoleRepository
 
                 return $permission;
             });
+    }
+
+    /**
+     * Role ids the user holds in the given clinic (or globally, when $clinicId is null).
+     *
+     * @return list<int>
+     */
+    public function roleIdsForUser(User $user, ?int $clinicId): array
+    {
+        return DB::table('model_has_roles')
+            ->where('model_type', $user->getMorphClass())
+            ->where('model_id', $user->getKey())
+            ->where('clinic_id', $clinicId)
+            ->pluck('role_id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+    }
+
+    /**
+     * Assignment counts for the given role ids, restricted to this clinic — a global baseline
+     * column must not report another clinic's assignments.
+     *
+     * @param  list<int>  $roleIds
+     * @return array<int, int> role_id => count
+     */
+    public function assignedUserCounts(array $roleIds, ?int $clinicId): array
+    {
+        return DB::table('model_has_roles')
+            ->whereIn('role_id', $roleIds)
+            ->where('clinic_id', $clinicId)
+            ->select('role_id', DB::raw('count(*) as aggregate'))
+            ->groupBy('role_id')
+            ->pluck('aggregate', 'role_id')
+            ->map(fn ($count): int => (int) $count)
+            ->all();
+    }
+
+    /**
+     * Whether a role has any assignment at all (no clinic filter: a custom role's assignments
+     * can only ever belong to its own clinic).
+     */
+    public function hasAnyAssignment(int $roleId): bool
+    {
+        return DB::table('model_has_roles')->where('role_id', $roleId)->exists();
+    }
+
+    /**
+     * This clinic's baseline-copy roles (clinic_id set, name is a ClinicRole case).
+     *
+     * @return Collection<int, Role>
+     */
+    public function baselineCopiesForClinic(int $clinicId): Collection
+    {
+        return Role::query()
+            ->where('clinic_id', $clinicId)
+            ->where('guard_name', 'web')
+            ->whereIn('name', ClinicRole::values())
+            ->orderBy('name')
+            ->get();
+    }
+
+    /**
+     * The role's current permission names — used by SelfLockoutGuard and by the "unchanged
+     * submission → skip" comparison in RolePermissionService.
+     *
+     * @return list<string>
+     */
+    public function permissionNamesFor(int $roleId): array
+    {
+        return DB::table('role_has_permissions')
+            ->join('permissions', 'permissions.id', '=', 'role_has_permissions.permission_id')
+            ->where('role_has_permissions.role_id', $roleId)
+            ->pluck('permissions.name')
+            ->all();
     }
 }

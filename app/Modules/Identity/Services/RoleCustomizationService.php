@@ -4,8 +4,11 @@ namespace App\Modules\Identity\Services;
 
 use App\Enums\ClinicRole;
 use App\Models\Role;
+use App\Models\User;
+use App\Modules\Identity\Repositories\RoleRepository;
 use App\Support\ClinicContext;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use RuntimeException;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -13,13 +16,16 @@ use Spatie\Permission\PermissionRegistrar;
  * Copy-on-write role customization: the first time a clinic touches a global baseline role,
  * it gets its own row (same name/guard, permissions copied) and its own model_has_roles
  * assignments are re-pointed to it — the global row and every other clinic's assignments
- * are untouched.
+ * are untouched. Also owns the rest of the clinic role lifecycle: custom role create/delete
+ * and reverting every baseline copy back to the global template.
  */
 class RoleCustomizationService
 {
     public function __construct(
         private ClinicContext $clinicContext,
         private PermissionRegistrar $permissionRegistrar,
+        private RoleRepository $repository,
+        private SelfLockoutGuard $guard,
     ) {}
 
     public function customizeForActiveClinic(Role $role): Role
@@ -74,5 +80,87 @@ class RoleCustomizationService
         $this->permissionRegistrar->forgetCachedPermissions();
 
         return $copy;
+    }
+
+    public function createCustomRole(string $name): Role
+    {
+        $clinicId = $this->clinicContext->clinicOrFail()->id;
+
+        // Role::query()->create(), not Role::create() — same reasoning as customizeForActiveClinic():
+        // Spatie's static create() runs findByParam()'s duplicate check first.
+        $role = Role::query()->create([
+            'name' => trim($name),
+            'guard_name' => 'web',
+            'clinic_id' => $clinicId,
+        ]);
+
+        $this->permissionRegistrar->forgetCachedPermissions();
+
+        return $role;
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    public function deleteCustomRole(User $user, Role $role): void
+    {
+        $clinicId = $this->clinicContext->clinicOrFail()->id;
+
+        if ($role->clinic_id !== $clinicId || ! $role->isCustomRole()) {
+            // The policy already returns 403 for this case; this is defence in depth.
+            throw new RuntimeException("Role [{$role->id}] is not a deletable custom role for this clinic.");
+        }
+
+        $this->guard->assertNotOwnRole($user, $clinicId, $role);
+
+        if ($this->repository->hasAnyAssignment($role->id)) {
+            throw ValidationException::withMessages([
+                'role' => [__('messages.role.has_assigned_users')],
+            ]);
+        }
+
+        $role->delete();
+
+        $this->permissionRegistrar->forgetCachedPermissions();
+    }
+
+    /**
+     * Deletes every baseline copy this clinic owns, re-pointing its assignments back to the
+     * matching global template row. Custom roles are never touched.
+     *
+     * @return list<string> reverted role names, for the toast
+     */
+    public function revertAllForActiveClinic(User $user): array
+    {
+        $clinicId = $this->clinicContext->clinicOrFail()->id;
+
+        $copies = $this->repository->baselineCopiesForClinic($clinicId);
+
+        if ($copies->isEmpty()) {
+            return [];
+        }
+
+        $this->guard->assertRevertKeepsProtected($user, $clinicId, $copies);
+
+        DB::transaction(function () use ($copies, $clinicId): void {
+            foreach ($copies as $copy) {
+                $globalRole = Role::query()
+                    ->where('name', $copy->name)
+                    ->where('guard_name', 'web')
+                    ->whereNull('clinic_id')
+                    ->firstOrFail();
+
+                DB::table('model_has_roles')
+                    ->where('role_id', $copy->id)
+                    ->where('clinic_id', $clinicId)
+                    ->update(['role_id' => $globalRole->id]);
+
+                $copy->delete();
+            }
+        });
+
+        $this->permissionRegistrar->forgetCachedPermissions();
+
+        return $copies->pluck('name')->all();
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ClinicRole;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\Permission\Models\Role as SpatieRole;
@@ -35,6 +36,12 @@ class Role extends SpatieRole
     public function isCustomized(): bool
     {
         return $this->clinic_id !== null;
+    }
+
+    /** A clinic-owned role whose name is not one of the baseline ClinicRole cases. */
+    public function isCustomRole(): bool
+    {
+        return $this->clinic_id !== null && ClinicRole::tryFrom($this->name) === null;
     }
 
     /**

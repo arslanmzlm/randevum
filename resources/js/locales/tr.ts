@@ -1365,16 +1365,46 @@ export const tr = {
     role: {
         title: 'Roller ve Yetkiler',
         subtitle:
-            'Kliniğinizdeki rollerin hangi izinlere sahip olduğunu görüntüleyin.',
+            'Kliniğinizdeki rollerin hangi izinlere sahip olduğunu yönetin.',
         read_only_note:
-            'Bu sayfa salt okunurdur. İzinleri düzenleme özelliği ilerleyen sürümde eklenecek.',
+            'Bu sayfayı yalnızca görüntüleyebilirsiniz. İzinleri değiştirmek için rol yönetimi yetkisi gerekir.',
+        edit_note:
+            'Bir rolün izinlerini ilk kez değiştirdiğinizde o rolün kliniğinize özel bir kopyası oluşturulur; sistem genelindeki varsayılan rol etkilenmez.',
         customized_badge: 'Özelleştirilmiş',
+        custom_badge: 'Özel rol',
         table_caption: 'Rol ve izin matrisi',
         granted: 'Yetkili',
         not_granted: 'Yetkisiz',
         empty: 'Gösterilecek rol veya izin yok.',
+        save: 'Kaydet',
+        discard: 'Değişiklikleri geri al',
+        dirty_badge: 'Kaydedilmemiş değişiklik',
+        unsaved_warning:
+            'Kaydedilmemiş izin değişiklikleriniz var. Sayfadan ayrılmak istediğinize emin misiniz?',
+        add_custom: 'Özel Rol Ekle',
+        create_title: 'Özel Rol Ekle',
+        create_submit: 'Rolü Ekle',
+        remove: 'Rolü kaldır',
+        remove_confirm:
+            '{name} adlı özel rolü kaldırmak istediğinize emin misiniz?',
+        delete_blocked_assigned:
+            'Bu rol {count} kullanıcıya atanmış olduğu için kaldırılamaz.',
+        delete_blocked_own: 'Kendi rolünüzü kaldıramazsınız.',
+        revert_all: 'Varsayılana Döndür',
+        revert_confirm:
+            'Şu rollerin kliniğinize özel izin ayarları silinip sistem varsayılanlarına dönülecek: {names}. Devam edilsin mi?',
+        revert_accept: 'Varsayılana döndür',
+        locked_hint:
+            'Bu izni kendi rolünüzden kaldıramazsınız; aksi hâlde bu sayfaya erişiminizi kaybedersiniz.',
+        group_toggle_label: '{group} grubunun tamamı — {role}',
         columns: {
             permission: 'İzin',
+        },
+        fields: {
+            name: 'Rol adı',
+        },
+        hints: {
+            name: 'Kliniğinize özgü bir ad girin. Sistem rollerinin adları kullanılamaz.',
         },
     },
     date_filter: {
