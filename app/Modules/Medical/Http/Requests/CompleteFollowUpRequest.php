@@ -17,7 +17,7 @@ class CompleteFollowUpRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'result_note' => ['nullable', 'string'],
+            'result_note' => ['nullable', 'string', 'max:1000'],
         ];
     }
 }

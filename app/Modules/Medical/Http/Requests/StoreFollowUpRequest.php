@@ -32,7 +32,7 @@ class StoreFollowUpRequest extends FormRequest
                     ->whereNull('deleted_at'),
             ],
             'due_date' => ['required', 'date'],
-            'note' => ['nullable', 'string'],
+            'note' => ['nullable', 'string', 'max:1000'],
         ];
     }
 }

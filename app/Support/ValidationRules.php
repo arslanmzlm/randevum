@@ -19,4 +19,17 @@ class ValidationRules
     {
         return ['numeric', 'min:'.$min, 'max:9999999999.99', 'decimal:0,2'];
     }
+
+    /**
+     * Rules for a free-text reason/explanation field. $max defaults to the common case
+     * (cancel/no-show/offboard reasons); pass an explicit value where a field's own budget
+     * differs (e.g. a required refund reason kept at 1000, a short schedule-exception reason
+     * at 255).
+     *
+     * @return list<string>
+     */
+    public static function reason(int $max = 500): array
+    {
+        return ['string', 'max:'.$max];
+    }
 }

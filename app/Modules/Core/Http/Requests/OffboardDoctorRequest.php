@@ -2,6 +2,7 @@
 
 namespace App\Modules\Core\Http\Requests;
 
+use App\Support\ValidationRules;
 use Illuminate\Foundation\Http\FormRequest;
 
 class OffboardDoctorRequest extends FormRequest
@@ -19,7 +20,7 @@ class OffboardDoctorRequest extends FormRequest
     {
         return [
             'cancel_appointments' => ['boolean'],
-            'reason' => ['nullable', 'string', 'max:500'],
+            'reason' => ['nullable', ...ValidationRules::reason()],
         ];
     }
 }

@@ -19,18 +19,28 @@ class PaymentPlanRepository
     }
 
     /**
+     * Bulk-inserts every installment in one statement (count is config-capped, see
+     * StorePaymentPlanRequest). Bypasses Eloquent events, so clinic_id and the timestamps
+     * — normally auto-filled by BelongsToClinic/save() — are set by hand here.
+     *
      * @param  list<array{sequence: int, due_date: string, amount: float|string}>  $installments
      */
     public function insertInstallments(PaymentPlan $plan, array $installments): void
     {
-        foreach ($installments as $row) {
-            $plan->installments()->create([
-                'sequence' => $row['sequence'],
-                'due_date' => $row['due_date'],
-                'amount' => $row['amount'],
-                'status' => InstallmentStatus::Pending->value,
-            ]);
-        }
+        $now = now();
+
+        $rows = array_map(fn (array $row): array => [
+            'clinic_id' => $plan->clinic_id,
+            'payment_plan_id' => $plan->id,
+            'sequence' => $row['sequence'],
+            'due_date' => $row['due_date'],
+            'amount' => $row['amount'],
+            'status' => InstallmentStatus::Pending->value,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ], $installments);
+
+        PaymentPlanInstallment::insert($rows);
     }
 
     /**

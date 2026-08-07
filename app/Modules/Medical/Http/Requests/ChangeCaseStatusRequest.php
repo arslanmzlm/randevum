@@ -25,7 +25,7 @@ class ChangeCaseStatusRequest extends FormRequest
         return [
             'status' => ['required', Rule::enum(CaseStatus::class)],
             'due_date' => ['nullable', 'date', Rule::requiredIf($isFollowUp)],
-            'note' => ['nullable', 'string'],
+            'note' => ['nullable', 'string', 'max:1000'],
             'follow_up_type_id' => [
                 'nullable',
                 'integer',

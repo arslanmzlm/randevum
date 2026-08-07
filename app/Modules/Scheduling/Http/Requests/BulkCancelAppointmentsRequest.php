@@ -3,6 +3,7 @@
 namespace App\Modules\Scheduling\Http\Requests;
 
 use App\Support\ClinicContext;
+use App\Support\ValidationRules;
 use Carbon\Carbon;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -31,7 +32,7 @@ class BulkCancelAppointmentsRequest extends FormRequest
                 'integer',
                 Rule::exists('doctors', 'id')->where('clinic_id', $clinicId),
             ],
-            'reason' => ['nullable', 'string', 'max:500'],
+            'reason' => ['nullable', ...ValidationRules::reason()],
             'block_new_bookings' => ['boolean'],
         ];
     }

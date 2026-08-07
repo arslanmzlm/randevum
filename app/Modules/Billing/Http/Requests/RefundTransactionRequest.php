@@ -24,7 +24,7 @@ class RefundTransactionRequest extends FormRequest
     {
         return [
             'amount' => ['required', ...ValidationRules::money(0.01)],
-            'reason' => ['required', 'string', 'max:1000'],
+            'reason' => ['required', ...ValidationRules::reason(1000)],
         ];
     }
 

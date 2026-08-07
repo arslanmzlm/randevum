@@ -2,6 +2,7 @@
 
 namespace App\Modules\Scheduling\Http\Requests;
 
+use App\Support\ValidationRules;
 use Illuminate\Foundation\Http\FormRequest;
 
 class NoShowAppointmentRequest extends FormRequest
@@ -18,7 +19,7 @@ class NoShowAppointmentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'reason' => ['nullable', 'string', 'max:500'],
+            'reason' => ['nullable', ...ValidationRules::reason()],
         ];
     }
 }

@@ -137,9 +137,6 @@ class PaymentPlanController extends Controller
     }
 
     /**
-     * POST /payment-plans/{paymentPlan}/cancel
-     */
-    /**
      * DELETE /payment-plans/{paymentPlan} — for a plan entered by mistake. Blocked by the policy
      * once any installment has been collected; cancel that one instead.
      */
@@ -154,6 +151,9 @@ class PaymentPlanController extends Controller
         return back();
     }
 
+    /**
+     * POST /payment-plans/{paymentPlan}/cancel
+     */
     public function cancel(Request $request, PaymentPlan $paymentPlan): RedirectResponse
     {
         $this->authorize('cancel', $paymentPlan);

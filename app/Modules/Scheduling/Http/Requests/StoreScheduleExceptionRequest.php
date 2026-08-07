@@ -3,6 +3,7 @@
 namespace App\Modules\Scheduling\Http\Requests;
 
 use App\Support\ClinicContext;
+use App\Support\ValidationRules;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -32,7 +33,7 @@ class StoreScheduleExceptionRequest extends FormRequest
             'is_all_day' => ['boolean'],
             'starts_at' => ['required', 'date'],
             'ends_at' => ['required', 'date', 'after_or_equal:starts_at'],
-            'reason' => ['nullable', 'string', 'max:255'],
+            'reason' => ['nullable', ...ValidationRules::reason(255)],
         ];
     }
 }

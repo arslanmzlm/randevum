@@ -24,9 +24,9 @@ class UpdateDoctorProfileRequest extends FormRequest
             'last_name' => ['required', 'string', 'max:100'],
             'title' => ['nullable', 'string', 'max:50'],
             'specialization' => ['nullable', 'string', 'max:100'],
-            'bio' => ['nullable', 'string'],
+            'bio' => ['nullable', 'string', 'max:2000'],
             'license_number' => ['nullable', 'string', 'max:100'],
-            'certificate' => ['nullable', 'string'],
+            'certificate' => ['nullable', 'string', 'max:2000'],
             'is_active' => ['boolean'],
         ];
     }
