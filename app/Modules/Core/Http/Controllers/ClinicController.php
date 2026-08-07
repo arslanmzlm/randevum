@@ -37,7 +37,7 @@ class ClinicController extends Controller
      */
     public function edit(Request $request): Response
     {
-        $clinic = Clinic::with('vertical')->findOrFail($this->clinicContext->id());
+        $clinic = Clinic::with(['vertical', 'city'])->findOrFail($this->clinicContext->id());
 
         $canEditClinic = $request->user()->can('update', $clinic);
         // Bound by the Messaging module; absent means no SMS tab, not an error.
@@ -63,12 +63,7 @@ class ClinicController extends Controller
             // SMS preferences are a tab on this page rather than a separate screen. Null when the
             // viewer lacks smsSettings.view — the tab is then not rendered at all.
             'sms' => $sms,
-            'mapDefaults' => [
-                'lat' => (float) config('platform.map.default_center.lat'),
-                'lng' => (float) config('platform.map.default_center.lng'),
-                'zoom' => (int) config('platform.map.default_zoom'),
-                'selected_zoom' => (int) config('platform.map.selected_zoom'),
-            ],
+            'mapDefaults' => $this->mapDefaults($clinic),
         ]);
     }
 
@@ -113,6 +108,33 @@ class ClinicController extends Controller
         Toast::success(__('messages.clinic.media_removed'));
 
         return redirect()->back();
+    }
+
+    /**
+     * Centres the empty-state picker on the clinic's own city when we have coordinates for it,
+     * falling back to the country-wide default otherwise (e.g. city not yet geocoded).
+     *
+     * @return array<string, mixed>
+     */
+    private function mapDefaults(Clinic $clinic): array
+    {
+        $city = $clinic->city;
+
+        if ($city !== null && $city->latitude !== null && $city->longitude !== null) {
+            return [
+                'lat' => (float) $city->latitude,
+                'lng' => (float) $city->longitude,
+                'zoom' => (int) config('platform.map.city_zoom'),
+                'selected_zoom' => (int) config('platform.map.selected_zoom'),
+            ];
+        }
+
+        return [
+            'lat' => (float) config('platform.map.default_center.lat'),
+            'lng' => (float) config('platform.map.default_center.lng'),
+            'zoom' => (int) config('platform.map.default_zoom'),
+            'selected_zoom' => (int) config('platform.map.selected_zoom'),
+        ];
     }
 
     /**

@@ -9,6 +9,9 @@ use Illuminate\Database\Seeder;
 class CitySeeder extends Seeder
 {
     /**
+     * Province centre coordinates: Wikidata (CC0), matched to this table's city names and
+     * verified against `code` (plaka). See database/seeders/data/city-coordinates.json.
+     *
      * Türkiye'nin 81 ili. `code` = resmî plaka kodu (01-81) = ISO 3166-2:TR alt bölüm numarası.
      *
      * @var array<string, string>
@@ -41,10 +44,23 @@ class CitySeeder extends Seeder
     {
         $turkey = Country::where('code', 'TR')->firstOrFail();
 
+        $coordinatesByCode = collect(
+            json_decode(file_get_contents(__DIR__.'/data/city-coordinates.json'), true),
+        )->keyBy('code');
+
         foreach (self::TR_PROVINCES as $code => $name) {
-            City::firstOrCreate(
+            $coordinates = $coordinatesByCode->get($code);
+
+            // updateOrCreate (not firstOrCreate): re-running must heal a row seeded before
+            // coordinates existed, same as PermissionSeeder's authoritative re-sync.
+            City::updateOrCreate(
                 ['country_id' => $turkey->id, 'code' => $code],
-                ['name' => $name, 'is_active' => true],
+                [
+                    'name' => $name,
+                    'latitude' => $coordinates['lat'] ?? null,
+                    'longitude' => $coordinates['lng'] ?? null,
+                    'is_active' => true,
+                ],
             );
         }
     }

@@ -111,6 +111,11 @@ return [
     | and the zoom it snaps to once a point is chosen. Never inline a country
     | centre in the frontend — a second country only changes env here.
     |
+    | default_center/default_zoom are the last-resort fallback (no clinic city,
+    | or the city has no coordinates yet). city_zoom is used instead once the
+    | clinic's city has coordinates, so the picker opens already centred on the
+    | right city rather than the whole country.
+    |
     */
 
     /*
@@ -140,6 +145,7 @@ return [
             'lng' => (float) env('PLATFORM_MAP_DEFAULT_LNG', 35.0),
         ],
         'default_zoom' => (int) env('PLATFORM_MAP_DEFAULT_ZOOM', 6),
+        'city_zoom' => (int) env('PLATFORM_MAP_CITY_ZOOM', 11),
         'selected_zoom' => (int) env('PLATFORM_MAP_SELECTED_ZOOM', 15),
     ],
 

@@ -14,6 +14,8 @@ class City extends Model
         'country_id',
         'code',
         'name',
+        'latitude',
+        'longitude',
         'is_active',
     ];
 
@@ -24,6 +26,8 @@ class City extends Model
     {
         return [
             'country_id' => 'integer',
+            'latitude' => 'decimal:7',
+            'longitude' => 'decimal:7',
             'is_active' => 'boolean',
         ];
     }

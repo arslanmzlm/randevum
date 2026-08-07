@@ -16,6 +16,9 @@ return new class extends Migration
             $table->foreignId('country_id')->constrained();
             $table->char('code', 2); // ISO 3166-2 subdivision (TR: plaka kodu 01-81)
             $table->string('name', 100);
+            // Nullable: a future country's cities may be added before we have centre coordinates for them.
+            $table->decimal('latitude', 10, 7)->nullable();
+            $table->decimal('longitude', 10, 7)->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestampsTz();
 

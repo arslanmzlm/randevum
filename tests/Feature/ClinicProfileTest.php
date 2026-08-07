@@ -123,6 +123,39 @@ it('GET /clinic props include coordinates, logo variant URLs and mapDefaults', f
         );
 });
 
+it('GET /clinic centres mapDefaults on the clinic city when the city has coordinates', function (): void {
+    $clinic = Clinic::factory()->create();
+    $clinic->city()->update(['latitude' => 38.4237, 'longitude' => 27.1428]); // İzmir
+    $owner = User::factory()->create();
+    clinicRole($owner, 'owner', $clinic->id);
+
+    $this->actingAs($owner)
+        ->get(route('clinic.edit'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('mapDefaults.lat', 38.4237)
+            ->where('mapDefaults.lng', 27.1428)
+            ->where('mapDefaults.zoom', 11)
+            ->where('mapDefaults.selected_zoom', 15)
+        );
+});
+
+it('GET /clinic falls back to the country-wide mapDefaults when the clinic city has no coordinates', function (): void {
+    $clinic = Clinic::factory()->create();
+    $clinic->city()->update(['latitude' => null, 'longitude' => null]);
+    $owner = User::factory()->create();
+    clinicRole($owner, 'owner', $clinic->id);
+
+    $this->actingAs($owner)
+        ->get(route('clinic.edit'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('mapDefaults.lat', 39)
+            ->where('mapDefaults.lng', 35)
+            ->where('mapDefaults.zoom', 6)
+        );
+});
+
 it('shares the active clinic identity (id, name, logo_url) with the app shell', function (): void {
     $clinic = Clinic::factory()->create(['name' => 'Shell Clinic']);
     $owner = User::factory()->create();
