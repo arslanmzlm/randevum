@@ -930,10 +930,8 @@ export const tr = {
             sms: 'Gönderilen SMS',
         },
         fields: {
-            patient: 'Hasta',
             doctor: 'Doktor',
             datetime: 'Tarih / Saat',
-            status: 'Durum',
             service: 'Hizmet',
             type: 'Randevu türü',
             walk_in: 'Randevusuz',
@@ -950,8 +948,6 @@ export const tr = {
             go_to: 'Tedaviye git',
             complaint: 'Şikayet',
             diagnosis: 'Tanı',
-            total: 'Tutar',
-            status: 'Durum',
         },
         sms: {
             empty: 'Bu randevu için SMS gönderilmedi.',

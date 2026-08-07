@@ -66,6 +66,9 @@ class CalendarService
                 'patient_id' => $a->patient_id,
                 'start' => $a->starts_at->setTimezone($tz)->format('Y-m-d H:i'),
                 'end' => $a->ends_at->setTimezone($tz)->format('Y-m-d H:i'),
+                // The grid positions events by clinic-local wall clock, but "is it past?" must be
+                // decided on a real instant — the popover feeds this into the shared action rules.
+                'starts_at_utc' => $a->starts_at->toIso8601String(),
                 'status' => $a->status->value,
                 'is_walk_in' => $a->is_walk_in,
                 'service_name' => $a->service?->name,

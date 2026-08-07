@@ -33,6 +33,8 @@ export type CalendarEventDto = {
     patient_id: number;
     start: string;
     end: string;
+    /** ISO 8601 UTC instant of `start` — what the past/future action rules compare against. */
+    starts_at_utc: string;
     status: AppointmentStatus;
     is_walk_in: boolean;
     service_name: string | null;

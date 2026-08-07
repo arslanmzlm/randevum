@@ -191,6 +191,23 @@ it('query prop contains the expected filter/sort/per_page keys', function (): vo
         );
 });
 
+it('query prop echoes an applied doctor_id filter as a list of ids', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    alRole($owner, 'owner', $clinic->id);
+
+    $first = Doctor::factory()->create(['clinic_id' => $clinic->id]);
+    $second = Doctor::factory()->create(['clinic_id' => $clinic->id]);
+
+    // doctor_id is the only 'array'-typed filter: it round-trips through a csv join/split,
+    // so the echo has to come back as a list, not the raw string.
+    $this->actingAs($owner)
+        ->get(route('appointments.index', ['filter' => ['doctor_id' => "{$first->id},{$second->id}"]]))
+        ->assertInertia(fn ($page) => $page
+            ->where('query.filter.doctor_id', [(string) $first->id, (string) $second->id])
+        );
+});
+
 it('services and appointmentTypes props are rendered on the index', function (): void {
     $clinic = Clinic::factory()->create();
     $owner = User::factory()->create();

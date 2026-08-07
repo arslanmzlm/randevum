@@ -246,8 +246,6 @@ export type TreatmentIndexProps = {
     doctors: TreatmentListDoctorOption[];
     services: TreatmentListServiceOption[];
     query: TreatmentListQuery;
-    /** The user's own doctors.id; null when they have no doctor profile. */
-    ownDoctorId: number | null;
 };
 
 /** A treatment a standalone payment may optionally attach to (both Draft & Completed). */

@@ -95,7 +95,7 @@ it("a non-creator without transactions.refund cannot delete another user's manua
     $creator = User::factory()->create();
     midRole($creator, 'receptionist', $clinic->id);
     $otherStaff = User::factory()->create();
-    midRole($otherStaff, 'manager', $clinic->id);
+    midRole($otherStaff, 'doctor', $clinic->id);
 
     $income = Transaction::factory()->manual()->create(['clinic_id' => $clinic->id, 'created_by' => $creator->id]);
 

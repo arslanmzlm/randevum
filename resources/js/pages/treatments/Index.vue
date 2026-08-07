@@ -195,8 +195,10 @@ const dateRange = computed<(Date | null)[] | null>({
                     :filter-placeholder="t('common.search')"
                     class="w-full sm:w-52"
                 />
+                <!-- Always rendered: "Belirtilmemiş" is catalog-independent, so hiding the
+                     select on an empty catalog would strip the only way to filter treatments
+                     that have no service line. -->
                 <MultiSelect
-                    v-if="services.length"
                     v-model="state.service_id"
                     :options="serviceFilterOptions"
                     option-label="label"

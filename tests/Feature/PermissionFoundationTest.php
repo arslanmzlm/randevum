@@ -138,6 +138,7 @@ it('grants the manager role full management except self-create', function (): vo
             'treatments.create',
             'transactions.create',
             'transactions.viewAny',
+            'transactions.refund',
             'reports.revenue',
             'cases.viewAny',
             'cases.viewAll',

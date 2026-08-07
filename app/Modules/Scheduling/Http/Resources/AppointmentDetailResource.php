@@ -34,7 +34,7 @@ class AppointmentDetailResource extends JsonResource
             'is_walk_in' => $this->is_walk_in,
             'starts_at' => $this->starts_at->toIso8601String(),
             'ends_at' => $this->ends_at->toIso8601String(),
-            'treatment_id' => $this->whenLoaded('treatment', fn () => $this->treatment?->id),
+            'treatment_id' => $this->treatment?->id,
             'created_by_name' => $this->creator?->name,
             'created_at' => $this->created_at->toIso8601String(),
         ];

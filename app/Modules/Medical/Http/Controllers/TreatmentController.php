@@ -70,7 +70,6 @@ class TreatmentController extends Controller
                 'start_date' => 'string',
                 'end_date' => 'string',
             ]),
-            'ownDoctorId' => $request->user()->doctor?->id,
         ]);
     }
 

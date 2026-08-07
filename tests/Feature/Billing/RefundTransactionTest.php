@@ -530,7 +530,7 @@ it('owner can refund (has transactions.refund)', function (): void {
     )->toBeTrue();
 });
 
-it('manager is denied the refund endpoint → 403 (lacks transactions.refund)', function (): void {
+it('manager may refund (owner and manager are both full-authority clinic roles)', function (): void {
     ['clinic' => $clinic, 'payment' => $payment] = rfSetup(200.00);
 
     $manager = User::factory()->create();
@@ -538,11 +538,11 @@ it('manager is denied the refund endpoint → 403 (lacks transactions.refund)', 
 
     $this->actingAs($manager)
         ->post(route('transactions.refund', $payment), rfPayload())
-        ->assertForbidden();
+        ->assertRedirect();
 
     expect(
         Transaction::withoutGlobalScopes()->where('original_transaction_id', $payment->id)->exists()
-    )->toBeFalse();
+    )->toBeTrue();
 });
 
 it('doctor is denied the refund endpoint → 403 (lacks transactions.refund)', function (): void {
@@ -619,7 +619,7 @@ it('transactions.refund is in auth.permissions for owner (refund button visible)
         ));
 });
 
-it('transactions.refund is NOT in auth.permissions for manager (refund button hidden)', function (): void {
+it('transactions.refund is in auth.permissions for manager (refund button visible)', function (): void {
     ['clinic' => $clinic] = rfSetup();
 
     $manager = User::factory()->create();
@@ -629,7 +629,7 @@ it('transactions.refund is NOT in auth.permissions for manager (refund button hi
         ->get(route('dashboard'))
         ->assertInertia(fn ($page) => $page->where(
             'auth.permissions',
-            fn ($p) => ! $p->contains('transactions.refund'),
+            fn ($p) => $p->contains('transactions.refund'),
         ));
 });
 

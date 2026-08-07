@@ -204,12 +204,5 @@ export function useAppointmentActionMenu(
         return all;
     });
 
-    const hasAny = computed(
-        () =>
-            primaryAction.value !== null ||
-            secondaryActions.value.length > 0 ||
-            destructiveActions.value.length > 0,
-    );
-
-    return { primaryAction, secondaryActions, destructiveActions, hasAny };
+    return { primaryAction, secondaryActions, destructiveActions };
 }

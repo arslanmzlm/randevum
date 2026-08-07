@@ -137,6 +137,23 @@ it('a doctor without treatments.viewAll sees only their own treatments', functio
         );
 });
 
+it('a doctor without treatments.viewAll cannot widen scope with filter[doctor_id]', function (): void {
+    ['clinic' => $clinic, 'doctorUser' => $doctorUser, 'doctor' => $doctor, 'patient' => $patient] = tlDoctorSetup();
+    tlRole($doctorUser, 'doctor', $clinic->id);
+
+    tlTreatment($clinic, $doctor, $patient);
+
+    $otherDoctorUser = User::factory()->create();
+    $otherDoctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $otherDoctorUser->id]);
+    tlTreatment($clinic, $otherDoctor, $patient);
+
+    // The filter narrows within the visible set; it must never reach past the ownership scope.
+    $this->actingAs($doctorUser)
+        ->get(route('treatments.index', ['filter' => ['doctor_id' => (string) $otherDoctor->id]]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('treatments.meta.total', 0));
+});
+
 it('a user with treatments.viewAny but no doctor profile and no viewAll gets an empty paginator', function (): void {
     $clinic = Clinic::factory()->create();
     $noProfileDoctor = User::factory()->create();
@@ -305,6 +322,21 @@ it('query prop echoes the applied filters', function (): void {
         ->assertInertia(fn ($page) => $page
             ->where('query.filter.status', 'draft')
             ->where('query.filter.search', 'test-term')
+        );
+});
+
+it('query prop echoes the array-typed doctor_id filter as a list of ids', function (): void {
+    ['clinic' => $clinic, 'doctor' => $doctor] = tlDoctorSetup();
+    $owner = User::factory()->create();
+    tlRole($owner, 'owner', $clinic->id);
+
+    $second = Doctor::factory()->create(['clinic_id' => $clinic->id]);
+
+    $this->actingAs($owner)
+        ->get(route('treatments.index', ['filter' => ['doctor_id' => "{$doctor->id},{$second->id}"]]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('query.filter.doctor_id', [(string) $doctor->id, (string) $second->id])
         );
 });
 

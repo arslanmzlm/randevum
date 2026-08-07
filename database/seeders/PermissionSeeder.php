@@ -22,6 +22,8 @@ class PermissionSeeder extends Seeder
         'doctors.create' => ['owner', 'manager'],
         'doctors.update' => ['owner', 'manager'],
         'doctors.delete' => ['owner', 'manager'],
+        // Self-create a doctor profile — owner-only by design; a manager who practises
+        // gets a profile created for them like any other doctor.
         'doctors.createOwn' => ['owner'],
         'doctors.offboard' => ['owner', 'manager'],
         'services.viewAny' => ['owner', 'manager', 'doctor'],
@@ -88,8 +90,9 @@ class PermissionSeeder extends Seeder
         'transactions.create' => ['owner', 'manager', 'doctor', 'receptionist'],
         // Balance / transaction list display — hidden from assistant (money figures).
         'transactions.viewAny' => ['owner', 'manager', 'doctor', 'receptionist'],
-        // Refund a payment — owner only per data-model decision (sadece owner iade başlatabilir).
-        'transactions.refund' => ['owner'],
+        // Refund a payment. Owner + manager: both are full-authority clinic roles (owner
+        // additionally owns tenant-level settings, which have no surface yet).
+        'transactions.refund' => ['owner', 'manager'],
         // Payment plans (taksit) — collections screen; excludes doctor/assistant (money screen).
         'paymentPlans.viewAny' => ['owner', 'manager', 'receptionist'],
         // Mirrors transactions.create — plan created where payments are recorded.

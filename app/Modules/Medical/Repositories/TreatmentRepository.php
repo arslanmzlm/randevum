@@ -47,9 +47,11 @@ class TreatmentRepository
             ->multipleRelation('serviceLines', 'service_id')
             ->dateRange('created_at', 'start_date', 'end_date', $timezone);
 
+        // id breaks ties: created_at alone is not a total order, so rows created in the same
+        // second (seed/bulk day) can repeat or vanish across page boundaries.
         request()->filled('sort')
             ? $helper->sort('created_at', 'completed_at', 'total_amount', 'status')
-            : $query->orderByDesc('created_at');
+            : $query->orderByDesc('created_at')->orderByDesc('id');
 
         return $helper->paginate();
     }

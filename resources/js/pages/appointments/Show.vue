@@ -314,10 +314,11 @@ const summaryRows = computed(() => [
             </p>
         </SectionCard>
 
-        <Message v-if="reasonCallout" severity="warn" :closable="false">
-            <span class="font-medium">{{ reasonCallout.label }}:</span>
-            {{ reasonCallout.text }}
-        </Message>
+        <SectionCard v-if="reasonCallout" :title="reasonCallout.label">
+            <Message severity="warn" :closable="false">
+                {{ reasonCallout.text }}
+            </Message>
+        </SectionCard>
 
         <SmsLogList
             v-if="smsLogs"
