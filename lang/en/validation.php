@@ -370,6 +370,7 @@ return [
         'installment_plan.installments.*.amount' => 'installment amount',
     ],
 
+    'segment_name_taken' => 'This segment name is already in use (case-insensitive).',
     'tag_name_taken' => 'This tag name is already in use (case-insensitive).',
     'follow_up_type_name_taken' => 'This follow-up type name is already in use (case-insensitive).',
     'role_name_taken' => 'This role name is already in use (case-insensitive).',

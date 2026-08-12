@@ -19,14 +19,14 @@ class AnamnesisResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'blood_type' => $this->blood_type,
+            'blood_type' => $this->blood_type?->value,
             'height_cm' => $this->height_cm,
             'weight_kg' => $this->weight_kg !== null ? (float) $this->weight_kg : null,
             'bmi' => $this->bmi(),
-            'smoking' => $this->smoking,
-            'alcohol' => $this->alcohol,
-            'diabetes' => $this->diabetes,
-            'pregnancy' => $this->pregnancy,
+            'smoking' => $this->smoking?->value,
+            'alcohol' => $this->alcohol?->value,
+            'diabetes' => $this->diabetes?->value,
+            'pregnancy' => $this->pregnancy?->value,
             'hypertension' => (bool) $this->hypertension,
             'cardiovascular' => (bool) $this->cardiovascular,
             'respiratory' => (bool) $this->respiratory,

@@ -237,6 +237,7 @@ return [
         'installment_plan.installments.*.amount' => 'Taksit tutarı',
     ],
 
+    'segment_name_taken' => 'Bu segment adı (büyük/küçük harf fark etmeksizin) zaten kullanılıyor.',
     'tag_name_taken' => 'Bu etiket adı (büyük/küçük harf fark etmeksizin) zaten kullanılıyor.',
     'follow_up_type_name_taken' => 'Bu takip türü adı (büyük/küçük harf fark etmeksizin) zaten kullanılıyor.',
     'role_name_taken' => 'Bu rol adı (büyük/küçük harf fark etmeksizin) zaten kullanılıyor.',

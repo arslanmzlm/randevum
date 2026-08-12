@@ -5,7 +5,10 @@ namespace App\Modules\Medical\Http\Requests;
 use App\Enums\Gender;
 use App\Support\ClinicContext;
 use App\Support\FilterHelper;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class StoreSegmentRequest extends FormRequest
@@ -41,6 +44,33 @@ class StoreSegmentRequest extends FormRequest
             ],
             'criteria.last_visit_after' => ['nullable', 'date'],
             'criteria.last_visit_before' => ['nullable', 'date'],
+        ];
+    }
+
+    /**
+     * @return list<\Closure>
+     */
+    public function after(): array
+    {
+        return [
+            function (Validator $validator): void {
+                if ($validator->errors()->has('name')) {
+                    return;
+                }
+
+                $clinicId = app(ClinicContext::class)->id();
+
+                // Case-insensitive per-clinic uniqueness — mirrors the DB-level functional
+                // index (tags/follow_up_types precedent).
+                $taken = DB::table('patient_segments')
+                    ->where('clinic_id', $clinicId)
+                    ->whereRaw('lower(name) = ?', [Str::lower($this->string('name')->value())])
+                    ->exists();
+
+                if ($taken) {
+                    $validator->errors()->add('name', __('validation.segment_name_taken'));
+                }
+            },
         ];
     }
 

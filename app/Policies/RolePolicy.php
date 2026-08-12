@@ -26,8 +26,13 @@ class RolePolicy
     }
 
     /**
-     * Takes no Role instance: both callers (matrix save, revert) act on the clinic's whole
-     * effective set, not a single role.
+     * Takes no Role instance: both callers (matrix save, revert) act "ForActiveClinic" — the
+     * clinic's whole effective role set, not a single row — so there's no single Role to check
+     * ownership against. Tenant isolation still holds: `can('roles.manage')` is resolved through
+     * Spatie Teams against the active clinic (set by SetClinicContext), and the services these
+     * callers invoke (RolePermissionService::syncForActiveClinic,
+     * RoleCustomizationService::revertAllForActiveClinic) themselves scope every row they touch
+     * to that same active clinic.
      */
     public function update(User $user): bool
     {

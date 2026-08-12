@@ -2,7 +2,11 @@
 
 namespace App\Modules\Medical\Http\Requests;
 
-use App\Models\Anamnesis;
+use App\Enums\AlcoholUse;
+use App\Enums\BloodType;
+use App\Enums\DiabetesStatus;
+use App\Enums\PregnancyStatus;
+use App\Enums\SmokingStatus;
 use App\Modules\Medical\Services\AnamnesisFieldService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -26,13 +30,13 @@ class UpdateAnamnesisRequest extends FormRequest
         $activeFields = $anamnesisFieldService->definitionsForActiveClinic();
 
         return [
-            'blood_type' => ['nullable', 'string', Rule::in(Anamnesis::BLOOD_TYPES)],
+            'blood_type' => ['nullable', Rule::enum(BloodType::class)],
             'height_cm' => ['nullable', 'integer', 'min:1', 'max:300'],
             'weight_kg' => ['nullable', 'numeric', 'min:1', 'max:500'],
-            'smoking' => ['nullable', 'string', Rule::in(Anamnesis::SMOKING)],
-            'alcohol' => ['nullable', 'string', Rule::in(Anamnesis::ALCOHOL)],
-            'diabetes' => ['nullable', 'string', Rule::in(Anamnesis::DIABETES)],
-            'pregnancy' => ['nullable', 'string', Rule::in(Anamnesis::PREGNANCY)],
+            'smoking' => ['nullable', Rule::enum(SmokingStatus::class)],
+            'alcohol' => ['nullable', Rule::enum(AlcoholUse::class)],
+            'diabetes' => ['nullable', Rule::enum(DiabetesStatus::class)],
+            'pregnancy' => ['nullable', Rule::enum(PregnancyStatus::class)],
             'hypertension' => ['boolean'],
             'cardiovascular' => ['boolean'],
             'respiratory' => ['boolean'],

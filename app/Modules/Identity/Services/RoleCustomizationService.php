@@ -148,7 +148,7 @@ class RoleCustomizationService
 
         $this->guard->assertNotOwnRole($user, $clinicId, $role);
 
-        if ($this->repository->hasAnyAssignment($role->id)) {
+        if ($this->repository->hasAnyAssignment($role->id, $clinicId)) {
             throw ValidationException::withMessages([
                 'role' => [__('messages.role.has_assigned_users')],
             ]);

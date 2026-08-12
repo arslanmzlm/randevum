@@ -14,12 +14,12 @@ return new class extends Migration
             $table->foreignId('treatment_id')->constrained('treatments')->cascadeOnDelete();
             // Soft reference: catalog soft-deletes; snapshot survives via unit_price
             $table->foreignId('service_id')->constrained('services')->restrictOnDelete();
-            $table->smallInteger('quantity')->default(1);
+            $table->unsignedSmallInteger('quantity')->default(1);
             $table->decimal('unit_price', 12, 2);
             $table->decimal('discount_amount', 12, 2)->default(0);
             $table->decimal('subtotal', 12, 2);
             $table->text('note')->nullable();
-            $table->smallInteger('sort_order')->default(0);
+            $table->unsignedSmallInteger('sort_order')->default(0);
             $table->timestampsTz();
 
             $table->index(['treatment_id', 'sort_order']);

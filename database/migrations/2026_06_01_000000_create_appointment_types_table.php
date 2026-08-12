@@ -15,7 +15,7 @@ return new class extends Migration
             $table->foreignId('vertical_id')->constrained()->cascadeOnDelete();
             $table->string('name', 100);
             $table->string('color', 7); // '#RRGGBB'
-            $table->smallInteger('default_duration_minutes')->default(30);
+            $table->unsignedSmallInteger('default_duration_minutes')->default(30);
             $table->boolean('is_active')->default(true);
             $table->timestampsTz();
             $table->softDeletesTz();

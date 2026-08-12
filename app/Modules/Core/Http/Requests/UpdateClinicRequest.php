@@ -39,7 +39,10 @@ class UpdateClinicRequest extends FormRequest
             'email' => ['nullable', 'email', 'max:255'],
             'website' => ['nullable', 'url', 'max:255'],
             'country_id' => ['required', Rule::exists('countries', 'id')],
-            'city_id' => ['nullable', Rule::exists('cities', 'id')],
+            'city_id' => [
+                'nullable',
+                Rule::exists('cities', 'id')->where('country_id', $this->input('country_id')),
+            ],
             'district' => ['nullable', 'string', 'max:100'],
             'address' => ['nullable', 'string'],
             'postal_code' => ['nullable', 'string', 'max:20'],

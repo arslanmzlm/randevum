@@ -7,6 +7,7 @@ use App\Models\Anamnesis;
 use App\Models\AnamnesisField;
 use App\Models\Clinic;
 use App\Models\Patient;
+use BackedEnum;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Spatie\LaravelPdf\Enums\Format;
@@ -188,6 +189,12 @@ class AnamnesisReportService
     {
         if ($value === null) {
             return null;
+        }
+
+        // blood_type/smoking/alcohol/diabetes/pregnancy are enum-cast on the model; unwrap
+        // to the backing scalar so the label lookup below can concatenate it into a key.
+        if ($value instanceof BackedEnum) {
+            $value = $value->value;
         }
 
         if (in_array($field, self::BOOLEAN_FIELDS, true)) {

@@ -2,6 +2,7 @@
 
 namespace App\Modules\Medical\Repositories;
 
+use App\Enums\FollowUpStatus;
 use App\Models\FollowUp;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -43,13 +44,20 @@ class FollowUpRepository
      */
     public function forCase(int $caseId): Collection
     {
-        return FollowUp::where('case_id', $caseId)
+        // Two queries instead of one status-CASE ORDER BY: `NULLS LAST` isn't portable
+        // (Postgres-only), and the open/closed groups need unrelated sort keys anyway.
+        $open = FollowUp::where('case_id', $caseId)
+            ->where('status', FollowUpStatus::Open->value)
             ->with(['type:id,name', 'completedBy'])
-            ->orderByRaw("CASE WHEN status = 'open' THEN 0 ELSE 1 END")
-            // due_date orders the OPEN rows only; applying it to every row would make it the
-            // primary key for the history too, leaving completed_at as a mere tie-break.
-            ->orderByRaw("CASE WHEN status = 'open' THEN due_date END ASC NULLS LAST")
+            ->orderBy('due_date')
+            ->get();
+
+        $closed = FollowUp::where('case_id', $caseId)
+            ->where('status', '!=', FollowUpStatus::Open->value)
+            ->with(['type:id,name', 'completedBy'])
             ->orderByDesc('completed_at')
             ->get();
+
+        return $open->concat($closed);
     }
 }

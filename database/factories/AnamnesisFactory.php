@@ -2,6 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Enums\AlcoholUse;
+use App\Enums\BloodType;
+use App\Enums\SmokingStatus;
 use App\Models\Anamnesis;
 use App\Models\Clinic;
 use App\Models\Patient;
@@ -20,11 +23,11 @@ class AnamnesisFactory extends Factory
         return [
             'clinic_id' => Clinic::factory(),
             'patient_id' => Patient::factory(),
-            'blood_type' => fake()->randomElement(Anamnesis::BLOOD_TYPES),
+            'blood_type' => fake()->randomElement(BloodType::cases())->value,
             'height_cm' => fake()->numberBetween(150, 195),
             'weight_kg' => fake()->randomFloat(2, 50, 110),
-            'smoking' => fake()->randomElement(Anamnesis::SMOKING),
-            'alcohol' => fake()->randomElement(Anamnesis::ALCOHOL),
+            'smoking' => fake()->randomElement(SmokingStatus::cases())->value,
+            'alcohol' => fake()->randomElement(AlcoholUse::cases())->value,
             'diabetes' => 'none',
             'hypertension' => false,
             'cardiovascular' => false,

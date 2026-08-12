@@ -111,12 +111,18 @@ class RoleRepository
     }
 
     /**
-     * Whether a role has any assignment at all (no clinic filter: a custom role's assignments
-     * can only ever belong to its own clinic).
+     * Whether a role has any assignment at all. No clinic filter is strictly needed — a custom
+     * role id is already clinic-specific, so `model_has_roles` rows for it can only ever carry
+     * that same clinic_id — but the caller (RoleCustomizationService::deleteCustomRole, gating a
+     * delete) is exactly the kind of check that should stay correct even if that invariant ever
+     * changes, so the filter is added defensively.
      */
-    public function hasAnyAssignment(int $roleId): bool
+    public function hasAnyAssignment(int $roleId, ?int $clinicId): bool
     {
-        return DB::table('model_has_roles')->where('role_id', $roleId)->exists();
+        return DB::table('model_has_roles')
+            ->where('role_id', $roleId)
+            ->where('clinic_id', $clinicId)
+            ->exists();
     }
 
     /**

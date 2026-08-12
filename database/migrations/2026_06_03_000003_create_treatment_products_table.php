@@ -13,12 +13,12 @@ return new class extends Migration
             $table->foreignId('treatment_id')->constrained('treatments')->cascadeOnDelete();
             $table->foreignId('product_id')->constrained('products')->restrictOnDelete();
             // Always explicit — caller must supply qty (no default; spec says min 1)
-            $table->smallInteger('quantity');
+            $table->unsignedSmallInteger('quantity');
             $table->decimal('unit_price', 12, 2);
             $table->decimal('discount_amount', 12, 2)->default(0);
             $table->decimal('subtotal', 12, 2);
             $table->text('note')->nullable();
-            $table->smallInteger('sort_order')->default(0);
+            $table->unsignedSmallInteger('sort_order')->default(0);
             $table->timestampsTz();
 
             $table->index(['treatment_id', 'sort_order']);

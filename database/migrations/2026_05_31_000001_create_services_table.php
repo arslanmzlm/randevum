@@ -15,7 +15,7 @@ return new class extends Migration
             $table->string('name');
             $table->text('description')->nullable();
             $table->decimal('price', 12, 2)->default(0);
-            $table->smallInteger('duration_minutes')->nullable();
+            $table->unsignedSmallInteger('duration_minutes')->nullable();
             $table->text('default_complaint')->nullable();
             $table->text('default_diagnosis')->nullable();
             $table->text('default_treatment_process')->nullable();

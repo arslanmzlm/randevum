@@ -2,6 +2,11 @@
 
 namespace App\Models;
 
+use App\Enums\AlcoholUse;
+use App\Enums\BloodType;
+use App\Enums\DiabetesStatus;
+use App\Enums\PregnancyStatus;
+use App\Enums\SmokingStatus;
 use App\Models\Concerns\BelongsToClinic;
 use Database\Factories\AnamnesisFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -19,16 +24,6 @@ class Anamnesis extends Model
     use BelongsToClinic, HasFactory;
 
     protected $table = 'anamneses';
-
-    public const BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', '0+', '0-'];
-
-    public const SMOKING = ['none', 'former', 'occasional', 'regular'];
-
-    public const ALCOHOL = ['none', 'occasional', 'regular'];
-
-    public const DIABETES = ['none', 'type1', 'type2'];
-
-    public const PREGNANCY = ['none', 'pregnant', 'breastfeeding'];
 
     /**
      * @var list<string>
@@ -70,8 +65,13 @@ class Anamnesis extends Model
         return [
             'clinic_id' => 'integer',
             'patient_id' => 'integer',
+            'blood_type' => BloodType::class,
             'height_cm' => 'integer',
             'weight_kg' => 'decimal:2',
+            'smoking' => SmokingStatus::class,
+            'alcohol' => AlcoholUse::class,
+            'diabetes' => DiabetesStatus::class,
+            'pregnancy' => PregnancyStatus::class,
             'hypertension' => 'boolean',
             'cardiovascular' => 'boolean',
             'respiratory' => 'boolean',

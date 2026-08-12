@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\BloodType;
 use App\Models\Anamnesis;
 use App\Models\AnamnesisField;
 use App\Models\Clinic;
@@ -76,7 +77,7 @@ it('cross-clinic PUT does not mutate the target patient anamnesis', function ():
         ->put(route('patients.anamnesis.update', $setupA['patient']), ['blood_type' => 'B-'])
         ->assertNotFound();
 
-    expect($setupA['anamnesis']->fresh()->blood_type)->toBe('A+');
+    expect($setupA['anamnesis']->fresh()->blood_type)->toBe(BloodType::APositive);
 });
 
 it('clinic A user cannot GET clinic B patient anamnesis PDF (404)', function (): void {

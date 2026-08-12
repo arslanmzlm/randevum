@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\AppointmentStatus;
+use App\Enums\BloodType;
 use App\Enums\TreatmentStatus;
 use App\Models\Anamnesis;
 use App\Models\AnamnesisField;
@@ -173,7 +174,7 @@ it('first PUT creates one Anamnesis row linked by patient_id with clinic_id = th
     expect($anamnesis)->not->toBeNull()
         ->and($anamnesis->patient_id)->toBe($setup['patient']->id)
         ->and($anamnesis->clinic_id)->toBe($setup['clinic']->id)
-        ->and($anamnesis->blood_type)->toBe('A+')
+        ->and($anamnesis->blood_type)->toBe(BloodType::APositive)
         ->and($anamnesis->height_cm)->toBe(170)
         ->and((float) $anamnesis->weight_kg)->toBe(65.5)
         ->and($anamnesis->hypertension)->toBeTrue();
@@ -197,7 +198,7 @@ it('a second PUT updates the same row rather than creating a new one', function 
     $fresh = $setup['patient']->fresh();
 
     expect($fresh->anamnesis->id)->toBe($firstId)
-        ->and($fresh->anamnesis->blood_type)->toBe('B-')
+        ->and($fresh->anamnesis->blood_type)->toBe(BloodType::BNegative)
         ->and(Anamnesis::count())->toBe(1);
 });
 
@@ -363,7 +364,7 @@ it('a clinic on a non-podiatry vertical saves the core anamnesis successfully (n
         ->assertSessionHasNoErrors()
         ->assertRedirect();
 
-    expect($patient->fresh()->anamnesis->blood_type)->toBe('A+');
+    expect($patient->fresh()->anamnesis->blood_type)->toBe(BloodType::APositive);
 });
 
 // ---------------------------------------------------------------------------
