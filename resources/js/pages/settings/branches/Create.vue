@@ -69,7 +69,7 @@ function submit(): void {
                     >
                         <Select
                             v-model="form.vertical_id"
-                            :options="props.verticals"
+                            :options="verticals"
                             option-label="name"
                             option-value="id"
                             fluid
@@ -103,7 +103,7 @@ function submit(): void {
                             {{
                                 canCopyCatalog
                                     ? t('branch.copy_catalog_source', {
-                                          name: props.sourceClinic.name,
+                                          name: sourceClinic.name,
                                       })
                                     : t('branch.copy_catalog_hint')
                             }}

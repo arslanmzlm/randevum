@@ -201,31 +201,31 @@ async function submit(): Promise<void> {
 
         <!-- Post-book report: created count + the slots that conflicted and were skipped. -->
         <div
-            v-if="props.result"
+            v-if="result"
             class="flex flex-col gap-4 rounded-xl border border-surface-200 bg-surface-0 p-6"
         >
             <Message severity="success" :closable="false">
                 {{
                     t(
                         'appointment_bulk.result.created',
-                        { count: props.result.created },
-                        props.result.created,
+                        { count: result.created },
+                        result.created,
                     )
                 }}
             </Message>
 
-            <div v-if="props.result.skipped.length" class="flex flex-col gap-2">
+            <div v-if="result.skipped.length" class="flex flex-col gap-2">
                 <Message severity="warn" :closable="false">
                     {{
                         t(
                             'appointment_bulk.result.skipped',
-                            { count: props.result.skipped.length },
-                            props.result.skipped.length,
+                            { count: result.skipped.length },
+                            result.skipped.length,
                         )
                     }}
                 </Message>
                 <ul class="flex flex-wrap gap-2">
-                    <li v-for="slot in props.result.skipped" :key="slot">
+                    <li v-for="slot in result.skipped" :key="slot">
                         <Tag severity="warn" :value="slot" />
                     </li>
                 </ul>

@@ -155,8 +155,8 @@ function submit(): void {
             </AppointmentTopCard>
 
             <CreatedAppointmentCard
-                v-if="showCreated && props.lastCreated"
-                :appointment="props.lastCreated"
+                v-if="showCreated && lastCreated"
+                :appointment="lastCreated"
                 @dismiss="showCreated = false"
             />
             <DaySchedulePanel

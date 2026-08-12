@@ -4,6 +4,7 @@ import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import FormField from '@/components/FormField.vue';
 import PatientSearchSelect from '@/components/PatientSearchSelect.vue';
+import RequiredMark from '@/components/RequiredMark.vue';
 import { cases as casesForPatient, store } from '@/routes/follow-ups';
 import type {
     FollowUpCaseOption,
@@ -127,7 +128,7 @@ function submit(): void {
             <div v-if="showPatientField" class="form-group">
                 <label class="mb-1 block text-sm text-muted">
                     {{ t('follow_up.fields.patient')
-                    }}<span class="text-red-500"> *</span>
+                    }}<RequiredMark />
                 </label>
                 <PatientSearchSelect
                     v-model="selectedPatient"

@@ -12,7 +12,7 @@ import type { DashboardProps } from '@/types/dashboard';
 
 defineOptions({ layout: AppLayout });
 
-const props = defineProps<DashboardProps>();
+defineProps<DashboardProps>();
 
 const { t } = useI18n();
 const { can } = useCan();
@@ -24,16 +24,13 @@ const { can } = useCan();
 
         <PageHeader :title="t('dashboard.title')" />
 
-        <StatCardsRow :stats="props.stats" />
+        <StatCardsRow :stats="stats" />
 
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <div class="flex flex-col gap-6 lg:col-span-2">
                 <TodayScheduleSummary
-                    v-if="
-                        can('appointments.viewAny') &&
-                        props.stats.today_schedule
-                    "
-                    :appointments="props.stats.today_schedule"
+                    v-if="can('appointments.viewAny') && stats.today_schedule"
+                    :appointments="stats.today_schedule"
                 />
             </div>
 
@@ -46,8 +43,8 @@ const { can } = useCan();
              and was cramped inside the two-thirds column. -->
         <FollowUpWidget
             v-if="can('followUps.view')"
-            :follow-ups="props.followUps"
-            :types="props.followUpTypes"
+            :follow-ups="followUps"
+            :types="followUpTypes"
         />
     </div>
 </template>

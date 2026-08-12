@@ -55,12 +55,12 @@ function submit(): void {
         <Head :title="t('auth.register.title')" />
 
         <Message
-            v-if="props.status"
+            v-if="status"
             severity="success"
             :closable="false"
             class="mb-6"
         >
-            {{ t(`auth.status.${props.status}`, props.status) }}
+            {{ t(`auth.status.${status}`, status) }}
         </Message>
 
         <h1 class="text-2xl font-semibold text-surface-900">
@@ -115,7 +115,7 @@ function submit(): void {
                 >
                     <Select
                         v-model="form.vertical_id"
-                        :options="props.verticals"
+                        :options="verticals"
                         option-label="name"
                         option-value="id"
                         fluid

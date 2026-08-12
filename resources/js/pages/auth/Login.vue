@@ -12,7 +12,7 @@ defineOptions({ layout: AuthLayout });
 
 const { t } = useI18n();
 
-const props = defineProps<{
+defineProps<{
     canResetPassword: boolean;
     canLoginWithOtp: boolean;
     status: string | null;
@@ -36,12 +36,12 @@ function submit(): void {
         <Head :title="t('auth.login.title')" />
 
         <Message
-            v-if="props.status"
+            v-if="status"
             severity="success"
             :closable="false"
             class="mb-6"
         >
-            {{ t(`auth.status.${props.status}`, props.status) }}
+            {{ t(`auth.status.${status}`, status) }}
         </Message>
 
         <h1 class="mb-8 text-2xl font-semibold text-surface-900">
@@ -89,7 +89,7 @@ function submit(): void {
                         </Password>
                     </FormField>
                     <Link
-                        v-if="props.canResetPassword"
+                        v-if="canResetPassword"
                         :href="passwordRequest().url"
                         class="self-end text-xs font-medium text-brand transition-colors hover:text-brand-dark"
                     >

@@ -25,17 +25,17 @@ const { t } = useI18n();
     <div class="flex h-full min-h-0 flex-col bg-surface-0">
         <div
             class="flex h-16 shrink-0 items-center gap-3"
-            :class="props.collapsed ? 'justify-center px-2' : 'px-6'"
+            :class="collapsed ? 'justify-center px-2' : 'px-6'"
         >
             <!-- Collapsed uses the icon variant, expanded the wordmark; both fall back to the base
                  logo server-side, so a clinic that uploaded only one image still shows it. -->
             <img
-                v-if="props.collapsed && clinic?.logo_icon_url"
+                v-if="collapsed && clinic?.logo_icon_url"
                 :src="clinic.logo_icon_url"
                 :alt="clinic.name"
                 class="size-9 shrink-0 rounded-lg object-cover"
             />
-            <template v-else-if="!props.collapsed">
+            <template v-else-if="!collapsed">
                 <img
                     v-if="clinic?.logo_url"
                     :src="clinic.logo_url"
@@ -50,7 +50,7 @@ const { t } = useI18n();
                 />
             </template>
             <span
-                v-if="!props.collapsed"
+                v-if="!collapsed"
                 class="truncate text-lg font-semibold"
                 :class="clinic ? 'text-surface-900' : 'text-brand'"
             >
@@ -62,7 +62,7 @@ const { t } = useI18n();
             <SidebarNav
                 :items="navItems"
                 :groups="navGroups"
-                :collapsed="props.collapsed"
+                :collapsed="collapsed"
                 @navigate="emit('navigate')"
             />
         </div>
@@ -70,16 +70,16 @@ const { t } = useI18n();
         <div class="shrink-0 border-t border-surface-200 p-3">
             <SidebarNav
                 :items="bottomNavItems"
-                :collapsed="props.collapsed"
+                :collapsed="collapsed"
                 @navigate="emit('navigate')"
             />
 
             <button
-                v-tooltip.right="props.collapsed ? t('auth.logout') : undefined"
+                v-tooltip.right="collapsed ? t('auth.logout') : undefined"
                 type="button"
                 class="flex w-full cursor-pointer items-center rounded-2xl py-3 text-sm font-medium text-surface-500 transition-colors hover:bg-surface-100 hover:text-surface-700"
-                :class="props.collapsed ? 'justify-center px-0' : 'gap-3 px-4'"
-                :aria-label="props.collapsed ? t('auth.logout') : undefined"
+                :class="collapsed ? 'justify-center px-0' : 'gap-3 px-4'"
+                :aria-label="collapsed ? t('auth.logout') : undefined"
                 @click="emit('logout')"
             >
                 <IconLogout class="size-5 shrink-0" />

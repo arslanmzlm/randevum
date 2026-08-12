@@ -3,6 +3,7 @@ import { IconCalendarEvent, IconClockHour4 } from '@tabler/icons-vue';
 import { computed, useId } from 'vue';
 import { useI18n } from 'vue-i18n';
 import AvailabilityBadge from '@/components/AvailabilityBadge.vue';
+import RequiredMark from '@/components/RequiredMark.vue';
 import { useAvailabilityCheck } from '@/composables/useAvailabilityCheck';
 import {
     clampTime,
@@ -91,7 +92,7 @@ function onTimeBlur(): void {
             <div class="form-group">
                 <label class="mb-1 block text-sm text-muted">
                     {{ t('appointment.fields.date')
-                    }}<span class="text-red-500"> *</span>
+                    }}<RequiredMark />
                 </label>
                 <DatePicker
                     v-model="form.date"
@@ -106,7 +107,7 @@ function onTimeBlur(): void {
             <div class="form-group">
                 <label :for="timeFieldId" class="mb-1 block text-sm text-muted">
                     {{ t('appointment.fields.time')
-                    }}<span class="text-red-500"> *</span>
+                    }}<RequiredMark />
                 </label>
                 <InputMask
                     :id="timeFieldId"

@@ -18,7 +18,7 @@ import { show as patientShow } from '@/routes/patients';
 import type { FollowUpReminder } from '@/types/dashboard';
 import type { FollowUpTypeOption } from '@/types/followUp';
 
-const props = defineProps<{
+defineProps<{
     followUps: FollowUpReminder[];
     types: FollowUpTypeOption[];
 }>();
@@ -58,8 +58,8 @@ function markCalled(row: FollowUpReminder): void {
                 {{ t('dashboard.follow_ups.title') }}
             </h2>
             <Badge
-                v-if="props.followUps.length"
-                :value="props.followUps.length"
+                v-if="followUps.length"
+                :value="followUps.length"
                 severity="secondary"
             />
         </template>
@@ -81,7 +81,7 @@ function markCalled(row: FollowUpReminder): void {
         </template>
 
         <div
-            v-if="!props.followUps.length"
+            v-if="!followUps.length"
             class="flex flex-col items-center justify-center gap-2 px-5 py-10 text-center"
         >
             <IconPhoneOff class="size-8 text-surface-300" />
@@ -92,7 +92,7 @@ function markCalled(row: FollowUpReminder): void {
 
         <div v-else>
             <DataTable
-                :value="props.followUps"
+                :value="followUps"
                 data-key="id"
                 size="small"
                 class="text-sm"
@@ -222,7 +222,7 @@ function markCalled(row: FollowUpReminder): void {
         <FollowUpFormDialog
             v-if="canCreate()"
             v-model:visible="showCreateDialog"
-            :types="props.types"
+            :types="types"
         />
     </DashboardPanel>
 </template>

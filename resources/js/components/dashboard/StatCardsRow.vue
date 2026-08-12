@@ -16,7 +16,7 @@ import type { DashboardStats } from '@/types/dashboard';
 // gated on permission) AND the viewer holds the same ability — mirroring the server gate per the
 // auth-permissions rule. Money formats via useMoney (clinic currency); the revenue figure is always
 // clinic-wide (no per-doctor split in the transaction model — accepted asymmetry).
-const props = defineProps<{ stats: DashboardStats }>();
+defineProps<{ stats: DashboardStats }>();
 
 const { t } = useI18n();
 const { can } = useCan();
@@ -28,38 +28,35 @@ const { formatMoney } = useMoney();
     <div
         class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
     >
-        <template
-            v-if="props.stats.appointments && can('appointments.viewAny')"
-        >
+        <template v-if="stats.appointments && can('appointments.viewAny')">
             <StatCard
                 :label="t('dashboard.stats.today_appointments')"
-                :value="props.stats.appointments.today"
+                :value="stats.appointments.today"
                 :icon="IconCalendarClock"
                 :sublabel="t('dashboard.stats.today')"
                 accent="primary"
             />
             <StatCard
                 :label="t('dashboard.stats.pending_confirmation')"
-                :value="props.stats.appointments.pending"
+                :value="stats.appointments.pending"
                 :icon="IconClockHour4"
                 accent="amber"
             />
             <StatCard
                 :label="t('dashboard.stats.this_week')"
-                :value="props.stats.appointments.this_week"
+                :value="stats.appointments.this_week"
                 :icon="IconCalendarWeek"
                 accent="sky"
             />
             <StatCard
-                v-if="props.stats.appointments.no_show_rate"
+                v-if="stats.appointments.no_show_rate"
                 :label="t('dashboard.stats.no_show_rate')"
-                :value="`${props.stats.appointments.no_show_rate.percent}%`"
+                :value="`${stats.appointments.no_show_rate.percent}%`"
                 :icon="IconCalendarX"
                 :sublabel="
                     t('dashboard.stats.no_show_rate_count', {
-                        noShow: props.stats.appointments.no_show_rate.no_show,
-                        expected:
-                            props.stats.appointments.no_show_rate.expected,
+                        noShow: stats.appointments.no_show_rate.no_show,
+                        expected: stats.appointments.no_show_rate.expected,
                     })
                 "
                 accent="rose"
@@ -67,9 +64,9 @@ const { formatMoney } = useMoney();
         </template>
 
         <StatCard
-            v-if="props.stats.revenue && can('transactions.viewAny')"
+            v-if="stats.revenue && can('transactions.viewAny')"
             :label="t('dashboard.stats.today_revenue')"
-            :value="formatMoney(props.stats.revenue.today_collected)"
+            :value="formatMoney(stats.revenue.today_collected)"
             :icon="IconCash"
             :sublabel="t('dashboard.stats.today')"
             accent="emerald"

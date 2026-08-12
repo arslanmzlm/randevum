@@ -86,7 +86,7 @@ function submit(): void {
 
 <template>
     <div class="flex flex-col gap-6">
-        <SmsQuotaPanel :quota="props.quota" />
+        <SmsQuotaPanel :quota="quota" />
 
         <form novalidate class="flex flex-col gap-6" @submit.prevent="submit">
             <SectionCard
@@ -105,9 +105,9 @@ function submit(): void {
                         :type="type"
                         :label="t(`sms_settings.type.${type}.label`)"
                         :hint="t(`sms_settings.type.${type}.hint`)"
-                        :variables="props.variables"
-                        :sample="props.sample"
-                        :default-body="props.defaults[type]"
+                        :variables="variables"
+                        :sample="sample"
+                        :default-body="defaults[type]"
                         :recommended="recommendedVariables[type]"
                         :error="form.errors[`templates.${type}`]"
                         :disabled="!canUpdate"

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { cloneVNode, useId, useSlots } from 'vue';
 import type { VNode } from 'vue';
+import RequiredMark from '@/components/RequiredMark.vue';
 
 const props = defineProps<{
     label?: string;
@@ -50,7 +51,7 @@ function FieldControl(): VNode[] {
         <FloatLabel variant="in">
             <FieldControl />
             <label v-if="label" :for="fieldId" class="text-muted">
-                {{ label }}<span v-if="required" class="text-red-500"> *</span>
+                {{ label }}<RequiredMark v-if="required" />
             </label>
         </FloatLabel>
         <small v-if="error" class="text-xs text-red-500">{{ error }}</small>
