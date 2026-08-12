@@ -2,6 +2,7 @@
 
 namespace App\Modules\Identity\Services;
 
+use App\Models\Role;
 use App\Models\User;
 use App\Modules\Identity\Repositories\RoleRepository;
 use App\Modules\Identity\Support\PermissionCatalog;
@@ -23,7 +24,8 @@ class PermissionMatrixService
      *
      * @return array{
      *     roles: list<array{id: int, name: string, label: string, is_customized: bool, is_custom: bool, is_own: bool, assigned_users_count: int, can_delete: bool}>,
-     *     groups: list<array{key: string, label: string, permissions: list<array{name: string, label: string, role_ids: list<int>, locked_role_ids: list<int>}>}>,
+     *     groups: list<array{key: string, label: string, permissions: list<array{name: string, label: string, role_ids: list<int>, locked_role_ids: list<int>, undefined_role_ids: list<int>}>}>,
+     *     undefinedPermissions: list<array{name: string, label: string}>,
      * }
      */
     public function matrixForActiveClinic(User $user): array
@@ -34,6 +36,7 @@ class PermissionMatrixService
         $permissions = $this->repository->allPermissions($columnIds);
 
         $roleLabels = trans('role.names');
+        $permissionLabels = trans('permission.names');
         $ownRoleIds = $this->guard->ownRoleIds($user, $clinicId);
         $assignedCounts = $this->repository->assignedUserCounts($columnIds, $clinicId);
 
@@ -54,20 +57,96 @@ class PermissionMatrixService
             ];
         })->values()->all();
 
-        $groups = $this->buildGroups($permissions, $ownRoleIds, $columnIds);
+        // Baseline copies only (clinic_id set, name is a ClinicRole case). A custom role
+        // (createCustomRole) starts with zero permissions by design — nothing about it was
+        // ever "missed", every gap there is a deliberate initial default, not a copy-on-write
+        // blind spot. Global template columns (no copy yet) stay in lockstep with
+        // PermissionSeeder automatically, so they carry no drift either.
+        $copies = $columns->filter(
+            fn (Role $role): bool => $role->isCustomized() && ! $role->isCustomRole(),
+        )->values();
 
-        return compact('roles', 'groups');
+        $undefinedRoleIdsByPermission = $this->undefinedRoleIdsByPermission($permissions, $copies);
+
+        $groups = $this->buildGroups($permissions, $ownRoleIds, $columnIds, $permissionLabels, $undefinedRoleIdsByPermission);
+        $undefinedPermissions = $this->undefinedPermissionsSummary($undefinedRoleIdsByPermission, $permissionLabels);
+
+        return compact('roles', 'groups', 'undefinedPermissions');
+    }
+
+    /**
+     * A permission is "undefined" for a baseline copy when the copy could never have decided
+     * it either way: it didn't exist yet when the copy was made (permissions.created_at is
+     * after the copy's roles.created_at) AND the copy doesn't currently hold it. That second
+     * condition also covers the case where the owner has since noticed the new row in the
+     * matrix and granted it manually — once granted, it's no longer "undefined".
+     *
+     * A permission that existed before the copy was created is never flagged even if the copy
+     * doesn't hold it — that's the clinic's own decision (inherited-but-later-revoked, or never
+     * granted to that baseline role to begin with), not a copy-on-write gap.
+     *
+     * @param  Collection<int, Permission>  $permissions
+     * @param  Collection<int, Role>  $copies  baseline role copies for the active clinic
+     * @return array<string, list<int>> permission name => copy role ids it's undefined for
+     */
+    private function undefinedRoleIdsByPermission(Collection $permissions, Collection $copies): array
+    {
+        if ($copies->isEmpty()) {
+            return [];
+        }
+
+        $map = [];
+
+        foreach ($permissions as $permission) {
+            $heldByRoleIds = $permission->getAttribute('role_ids');
+
+            foreach ($copies as $copy) {
+                $existedBeforeCopy = $permission->created_at !== null
+                    && $permission->created_at->lessThanOrEqualTo($copy->created_at);
+
+                if ($existedBeforeCopy || in_array($copy->id, $heldByRoleIds, true)) {
+                    continue;
+                }
+
+                $map[$permission->name][] = $copy->id;
+            }
+        }
+
+        return $map;
+    }
+
+    /**
+     * @param  array<string, list<int>>  $undefinedRoleIdsByPermission
+     * @param  array<string, string>  $permissionLabels
+     * @return list<array{name: string, label: string}>
+     */
+    private function undefinedPermissionsSummary(array $undefinedRoleIdsByPermission, array $permissionLabels): array
+    {
+        return collect(array_keys($undefinedRoleIdsByPermission))
+            ->sort()
+            ->map(fn (string $name): array => [
+                'name' => $name,
+                'label' => $permissionLabels[$name] ?? $name,
+            ])
+            ->values()
+            ->all();
     }
 
     /**
      * @param  Collection<int, Permission>  $permissions
      * @param  list<int>  $ownRoleIds
      * @param  list<int>  $columnIds
-     * @return list<array{key: string, label: string, permissions: list<array{name: string, label: string, role_ids: list<int>, locked_role_ids: list<int>}>}>
+     * @param  array<string, string>  $permissionLabels
+     * @param  array<string, list<int>>  $undefinedRoleIdsByPermission
+     * @return list<array{key: string, label: string, permissions: list<array{name: string, label: string, role_ids: list<int>, locked_role_ids: list<int>, undefined_role_ids: list<int>}>}>
      */
-    private function buildGroups(Collection $permissions, array $ownRoleIds, array $columnIds): array
-    {
-        $permissionLabels = trans('permission.names');
+    private function buildGroups(
+        Collection $permissions,
+        array $ownRoleIds,
+        array $columnIds,
+        array $permissionLabels,
+        array $undefinedRoleIdsByPermission,
+    ): array {
         $groupLabels = trans('permission.groups');
 
         $sorted = $permissions->sortBy(
@@ -90,6 +169,7 @@ class PermissionMatrixService
                     'locked_role_ids' => in_array($permission->name, SelfLockoutGuard::PROTECTED_PERMISSIONS, true)
                         ? $lockedColumnIds
                         : [],
+                    'undefined_role_ids' => $undefinedRoleIdsByPermission[$permission->name] ?? [],
                 ])->values()->all(),
             ])
             ->values()

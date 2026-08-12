@@ -95,6 +95,28 @@ class RoleCustomizationService
         return $copy;
     }
 
+    /**
+     * Renames a clinic's own custom role. Never a baseline copy — a copy's name is how
+     * RoleResolver recognizes it, so renaming one would strand it (RolePolicy::rename() is
+     * the actual gate; this check is defence in depth).
+     */
+    public function renameCustomRole(Role $role, string $name): Role
+    {
+        $clinicId = $this->clinicContext->clinicOrFail()->id;
+
+        if ($role->clinic_id !== $clinicId || ! $role->isCustomRole()) {
+            throw new RuntimeException("Role [{$role->id}] is not a renameable custom role for this clinic.");
+        }
+
+        $role->update(['name' => trim($name)]);
+
+        // The name isn't part of the permission cache, but every other role mutation clears
+        // it here — keep that consistent rather than special-case renaming.
+        $this->permissionRegistrar->forgetCachedPermissions();
+
+        return $role;
+    }
+
     public function createCustomRole(string $name): Role
     {
         $clinicId = $this->clinicContext->clinicOrFail()->id;

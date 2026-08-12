@@ -1389,6 +1389,8 @@ export const tr = {
         add_custom: 'Özel Rol Ekle',
         create_title: 'Özel Rol Ekle',
         create_submit: 'Rolü Ekle',
+        edit_title: 'Özel Rolü Yeniden Adlandır',
+        rename: 'Rolü yeniden adlandır',
         remove: 'Rolü kaldır',
         remove_confirm:
             '{name} adlı özel rolü kaldırmak istediğinize emin misiniz?',
@@ -1402,6 +1404,12 @@ export const tr = {
         locked_hint:
             'Bu izni kendi rolünüzden kaldıramazsınız; aksi hâlde bu sayfaya erişiminizi kaybedersiniz.',
         group_toggle_label: '{group} grubunun tamamı — {role}',
+        undefined_permissions: {
+            banner:
+                'Bu klinikte tanımlanmamış {count} yeni izin var: {names}',
+            row_hint:
+                'Bu izin, ilgili rol kopyası oluşturulduktan sonra sisteme eklendi; klinik için henüz bir karar verilmedi.',
+        },
         columns: {
             permission: 'İzin',
         },

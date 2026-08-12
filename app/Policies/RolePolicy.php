@@ -42,4 +42,12 @@ class RolePolicy
             && $role->clinic_id === $this->clinicContext->id()
             && $role->isCustomRole();
     }
+
+    /** Same gate as delete(): only a custom role owned by the active clinic may be renamed. */
+    public function rename(User $user, Role $role): bool
+    {
+        return $user->can('roles.manage')
+            && $role->clinic_id === $this->clinicContext->id()
+            && $role->isCustomRole();
+    }
 }

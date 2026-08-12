@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { IconCheck, IconTrash } from '@tabler/icons-vue';
+import { IconAlertTriangle, IconCheck, IconPencil, IconTrash } from '@tabler/icons-vue';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import SectionCard from '@/components/SectionCard.vue';
@@ -28,6 +28,7 @@ const emit = defineEmits<{
     toggle: [roleId: number, permission: string, granted: boolean];
     toggleGroup: [roleId: number, groupKey: string, granted: boolean];
     delete: [role: RoleColumn];
+    rename: [role: RoleColumn];
 }>();
 
 const { t } = useI18n();
@@ -134,20 +135,31 @@ function deleteTooltip(role: RoleColumn): string {
                                 />
                                 <span
                                     v-if="editable && role.is_custom"
-                                    v-tooltip.top="deleteTooltip(role)"
                                     class="inline-flex"
                                 >
                                     <Button
                                         type="button"
-                                        severity="danger"
+                                        severity="secondary"
                                         text
                                         size="small"
-                                        :disabled="!role.can_delete"
-                                        :aria-label="deleteTooltip(role)"
-                                        @click="emit('delete', role)"
+                                        :aria-label="t('role.rename')"
+                                        @click="emit('rename', role)"
                                     >
-                                        <IconTrash :size="16" />
+                                        <IconPencil :size="16" />
                                     </Button>
+                                    <span v-tooltip.top="deleteTooltip(role)">
+                                        <Button
+                                            type="button"
+                                            severity="danger"
+                                            text
+                                            size="small"
+                                            :disabled="!role.can_delete"
+                                            :aria-label="deleteTooltip(role)"
+                                            @click="emit('delete', role)"
+                                        >
+                                            <IconTrash :size="16" />
+                                        </Button>
+                                    </span>
                                 </span>
                             </div>
                         </th>
@@ -209,7 +221,23 @@ function deleteTooltip(role: RoleColumn): string {
                                 :title="permission.name"
                                 class="sticky left-0 z-10 max-w-xs bg-surface-0 px-5 py-2 text-left font-normal text-surface-700 group-hover:bg-surface-50"
                             >
-                                {{ permission.label }}
+                                <span class="inline-flex items-center gap-1.5">
+                                    {{ permission.label }}
+                                    <IconAlertTriangle
+                                        v-if="
+                                            permission.undefined_role_ids
+                                                .length > 0
+                                        "
+                                        v-tooltip.top="
+                                            t('role.undefined_permissions.row_hint')
+                                        "
+                                        :size="14"
+                                        class="shrink-0 text-orange-500"
+                                        :aria-label="
+                                            t('role.undefined_permissions.row_hint')
+                                        "
+                                    />
+                                </span>
                             </th>
                             <td
                                 v-for="role in roles"

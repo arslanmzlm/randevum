@@ -12,6 +12,7 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/settings/roles', [RoleController::class, 'store'])->name('settings.roles.store');
     Route::put('/settings/roles/permissions', [RolePermissionController::class, 'update'])->name('settings.roles.permissions.update');
     Route::delete('/settings/roles/customizations', [RoleController::class, 'revert'])->name('settings.roles.revert');
+    Route::put('/settings/roles/{role}', [RoleController::class, 'update'])->whereNumber('role')->name('settings.roles.update');
     Route::delete('/settings/roles/{role}', [RoleController::class, 'destroy'])->whereNumber('role')->name('settings.roles.destroy');
 });
 

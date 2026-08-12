@@ -112,6 +112,7 @@ return [
     'role' => [
         'permissions_updated' => 'Role permissions updated.',
         'created' => 'Role created.',
+        'renamed' => 'Role renamed.',
         'deleted' => 'Role deleted.',
         'reverted' => 'Reverted to default role permissions.',
         'no_customizations' => 'There is nothing to revert.',

@@ -46,6 +46,17 @@ const hasMatrix = computed(
     () => props.roles.length > 0 && props.groups.length > 0,
 );
 
+const undefinedPermissionsMessage = computed(() => {
+    if (props.undefinedPermissions.length === 0) {
+        return null;
+    }
+
+    return t('role.undefined_permissions.banner', {
+        count: props.undefinedPermissions.length,
+        names: props.undefinedPermissions.map((p) => p.label).join(', '),
+    });
+});
+
 function buildDraft(): PermissionDraft {
     const draft: PermissionDraft = {};
 
@@ -153,7 +164,7 @@ useUnsavedChanges(
     () => [updatePermissions().url],
 );
 
-const { visible, item, openCreate, confirmDelete } = useCrudDialog<RoleColumn>({
+const { visible, item, openCreate, openEdit, confirmDelete } = useCrudDialog<RoleColumn>({
     lang: roleResource.lang,
     destroy,
     canCreate: () => editable.value,
@@ -237,6 +248,15 @@ function confirmRevert(): void {
             {{ pageError }}
         </Message>
 
+        <!-- Persistent state (not a one-off event), so an in-page Message rather than a toast. -->
+        <Message
+            v-if="undefinedPermissionsMessage"
+            severity="warn"
+            :closable="false"
+        >
+            {{ undefinedPermissionsMessage }}
+        </Message>
+
         <Message severity="secondary" :closable="false">
             {{ editable ? t('role.edit_note') : t('role.read_only_note') }}
         </Message>
@@ -257,6 +277,7 @@ function confirmRevert(): void {
             @toggle="onToggle"
             @toggle-group="onToggleGroup"
             @delete="(role) => confirmDelete(role, role.label)"
+            @rename="openEdit"
         />
 
         <EmptyState v-else :icon="IconShieldLock" :message="t('role.empty')" />

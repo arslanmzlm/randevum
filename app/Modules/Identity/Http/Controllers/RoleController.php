@@ -5,6 +5,7 @@ namespace App\Modules\Identity\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\Role;
 use App\Modules\Core\Support\Toast;
+use App\Modules\Identity\Http\Requests\RenameRoleRequest;
 use App\Modules\Identity\Http\Requests\StoreRoleRequest;
 use App\Modules\Identity\Services\PermissionMatrixService;
 use App\Modules\Identity\Services\RoleCustomizationService;
@@ -34,6 +35,17 @@ class RoleController extends Controller
         $this->customization->createCustomRole($request->validated('name'));
 
         Toast::success(__('messages.role.created'));
+
+        return to_route('settings.roles.index');
+    }
+
+    public function update(RenameRoleRequest $request, Role $role): RedirectResponse
+    {
+        $this->authorize('rename', $role);
+
+        $this->customization->renameCustomRole($role, $request->validated('name'));
+
+        Toast::success(__('messages.role.renamed'));
 
         return to_route('settings.roles.index');
     }

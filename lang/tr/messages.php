@@ -112,6 +112,7 @@ return [
     'role' => [
         'permissions_updated' => 'Rol izinleri güncellendi.',
         'created' => 'Rol oluşturuldu.',
+        'renamed' => 'Rol yeniden adlandırıldı.',
         'deleted' => 'Rol silindi.',
         'reverted' => 'Varsayılan rol izinlerine dönüldü.',
         'no_customizations' => 'Geri alınacak bir özelleştirme yok.',

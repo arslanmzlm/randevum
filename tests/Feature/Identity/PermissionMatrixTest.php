@@ -8,6 +8,8 @@ use App\Support\ClinicContext;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 
 uses(RefreshDatabase::class);
@@ -119,6 +121,49 @@ it("sets is_own true only for the viewing user's own column, and locked_role_ids
 
                 return $manage['locked_role_ids'] !== [] && $viewAny['locked_role_ids'] !== []
                     && $other['locked_role_ids'] === [];
+            });
+        });
+});
+
+it('flags a permission created after the copy, but not one the clinic deliberately revoked', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    pmRole($owner, 'owner', $clinic->id);
+
+    app(ClinicContext::class)->set($clinic->id);
+    $globalDoctor = Role::query()->where('name', 'doctor')->whereNull('clinic_id')->firstOrFail();
+    $copy = app(RoleCustomizationService::class)->customizeForActiveClinic($globalDoctor);
+    app(ClinicContext::class)->forget();
+
+    // A permission the copy already had a chance to decide on (seeded before the copy was
+    // made) and explicitly turned down — this must never resurface as "undefined", or the
+    // warning would relabel a real decision as a gap.
+    $copy->revokePermissionTo('patients.create');
+
+    // A permission that didn't exist yet when the copy was made — the copy could not have
+    // addressed it either way, so it must be flagged.
+    Carbon::setTestNow(now()->addMinute());
+    Permission::findOrCreate('reports.newFeature', 'web');
+    Carbon::setTestNow();
+
+    app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+    $this->actingAs($owner)
+        ->get(route('settings.roles.index'))
+        ->assertOk()
+        ->assertInertia(function ($page) use ($copy) {
+            $page->where('undefinedPermissions', function ($undefined) {
+                $names = collect($undefined)->pluck('name');
+
+                return $names->contains('reports.newFeature')
+                    && ! $names->contains('patients.create');
+            })->where('groups', function ($groups) use ($copy) {
+                $flat = collect($groups)->flatMap(fn (array $g) => $g['permissions']);
+                $new = $flat->firstWhere('name', 'reports.newFeature');
+                $revoked = $flat->firstWhere('name', 'patients.create');
+
+                return in_array($copy->id, $new['undefined_role_ids'], true)
+                    && ! in_array($copy->id, $revoked['undefined_role_ids'], true);
             });
         });
 });

@@ -27,6 +27,18 @@ export type PermissionRow = {
     role_ids: number[];
     /** Cells the server refuses to change (self-lockout protection). */
     locked_role_ids: number[];
+    /**
+     * Copy-column role ids that never got a chance to decide this permission — it was added
+     * to the system after that clinic copy was made, so its absence isn't a deliberate
+     * removal.
+     */
+    undefined_role_ids: number[];
+};
+
+/** One entry of the "undefined permissions" summary (see RoleMatrixProps.undefinedPermissions). */
+export type UndefinedPermission = {
+    name: string;
+    label: string;
 };
 
 /** Permissions bucketed by resource group, in server-decided display order. */
@@ -39,9 +51,11 @@ export type PermissionGroup = {
 export type RoleMatrixProps = {
     roles: RoleColumn[];
     groups: PermissionGroup[];
+    /** Permissions no baseline copy in this clinic ever defined (see PermissionRow.undefined_role_ids). */
+    undefinedPermissions: UndefinedPermission[];
 };
 
-/** Create form for a clinic's own role; renaming is not supported. */
+/** Create/rename form for a clinic's own custom role. */
 export type RoleFormData = {
     name: string;
 };
