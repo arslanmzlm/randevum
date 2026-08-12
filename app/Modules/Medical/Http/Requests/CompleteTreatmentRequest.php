@@ -36,8 +36,9 @@ class CompleteTreatmentRequest extends FormRequest
             // Treatment-level discount
             'discount_amount' => ['nullable', ...ValidationRules::money(0)],
 
-            // Service line items
-            'services' => ['nullable', 'array'],
+            // Service line items — 50 is a generous abuse-guard bound (real sessions rarely
+            // pass a handful), mirroring the payments/follow_up.occurrences caps below.
+            'services' => ['nullable', 'array', 'max:50'],
             'services.*.service_id' => [
                 'required',
                 'integer',
@@ -48,8 +49,8 @@ class CompleteTreatmentRequest extends FormRequest
             'services.*.discount_amount' => ['nullable', ...ValidationRules::money(0)],
             'services.*.note' => ['nullable', 'string', 'max:1000'],
 
-            // Product line items
-            'products' => ['nullable', 'array'],
+            // Product line items — same abuse-guard bound as services above.
+            'products' => ['nullable', 'array', 'max:50'],
             'products.*.product_id' => [
                 'required',
                 'integer',

@@ -88,6 +88,23 @@ class AppointmentController extends Controller
     {
         $this->authorize('create', Appointment::class);
 
+        return Inertia::render('appointments/Create', [
+            ...$this->bookingFormProps($request),
+            // Set by store() right before it redirects back here, so the fresh render can show
+            // what was just booked instead of leaving the reception staring at a stale form.
+            'lastCreated' => $request->session()->get('appointment_created'),
+        ]);
+    }
+
+    /**
+     * Shared prop bundle for the single and bulk booking forms: doctor/service/appointment-type
+     * lookups, the clinic's default slot duration, any preselected patient (from ?patient_id=),
+     * and the acting user's own doctor id. Each caller adds its own page-specific key on top.
+     *
+     * @return array<string, mixed>
+     */
+    private function bookingFormProps(Request $request): array
+    {
         $clinic = $this->clinicContext->clinicOrFail();
 
         $doctors = $this->doctorDirectory->activeForClinic()
@@ -111,17 +128,14 @@ class AppointmentController extends Controller
 
         $user = $request->user();
 
-        return Inertia::render('appointments/Create', [
+        return [
             'doctors' => $doctors,
             'services' => $services,
             'appointmentTypes' => $appointmentTypes,
             'defaultSlotDuration' => $clinic->default_slot_duration_minutes,
             'preselectedPatient' => $preselectedPatient,
             'ownDoctorId' => $user->doctor?->id,
-            // Set by store() right before it redirects back here, so the fresh render can show
-            // what was just booked instead of leaving the reception staring at a stale form.
-            'lastCreated' => $request->session()->get('appointment_created'),
-        ]);
+        ];
     }
 
     public function store(StoreAppointmentRequest $request): RedirectResponse
@@ -169,36 +183,8 @@ class AppointmentController extends Controller
     {
         $this->authorize('create', Appointment::class);
 
-        $clinic = $this->clinicContext->clinicOrFail();
-
-        $doctors = $this->doctorDirectory->activeForClinic()
-            ->map(fn ($d) => ['id' => $d->id, 'display_name' => $d->display_name]);
-
-        $services = $this->serviceLookup->activeForBooking();
-
-        $appointmentTypes = $this->appointmentTypeService->listActiveForBooking();
-
-        $preselectedPatient = null;
-        if ($patientId = $request->integer('patient_id')) {
-            $patient = Patient::find($patientId);
-            if ($patient) {
-                $preselectedPatient = [
-                    'id' => $patient->id,
-                    'full_name' => trim($patient->first_name.' '.$patient->last_name),
-                    'phone' => $patient->getRawOriginal('phone'),
-                ];
-            }
-        }
-
-        $user = $request->user();
-
         return Inertia::render('appointments/BulkCreate', [
-            'doctors' => $doctors,
-            'services' => $services,
-            'appointmentTypes' => $appointmentTypes,
-            'defaultSlotDuration' => $clinic->default_slot_duration_minutes,
-            'preselectedPatient' => $preselectedPatient,
-            'ownDoctorId' => $user->doctor?->id,
+            ...$this->bookingFormProps($request),
             'result' => $request->session()->get('bulk_appointment_result'),
         ]);
     }

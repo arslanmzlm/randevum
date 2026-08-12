@@ -39,7 +39,9 @@ class TransactionRepository
             ->whereNot('status', TransactionStatus::Pending)
             ->sum('amount');
 
-        return number_format((float) $total, 2, '.', '');
+        // Normalize the DB decimal SUM to a 2-dp string via bcmath — never a (float)
+        // round-trip: this string feeds bccomp/bcadd downstream, and a float would drift cents.
+        return bcadd('0', (string) $total, 2);
     }
 
     /**
@@ -54,7 +56,7 @@ class TransactionRepository
             ->whereNot('status', TransactionStatus::Pending)
             ->sum('amount');
 
-        return number_format((float) $total, 2, '.', '');
+        return bcadd('0', (string) $total, 2);
     }
 
     /**
@@ -78,7 +80,7 @@ class TransactionRepository
             ->groupBy('patient_id')
             ->selectRaw('patient_id, sum(amount) as total')
             ->pluck('total', 'patient_id')
-            ->map(fn ($total): string => (string) $total)
+            ->map(fn ($total): string => bcadd('0', (string) $total, 2))
             ->all();
     }
 
@@ -89,10 +91,10 @@ class TransactionRepository
      */
     public function refundedTotalFor(int $originalId): string
     {
-        $total = number_format((float) Transaction::where('original_transaction_id', $originalId)->sum('amount'), 2, '.', '');
+        $total = Transaction::where('original_transaction_id', $originalId)->sum('amount');
 
         // SUM of negative amounts is ≤ 0; negate to get the positive refunded figure.
-        return bcsub('0', $total, 2);
+        return bcsub('0', (string) $total, 2);
     }
 
     /**
@@ -145,7 +147,7 @@ class TransactionRepository
             ->whereNotNull('patient_id')
             ->sum('amount');
 
-        return number_format((float) $total, 2, '.', '');
+        return bcadd('0', (string) $total, 2);
     }
 
     /**
@@ -162,7 +164,7 @@ class TransactionRepository
             ->whereNot('status', TransactionStatus::Pending)
             ->sum('amount');
 
-        return number_format((float) $total, 2, '.', '');
+        return bcadd('0', (string) $total, 2);
     }
 
     /**

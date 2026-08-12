@@ -75,7 +75,8 @@ class CalendarEventsRequest extends FormRequest
         return [
             'start' => ['required', 'date_format:Y-m-d'],
             'end' => ['required', 'date_format:Y-m-d', 'after_or_equal:start'],
-            'doctor_id' => ['nullable', 'array'],
+            // Mirrors clinic_id's max:20 below — bounded by a clinic's realistic doctor headcount.
+            'doctor_id' => ['nullable', 'array', 'max:20'],
             'doctor_id.*' => [
                 'integer',
                 Rule::exists('doctors', 'id')->where('clinic_id', $clinicId),
