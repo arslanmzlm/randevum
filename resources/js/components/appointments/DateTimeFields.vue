@@ -91,8 +91,7 @@ function onTimeBlur(): void {
         <div class="flex flex-col gap-4">
             <div class="form-group">
                 <label class="mb-1 block text-sm text-muted">
-                    {{ t('appointment.fields.date')
-                    }}<RequiredMark />
+                    {{ t('appointment.fields.date') }}<RequiredMark />
                 </label>
                 <DatePicker
                     v-model="form.date"
@@ -106,8 +105,7 @@ function onTimeBlur(): void {
 
             <div class="form-group">
                 <label :for="timeFieldId" class="mb-1 block text-sm text-muted">
-                    {{ t('appointment.fields.time')
-                    }}<RequiredMark />
+                    {{ t('appointment.fields.time') }}<RequiredMark />
                 </label>
                 <InputMask
                     :id="timeFieldId"

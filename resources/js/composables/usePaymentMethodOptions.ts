@@ -4,12 +4,7 @@ import { useI18n } from 'vue-i18n';
 import type { PaymentMethod } from '@/types/enums';
 
 /** Every payment method, in the order forms offer them. */
-const PAYMENT_METHODS: PaymentMethod[] = [
-    'cash',
-    'card',
-    'transfer',
-    'cheque',
-];
+const PAYMENT_METHODS: PaymentMethod[] = ['cash', 'card', 'transfer', 'cheque'];
 
 /**
  * Select options for the payment method, in one place: a new PaymentMethod case is a

@@ -50,13 +50,14 @@ const customizableTypes: CustomizableSmsType[] = [
 
 // Soft-warning recommended variables per type (never a hard block). Cancelled
 // recommends none; every other type recommends :date + :time.
-const recommendedVariables: Record<CustomizableSmsType, SmsTemplateVariable[]> = {
-    appointment_created: ['date', 'time'],
-    appointment_cancelled: [],
-    appointment_rescheduled: ['date', 'time'],
-    reminder_24h: ['date', 'time'],
-    reminder_1h: ['date', 'time'],
-};
+const recommendedVariables: Record<CustomizableSmsType, SmsTemplateVariable[]> =
+    {
+        appointment_created: ['date', 'time'],
+        appointment_cancelled: [],
+        appointment_rescheduled: ['date', 'time'],
+        reminder_24h: ['date', 'time'],
+        reminder_1h: ['date', 'time'],
+    };
 
 // Textarea binds to a string; a null custom template is an empty editor (→ default).
 const initialTemplates = Object.fromEntries(

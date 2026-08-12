@@ -67,7 +67,10 @@ function clearPatient(): void {
 
         <div class="flex flex-col gap-4">
             <div class="form-group">
-                <label :for="patientFieldId" class="mb-1 block text-sm text-muted">
+                <label
+                    :for="patientFieldId"
+                    class="mb-1 block text-sm text-muted"
+                >
                     {{ t('appointment.fields.patient') }}
                 </label>
                 <PatientSearchSelect

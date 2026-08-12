@@ -127,8 +127,7 @@ function submit(): void {
                  would collide with FloatLabel's in-field label (PatientPicker precedent). -->
             <div v-if="showPatientField" class="form-group">
                 <label class="mb-1 block text-sm text-muted">
-                    {{ t('follow_up.fields.patient')
-                    }}<RequiredMark />
+                    {{ t('follow_up.fields.patient') }}<RequiredMark />
                 </label>
                 <PatientSearchSelect
                     v-model="selectedPatient"

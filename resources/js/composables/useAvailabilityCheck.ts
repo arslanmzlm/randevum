@@ -66,7 +66,8 @@ export function useAvailabilityCheck(
                     return;
                 }
 
-                const body = (await response.json()) as AvailabilityCheckResponse;
+                const body =
+                    (await response.json()) as AvailabilityCheckResponse;
                 reason.value = body.reason;
                 state.value = body.available ? 'available' : 'unavailable';
             } catch (error) {

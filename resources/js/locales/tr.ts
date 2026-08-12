@@ -1405,8 +1405,7 @@ export const tr = {
             'Bu izni kendi rolünüzden kaldıramazsınız; aksi hâlde bu sayfaya erişiminizi kaybedersiniz.',
         group_toggle_label: '{group} grubunun tamamı — {role}',
         undefined_permissions: {
-            banner:
-                'Bu klinikte tanımlanmamış {count} yeni izin var: {names}',
+            banner: 'Bu klinikte tanımlanmamış {count} yeni izin var: {names}',
             row_hint:
                 'Bu izin, ilgili rol kopyası oluşturulduktan sonra sisteme eklendi; klinik için henüz bir karar verilmedi.',
         },

@@ -143,4 +143,9 @@ export type AnamnesisPregnancy = 'none' | 'pregnant' | 'breastfeeding';
  * template editor branches on it (insert buttons, i18n label lookup, preview
  * substitution) and the settings form keys its recommended-variable map off it.
  */
-export type SmsTemplateVariable = 'clinic' | 'date' | 'time' | 'patient' | 'doctor';
+export type SmsTemplateVariable =
+    | 'clinic'
+    | 'date'
+    | 'time'
+    | 'patient'
+    | 'doctor';

@@ -2,7 +2,11 @@ import type { InertiaForm } from '@inertiajs/vue3';
 import type { Anamnesis, AnamnesisFieldDefinition } from '@/types/anamnesis';
 import type { PatientBalance, TransactionItem } from '@/types/balance';
 import type { PatientCaseItem } from '@/types/case';
-import type { AppointmentStatus, MaritalStatus, PatientGender } from '@/types/enums';
+import type {
+    AppointmentStatus,
+    MaritalStatus,
+    PatientGender,
+} from '@/types/enums';
 import type { PatientPaymentPlan } from '@/types/payment-plan';
 import type { SmsLogItem } from '@/types/smsLog';
 import type { Paginated, TableState } from '@/types/table';

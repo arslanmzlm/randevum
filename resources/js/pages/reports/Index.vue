@@ -74,19 +74,17 @@ watch(activeTab, (tab) => {
 // The umbrella tab only exists for a tenant with a second branch the viewer belongs to; the server
 // silently falls back to `finance` if it is requested anyway.
 const tabs = computed(() =>
-    REPORT_TABS.filter(
-        (tab) => tab.value !== 'branch' || props.multiBranch,
-    )
+    REPORT_TABS.filter((tab) => tab.value !== 'branch' || props.multiBranch)
         .filter(
             (tab) =>
                 canViewExpenses.value ||
                 !EXPENSE_GATED_TABS.includes(tab.value),
         )
         .map((tab) => ({
-        value: tab.value,
-        label: t(`report.tabs.${tab.value}`),
-        icon: tab.icon,
-    })),
+            value: tab.value,
+            label: t(`report.tabs.${tab.value}`),
+            icon: tab.icon,
+        })),
 );
 
 const columns = computed<BreakdownColumn[]>(() =>

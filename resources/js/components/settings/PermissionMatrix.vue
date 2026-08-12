@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import { IconAlertTriangle, IconCheck, IconPencil, IconTrash } from '@tabler/icons-vue';
+import {
+    IconAlertTriangle,
+    IconCheck,
+    IconPencil,
+    IconTrash,
+} from '@tabler/icons-vue';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import SectionCard from '@/components/SectionCard.vue';
@@ -229,12 +234,16 @@ function deleteTooltip(role: RoleColumn): string {
                                                 .length > 0
                                         "
                                         v-tooltip.top="
-                                            t('role.undefined_permissions.row_hint')
+                                            t(
+                                                'role.undefined_permissions.row_hint',
+                                            )
                                         "
                                         :size="14"
                                         class="shrink-0 text-orange-500"
                                         :aria-label="
-                                            t('role.undefined_permissions.row_hint')
+                                            t(
+                                                'role.undefined_permissions.row_hint',
+                                            )
                                         "
                                     />
                                 </span>

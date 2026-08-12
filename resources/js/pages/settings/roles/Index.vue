@@ -164,11 +164,12 @@ useUnsavedChanges(
     () => [updatePermissions().url],
 );
 
-const { visible, item, openCreate, openEdit, confirmDelete } = useCrudDialog<RoleColumn>({
-    lang: roleResource.lang,
-    destroy,
-    canCreate: () => editable.value,
-});
+const { visible, item, openCreate, openEdit, confirmDelete } =
+    useCrudDialog<RoleColumn>({
+        lang: roleResource.lang,
+        destroy,
+        canCreate: () => editable.value,
+    });
 
 function confirmRevert(): void {
     confirm.require({
