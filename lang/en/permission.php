@@ -38,7 +38,6 @@ return [
         'cases.viewAny' => 'View case list',
         'clinic.update' => 'Update clinic settings',
         'clinics.create' => 'Open a new branch',
-        'clinics.switch' => 'Switch between branches',
         'doctors.create' => 'Add doctor',
         'doctors.createOwn' => 'Create own doctor profile',
         'doctors.delete' => 'Delete doctor',

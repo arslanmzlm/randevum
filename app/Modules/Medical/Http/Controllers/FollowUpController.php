@@ -5,6 +5,7 @@ namespace App\Modules\Medical\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\FollowUp;
 use App\Modules\Core\Support\Toast;
+use App\Modules\Medical\Http\Requests\CasesForPatientRequest;
 use App\Modules\Medical\Http\Requests\CompleteFollowUpRequest;
 use App\Modules\Medical\Http\Requests\StoreFollowUpRequest;
 use App\Modules\Medical\Services\CaseService;
@@ -58,13 +59,11 @@ class FollowUpController extends Controller
      * Doctors are narrowed to their own cases; anyone else who may create a follow-up sees
      * the patient's full case list (same behaviour as PatientController::show).
      */
-    public function casesForPatient(Request $request): JsonResponse
+    public function casesForPatient(CasesForPatientRequest $request): JsonResponse
     {
         $this->authorize('create', FollowUp::class);
 
-        $validated = $request->validate(['patient_id' => ['required', 'integer']]);
-
-        $cases = $this->caseService->casesForPatient((int) $validated['patient_id'], $request->user());
+        $cases = $this->caseService->casesForPatient((int) $request->validated('patient_id'), $request->user());
 
         return response()->json([
             'data' => array_map(
