@@ -997,6 +997,8 @@ export const tr = {
         pick_range: 'Önizleme için bir tarih aralığı seçin.',
         loading: 'Randevular yükleniyor…',
         empty: 'Seçilen aralıkta iptal edilebilecek randevu bulunmuyor.',
+        preview_error:
+            'Önizleme yüklenemedi. Randevuları göremeden randevuları iptal edemezsiniz.',
         columns: {
             datetime: 'Tarih / Saat',
             patient: 'Hasta',

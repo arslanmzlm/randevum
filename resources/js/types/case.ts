@@ -89,7 +89,10 @@ export type CaseShowProps = {
     ungroupedTreatments: UngroupedTreatmentItem[];
     /** Within config('platform.edit_windows.case') of opened_at. */
     canEditTitle: boolean;
-    ownDoctorId: number | null;
+    /** Mirrors CasePolicy::update (viewAll, or ownership) — server-computed, not re-derived client-side. */
+    canManage: boolean;
+    /** Mirrors FollowUpPolicy::complete's ownership formula at case granularity. */
+    canCompleteFollowUp: boolean;
     /** Active follow-up types for the add + → follow_up transition dialogs. */
     followUpTypes: FollowUpTypeOption[];
 };

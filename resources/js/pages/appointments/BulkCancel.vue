@@ -271,6 +271,16 @@ function submit(): void {
                     </p>
                 </div>
 
+                <!-- Error: server/preview request failed, distinct from a genuinely empty range -->
+                <div
+                    v-else-if="state === 'error'"
+                    class="flex flex-1 items-center justify-center px-6 py-16"
+                >
+                    <Message severity="error" :closable="false">
+                        {{ t('appointment_bulk_cancel.preview_error') }}
+                    </Message>
+                </div>
+
                 <!-- Empty: range chosen, nothing cancellable -->
                 <EmptyState
                     v-else-if="count === 0"

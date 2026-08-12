@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { IconCalendarEvent, IconClockHour4 } from '@tabler/icons-vue';
-import { computed } from 'vue';
+import { computed, useId } from 'vue';
 import { useI18n } from 'vue-i18n';
 import AvailabilityBadge from '@/components/AvailabilityBadge.vue';
 import { useAvailabilityCheck } from '@/composables/useAvailabilityCheck';
@@ -29,6 +29,13 @@ const { t } = useI18n();
 const form = useAppointmentForm();
 
 const minDate = new Date();
+
+// FormField isn't used here: the date control is an inline calendar (no labellable input to
+// float over or link via `for`), and the time control couples a per-field invalid highlight
+// derived from a shared `starts_at` server error plus a live AvailabilityBadge in place of a
+// plain hint string — both fall outside FormField's single error/hint-string API. Still wire
+// a real id/for pair for the time input since it IS a normal text control.
+const timeFieldId = useId();
 
 // starts_at is a server-only key (the transform builds it from date + time), so it isn't part of
 // the form's typed error map — read it through a loosened view.
@@ -97,11 +104,12 @@ function onTimeBlur(): void {
             </div>
 
             <div class="form-group">
-                <label class="mb-1 block text-sm text-muted">
+                <label :for="timeFieldId" class="mb-1 block text-sm text-muted">
                     {{ t('appointment.fields.time')
                     }}<span class="text-red-500"> *</span>
                 </label>
                 <InputMask
+                    :id="timeFieldId"
                     v-model="form.time"
                     mask="99:99"
                     :placeholder="t('appointment.time_placeholder')"

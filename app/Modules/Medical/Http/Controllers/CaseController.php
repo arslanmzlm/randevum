@@ -112,7 +112,10 @@ class CaseController extends Controller
             'allowedTransitions' => $this->caseService->allowedTransitions($case),
             'ungroupedTreatments' => $this->caseService->ungroupedTreatmentsForCase($case),
             'canEditTitle' => $this->caseService->canEditTitle($case),
-            'ownDoctorId' => $request->user()->doctor?->id,
+            // Mirrors CasePolicy::update exactly (viewAll, or ownership) — same gate the
+            // mutating endpoints (changeStatus/updateNotes/linkTreatments/...) enforce.
+            'canManage' => $user->can('update', $case),
+            'canCompleteFollowUp' => $this->caseService->canCompleteFollowUp($case, $user),
             'followUpTypes' => $this->followUpTypeService->listActiveOptions(),
         ]);
     }

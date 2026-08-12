@@ -13,12 +13,14 @@ const props = withDefaults(
         placeholder?: string;
         disabled?: boolean;
         invalid?: boolean;
+        inputId?: string;
     }>(),
     {
         autofocus: false,
         placeholder: undefined,
         disabled: false,
         invalid: false,
+        inputId: undefined,
     },
 );
 
@@ -121,6 +123,7 @@ defineExpose({ focus });
         <AutoComplete
             ref="autocomplete"
             v-model="model"
+            :input-id="inputId"
             :suggestions="suggestions"
             option-label="full_name"
             :loading="loading"

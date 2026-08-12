@@ -118,6 +118,60 @@ it('passes canEditTitle=false once the 48h window has expired', function (): voi
 });
 
 // ---------------------------------------------------------------------------
+// canManage / canCompleteFollowUp — ownership decisions the server computes
+// (CasePolicy::update / FollowUpPolicy::complete) so the client never re-derives them.
+// ---------------------------------------------------------------------------
+
+it('passes canManage=true and canCompleteFollowUp=true for the owner (viewAll + dismiss)', function (): void {
+    ['owner' => $owner, 'case' => $case] = cpcCase();
+
+    $this->actingAs($owner)
+        ->get(route('cases.show', $case))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('canManage', true)
+            ->where('canCompleteFollowUp', true)
+        );
+});
+
+it('passes canManage=true and canCompleteFollowUp=true for the doctor who owns the case', function (): void {
+    $clinic = Clinic::factory()->create();
+    $doctorUser = User::factory()->create();
+    cpcRole($doctorUser, 'doctor', $clinic->id);
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+
+    $case = CaseRecord::factory()->open()->create([
+        'clinic_id' => $clinic->id,
+        'patient_id' => $patient->id,
+        'doctor_id' => $doctor->id,
+        'vertical_id' => $clinic->vertical_id,
+    ]);
+
+    $this->actingAs($doctorUser)
+        ->get(route('cases.show', $case))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('canManage', true)
+            ->where('canCompleteFollowUp', true)
+        );
+});
+
+it('passes canManage=false and canCompleteFollowUp=false for the assistant (viewAll but no update/dismiss)', function (): void {
+    ['owner' => $owner, 'case' => $case] = cpcCase();
+    $assistant = User::factory()->create();
+    cpcRole($assistant, 'assistant', $case->clinic_id);
+
+    $this->actingAs($assistant)
+        ->get(route('cases.show', $case))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('canManage', false)
+            ->where('canCompleteFollowUp', false)
+        );
+});
+
+// ---------------------------------------------------------------------------
 // case.follow_ups / followUpTypes — the props CaseFollowUpCard reads
 // (`props.caseRecord.follow_ups`, the type picker options). Locks the shape
 // FollowUpService::forCase()/FollowUpTypeService::listActiveOptions() hand the

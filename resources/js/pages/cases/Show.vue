@@ -17,7 +17,6 @@ import CaseTreatmentsList from '@/components/cases/CaseTreatmentsList.vue';
 import FollowUpStatusDialog from '@/components/cases/FollowUpStatusDialog.vue';
 import LinkTreatmentsDialog from '@/components/cases/LinkTreatmentsDialog.vue';
 import PageHeader from '@/components/PageHeader.vue';
-import { useCan } from '@/composables/useCan';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { index } from '@/routes/cases';
 import { update as updateStatus } from '@/routes/cases/status';
@@ -34,25 +33,14 @@ const caseRecord = computed(() => props.case);
 
 const { t } = useI18n();
 const confirm = useConfirm();
-const { can } = useCan();
 
-// Mirror the server policy: mutate any clinic case with viewAll, else only own.
-const canManage = computed(
-    () =>
-        can('cases.update') &&
-        (can('cases.viewAll') || props.case.doctor.id === props.ownDoctorId),
-);
+// canManage/canCompleteFollowUp are ownership decisions the server computes (CasePolicy::update
+// / FollowUpPolicy::complete) and hands over as page props — not re-derived here, so the button
+// gating can never drift from what the mutating endpoints actually enforce.
 
 // Linking and unlinking are open in every case status except `closed`.
 const canLink = computed(
-    () => canManage.value && props.case.status !== 'closed',
-);
-
-// Mirrors FollowUpPolicy::complete — the clinic-wide permission, or own-case ownership.
-const canCompleteFollowUp = computed(
-    () =>
-        can('followUps.dismiss') ||
-        (can('cases.update') && props.case.doctor.id === props.ownDoctorId),
+    () => props.canManage && props.case.status !== 'closed',
 );
 
 const showFollowUpStatusDialog = ref(false);

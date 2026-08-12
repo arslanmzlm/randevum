@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
 import { IconUser } from '@tabler/icons-vue';
-import { computed, ref, watch } from 'vue';
+import { computed, ref, useId, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import FormField from '@/components/FormField.vue';
 import PatientSearchSelect from '@/components/PatientSearchSelect.vue';
@@ -17,6 +17,14 @@ const props = defineProps<{
 const { t } = useI18n();
 
 const form = usePatientForm();
+
+// FormField isn't used for the search field below: its `invalid` state is intentionally a
+// cross-field signal (highlighted when NEITHER an existing patient nor new-patient input is
+// present, driven by the new_patient.first_name error, not patient_id), and its error text is
+// shown under a different field — FormField couples invalid+message to a single `error` prop,
+// which can't represent that split without duplicating or dropping one signal. Still wire a
+// real id/for pair since the underlying AutoComplete is a normal text input.
+const patientFieldId = useId();
 
 const selectedPatient = ref<PatientSearchResult | null>(
     props.preselectedPatient,
@@ -59,11 +67,12 @@ function clearPatient(): void {
 
         <div class="flex flex-col gap-4">
             <div class="form-group">
-                <label class="mb-1 block text-sm text-muted">
+                <label :for="patientFieldId" class="mb-1 block text-sm text-muted">
                     {{ t('appointment.fields.patient') }}
                 </label>
                 <PatientSearchSelect
                     v-model="selectedPatient"
+                    :input-id="patientFieldId"
                     :disabled="hasNewPatientInput"
                     :invalid="patientInvalid"
                     :placeholder="t('appointment.patient_placeholder')"

@@ -138,7 +138,7 @@ it('paidTotalsForPatients ignores the manual income row', function (): void {
     app(ClinicContext::class)->set($clinic->id);
     $repo = app(TransactionRepository::class);
 
-    expect($repo->paidTotalsForPatients([$patient->id]))->toBe([$patient->id => '150']);
+    expect($repo->paidTotalsForPatients([$patient->id]))->toBe([$patient->id => '150.00']);
 });
 
 it('the patients-list balance column (remaining) is unaffected by manual income', function (): void {

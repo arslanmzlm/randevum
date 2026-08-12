@@ -347,6 +347,17 @@ class CaseService
     }
 
     /**
+     * Whether $user could complete a follow-up tied to this case. Mirrors
+     * FollowUpPolicy::complete's ownership formula, but at case granularity — the case page
+     * gates its "complete" affordance before any specific FollowUp row is picked.
+     */
+    public function canCompleteFollowUp(CaseRecord $case, User $user): bool
+    {
+        return $user->can('followUps.dismiss')
+            || ($user->can('cases.update') && $case->doctor_id === $user->doctor?->id);
+    }
+
+    /**
      * Resolve and validate the shared doctor from a set of treatment ids.
      *
      * All treatments must: be Completed, belong to the given patient, have no existing
