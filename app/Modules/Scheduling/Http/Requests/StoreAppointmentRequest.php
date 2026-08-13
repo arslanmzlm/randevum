@@ -46,7 +46,11 @@ class StoreAppointmentRequest extends FormRequest
                 'required_if:patient_mode,existing',
                 'nullable',
                 'integer',
-                Rule::exists('patients', 'id')->where('clinic_id', $clinicId),
+                // whereNull('deleted_at'): Rule::exists builds a raw query, so SoftDeletes does
+                // not apply — without it a soft-deleted patient's id books a new appointment.
+                Rule::exists('patients', 'id')
+                    ->where('clinic_id', $clinicId)
+                    ->whereNull('deleted_at'),
             ],
             'new_patient' => ['nullable', 'required_if:patient_mode,new', 'array'],
             'new_patient.first_name' => ['required_if:patient_mode,new', 'nullable', 'string', 'max:100'],

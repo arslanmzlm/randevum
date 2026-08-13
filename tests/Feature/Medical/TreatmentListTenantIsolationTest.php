@@ -63,3 +63,36 @@ it("clinic A's treatments list never exposes clinic B's treatments", function ()
             ->where('treatments.data.0.id', $treatmentA->id)
         );
 });
+
+it("clinic B's treatment is not found by clinic A's search on B's soft-deleted patient name", function (): void {
+    $clinicA = Clinic::factory()->create();
+    $clinicB = Clinic::factory()->create();
+
+    $ownerA = User::factory()->create();
+    tliRole($ownerA, 'owner', $clinicA->id);
+
+    $doctorA = Doctor::factory()->create(['clinic_id' => $clinicA->id]);
+    $patientA = Patient::factory()->create(['clinic_id' => $clinicA->id, 'first_name' => 'Ayşe', 'last_name' => 'Yılmaz']);
+    Treatment::factory()->create([
+        'clinic_id' => $clinicA->id,
+        'doctor_id' => $doctorA->id,
+        'patient_id' => $patientA->id,
+    ]);
+
+    $doctorB = Doctor::factory()->create(['clinic_id' => $clinicB->id]);
+    $patientB = Patient::factory()->create(['clinic_id' => $clinicB->id, 'first_name' => 'SilinenGizli', 'last_name' => 'GizliSoyadXyz']);
+    Treatment::factory()->create([
+        'clinic_id' => $clinicB->id,
+        'doctor_id' => $doctorB->id,
+        'patient_id' => $patientB->id,
+    ]);
+    $patientB->delete();
+
+    $response = $this->actingAs($ownerA)
+        ->get(route('treatments.index', ['filter' => ['search' => 'SilinenGizli']]));
+
+    $response->assertOk()
+        ->assertInertia(fn ($page) => $page->where('treatments.meta.total', 0));
+
+    expect($response->getContent())->not->toContain('GizliSoyadXyz');
+});

@@ -30,9 +30,9 @@ interface DashboardStatsContract
      *   appointments: array{today: int, pending: int, this_week: int, no_show_rate: array{percent: float, no_show: int, expected: int}|null}|null,
      *   revenue: array{today_collected: string, currency: string}|null,
      *   today_schedule: list<array{
-     *     id: int, patient_id: int, patient_name: string, doctor_id: int,
-     *     doctor_name: string, service_name: string|null, status: string,
-     *     is_walk_in: bool, starts_at: string,
+     *     id: int, patient_id: int, patient_name: string, patient_is_deleted: bool,
+     *     doctor_id: int, doctor_name: string, doctor_is_deleted: bool,
+     *     service_name: string|null, status: string, is_walk_in: bool, starts_at: string,
      *   }>|null,
      * }
      */

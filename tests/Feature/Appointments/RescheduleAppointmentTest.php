@@ -141,6 +141,32 @@ it('edit page appointment prop includes patient read-only block, status, and ISO
         );
 });
 
+it('edit page patient block carries is_deleted true for a soft-deleted patient and false otherwise', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    raRole($owner, 'owner', $clinic->id);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+    $appointment = raAppointment($clinic, $doctor, $patient);
+
+    $this->actingAs($owner)
+        ->get(route('appointments.edit', $appointment))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('appointment.patient.is_deleted', false));
+
+    $patient->delete();
+
+    $this->actingAs($owner)
+        ->get(route('appointments.edit', $appointment))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('appointment.patient.is_deleted', true)
+            ->where('appointment.patient.id', $patient->id)
+            ->where('appointment.patient.full_name', trim($patient->first_name.' '.$patient->last_name))
+        );
+});
+
 it('doctor can access their own appointment edit page', function (): void {
     $clinic = Clinic::factory()->create();
     $doctorUser = User::factory()->create();

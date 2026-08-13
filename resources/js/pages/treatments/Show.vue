@@ -18,6 +18,7 @@ import MediaGallery from '@/components/media/MediaGallery.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import RecordPaymentDialog from '@/components/payments/RecordPaymentDialog.vue';
 import TransactionList from '@/components/payments/TransactionList.vue';
+import RecordName from '@/components/RecordName.vue';
 import SectionCard from '@/components/SectionCard.vue';
 import TreatmentStatusTag from '@/components/TreatmentStatusTag.vue';
 import { useCan } from '@/composables/useCan';
@@ -280,7 +281,7 @@ const hasProductLines = computed(() => props.treatment.productLines.length > 0);
                         <Tag
                             v-if="treatment.patient.is_deleted"
                             severity="danger"
-                            :value="t('patient.deleted_badge')"
+                            :value="t('common.deleted_badge')"
                         />
                     </div>
                     <TreatmentStatusTag :status="treatment.status" />
@@ -292,8 +293,12 @@ const hasProductLines = computed(() => props.treatment.productLines.length > 0);
                         <dt class="text-surface-500">
                             {{ t('treatment.summary.doctor') }}:
                         </dt>
-                        <dd class="font-medium text-surface-800">
-                            {{ treatment.doctor.display_name }}
+                        <dd>
+                            <RecordName
+                                :name="treatment.doctor.display_name"
+                                :deleted="treatment.doctor.is_deleted"
+                                text-class="font-medium text-surface-800"
+                            />
                         </dd>
                     </div>
                     <div

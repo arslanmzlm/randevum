@@ -7,11 +7,14 @@ use App\Models\Clinic;
 use App\Models\Doctor;
 use App\Models\FollowUp;
 use App\Models\Patient;
+use App\Models\Transaction;
+use App\Models\Treatment;
 use App\Modules\Core\Exceptions\DeletionBlockedException;
 use App\Modules\Medical\Exceptions\TrashedPhoneConflictException;
 use App\Modules\Medical\Services\PatientService;
 use App\Support\ClinicContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Number;
 use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
@@ -226,6 +229,126 @@ it('delete is blocked when the patient has an open follow-up', function (): void
         ->toThrow(DeletionBlockedException::class);
 
     expect(Patient::withoutGlobalScopes()->find($patient->id)->deleted_at)->toBeNull();
+});
+
+it('delete is blocked when the patient still owes money, and the message names the balance', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id]);
+
+    $appointment = Appointment::factory()->past()->create([
+        'clinic_id' => $clinic->id,
+        'patient_id' => $patient->id,
+        'doctor_id' => $doctor->id,
+        'status' => AppointmentStatus::Completed,
+    ]);
+
+    Treatment::factory()->completed()->create([
+        'clinic_id' => $clinic->id,
+        'appointment_id' => $appointment->id,
+        'patient_id' => $patient->id,
+        'doctor_id' => $doctor->id,
+        'total_amount' => '150.00',
+    ]);
+
+    $service = app(PatientService::class);
+
+    try {
+        $service->delete($patient);
+        $this->fail('Expected DeletionBlockedException was not thrown');
+    } catch (DeletionBlockedException $e) {
+        expect($e->getMessage())->toContain(Number::currency(150.0, 'TRY', 'tr_TR'));
+    }
+
+    expect(Patient::withoutGlobalScopes()->find($patient->id)->deleted_at)->toBeNull();
+});
+
+it('delete is blocked when the clinic owes the patient a refund (negative balance)', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+
+    Transaction::factory()->create([
+        'clinic_id' => $clinic->id,
+        'patient_id' => $patient->id,
+        'amount' => '80.00',
+    ]);
+
+    $service = app(PatientService::class);
+
+    expect(fn () => $service->delete($patient))
+        ->toThrow(DeletionBlockedException::class);
+
+    expect(Patient::withoutGlobalScopes()->find($patient->id)->deleted_at)->toBeNull();
+});
+
+it('delete succeeds when the billed total is fully paid', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id]);
+
+    $appointment = Appointment::factory()->past()->create([
+        'clinic_id' => $clinic->id,
+        'patient_id' => $patient->id,
+        'doctor_id' => $doctor->id,
+        'status' => AppointmentStatus::Completed,
+    ]);
+
+    $treatment = Treatment::factory()->completed()->create([
+        'clinic_id' => $clinic->id,
+        'appointment_id' => $appointment->id,
+        'patient_id' => $patient->id,
+        'doctor_id' => $doctor->id,
+        'total_amount' => '150.00',
+    ]);
+
+    Transaction::factory()->create([
+        'clinic_id' => $clinic->id,
+        'patient_id' => $patient->id,
+        'treatment_id' => $treatment->id,
+        'amount' => '150.00',
+    ]);
+
+    $service = app(PatientService::class);
+    $service->delete($patient);
+
+    expect(Patient::withoutGlobalScopes()->find($patient->id)->deleted_at)->not->toBeNull();
+});
+
+it("another clinic's unpaid treatment does not block a deletion", function (): void {
+    $clinicA = Clinic::factory()->create();
+    $clinicB = Clinic::factory()->create();
+
+    $patientA = Patient::factory()->create(['clinic_id' => $clinicA->id]);
+    $patientB = Patient::factory()->create(['clinic_id' => $clinicB->id]);
+    $doctorB = Doctor::factory()->create(['clinic_id' => $clinicB->id]);
+
+    $appointmentB = Appointment::factory()->past()->create([
+        'clinic_id' => $clinicB->id,
+        'patient_id' => $patientB->id,
+        'doctor_id' => $doctorB->id,
+        'status' => AppointmentStatus::Completed,
+    ]);
+
+    Treatment::factory()->completed()->create([
+        'clinic_id' => $clinicB->id,
+        'appointment_id' => $appointmentB->id,
+        'patient_id' => $patientB->id,
+        'doctor_id' => $doctorB->id,
+        'total_amount' => '500.00',
+    ]);
+
+    app(ClinicContext::class)->set($clinicA->id);
+
+    $service = app(PatientService::class);
+    $service->delete($patientA);
+
+    expect(Patient::withoutGlobalScopes()->find($patientA->id)->deleted_at)->not->toBeNull();
 });
 
 it('delete succeeds when the case, appointment and follow-up are all resolved', function (): void {

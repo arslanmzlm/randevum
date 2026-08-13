@@ -34,7 +34,7 @@ class TreatmentReportService
             // withTrashed(): the treatment outlives a soft-deleted patient (treatments are
             // never deleted) — a document requested long after "hasta sil" must still render.
             'patient' => fn ($q) => $q->withTrashed(),
-            'doctor.user',
+            'doctor' => fn ($q) => $q->withTrashed()->with('user'),
             'details',
             'serviceLines.service',
             'productLines.product',
@@ -87,6 +87,7 @@ class TreatmentReportService
             ],
             'doctor' => [
                 'displayName' => $treatment->doctor->display_name,
+                'deleted' => $treatment->doctor->trashed(),
             ],
             'documentDate' => $documentDate->locale($lang)->translatedFormat('d F Y'),
             'serviceLines' => $treatment->serviceLines->map(fn ($line) => [

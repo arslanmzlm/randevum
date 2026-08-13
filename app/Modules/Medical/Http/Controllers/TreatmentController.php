@@ -107,7 +107,14 @@ class TreatmentController extends Controller
             return redirect()->route('treatments.show', $treatment);
         }
 
-        $treatment->load(['appointment.appointmentType', 'patient', 'doctor.user', 'details', 'media']);
+        $treatment->load([
+            'appointment.appointmentType',
+            'patient',
+            // withTrashed(): a draft can outlive the doctor's removal — the screen needs the name.
+            'doctor' => fn ($q) => $q->withTrashed()->with('user'),
+            'details',
+            'media',
+        ]);
 
         $clinic = $this->clinicContext->clinicOrFail();
 
@@ -202,7 +209,7 @@ class TreatmentController extends Controller
             // withTrashed(): the treatment outlives a soft-deleted patient (treatments are
             // never deleted) — this detail page stays reachable long after the patient is gone.
             'patient' => fn ($q) => $q->withTrashed(),
-            'doctor.user',
+            'doctor' => fn ($q) => $q->withTrashed()->with('user'),
             'case',
             'details',
             'serviceLines.service',

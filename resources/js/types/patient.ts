@@ -30,6 +30,8 @@ export type Patient = {
     marital_status: MaritalStatus | null;
     notification_enabled: boolean;
     is_legacy: boolean;
+    /** Soft-deleted; a search surfaces such a row, and it renders unlinked with a badge. */
+    is_deleted: boolean;
     notes: string | null;
     /** ISO 8601 timestamp. */
     created_at: string;
@@ -133,6 +135,8 @@ export type PatientAppointmentItem = {
     status: AppointmentStatus;
     is_walk_in: boolean;
     doctor_name: string;
+    /** The row outlives its doctor: a soft-deleted one is named with a badge. */
+    doctor_is_deleted: boolean;
     service_name: string | null;
     appointment_type: { name: string; color: string } | null;
 };

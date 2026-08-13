@@ -98,6 +98,7 @@ class CalendarService
                 'id' => $e->id,
                 'doctor_id' => $e->doctor_id,
                 'doctor_name' => $e->doctor->display_name,
+                'doctor_is_deleted' => $e->doctor->trashed(),
                 'start' => $e->starts_at->setTimezone($tz)->format('Y-m-d H:i'),
                 'end' => $e->ends_at->setTimezone($tz)->format('Y-m-d H:i'),
                 'reason' => $e->reason,
@@ -139,9 +140,11 @@ class CalendarService
             'id' => $a->id,
             'doctor_id' => $a->doctor_id,
             'doctor_name' => $a->doctor->display_name,
+            'doctor_is_deleted' => $a->doctor->trashed(),
             'title' => trim($a->patient->first_name.' '.$a->patient->last_name),
             // The popover links the name straight to the patient record.
             'patient_id' => $a->patient_id,
+            'patient_is_deleted' => $a->patient->trashed(),
             'start' => $a->starts_at->setTimezone($tz)->format('Y-m-d H:i'),
             'end' => $a->ends_at->setTimezone($tz)->format('Y-m-d H:i'),
             // The grid positions events by clinic-local wall clock, but "is it past?" must be

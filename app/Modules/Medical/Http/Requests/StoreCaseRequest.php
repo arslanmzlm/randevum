@@ -22,7 +22,15 @@ class StoreCaseRequest extends FormRequest
 
         return [
             'title' => ['required', 'string', 'max:255'],
-            'patient_id' => ['required', 'integer', Rule::exists('patients', 'id')->where('clinic_id', $clinicId)],
+            // whereNull('deleted_at'): Rule::exists builds a raw query, so SoftDeletes does not
+            // apply — without it a soft-deleted patient's id opens a new case.
+            'patient_id' => [
+                'required',
+                'integer',
+                Rule::exists('patients', 'id')
+                    ->where('clinic_id', $clinicId)
+                    ->whereNull('deleted_at'),
+            ],
             'doctor_id' => ['nullable', 'integer', Rule::exists('doctors', 'id')->where('clinic_id', $clinicId)],
             'treatment_ids' => ['nullable', 'array'],
             'treatment_ids.*' => ['integer'],

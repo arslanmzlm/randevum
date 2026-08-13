@@ -47,7 +47,9 @@ class AppointmentRepository
         }
 
         $helper = FilterHelper::for($query)
-            ->searchRelation('patient', ['first_name', 'last_name'], 'first_name', 'last_name', 'phone')
+            // WithTrashed: the row stays listed (and named) after the patient is soft-deleted,
+            // so it must stay findable by that name too.
+            ->searchRelationWithTrashed('patient', ['first_name', 'last_name'], 'first_name', 'last_name', 'phone')
             ->enumMultiple(['status' => AppointmentStatus::class])
             ->multiple('doctor_id', 'service_id', 'appointment_type_id')
             ->dateRange('starts_at', 'start_date', 'end_date', $timezone);
@@ -106,7 +108,14 @@ class AppointmentRepository
         return Appointment::startingBetween($fromUtc, $toUtc)
             ->withStatus($statuses)
             ->when($doctorIds !== null, fn ($q) => $q->whereIn('doctor_id', $doctorIds))
-            ->with(['patient', 'clinic', 'doctor.user', 'service'])
+            // withTrashed(): the bulk-cancel preview/execute rows outlive a soft-deleted
+            // patient/doctor — without it the relation is null and both the preview name and
+            // the cancel SMS break.
+            ->with([
+                'patient' => fn ($q) => $q->withTrashed(),
+                'doctor' => fn ($q) => $q->withTrashed()->with('user'),
+                'clinic', 'service',
+            ])
             ->orderBy('starts_at')
             ->get();
     }
@@ -124,7 +133,9 @@ class AppointmentRepository
         return Appointment::forDoctor($doctorId)
             ->withStatus($statuses)
             ->where('starts_at', '>=', now())
-            ->with(['patient', 'clinic'])
+            // withTrashed(): the offboard cancel runs over rows that outlive a soft-deleted
+            // patient — without it the relation is null and the cancel SMS never goes out.
+            ->with(['patient' => fn ($q) => $q->withTrashed(), 'clinic'])
             ->orderBy('starts_at')
             ->get();
     }
@@ -176,7 +187,13 @@ class AppointmentRepository
     {
         $query = Appointment::inRange($startUtc, $endUtc)
             ->withStatus($statuses)
-            ->with(['patient', 'service', 'appointmentType', 'doctor.user', 'treatment'])
+            // withTrashed(): a calendar chip outlives its patient's/doctor's soft-delete — the popover
+            // needs the name (marked deleted), not a null.
+            ->with([
+                'patient' => fn ($q) => $q->withTrashed(),
+                'doctor' => fn ($q) => $q->withTrashed()->with('user'),
+                'service', 'appointmentType', 'treatment',
+            ])
             ->orderBy('starts_at');
 
         if (is_array($doctorIds)) {
@@ -202,7 +219,13 @@ class AppointmentRepository
             ->withStatus($statuses)
             ->where('starts_at', '>=', now())
             ->when($doctorIds !== null, fn ($q) => $q->whereIn('doctor_id', $doctorIds))
-            ->with(['patient', 'doctor.user', 'service', 'appointmentType'])
+            // withTrashed(): the appointment outlives a soft-deleted patient/doctor, and the
+            // widget must show the name flagged as deleted rather than drop or null the row.
+            ->with([
+                'patient' => fn ($q) => $q->withTrashed(),
+                'doctor' => fn ($q) => $q->withTrashed()->with('user'),
+                'service', 'appointmentType',
+            ])
             ->orderBy('starts_at')
             ->limit($limit)
             ->get();
@@ -317,7 +340,13 @@ class AppointmentRepository
                 AppointmentStatus::NoShow->value,
             ])
             ->when($doctorIds !== null, fn ($q) => $q->whereIn('doctor_id', $doctorIds))
-            ->with(['patient', 'doctor.user', 'service', 'appointmentType'])
+            // withTrashed(): today's row survives its patient/doctor being soft-deleted, so the
+            // panel must still resolve a name — flagged as deleted — instead of skipping the row.
+            ->with([
+                'patient' => fn ($q) => $q->withTrashed(),
+                'doctor' => fn ($q) => $q->withTrashed()->with('user'),
+                'service', 'appointmentType',
+            ])
             ->orderBy('starts_at')
             ->get();
     }
@@ -429,10 +458,10 @@ class AppointmentRepository
             ->withStatus($statuses)
             ->whereIn('clinic_id', $clinicIds)
             ->with([
-                'patient' => fn ($q) => $q->withoutGlobalScope(ClinicScope::class),
+                'patient' => fn ($q) => $q->withoutGlobalScope(ClinicScope::class)->withTrashed(),
                 'service' => fn ($q) => $q->withoutGlobalScope(ClinicScope::class),
                 'appointmentType' => fn ($q) => $q->withoutGlobalScope(ClinicScope::class),
-                'doctor' => fn ($q) => $q->withoutGlobalScope(ClinicScope::class)->with('user'),
+                'doctor' => fn ($q) => $q->withoutGlobalScope(ClinicScope::class)->withTrashed()->with('user'),
                 'treatment' => fn ($q) => $q->withoutGlobalScope(ClinicScope::class),
             ])
             ->orderBy('starts_at')
@@ -449,7 +478,12 @@ class AppointmentRepository
     public function forPatient(int $patientId, ?int $doctorId): Collection
     {
         $query = Appointment::where('patient_id', $patientId)
-            ->with(['doctor.user', 'service', 'appointmentType'])
+            // withTrashed(): the history row outlives its doctor's soft-delete — the panel needs
+            // the name (flagged deleted), not a null relation.
+            ->with([
+                'doctor' => fn ($q) => $q->withTrashed()->with('user'),
+                'service', 'appointmentType',
+            ])
             ->orderByDesc('starts_at');
 
         if ($doctorId !== null) {

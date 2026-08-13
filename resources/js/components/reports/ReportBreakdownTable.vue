@@ -5,6 +5,7 @@ import type {
 } from 'primevue/datatable';
 import { useI18n } from 'vue-i18n';
 import DataTableWrapper from '@/components/DataTableWrapper.vue';
+import RecordName from '@/components/RecordName.vue';
 import { useMoney } from '@/composables/useMoney';
 import { usePercent } from '@/composables/usePercent';
 import type {
@@ -106,7 +107,16 @@ function footer(column: BreakdownColumn): string {
                 :class="column.type === 'text' ? 'min-w-48' : 'text-right'"
             >
                 <template #body="{ data }">
+                    <!-- The doctor tab reaches soft-deleted profiles on purpose, so its label
+                         column has to say so; every other cell is plain text. -->
+                    <RecordName
+                        v-if="column.field === 'label'"
+                        :name="cell(data as BreakdownRow, column)"
+                        :deleted="(data as BreakdownRow).is_deleted ?? false"
+                        text-class="font-medium text-surface-800"
+                    />
                     <span
+                        v-else
                         :class="
                             column.type === 'text'
                                 ? 'font-medium text-surface-800'

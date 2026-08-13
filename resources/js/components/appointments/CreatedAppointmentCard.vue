@@ -2,6 +2,8 @@
 import { Link } from '@inertiajs/vue3';
 import { IconCalendarCheck, IconChevronRight, IconX } from '@tabler/icons-vue';
 import { useI18n } from 'vue-i18n';
+import PatientNameLink from '@/components/patients/PatientNameLink.vue';
+import RecordName from '@/components/RecordName.vue';
 import SectionCard from '@/components/SectionCard.vue';
 import { index as appointmentsIndex } from '@/routes/appointments';
 import { show as patientShow } from '@/routes/patients';
@@ -41,22 +43,34 @@ const { t } = useI18n();
 
         <div class="flex flex-col gap-4 p-5">
             <div class="flex flex-col gap-1">
-                <p class="text-base font-medium text-surface-900">
-                    {{ appointment.patient_name }}
-                </p>
-                <p class="text-sm text-surface-500">
-                    {{ appointment.starts_at }}
+                <!-- Plain: the "patient profile" link right below is this card's way into the
+                     record, so a second link on the name would only duplicate it. -->
+                <PatientNameLink
+                    plain
+                    :name="appointment.patient_name"
+                    :deleted="appointment.patient_is_deleted"
+                    class="text-base font-medium text-surface-900"
+                />
+                <div
+                    class="flex flex-wrap items-center gap-1 text-sm text-surface-500"
+                >
+                    <span>{{ appointment.starts_at }}</span>
                     <template v-if="appointment.doctor_name">
-                        · {{ appointment.doctor_name }}
+                        <span>·</span>
+                        <RecordName
+                            :name="appointment.doctor_name"
+                            :deleted="appointment.doctor_is_deleted"
+                        />
                     </template>
-                    <template v-if="appointment.service_name">
+                    <span v-if="appointment.service_name">
                         · {{ appointment.service_name }}
-                    </template>
-                </p>
+                    </span>
+                </div>
             </div>
 
             <div class="flex flex-wrap gap-2">
                 <Link
+                    v-if="!appointment.patient_is_deleted"
                     :href="patientShow(appointment.patient_id).url"
                     class="inline-flex items-center gap-1 text-sm font-medium text-primary-600 transition-colors hover:text-primary-700 hover:underline"
                 >

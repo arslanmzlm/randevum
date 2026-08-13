@@ -364,3 +364,54 @@ it('does not 500 and still shows names when the treatment\'s patient and doctor 
             ->where('treatments.data.0.doctor.display_name', $doctor->display_name)
         );
 });
+
+it('filter[search] finds a treatment whose patient is soft-deleted', function (): void {
+    ['clinic' => $clinic, 'doctor' => $doctor] = tlDoctorSetup();
+    $owner = User::factory()->create();
+    tlRole($owner, 'owner', $clinic->id);
+
+    $deleted = Patient::factory()->create(['clinic_id' => $clinic->id, 'first_name' => 'Ayşe', 'last_name' => 'Yılmaz']);
+    $active = Patient::factory()->create(['clinic_id' => $clinic->id, 'first_name' => 'Fatma', 'last_name' => 'Kaya']);
+
+    $match = tlTreatment($clinic, $doctor, $deleted);
+    tlTreatment($clinic, $doctor, $active);
+
+    $deleted->delete();
+
+    $this->actingAs($owner)
+        ->get(route('treatments.index', ['filter' => ['search' => 'Ayşe']]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('treatments.meta.total', 1)
+            ->where('treatments.data.0.id', $match->id)
+            ->where('treatments.data.0.patient.is_deleted', true)
+        );
+});
+
+it('the treatment list row carries doctor.is_deleted and keeps the display name', function (): void {
+    ['clinic' => $clinic, 'doctor' => $doctor, 'patient' => $patient] = tlDoctorSetup();
+    $owner = User::factory()->create();
+    tlRole($owner, 'owner', $clinic->id);
+
+    $treatment = tlTreatment($clinic, $doctor, $patient);
+
+    $this->actingAs($owner)
+        ->get(route('treatments.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('treatments.data.0.id', $treatment->id)
+            ->where('treatments.data.0.doctor.is_deleted', false)
+        );
+
+    $name = $doctor->display_name;
+    $doctor->delete();
+
+    $this->actingAs($owner)
+        ->get(route('treatments.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('treatments.data', 1)
+            ->where('treatments.data.0.doctor.display_name', $name)
+            ->where('treatments.data.0.doctor.is_deleted', true)
+        );
+});

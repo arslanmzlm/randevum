@@ -64,7 +64,9 @@ class PaymentPlanRepository
         $dueBefore = rescue(fn () => request()->date('filter.due_before'), null, report: false);
 
         return PaymentPlanInstallment::query()
-            ->with('plan.patient')
+            // withTrashed(): the plan (and its receivable) outlives a soft-deleted patient, so the
+            // collections screen must still resolve a name — flagged deleted — instead of a null.
+            ->with(['plan.patient' => fn ($q) => $q->withTrashed()])
             ->withSum('transactions as collected_total', 'amount')
             ->when(
                 $status !== null,

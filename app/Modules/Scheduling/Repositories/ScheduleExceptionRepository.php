@@ -18,7 +18,12 @@ class ScheduleExceptionRepository
      */
     public function listForClinic(?int $doctorId = null, bool $includePast = false): Collection
     {
-        return ScheduleException::with(['doctor.user', 'creator'])
+        // withTrashed(): leave rows are not removed with the doctor, so a departed doctor's
+        // rows must still resolve a name instead of a null relation.
+        return ScheduleException::with([
+            'doctor' => fn ($q) => $q->withTrashed()->with('user'),
+            'creator',
+        ])
             ->when(! $includePast, fn ($q) => $q->where('ends_at', '>=', now()))
             ->when($doctorId !== null, fn ($q) => $q->forDoctor($doctorId))
             ->orderBy('starts_at')
@@ -66,7 +71,9 @@ class ScheduleExceptionRepository
     public function inRange(int|array $doctorIds, mixed $startUtc, mixed $endUtc): Collection
     {
         $query = ScheduleException::overlapping($startUtc, $endUtc)
-            ->with('doctor')
+            // user is part of display_name, and withTrashed() keeps a departed doctor's leave
+            // block nameable on the calendar.
+            ->with(['doctor' => fn ($q) => $q->withTrashed()->with('user')])
             ->orderBy('starts_at');
 
         if (is_array($doctorIds)) {

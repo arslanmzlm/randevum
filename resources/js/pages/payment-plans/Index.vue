@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { Head, router, useForm } from '@inertiajs/vue3';
 import {
     IconAlertTriangle,
     IconBell,
@@ -15,6 +15,7 @@ import StatCard from '@/components/dashboard/StatCard.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import FormField from '@/components/FormField.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import PatientNameLink from '@/components/patients/PatientNameLink.vue';
 import InstallmentStatusTag from '@/components/payment-plans/InstallmentStatusTag.vue';
 import SectionCard from '@/components/SectionCard.vue';
 import { useCan } from '@/composables/useCan';
@@ -22,7 +23,6 @@ import { useDateTime } from '@/composables/useDateTime';
 import { useMoney } from '@/composables/useMoney';
 import { usePaymentMethodOptions } from '@/composables/usePaymentMethodOptions';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { show as patientShow } from '@/routes/patients';
 import { installments as installmentsRoute } from '@/routes/payment-plans';
 import {
     collect,
@@ -330,12 +330,12 @@ function remind(row: PendingInstallment): void {
                     sortable
                 >
                     <template #body="{ data }">
-                        <Link
-                            :href="patientShow(data.patient_id).url"
-                            class="font-medium text-primary-600 hover:underline"
-                        >
-                            {{ data.patient_name }}
-                        </Link>
+                        <PatientNameLink
+                            :id="data.patient_id"
+                            :name="data.patient_name"
+                            :deleted="data.patient_is_deleted"
+                            class="font-medium"
+                        />
                     </template>
                 </Column>
 

@@ -39,6 +39,7 @@ class TreatmentShowResource extends JsonResource
             ],
             'doctor' => [
                 'display_name' => $this->doctor->display_name,
+                'is_deleted' => $this->doctor->trashed(),
             ],
             'case' => $this->case ? [
                 'id' => $this->case->id,

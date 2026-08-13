@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
 import AppointmentStatusTag from '@/components/AppointmentStatusTag.vue';
+import RecordName from '@/components/RecordName.vue';
 import { useDateTime } from '@/composables/useDateTime';
 import type { BulkCancelPreviewRow } from '@/types/appointment';
 
@@ -52,9 +53,11 @@ const { formatDate, formatTime } = useDateTime();
             :header="t('appointment_bulk_cancel.columns.doctor')"
         >
             <template #body="{ data }">
-                <span class="text-surface-700">
-                    {{ data.doctor_name }}
-                </span>
+                <RecordName
+                    :name="data.doctor_name"
+                    :deleted="data.doctor_is_deleted"
+                    text-class="truncate text-surface-700"
+                />
             </template>
         </Column>
 

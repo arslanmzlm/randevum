@@ -10,6 +10,7 @@ use App\Modules\Core\Contracts\DoctorDirectoryContract;
 use App\Modules\Core\Services\StatusLogService;
 use App\Modules\Core\Support\Toast;
 use App\Modules\Medical\Contracts\TreatmentReaderContract;
+use App\Modules\Medical\Exceptions\TrashedPhoneConflictException;
 use App\Modules\Messaging\Contracts\SmsHistoryContract;
 use App\Modules\Messaging\Contracts\SmsQuotaContract;
 use App\Modules\Scheduling\Http\Requests\BulkCancelAppointmentsRequest;
@@ -25,6 +26,7 @@ use App\Modules\Scheduling\Http\Requests\StoreAppointmentRequest;
 use App\Modules\Scheduling\Http\Requests\UpcomingAppointmentsRequest;
 use App\Modules\Scheduling\Http\Resources\AppointmentDetailResource;
 use App\Modules\Scheduling\Http\Resources\AppointmentResource;
+use App\Modules\Scheduling\Services\AppointmentReader;
 use App\Modules\Scheduling\Services\AppointmentReminderService;
 use App\Modules\Scheduling\Services\AppointmentService;
 use App\Modules\Scheduling\Services\AppointmentTypeService;
@@ -52,6 +54,7 @@ class AppointmentController extends Controller
         private StatusLogService $statusLogService,
         private TreatmentReaderContract $treatmentReader,
         private SmsHistoryContract $smsHistory,
+        private AppointmentReader $appointmentReader,
     ) {}
 
     public function index(Request $request): Response
@@ -149,9 +152,19 @@ class AppointmentController extends Controller
             $this->authorize('appointments.assignDoctor');
         }
 
-        $appointment = $this->service->create($validated, $request->user());
+        try {
+            $appointment = $this->service->create($validated, $request->user());
+        } catch (TrashedPhoneConflictException $e) {
+            return $this->backWithRestorePrompt($e);
+        }
 
-        $appointment->loadMissing(['patient', 'doctor.user', 'service']);
+        // withTrashed(): booking a soft-deleted patient is rejected in validation, but the row can
+        // still be soft-deleted between create and this read — never resolve the relation to null.
+        $appointment->loadMissing([
+            'patient' => fn ($q) => $q->withTrashed(),
+            'doctor' => fn ($q) => $q->withTrashed()->with('user'),
+            'service',
+        ]);
 
         $patientName = trim(
             $appointment->patient->first_name.' '.$appointment->patient->last_name
@@ -166,7 +179,9 @@ class AppointmentController extends Controller
         $request->session()->flash('appointment_created', [
             'patient_id' => $appointment->patient_id,
             'patient_name' => $patientName,
+            'patient_is_deleted' => $appointment->patient->trashed(),
             'doctor_name' => $appointment->doctor?->display_name,
+            'doctor_is_deleted' => (bool) $appointment->doctor?->trashed(),
             'service_name' => $appointment->service?->name,
             'date' => $localStart->format('Y-m-d'),
             'starts_at' => $slot,
@@ -200,7 +215,11 @@ class AppointmentController extends Controller
             $this->authorize('appointments.assignDoctor');
         }
 
-        $result = $this->service->bulkBook($validated, $request->user());
+        try {
+            $result = $this->service->bulkBook($validated, $request->user());
+        } catch (TrashedPhoneConflictException $e) {
+            return $this->backWithRestorePrompt($e);
+        }
 
         $createdCount = count($result['created']);
         $skipped = $result['skipped'];
@@ -217,6 +236,19 @@ class AppointmentController extends Controller
         }
 
         return to_route('appointments.bulk-create');
+    }
+
+    /**
+     * Inline new-patient booking hit a soft-deleted patient holding the same phone. Mirrors
+     * PatientController::store() — bounce back with the submitted fields intact and the trashed
+     * patient in a flash, so the form can offer a restore instead of a dead-end error.
+     */
+    private function backWithRestorePrompt(TrashedPhoneConflictException $e): RedirectResponse
+    {
+        return redirect()->back()->withInput()->with('restorable_patient', [
+            'id' => $e->patient->id,
+            'full_name' => $e->patient->first_name.' '.$e->patient->last_name,
+        ]);
     }
 
     /**
@@ -278,7 +310,12 @@ class AppointmentController extends Controller
     {
         $this->authorize('update', $appointment);
 
-        $appointment->loadMissing('patient', 'doctor.user', 'service', 'appointmentType');
+        // withTrashed(): the appointment outlives its patient's soft-delete — without it the
+        // relation resolves to null and the read-only patient block renders empty.
+        $appointment->loadMissing([
+            'patient' => fn ($q) => $q->withTrashed(),
+            'doctor.user', 'service', 'appointmentType',
+        ]);
 
         $clinic = $this->clinicContext->clinicOrFail();
         $user = $request->user();
@@ -302,6 +339,7 @@ class AppointmentController extends Controller
                     'id' => $appointment->patient_id,
                     'full_name' => trim($appointment->patient->first_name.' '.$appointment->patient->last_name),
                     'phone' => $appointment->patient->getRawOriginal('phone'),
+                    'is_deleted' => $appointment->patient->trashed(),
                 ],
                 'doctor_id' => $appointment->doctor_id,
                 'service_id' => $appointment->service_id,
@@ -397,7 +435,7 @@ class AppointmentController extends Controller
         $limit = (int) $request->validated()['limit'];
 
         return response()->json([
-            'data' => $this->service->upcomingFor($request->user(), $limit),
+            'data' => $this->appointmentReader->upcomingFor($request->user(), $limit),
         ]);
     }
 
@@ -452,7 +490,9 @@ class AppointmentController extends Controller
 
         $appointments = Appointment::forDoctor((int) $validated['doctor_id'])
             ->forDay($dayStart, $dayEnd)
-            ->with(['patient', 'service', 'appointmentType'])
+            // withTrashed(): the day-schedule row outlives its patient's soft-delete — without it
+            // the relation resolves to null and the panel renders an empty name.
+            ->with(['patient' => fn ($q) => $q->withTrashed(), 'service', 'appointmentType'])
             ->orderBy('starts_at')
             ->get();
 
@@ -514,6 +554,7 @@ class AppointmentController extends Controller
                 'starts_at' => $a->starts_at->toIso8601String(),
                 'patient_name' => trim($a->patient->first_name.' '.$a->patient->last_name),
                 'doctor_name' => $a->doctor->display_name,
+                'doctor_is_deleted' => $a->doctor->trashed(),
                 'service_name' => $a->service?->name,
                 'status' => $a->status->value,
                 'has_phone' => $a->patient->getRawOriginal('phone') !== null,

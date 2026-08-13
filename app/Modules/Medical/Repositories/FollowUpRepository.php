@@ -31,7 +31,9 @@ class FollowUpRepository
                 // never deleted) — the dashboard widget still needs a name, not a null.
                 'patient' => fn ($q) => $q->withTrashed()->select('id', 'first_name', 'last_name', 'phone', 'deleted_at'),
                 'type:id,name',
-                'caseRecord.doctor.user',
+                // withTrashed() on the doctor for the same reason — the widget names whoever
+                // owns the case, deleted profile or not.
+                'caseRecord.doctor' => fn ($q) => $q->withTrashed()->with('user'),
             ])
             ->orderBy('due_date')
             ->orderBy('id')

@@ -47,9 +47,9 @@ class DashboardStatsService implements DashboardStatsContract
      * upcoming widget's small-N cap.
      *
      * @return list<array{
-     *   id: int, patient_id: int, patient_name: string, doctor_id: int,
-     *   doctor_name: string, service_name: string|null, status: string,
-     *   is_walk_in: bool, starts_at: string,
+     *   id: int, patient_id: int, patient_name: string, patient_is_deleted: bool,
+     *   doctor_id: int, doctor_name: string, doctor_is_deleted: bool,
+     *   service_name: string|null, status: string, is_walk_in: bool, starts_at: string,
      * }>|null
      */
     private function todaySchedule(User $user, string $timezone): ?array
@@ -64,8 +64,10 @@ class DashboardStatsService implements DashboardStatsContract
                 'id' => $a->id,
                 'patient_id' => $a->patient_id,
                 'patient_name' => trim($a->patient->first_name.' '.$a->patient->last_name),
+                'patient_is_deleted' => $a->patient->trashed(),
                 'doctor_id' => $a->doctor_id,
                 'doctor_name' => $a->doctor->display_name,
+                'doctor_is_deleted' => $a->doctor->trashed(),
                 'service_name' => $a->service?->name,
                 'status' => $a->status->value,
                 'is_walk_in' => $a->is_walk_in,
@@ -141,7 +143,7 @@ class DashboardStatsService implements DashboardStatsContract
 
     /**
      * Doctor-scoping shared by every appointment-scoped block, mirroring the exact
-     * branch from AppointmentService::upcomingFor:
+     * branch from AppointmentReader::upcomingFor:
      * - `appointments.viewAll` → null (no doctor filter, clinic-wide)
      * - else → own doctor profile id; no profile → [] (empty scope → 0 rows)
      *

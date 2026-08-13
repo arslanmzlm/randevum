@@ -263,3 +263,24 @@ it('passes followUpTypes with only the clinic\'s active types', function (): voi
             ->where('followUpTypes.0', ['id' => $active->id, 'name' => $active->name])
         );
 });
+
+it('passes case.doctor.is_deleted for a soft-deleted doctor and keeps the display name', function (): void {
+    ['owner' => $owner, 'case' => $case] = cpcCase();
+
+    $this->actingAs($owner)
+        ->get(route('cases.show', $case))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('case.doctor.is_deleted', false));
+
+    $doctor = Doctor::findOrFail($case->doctor_id);
+    $name = $doctor->display_name;
+    $doctor->delete();
+
+    $this->actingAs($owner)
+        ->get(route('cases.show', $case))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('case.doctor.display_name', $name)
+            ->where('case.doctor.is_deleted', true)
+        );
+});

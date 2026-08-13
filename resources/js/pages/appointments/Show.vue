@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
+import { Head } from '@inertiajs/vue3';
 import {
     IconBriefcase,
     IconCalendarEvent,
@@ -19,6 +19,8 @@ import AppointmentStatusTimeline from '@/components/appointments/AppointmentStat
 import AppointmentStatusTag from '@/components/AppointmentStatusTag.vue';
 import ButtonLink from '@/components/ButtonLink.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import PatientNameLink from '@/components/patients/PatientNameLink.vue';
+import RecordName from '@/components/RecordName.vue';
 import SectionCard from '@/components/SectionCard.vue';
 import SmsLogList from '@/components/sms/SmsLogList.vue';
 import TreatmentStatusTag from '@/components/TreatmentStatusTag.vue';
@@ -30,7 +32,6 @@ import { useMoney } from '@/composables/useMoney';
 import { useTreatmentActions } from '@/composables/useTreatmentActions';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { index as appointmentsIndex } from '@/routes/appointments';
-import { show as patientShow } from '@/routes/patients';
 import { show as treatmentShow } from '@/routes/treatments';
 import type { AppointmentShowProps } from '@/types/appointment';
 
@@ -94,6 +95,7 @@ const summaryRows = computed(() => [
         icon: IconStethoscope,
         label: t('appointment_detail.fields.doctor'),
         value: props.appointment.doctor_name,
+        deleted: props.appointment.doctor_is_deleted,
     },
     {
         key: 'datetime',
@@ -190,12 +192,12 @@ const summaryRows = computed(() => [
         >
             <div class="flex flex-col gap-5">
                 <div class="flex flex-wrap items-center gap-3">
-                    <Link
-                        :href="patientShow(appointment.patient_id).url"
-                        class="truncate text-base font-semibold text-primary-600 transition-colors hover:text-primary-700 hover:underline"
-                    >
-                        {{ appointment.patient_name }}
-                    </Link>
+                    <PatientNameLink
+                        :id="appointment.patient_id"
+                        :name="appointment.patient_name"
+                        :deleted="appointment.patient_is_deleted"
+                        class="truncate text-base font-semibold"
+                    />
                     <AppointmentStatusTag :status="appointment.status" />
                     <Tag v-if="appointment.is_walk_in" severity="warn">
                         <template #icon>
@@ -227,9 +229,12 @@ const summaryRows = computed(() => [
                                 :style="{ backgroundColor: row.color }"
                                 aria-hidden="true"
                             />
-                            <span v-if="row.value" class="truncate">
-                                {{ row.value }}
-                            </span>
+                            <RecordName
+                                v-if="row.value"
+                                :name="row.value"
+                                :deleted="row.deleted ?? false"
+                                text-class="truncate"
+                            />
                             <span v-else class="text-surface-400">—</span>
                         </dd>
                     </div>

@@ -13,6 +13,8 @@ export interface BreakdownRow {
     /** Dimension key: doctor / service / product / appointment type / user id; null = unspecified. */
     id: number | null;
     label: string;
+    /** Doctor tab only: the breakdown reaches soft-deleted profiles, so the label gets a badge. */
+    is_deleted?: boolean;
     amount: string;
     count: number;
     average: string;

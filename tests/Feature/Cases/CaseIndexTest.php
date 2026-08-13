@@ -195,3 +195,124 @@ it('index passes ownDoctorId matching the authenticated doctor profile', functio
         ->assertOk()
         ->assertInertia(fn ($page) => $page->where('ownDoctorId', $doctorA->id));
 });
+
+// ---------------------------------------------------------------------------
+// Soft-deleted patient — the case outlives the patient
+// ---------------------------------------------------------------------------
+
+it('patient name search finds a case whose patient is soft-deleted', function (): void {
+    ['clinic' => $clinic, 'owner' => $owner, 'doctorA' => $doctorA] = cixSetup();
+
+    $deleted = Patient::factory()->create([
+        'clinic_id' => $clinic->id,
+        'first_name' => 'Zeynep',
+        'last_name' => 'Kaya',
+    ]);
+
+    $match = CaseRecord::factory()->open()->create([
+        'clinic_id' => $clinic->id,
+        'patient_id' => $deleted->id,
+        'doctor_id' => $doctorA->id,
+        'vertical_id' => $clinic->vertical_id,
+        'title' => 'Ayak tabani',
+    ]);
+
+    $deleted->delete();
+
+    $this->actingAs($owner)
+        ->get(route('cases.index', ['filter' => ['search' => 'Zeynep']]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('cases.data', 1)
+            ->where('cases.data.0.id', $match->id)
+            ->where('cases.data.0.patient.full_name', 'Zeynep Kaya')
+            ->where('cases.data.0.patient.is_deleted', true)
+        );
+});
+
+it('title search still works alongside the trashed-patient relation', function (): void {
+    ['clinic' => $clinic, 'owner' => $owner, 'doctorA' => $doctorA, 'patient' => $patient] = cixSetup();
+
+    $match = CaseRecord::factory()->open()->create([
+        'clinic_id' => $clinic->id,
+        'patient_id' => $patient->id,
+        'doctor_id' => $doctorA->id,
+        'vertical_id' => $clinic->vertical_id,
+        'title' => 'Topuk dikeni kontrolu',
+    ]);
+
+    $this->actingAs($owner)
+        ->get(route('cases.index', ['filter' => ['search' => 'Topuk dikeni']]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('cases.data', 1)
+            ->where('cases.data.0.id', $match->id)
+            ->where('cases.data.0.patient.is_deleted', false)
+        );
+});
+
+it("clinic B's soft-deleted patient name does not surface clinic B cases in clinic A's search", function (): void {
+    ['owner' => $ownerA] = cixSetup();
+
+    $clinicB = Clinic::factory()->create();
+    $doctorB = Doctor::factory()->create(['clinic_id' => $clinicB->id]);
+    $patientB = Patient::factory()->create([
+        'clinic_id' => $clinicB->id,
+        'first_name' => 'SilinenGizli',
+        'last_name' => 'GizliSoyadXyz',
+    ]);
+
+    CaseRecord::factory()->open()->create([
+        'clinic_id' => $clinicB->id,
+        'patient_id' => $patientB->id,
+        'doctor_id' => $doctorB->id,
+        'vertical_id' => $clinicB->vertical_id,
+    ]);
+
+    $patientB->delete();
+
+    $response = $this->actingAs($ownerA)
+        ->get(route('cases.index', ['filter' => ['search' => 'SilinenGizli']]));
+
+    $response->assertOk()
+        ->assertInertia(fn ($page) => $page->has('cases.data', 0));
+
+    expect($response->getContent())->not->toContain('GizliSoyadXyz');
+});
+
+// ---------------------------------------------------------------------------
+// Soft-deleted doctor — the case outlives the doctor
+// ---------------------------------------------------------------------------
+
+it('the case list row carries doctor.is_deleted and keeps the display name', function (): void {
+    ['clinic' => $clinic, 'owner' => $owner, 'doctorA' => $doctorA, 'patient' => $patient] = cixSetup();
+
+    $match = CaseRecord::factory()->open()->create([
+        'clinic_id' => $clinic->id,
+        'patient_id' => $patient->id,
+        'doctor_id' => $doctorA->id,
+        'vertical_id' => $clinic->vertical_id,
+        'title' => 'Doktor silme kontrolu',
+    ]);
+
+    $this->actingAs($owner)
+        ->get(route('cases.index', ['filter' => ['search' => 'Doktor silme']]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('cases.data', 1)
+            ->where('cases.data.0.doctor.is_deleted', false)
+        );
+
+    $name = $doctorA->display_name;
+    $doctorA->delete();
+
+    $this->actingAs($owner)
+        ->get(route('cases.index', ['filter' => ['search' => 'Doktor silme']]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('cases.data', 1)
+            ->where('cases.data.0.id', $match->id)
+            ->where('cases.data.0.doctor.display_name', $name)
+            ->where('cases.data.0.doctor.is_deleted', true)
+        );
+});

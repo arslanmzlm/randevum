@@ -45,7 +45,7 @@ return [
         'document_no' => 'Document No',
         'date' => 'Date',
         'patient' => 'Patient',
-        'patient_deleted' => '(Deleted record)',
+        'deleted_record' => '(Deleted record)',
         'doctor' => 'Doctor',
         'services' => 'Services',
         'products' => 'Products',

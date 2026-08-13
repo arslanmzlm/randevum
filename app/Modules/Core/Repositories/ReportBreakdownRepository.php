@@ -417,6 +417,22 @@ class ReportBreakdownRepository
     }
 
     /**
+     * Ids of the given doctors that are soft-deleted, so a report row can mark a name
+     * that no longer belongs to a live profile.
+     *
+     * @param  array<int, int>  $ids
+     * @return array<int, int> list of soft-deleted doctor ids
+     */
+    public function deletedDoctorIds(array $ids): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+
+        return Doctor::onlyTrashed()->whereIn('id', $ids)->pluck('id')->all();
+    }
+
+    /**
      * @param  array<int, int>  $ids
      * @return array<int, string> service_id => name
      */

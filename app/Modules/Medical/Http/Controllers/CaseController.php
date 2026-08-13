@@ -76,7 +76,7 @@ class CaseController extends Controller
             // withTrashed(): the case outlives a soft-deleted patient (cases are never
             // deleted) — this detail page stays reachable long after the patient is gone.
             'patient' => fn ($q) => $q->withTrashed()->select('id', 'first_name', 'last_name', 'deleted_at'),
-            'doctor.user',
+            'doctor' => fn ($q) => $q->withTrashed()->with('user'),
             'treatments' => fn ($q) => $q->with([
                 'serviceLines' => fn ($sq) => $sq->orderBy('sort_order')->limit(1),
                 'serviceLines.service',

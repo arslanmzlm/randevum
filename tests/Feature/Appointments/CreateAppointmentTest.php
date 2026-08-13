@@ -791,6 +791,22 @@ it('store rejects a patient_id that belongs to a different clinic (422)', functi
     expect(Appointment::withoutGlobalScopes()->where('clinic_id', $clinicA->id)->exists())->toBeFalse();
 });
 
+it('store rejects a soft-deleted patient_id (422)', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    caRole($owner, 'owner', $clinic->id);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+    $patient->delete();
+
+    $this->actingAs($owner)
+        ->post(route('appointments.store'), caPayload($patient->id, $doctor->id))
+        ->assertSessionHasErrors('patient_id');
+
+    expect(Appointment::withoutGlobalScopes()->where('clinic_id', $clinic->id)->exists())->toBeFalse();
+});
+
 it('store rejects a doctor_id that belongs to a different clinic (422)', function (): void {
     $clinicA = Clinic::factory()->create();
     $clinicB = Clinic::factory()->create();
@@ -1244,4 +1260,123 @@ it('does not send a result card when the page is opened without booking', functi
         ->get(route('appointments.create'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page->where('lastCreated', null));
+});
+
+// ---------------------------------------------------------------------------
+// POST /appointments — inline new patient reusing a soft-deleted patient's phone
+// ---------------------------------------------------------------------------
+
+it('offers to restore the soft-deleted patient when the inline new patient reuses their phone', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    caRole($owner, 'owner', $clinic->id);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+
+    $trashed = Patient::factory()->trashed()->create([
+        'clinic_id' => $clinic->id,
+        'first_name' => 'Silinen',
+        'last_name' => 'Hasta',
+        'phone' => '05312345678',
+    ]);
+
+    $this->actingAs($owner)
+        ->post(route('appointments.store'), caPayload(0, $doctor->id, [
+            'patient_mode' => 'new',
+            'patient_id' => null,
+            'new_patient' => [
+                'first_name' => 'Yeni',
+                'last_name' => 'Hasta',
+                'phone' => '05312345678',
+                'email' => null,
+            ],
+        ]))
+        ->assertRedirect()
+        ->assertSessionHas('restorable_patient', fn ($value) => $value['id'] === $trashed->id &&
+            $value['full_name'] === 'Silinen Hasta'
+        );
+
+    expect(Appointment::withoutGlobalScopes()->where('clinic_id', $clinic->id)->exists())->toBeFalse();
+    expect(Patient::withoutGlobalScopes()->where('first_name', 'Yeni')->exists())->toBeFalse();
+});
+
+it('keeps the submitted booking form input when it bounces back with the restore offer', function (): void {
+    $clinic = Clinic::factory()->create(['timezone' => 'Europe/Istanbul']);
+    $owner = User::factory()->create();
+    caRole($owner, 'owner', $clinic->id);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+    $service = Service::factory()->create(['clinic_id' => $clinic->id, 'vertical_id' => $clinic->vertical_id]);
+
+    Patient::factory()->trashed()->create([
+        'clinic_id' => $clinic->id,
+        'phone' => '05312345678',
+    ]);
+
+    $slot = caNextMondaySlot();
+
+    $this->actingAs($owner)
+        ->post(route('appointments.store'), caPayload(0, $doctor->id, [
+            'patient_mode' => 'new',
+            'patient_id' => null,
+            'service_id' => $service->id,
+            'starts_at' => $slot,
+            'new_patient' => [
+                'first_name' => 'Yeni',
+                'last_name' => 'Hasta',
+                'phone' => '05312345678',
+                'email' => null,
+            ],
+        ]))
+        ->assertSessionHas('restorable_patient')
+        ->assertSessionHasInput('doctor_id', $doctor->id)
+        ->assertSessionHasInput('service_id', $service->id)
+        ->assertSessionHasInput('starts_at', $slot)
+        ->assertSessionHasInput('new_patient.first_name', 'Yeni')
+        ->assertSessionHasInput('new_patient.last_name', 'Hasta');
+});
+
+it('does not offer another clinic\'s soft-deleted patient for restore', function (): void {
+    $clinicA = Clinic::factory()->create();
+    $clinicB = Clinic::factory()->create();
+
+    $ownerA = User::factory()->create();
+    caRole($ownerA, 'owner', $clinicA->id);
+
+    $doctorUser = User::factory()->create();
+    $doctorA = Doctor::factory()->create(['clinic_id' => $clinicA->id, 'user_id' => $doctorUser->id]);
+
+    // Same phone, but the soft-deleted row belongs to clinic B — phone uniqueness is per clinic.
+    Patient::factory()->trashed()->create([
+        'clinic_id' => $clinicB->id,
+        'first_name' => 'Baska',
+        'last_name' => 'Klinik',
+        'phone' => '05312345678',
+    ]);
+
+    $this->actingAs($ownerA)
+        ->post(route('appointments.store'), caPayload(0, $doctorA->id, [
+            'patient_mode' => 'new',
+            'patient_id' => null,
+            'new_patient' => [
+                'first_name' => 'Yeni',
+                'last_name' => 'Hasta',
+                'phone' => '05312345678',
+                'email' => null,
+            ],
+        ]))
+        ->assertSessionMissing('restorable_patient')
+        ->assertRedirect(route('appointments.create'));
+
+    $patient = Patient::withoutGlobalScopes()
+        ->where('clinic_id', $clinicA->id)
+        ->where('first_name', 'Yeni')
+        ->first();
+
+    expect($patient)->not->toBeNull();
+    expect(Appointment::withoutGlobalScopes()
+        ->where('clinic_id', $clinicA->id)
+        ->where('patient_id', $patient->id)
+        ->exists()
+    )->toBeTrue();
 });

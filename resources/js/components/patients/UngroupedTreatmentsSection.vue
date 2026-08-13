@@ -3,6 +3,7 @@ import { useForm } from '@inertiajs/vue3';
 import { IconFolderOff, IconLink, IconPlus } from '@tabler/icons-vue';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import RecordName from '@/components/RecordName.vue';
 import SectionCard from '@/components/SectionCard.vue';
 import { useCan } from '@/composables/useCan';
 import { useDateTime } from '@/composables/useDateTime';
@@ -160,13 +161,22 @@ function submitLinkCase(): void {
                         >
                             {{ item.title || t('treatment.untitled') }}
                         </span>
-                        <span class="text-xs text-surface-500">
-                            {{
-                                item.completed_at
-                                    ? formatDate(item.completed_at)
-                                    : t('treatment.in_progress')
-                            }}
-                            · {{ item.doctor_name }}
+                        <span
+                            class="flex min-w-0 items-center gap-1 text-xs text-surface-500"
+                        >
+                            <span class="shrink-0">
+                                {{
+                                    item.completed_at
+                                        ? formatDate(item.completed_at)
+                                        : t('treatment.in_progress')
+                                }}
+                                ·
+                            </span>
+                            <RecordName
+                                :name="item.doctor_name"
+                                :deleted="item.doctor_is_deleted"
+                                text-class="truncate"
+                            />
                         </span>
                     </label>
                     <span class="text-sm font-medium text-surface-700">

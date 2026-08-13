@@ -33,6 +33,7 @@ class TreatmentListResource extends JsonResource
             'doctor' => [
                 'id' => (int) $this->doctor_id,
                 'display_name' => $this->doctor->display_name,
+                'is_deleted' => $this->doctor->trashed(),
             ],
             'service_names' => $this->serviceLines
                 ->sortBy('sort_order')

@@ -203,3 +203,26 @@ it('a patient created by owner A is not visible to owner B', function (): void {
         ->assertOk()
         ->assertInertia(fn ($page) => $page->where('patients.meta.total', 0));
 });
+
+it("clinic B's soft-deleted patient is not found by clinic A's index search", function (): void {
+    $clinicA = Clinic::factory()->create();
+    $clinicB = Clinic::factory()->create();
+
+    $ownerA = User::factory()->create();
+    ptiRole($ownerA, 'owner', $clinicA->id);
+
+    Patient::factory()->trashed()->create([
+        'clinic_id' => $clinicB->id,
+        'first_name' => 'SilinenGizli',
+        'last_name' => 'GizliSoyadXyz',
+        'phone' => '05311111111',
+    ]);
+
+    $response = $this->actingAs($ownerA)
+        ->get(route('patients.index', ['filter' => ['search' => 'SilinenGizli']]));
+
+    $response->assertOk()
+        ->assertInertia(fn ($page) => $page->where('patients.meta.total', 0));
+
+    expect($response->getContent())->not->toContain('GizliSoyadXyz');
+});

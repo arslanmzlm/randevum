@@ -2,6 +2,7 @@
 import { useI18n } from 'vue-i18n';
 import AppointmentStatusTag from '@/components/AppointmentStatusTag.vue';
 import EntityLinkRow from '@/components/EntityLinkRow.vue';
+import RecordName from '@/components/RecordName.vue';
 import { useDateTime } from '@/composables/useDateTime';
 import type { PatientAppointmentItem } from '@/types/patient';
 
@@ -25,7 +26,11 @@ const { formatRange } = useDateTime();
         </template>
         <template #meta>
             <span class="flex items-center gap-1.5">
-                {{ appointment.doctor_name }}
+                <RecordName
+                    :name="appointment.doctor_name"
+                    :deleted="appointment.doctor_is_deleted"
+                    text-class="truncate"
+                />
                 <template v-if="appointment.service_name">
                     · {{ appointment.service_name }}
                 </template>

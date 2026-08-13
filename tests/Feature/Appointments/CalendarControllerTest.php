@@ -848,3 +848,87 @@ it('clinic B owner cannot see clinic A appointments (symmetric isolation)', func
     expect(count($dataB))->toBe(1)
         ->and($dataB[0]['doctor_id'])->toBe($doctorB->id);
 });
+
+// ---------------------------------------------------------------------------
+// Soft-deleted patient — the calendar chip outlives the patient
+// ---------------------------------------------------------------------------
+
+it('keeps a calendar event whose patient is soft-deleted and flags patient_is_deleted', function (): void {
+    $clinic = Clinic::factory()->create(['timezone' => 'Europe/Istanbul']);
+    $owner = User::factory()->create();
+    calRole($owner, 'owner', $clinic->id);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+    $patient = Patient::factory()->create([
+        'clinic_id' => $clinic->id,
+        'first_name' => 'Zeynep',
+        'last_name' => 'Kaya',
+    ]);
+
+    $appointment = calMakeAppointment($clinic, $doctor, $patient, 10, 11);
+
+    $before = $this->actingAs($owner)
+        ->getJson(calEventsUrl())
+        ->assertOk()
+        ->json('data');
+
+    expect($before)->toHaveCount(1)
+        ->and($before[0]['patient_is_deleted'])->toBeFalse();
+
+    $patient->delete();
+
+    $after = $this->actingAs($owner)
+        ->getJson(calEventsUrl())
+        ->assertOk()
+        ->json('data');
+
+    expect($after)->toHaveCount(1)
+        ->and($after[0]['id'])->toBe($appointment->id)
+        ->and($after[0]['title'])->toBe('Zeynep Kaya')
+        ->and($after[0]['patient_is_deleted'])->toBeTrue();
+});
+
+// ---------------------------------------------------------------------------
+// Soft-deleted doctor — the chip and the leave block outlive the profile
+// ---------------------------------------------------------------------------
+
+it('flags doctor_is_deleted on calendar events and leave blocks of a soft-deleted doctor', function (): void {
+    $clinic = Clinic::factory()->create(['timezone' => 'Europe/Istanbul']);
+    $owner = User::factory()->create();
+    calRole($owner, 'owner', $clinic->id);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+
+    calMakeAppointment($clinic, $doctor, $patient, 10, 11);
+
+    $date = calNextMonday();
+    ScheduleException::factory()->create([
+        'clinic_id' => $clinic->id,
+        'doctor_id' => $doctor->id,
+        'starts_at' => Carbon::parse("{$date} 13:00:00", 'Europe/Istanbul')->utc(),
+        'ends_at' => Carbon::parse("{$date} 14:00:00", 'Europe/Istanbul')->utc(),
+        'reason' => 'İzin',
+    ]);
+
+    // The default scope only lists ACTIVE doctors, so a departed doctor's rows are reached
+    // through an explicit doctor filter (a stale filter in the URL does exactly this).
+    $url = calEventsUrl(['doctor_id' => (string) $doctor->id]);
+
+    $before = $this->actingAs($owner)->getJson($url)->assertOk()->json();
+
+    expect($before['data'][0]['doctor_is_deleted'])->toBeFalse()
+        ->and($before['exceptions'][0]['doctor_is_deleted'])->toBeFalse();
+
+    $name = $doctor->display_name;
+    $doctor->delete();
+
+    $after = $this->actingAs($owner)->getJson($url)->assertOk()->json();
+
+    expect($after['data'])->toHaveCount(1)
+        ->and($after['data'][0]['doctor_name'])->toBe($name)
+        ->and($after['data'][0]['doctor_is_deleted'])->toBeTrue()
+        ->and($after['exceptions'])->toHaveCount(1)
+        ->and($after['exceptions'][0]['doctor_name'])->toBe($name)
+        ->and($after['exceptions'][0]['doctor_is_deleted'])->toBeTrue();
+});

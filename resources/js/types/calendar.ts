@@ -30,12 +30,16 @@ export type CalendarEventDto = {
     id: number;
     doctor_id: number;
     doctor_name: string;
+    /** The row outlives its doctor: a soft-deleted one is named with a badge. */
+    doctor_is_deleted: boolean;
     /** Owning branch — start/end are formatted in THIS clinic's timezone, not the active one. */
     clinic_id: number;
     clinic_name: string;
     title: string;
     /** Patient the popover title links to. */
     patient_id: number;
+    /** Soft-deleted patient: the popover shows the name unlinked, with a badge. */
+    patient_is_deleted: boolean;
     start: string;
     end: string;
     /** ISO 8601 UTC instant of `start` — what the past/future action rules compare against. */
@@ -54,6 +58,8 @@ export type CalendarExceptionDto = {
     id: number;
     doctor_id: number;
     doctor_name: string;
+    /** The row outlives its doctor: a soft-deleted one is named with a badge. */
+    doctor_is_deleted: boolean;
     start: string;
     end: string;
     reason: string | null;

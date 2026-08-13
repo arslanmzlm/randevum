@@ -351,7 +351,7 @@ it('response items carry the full DTO shape and starts_at is ISO-8601', function
         ->json('data.0');
 
     expect($item)->toHaveKeys([
-        'id', 'patient_id', 'patient_name',
+        'id', 'patient_id', 'patient_name', 'patient_is_deleted',
         'doctor_id', 'doctor_name', 'service_name',
         'appointment_type', 'status', 'is_walk_in', 'starts_at',
     ]);
@@ -545,4 +545,65 @@ it('shared prop includes all expected DTO keys', function (): void {
             ->has('upcomingAppointments.0.is_walk_in')
             ->has('upcomingAppointments.0.starts_at')
         );
+});
+
+// ---------------------------------------------------------------------------
+// Soft-deleted patient — the upcoming row outlives the patient
+// ---------------------------------------------------------------------------
+
+it('keeps an upcoming appointment whose patient is soft-deleted and flags patient_is_deleted', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    uaRole($owner, 'owner', $clinic->id);
+
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id]);
+    $patient = Patient::factory()->create([
+        'clinic_id' => $clinic->id,
+        'first_name' => 'Zeynep',
+        'last_name' => 'Kaya',
+    ]);
+
+    $appointment = uaFutureAppointment($clinic, $doctor, $patient);
+
+    $this->actingAs($owner)
+        ->get(route('appointments.upcoming', ['limit' => 5]))
+        ->assertOk()
+        ->assertJsonPath('data.0.patient_is_deleted', false);
+
+    $patient->delete();
+
+    $this->actingAs($owner)
+        ->get(route('appointments.upcoming', ['limit' => 5]))
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $appointment->id)
+        ->assertJsonPath('data.0.patient_name', 'Zeynep Kaya')
+        ->assertJsonPath('data.0.patient_is_deleted', true);
+});
+
+it('keeps an upcoming appointment whose doctor is soft-deleted and flags doctor_is_deleted', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    uaRole($owner, 'owner', $clinic->id);
+
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id]);
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+
+    $appointment = uaFutureAppointment($clinic, $doctor, $patient);
+
+    $this->actingAs($owner)
+        ->get(route('appointments.upcoming', ['limit' => 5]))
+        ->assertOk()
+        ->assertJsonPath('data.0.doctor_is_deleted', false);
+
+    $name = $doctor->display_name;
+    $doctor->delete();
+
+    $this->actingAs($owner)
+        ->get(route('appointments.upcoming', ['limit' => 5]))
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $appointment->id)
+        ->assertJsonPath('data.0.doctor_name', $name)
+        ->assertJsonPath('data.0.doctor_is_deleted', true);
 });

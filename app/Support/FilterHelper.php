@@ -75,16 +75,44 @@ class FilterHelper
      */
     public function searchRelation(string $relation, string|array ...$fields): self
     {
+        return $this->applySearchRelation($relation, $fields, withTrashed: false);
+    }
+
+    /**
+     * searchRelation() over a relation whose rows may be soft-deleted — for a list that keeps
+     * showing a row after its related record is trashed (a treatment/appointment outlives its
+     * patient), so searching by that name must still find it.
+     *
+     * Opt-in per caller rather than automatic: withTrashed() only exists on a SoftDeletes model,
+     * and including trashed rows is a list-specific decision, not a property of every relation.
+     *
+     * @param  string|list<string>  ...$fields
+     * @return self<TModel>
+     */
+    public function searchRelationWithTrashed(string $relation, string|array ...$fields): self
+    {
+        return $this->applySearchRelation($relation, $fields, withTrashed: true);
+    }
+
+    /**
+     * @param  list<string|list<string>>  $fields
+     * @return self<TModel>
+     */
+    private function applySearchRelation(string $relation, array $fields, bool $withTrashed): self
+    {
         $term = request()->input('filter.search');
 
         if (blank($term) || ! is_string($term) || $fields === []) {
             return $this;
         }
 
-        $this->query->whereHas(
-            $relation,
-            fn (Builder $query) => $this->applyLike($query, $fields, $term),
-        );
+        $this->query->whereHas($relation, function (Builder $query) use ($fields, $term, $withTrashed): void {
+            if ($withTrashed) {
+                $query->withTrashed();
+            }
+
+            $this->applyLike($query, $fields, $term);
+        });
 
         return $this;
     }

@@ -2,7 +2,7 @@
 import { Head, useForm, useHttp } from '@inertiajs/vue3';
 import { IconCircleCheck, IconClipboardList } from '@tabler/icons-vue';
 import { useConfirm } from 'primevue/useconfirm';
-import { computed, reactive } from 'vue';
+import { computed, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import {
     bulkPrecheck,
@@ -19,6 +19,7 @@ import FormField from '@/components/FormField.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import SectionCard from '@/components/SectionCard.vue';
 import { useCan } from '@/composables/useCan';
+import { useRestorablePatient } from '@/composables/useRestorablePatient';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { index } from '@/routes/appointments';
 import type {
@@ -113,6 +114,13 @@ const form = useForm<BulkAppointmentFormData>({
 provideBulkAppointmentForm(form);
 // Narrow patient slice shared with the PatientPicker (same component the create page uses).
 providePatientForm(form);
+
+// A new-patient phone that belongs to a soft-deleted record bounces back with a restore prompt.
+const patientPicker = ref<InstanceType<typeof PatientPicker>>();
+
+useRestorablePatient(form, (patient) =>
+    patientPicker.value?.selectPatient(patient),
+);
 
 // Without permission to book for others, the doctor select is locked to the user's own profile.
 const doctorLocked = computed(() => !can('appointments.assignDoctor'));
@@ -237,7 +245,10 @@ async function submit(): Promise<void> {
                  date/time section is bulk-specific (the occurrence generator below), so this card
                  carries two columns — patient + appointment details — instead of three. -->
             <AppointmentTopCard :columns="2">
-                <PatientPicker :preselected-patient="preselectedPatient" />
+                <PatientPicker
+                    ref="patientPicker"
+                    :preselected-patient="preselectedPatient"
+                />
 
                 <div
                     class="py-6 first:pt-0 last:pb-0 lg:px-6 lg:py-0 lg:first:pl-0 lg:last:pr-0"

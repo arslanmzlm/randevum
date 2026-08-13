@@ -12,13 +12,14 @@ import {
 import { computed, nextTick, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import AppointmentStatusTag from '@/components/AppointmentStatusTag.vue';
+import PatientNameLink from '@/components/patients/PatientNameLink.vue';
+import RecordName from '@/components/RecordName.vue';
 import { useAppointmentActionMenu } from '@/composables/useAppointmentActionMenu';
 import type { AppointmentActionTarget } from '@/composables/useAppointmentActionMenu';
 import type { AppointmentActions } from '@/composables/useAppointmentActions';
 import { useDateTime } from '@/composables/useDateTime';
 import type { TreatmentActions } from '@/composables/useTreatmentActions';
 import { show as appointmentShow } from '@/routes/appointments';
-import { show as patientShow } from '@/routes/patients';
 import type { CalendarEventDto } from '@/types/calendar';
 
 // Summary of a clicked appointment, anchored to its chip. The lifecycle actions (edit / cancel /
@@ -99,6 +100,7 @@ const rows = computed(() => {
             icon: IconStethoscope,
             label: t('calendar.popover.doctor'),
             value: a.doctor_name,
+            deleted: a.doctor_is_deleted,
         },
         {
             icon: IconClockHour4,
@@ -126,12 +128,12 @@ const rows = computed(() => {
             <header class="flex flex-col gap-2">
                 <div class="flex min-w-0 items-center gap-2">
                     <IconUser class="size-5 shrink-0 text-surface-400" />
-                    <Link
-                        :href="patientShow(appointment.patient_id).url"
-                        class="truncate font-semibold text-primary-600 transition-colors hover:text-primary-700 hover:underline"
-                    >
-                        {{ appointment.title }}
-                    </Link>
+                    <PatientNameLink
+                        :id="appointment.patient_id"
+                        :name="appointment.title"
+                        :deleted="appointment.patient_is_deleted"
+                        class="truncate font-semibold"
+                    />
                 </div>
                 <!-- Status (+ walk-in) on their own row so a long label can't squeeze the name. -->
                 <div class="flex flex-wrap items-center gap-2">
@@ -165,7 +167,11 @@ const rows = computed(() => {
                             :style="{ backgroundColor: row.color }"
                             aria-hidden="true"
                         />
-                        <span class="truncate">{{ row.value }}</span>
+                        <RecordName
+                            :name="row.value ?? ''"
+                            :deleted="row.deleted ?? false"
+                            text-class="truncate"
+                        />
                     </dd>
                 </div>
             </dl>

@@ -641,6 +641,32 @@ it('preview excludes Arrived, Completed, and Cancelled statuses', function (): v
     $response->assertJsonPath('appointments.0.id', $eligible->id);
 });
 
+it('preview still resolves the patient name when the patient has been soft-deleted', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    bkRole($owner, 'owner', $clinic->id);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+    $patient = Patient::factory()->create([
+        'clinic_id' => $clinic->id,
+        'first_name' => 'Silinmiş',
+        'last_name' => 'Hasta',
+    ]);
+
+    bkAppointment($clinic, $doctor, $patient, bkTargetDate(), ['status' => AppointmentStatus::Confirmed]);
+    $patient->delete();
+
+    // A null patient relation would raise "Attempt to read property on null" → 500, not 200.
+    $this->actingAs($owner)
+        ->getJson(route('appointments.bulk-cancel.preview', [
+            'start_date' => bkTargetDate(),
+            'end_date' => bkTargetDate(),
+        ]))
+        ->assertOk()
+        ->assertJson(['count' => 1])
+        ->assertJsonPath('appointments.0.patient_name', 'Silinmiş Hasta');
+});
+
 it('preview rejects a range greater than 31 days with 422', function (): void {
     $clinic = Clinic::factory()->create();
     $owner = User::factory()->create();

@@ -9,7 +9,7 @@ export type CaseListItem = {
     title: string;
     status: CaseStatus;
     patient: { id: number; full_name: string; is_deleted: boolean };
-    doctor: { id: number; display_name: string };
+    doctor: { id: number; display_name: string; is_deleted: boolean };
     treatments_count: number;
     /** ISO 8601 UTC timestamp. */
     opened_at: string;
@@ -63,7 +63,7 @@ export type CaseDetail = {
     closed_at: string | null;
     suspended_at: string | null;
     patient: { id: number; full_name: string; is_deleted: boolean };
-    doctor: { id: number; display_name: string };
+    doctor: { id: number; display_name: string; is_deleted: boolean };
     treatments: CaseTreatmentItem[];
     /** Open rows first (due_date asc), then done/cancelled newest-completed-first. */
     follow_ups: CaseFollowUpItem[];
@@ -79,6 +79,8 @@ export type UngroupedTreatmentItem = {
     completed_at: string | null;
     doctor_id: number;
     doctor_name: string;
+    /** The row outlives its doctor: a soft-deleted one is named with a badge. */
+    doctor_is_deleted: boolean;
     total_amount: string;
 };
 

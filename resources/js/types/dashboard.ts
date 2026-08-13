@@ -14,7 +14,7 @@ export type FollowUpReminder = {
         is_deleted: boolean;
     };
     /** Comes from the linked case; null when the follow-up has none. */
-    doctor: { id: number; display_name: string } | null;
+    doctor: { id: number; display_name: string; is_deleted: boolean } | null;
     /** null only when the type row was deleted. */
     type: FollowUpTypeOption | null;
     /** ISO date (Y-m-d), tz-less calendar date. */
@@ -29,8 +29,12 @@ export type TodayScheduleRow = {
     id: number;
     patient_id: number;
     patient_name: string;
+    /** The row outlives its patient: a soft-deleted one is shown unlinked, with a badge. */
+    patient_is_deleted: boolean;
     doctor_id: number;
     doctor_name: string;
+    /** The row outlives its doctor: a soft-deleted one is named with a badge. */
+    doctor_is_deleted: boolean;
     service_name: string | null;
     status: AppointmentStatus;
     is_walk_in: boolean;

@@ -494,6 +494,70 @@ it('searchRelation ignores empty search and returns all records', function (): v
     expect($result->total())->toBe(3);
 });
 
+it('searchRelation does not match a record whose related model is soft-deleted', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id, 'first_name' => 'Ahmet', 'phone' => '05311111111']);
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id]);
+
+    Appointment::factory()->create(['clinic_id' => $clinic->id, 'patient_id' => $patient->id, 'doctor_id' => $doctor->id]);
+
+    $patient->delete();
+
+    request()->replace(['filter' => ['search' => 'Ahmet']]);
+
+    $result = FilterHelper::for(Appointment::class)
+        ->searchRelation('patient', 'first_name', 'last_name', 'phone')
+        ->paginate();
+
+    expect($result->total())->toBe(0);
+});
+
+it('searchRelationWithTrashed matches a record whose related model is soft-deleted', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+
+    $deleted = Patient::factory()->create(['clinic_id' => $clinic->id, 'first_name' => 'Ahmet', 'phone' => '05311111111']);
+    $other = Patient::factory()->create(['clinic_id' => $clinic->id, 'first_name' => 'Fatma', 'phone' => '05322222222']);
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id]);
+
+    $match = Appointment::factory()->create(['clinic_id' => $clinic->id, 'patient_id' => $deleted->id, 'doctor_id' => $doctor->id]);
+    Appointment::factory()->create(['clinic_id' => $clinic->id, 'patient_id' => $other->id, 'doctor_id' => $doctor->id]);
+
+    $deleted->delete();
+
+    request()->replace(['filter' => ['search' => 'Ahmet']]);
+
+    $result = FilterHelper::for(Appointment::class)
+        ->searchRelationWithTrashed('patient', 'first_name', 'last_name', 'phone')
+        ->paginate();
+
+    expect($result->total())->toBe(1)
+        ->and($result->items()[0]->id)->toBe($match->id);
+});
+
+it('searchRelationWithTrashed keeps the relation clinic-scoped', function (): void {
+    $clinicA = Clinic::factory()->create();
+    $clinicB = Clinic::factory()->create();
+
+    app(ClinicContext::class)->set($clinicB->id);
+    $patientB = Patient::factory()->create(['clinic_id' => $clinicB->id, 'first_name' => 'Ahmet', 'phone' => '05311111111']);
+    $doctorB = Doctor::factory()->create(['clinic_id' => $clinicB->id]);
+    Appointment::factory()->create(['clinic_id' => $clinicB->id, 'patient_id' => $patientB->id, 'doctor_id' => $doctorB->id]);
+    $patientB->delete();
+
+    app(ClinicContext::class)->set($clinicA->id);
+
+    request()->replace(['filter' => ['search' => 'Ahmet']]);
+
+    $result = FilterHelper::for(Appointment::class)
+        ->searchRelationWithTrashed('patient', 'first_name', 'last_name', 'phone')
+        ->paginate();
+
+    expect($result->total())->toBe(0);
+});
+
 // ---------------------------------------------------------------------------
 // requestState() — 'array' and 'date' filter types
 // ---------------------------------------------------------------------------

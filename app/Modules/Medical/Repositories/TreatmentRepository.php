@@ -52,7 +52,9 @@ class TreatmentRepository
             ->when($doctorIds !== null, fn ($q) => $q->whereIn('doctor_id', $doctorIds));
 
         $helper = FilterHelper::for($query)
-            ->searchRelation('patient', ['first_name', 'last_name'], 'first_name', 'last_name', 'phone')
+            // WithTrashed: the row stays listed (and named) after the patient is soft-deleted,
+            // so it must stay findable by that name too.
+            ->searchRelationWithTrashed('patient', ['first_name', 'last_name'], 'first_name', 'last_name', 'phone')
             ->enumMultiple(['status' => TreatmentStatus::class])
             ->multiple('doctor_id')
             ->multipleRelation('serviceLines', 'service_id')
@@ -123,7 +125,8 @@ class TreatmentRepository
             ->whereNull('case_id')
             ->where('status', TreatmentStatus::Completed->value)
             ->with([
-                'doctor.user',
+                // withTrashed(): the treatment outlives its doctor — the dialog row still needs a name.
+                'doctor' => fn ($q) => $q->withTrashed()->with('user'),
                 'serviceLines' => fn ($q) => $q->orderBy('sort_order')->limit(1),
                 'serviceLines.service',
             ])
@@ -142,7 +145,8 @@ class TreatmentRepository
         return Treatment::where('patient_id', $patient->id)
             ->when($doctorId !== null, fn ($q) => $q->forDoctor($doctorId))
             ->with([
-                'doctor.user',
+                // withTrashed(): the history row outlives its doctor's soft-delete.
+                'doctor' => fn ($q) => $q->withTrashed()->with('user'),
                 'case:id,title',
                 'serviceLines' => fn ($q) => $q->orderBy('sort_order')->limit(1),
                 'serviceLines.service',

@@ -3,6 +3,8 @@ export type ScheduleException = {
     id: number;
     doctor_id: number;
     doctor_name: string;
+    /** The row outlives its doctor: a soft-deleted one is named with a badge. */
+    doctor_is_deleted: boolean;
     /** ISO 8601 UTC. */
     starts_at: string;
     /** ISO 8601 UTC. */

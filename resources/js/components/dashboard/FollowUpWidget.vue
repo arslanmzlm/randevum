@@ -12,6 +12,7 @@ import DashboardPanel from '@/components/dashboard/DashboardPanel.vue';
 import FollowUpCompleteDialog from '@/components/follow-ups/FollowUpCompleteDialog.vue';
 import FollowUpFormDialog from '@/components/follow-ups/FollowUpFormDialog.vue';
 import PatientNameLink from '@/components/patients/PatientNameLink.vue';
+import RecordName from '@/components/RecordName.vue';
 import { useCan } from '@/composables/useCan';
 import { useDateTime } from '@/composables/useDateTime';
 import type { FollowUpReminder } from '@/types/dashboard';
@@ -138,9 +139,12 @@ function markCalled(row: FollowUpReminder): void {
 
                 <Column :header="t('dashboard.follow_ups.columns.doctor')">
                     <template #body="{ data }">
-                        <span v-if="data.doctor" class="text-surface-700">
-                            {{ data.doctor.display_name }}
-                        </span>
+                        <RecordName
+                            v-if="data.doctor"
+                            :name="data.doctor.display_name"
+                            :deleted="data.doctor.is_deleted"
+                            text-class="truncate text-surface-700"
+                        />
                         <span v-else class="text-surface-400">—</span>
                     </template>
                 </Column>

@@ -12,6 +12,7 @@ import { providePatientForm } from '@/components/appointments/patientFormContext
 import PatientPicker from '@/components/appointments/PatientPicker.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import { useCan } from '@/composables/useCan';
+import { useRestorablePatient } from '@/composables/useRestorablePatient';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { store } from '@/routes/appointments';
 import type {
@@ -77,6 +78,13 @@ const form = useForm<AppointmentFormData>({
 provideAppointmentForm(form);
 // Narrow patient slice shared with the PatientPicker (same component the bulk page uses).
 providePatientForm(form);
+
+// A new-patient phone that belongs to a soft-deleted record bounces back with a restore prompt.
+const patientPicker = ref<InstanceType<typeof PatientPicker>>();
+
+useRestorablePatient(form, (patient) =>
+    patientPicker.value?.selectPatient(patient),
+);
 
 // Mirrors the backend resolveDuration priority: service duration → appointment-type
 // default → clinic default. Editing the duration field afterward is the explicit override.
@@ -144,7 +152,10 @@ function submit(): void {
 
         <form novalidate class="flex flex-col gap-6" @submit.prevent="submit">
             <AppointmentTopCard :columns="3">
-                <PatientPicker :preselected-patient="preselectedPatient" />
+                <PatientPicker
+                    ref="patientPicker"
+                    :preselected-patient="preselectedPatient"
+                />
                 <DateTimeFields />
                 <AppointmentDetailsFields
                     :doctor-options="doctorOptions"

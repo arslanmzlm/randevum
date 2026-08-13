@@ -94,7 +94,7 @@
             font-weight: 600;
         }
 
-        .patient-deleted-badge {
+        .deleted-badge {
             font-size: 9px;
             font-weight: 700;
             color: #b91c1c;
@@ -215,13 +215,19 @@
                 {{ $patient['fullName'] }}
                 @if ($patient['deleted'])
                     <span
-                        class="patient-deleted-badge">{{ __('treatment.report.patient_deleted') }}</span>
+                        class="deleted-badge">{{ __('treatment.report.deleted_record') }}</span>
                 @endif
             </div>
         </div>
         <div class="party">
             <div class="party-label">{{ __('treatment.report.doctor') }}</div>
-            <div class="party-value">{{ $doctor['displayName'] }}</div>
+            <div class="party-value">
+                {{ $doctor['displayName'] }}
+                @if ($doctor['deleted'])
+                    <span
+                        class="deleted-badge">{{ __('treatment.report.deleted_record') }}</span>
+                @endif
+            </div>
         </div>
     </div>
 

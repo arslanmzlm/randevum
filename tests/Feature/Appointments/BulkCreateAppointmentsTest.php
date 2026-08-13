@@ -413,6 +413,22 @@ it('rejects a cross-clinic patient_id', function (): void {
         ->assertSessionHasErrors('patient_id');
 });
 
+it('rejects a soft-deleted patient_id', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    bcRole($owner, 'owner', $clinic->id);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+    $patient->delete();
+
+    $this->actingAs($owner)
+        ->post(route('appointments.bulk-create.store'), bcPayload($doctor->id, $patient->id))
+        ->assertSessionHasErrors('patient_id');
+
+    expect(Appointment::withoutGlobalScopes()->where('clinic_id', $clinic->id)->exists())->toBeFalse();
+});
+
 it('rejects a cross-clinic doctor_id', function (): void {
     $clinic = Clinic::factory()->create();
     $owner = User::factory()->create();
@@ -596,4 +612,119 @@ it('clinic-A actor cannot book against clinic-B patient/doctor, and created rows
     }
 
     expect(Appointment::withoutGlobalScopes()->where('clinic_id', $clinicB->id)->exists())->toBeFalse();
+});
+
+// ---------------------------------------------------------------------------
+// Inline new patient reusing a soft-deleted patient's phone
+// ---------------------------------------------------------------------------
+
+it('offers to restore the soft-deleted patient when the bulk new patient reuses their phone', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    bcRole($owner, 'owner', $clinic->id);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+
+    $trashed = Patient::factory()->trashed()->create([
+        'clinic_id' => $clinic->id,
+        'first_name' => 'Silinen',
+        'last_name' => 'Hasta',
+        'phone' => '05312345678',
+    ]);
+
+    $this->actingAs($owner)
+        ->post(route('appointments.bulk-create.store'), bcPayload($doctor->id, 0, [
+            'patient_mode' => 'new',
+            'patient_id' => null,
+            'new_patient' => [
+                'first_name' => 'Toplu',
+                'last_name' => 'Hasta',
+                'phone' => '05312345678',
+                'email' => null,
+            ],
+        ]))
+        ->assertRedirect()
+        ->assertSessionHas('restorable_patient', fn ($value) => $value['id'] === $trashed->id &&
+            $value['full_name'] === 'Silinen Hasta'
+        );
+
+    expect(Appointment::withoutGlobalScopes()->where('clinic_id', $clinic->id)->exists())->toBeFalse();
+    expect(Patient::withoutGlobalScopes()->where('first_name', 'Toplu')->exists())->toBeFalse();
+});
+
+it('keeps the submitted bulk form input when it bounces back with the restore offer', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    bcRole($owner, 'owner', $clinic->id);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+
+    Patient::factory()->trashed()->create([
+        'clinic_id' => $clinic->id,
+        'phone' => '05312345678',
+    ]);
+
+    $this->actingAs($owner)
+        ->post(route('appointments.bulk-create.store'), bcPayload($doctor->id, 0, [
+            'patient_mode' => 'new',
+            'patient_id' => null,
+            'new_patient' => [
+                'first_name' => 'Toplu',
+                'last_name' => 'Hasta',
+                'phone' => '05312345678',
+                'email' => null,
+            ],
+            'occurrences' => bcOccurrences([bcSlot(0), bcSlot(1)]),
+        ]))
+        ->assertSessionHas('restorable_patient')
+        ->assertSessionHasInput('doctor_id', $doctor->id)
+        ->assertSessionHasInput('new_patient.first_name', 'Toplu')
+        ->assertSessionHasInput('occurrences.0.starts_at', bcSlot(0))
+        ->assertSessionHasInput('occurrences.1.starts_at', bcSlot(1));
+});
+
+it('does not offer another clinic\'s soft-deleted patient for restore in bulk booking', function (): void {
+    $clinicA = Clinic::factory()->create();
+    $clinicB = Clinic::factory()->create();
+
+    $ownerA = User::factory()->create();
+    bcRole($ownerA, 'owner', $clinicA->id);
+
+    $doctorUser = User::factory()->create();
+    $doctorA = Doctor::factory()->create(['clinic_id' => $clinicA->id, 'user_id' => $doctorUser->id]);
+
+    // Same phone, but the soft-deleted row belongs to clinic B — phone uniqueness is per clinic.
+    Patient::factory()->trashed()->create([
+        'clinic_id' => $clinicB->id,
+        'first_name' => 'Baska',
+        'last_name' => 'Klinik',
+        'phone' => '05312345678',
+    ]);
+
+    $this->actingAs($ownerA)
+        ->post(route('appointments.bulk-create.store'), bcPayload($doctorA->id, 0, [
+            'patient_mode' => 'new',
+            'patient_id' => null,
+            'new_patient' => [
+                'first_name' => 'Toplu',
+                'last_name' => 'Hasta',
+                'phone' => '05312345678',
+                'email' => null,
+            ],
+            'occurrences' => bcOccurrences([bcSlot(0), bcSlot(1)]),
+        ]))
+        ->assertSessionMissing('restorable_patient')
+        ->assertRedirect(route('appointments.bulk-create'));
+
+    $patient = Patient::withoutGlobalScopes()
+        ->where('clinic_id', $clinicA->id)
+        ->where('first_name', 'Toplu')
+        ->first();
+
+    expect($patient)->not->toBeNull();
+    expect(Appointment::withoutGlobalScopes()
+        ->where('clinic_id', $clinicA->id)
+        ->where('patient_id', $patient->id)
+        ->count()
+    )->toBe(2);
 });

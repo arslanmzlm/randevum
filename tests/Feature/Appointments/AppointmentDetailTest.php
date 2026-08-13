@@ -324,9 +324,8 @@ it('does not 500 and still shows names when the appointment\'s patient and docto
     $owner = User::factory()->create();
     adRole($owner, 'owner', $clinic->id);
 
-    // starts_at in the past: keeps this appointment out of the "upcoming appointments" header
-    // widget's own soft-delete gap (a separate, out-of-scope bug in AppointmentService::upcomingFor),
-    // so this test isolates the /appointments/{id} fix under review.
+    // starts_at in the past keeps this appointment out of the "upcoming appointments" header
+    // widget, so the test isolates the /appointments/{id} page itself.
     $appointment = adAppointment($clinic, $doctor, $patient, [
         'starts_at' => now()->subDay(),
         'ends_at' => now()->subDay()->addMinutes(30),
@@ -341,5 +340,55 @@ it('does not 500 and still shows names when the appointment\'s patient and docto
         ->assertInertia(fn ($page) => $page
             ->where('appointment.patient_name', trim($patient->first_name.' '.$patient->last_name))
             ->where('appointment.doctor_name', $doctor->display_name)
+        );
+});
+
+it('the appointment detail carries patient_is_deleted true for a soft-deleted patient', function (): void {
+    ['clinic' => $clinic, 'doctor' => $doctor, 'patient' => $patient] = adDoctorSetup();
+    $owner = User::factory()->create();
+    adRole($owner, 'owner', $clinic->id);
+
+    $appointment = adAppointment($clinic, $doctor, $patient, [
+        'starts_at' => now()->subDay(),
+        'ends_at' => now()->subDay()->addMinutes(30),
+    ]);
+
+    $this->actingAs($owner)
+        ->get(route('appointments.show', $appointment))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('appointment.patient_is_deleted', false));
+
+    $patient->delete();
+
+    $this->actingAs($owner)
+        ->get(route('appointments.show', $appointment))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('appointment.patient_is_deleted', true));
+});
+
+it('the appointment detail carries doctor_is_deleted true for a soft-deleted doctor', function (): void {
+    ['clinic' => $clinic, 'doctor' => $doctor, 'patient' => $patient] = adDoctorSetup();
+    $owner = User::factory()->create();
+    adRole($owner, 'owner', $clinic->id);
+
+    $appointment = adAppointment($clinic, $doctor, $patient, [
+        'starts_at' => now()->subDay(),
+        'ends_at' => now()->subDay()->addMinutes(30),
+    ]);
+
+    $this->actingAs($owner)
+        ->get(route('appointments.show', $appointment))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('appointment.doctor_is_deleted', false));
+
+    $name = $doctor->display_name;
+    $doctor->delete();
+
+    $this->actingAs($owner)
+        ->get(route('appointments.show', $appointment))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('appointment.doctor_is_deleted', true)
+            ->where('appointment.doctor_name', $name)
         );
 });

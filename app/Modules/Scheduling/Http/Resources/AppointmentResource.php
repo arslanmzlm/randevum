@@ -24,8 +24,14 @@ class AppointmentResource extends JsonResource
             'id' => $this->id,
             'patient_id' => $this->patient_id,
             'patient_name' => trim($this->patient->first_name.' '.$this->patient->last_name),
+            // Flat sibling of patient_id/patient_name (this payload has no nested patient object,
+            // unlike the treatment/case resources): the row outlives a soft-deleted patient, so
+            // the UI needs to mark the name as belonging to a deleted record.
+            'patient_is_deleted' => $this->patient->trashed(),
             'doctor_id' => $this->doctor_id,
             'doctor_name' => $this->doctor->display_name,
+            // Flat, like patient_is_deleted above: the row outlives a soft-deleted doctor.
+            'doctor_is_deleted' => $this->doctor->trashed(),
             'service_name' => $this->service?->name,
             'appointment_type' => $this->appointmentType
                 ? ['name' => $this->appointmentType->name, 'color' => $this->appointmentType->color]

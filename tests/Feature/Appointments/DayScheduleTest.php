@@ -225,6 +225,29 @@ it('each entry includes id, start_time, end_time, status, is_walk_in, patient_na
         ->and($entry['service_name'])->toBeNull();
 });
 
+it('still resolves the patient name when the patient has been soft-deleted', function (): void {
+    $clinic = Clinic::factory()->create(['timezone' => 'Europe/Istanbul']);
+    $owner = User::factory()->create();
+    dsRole($owner, 'owner', $clinic->id);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+    $patient = Patient::factory()->create([
+        'clinic_id' => $clinic->id,
+        'first_name' => 'Silinmiş',
+        'last_name' => 'Hasta',
+    ]);
+
+    dsMakeAppointment($clinic, $doctor, $patient, 10, 11);
+    $patient->delete();
+
+    // A null patient relation would raise "Attempt to read property on null" → 500, not 200.
+    $response = $this->actingAs($owner)
+        ->getJson(route('appointments.day-schedule', ['doctor_id' => $doctor->id, 'date' => dsNextMonday()]))
+        ->assertOk();
+
+    expect($response->json('data.0.patient_name'))->toBe('Silinmiş Hasta');
+});
+
 it('returns the service name when the appointment has a service, null otherwise', function (): void {
     $clinic = Clinic::factory()->create(['timezone' => 'Europe/Istanbul']);
     $owner = User::factory()->create();

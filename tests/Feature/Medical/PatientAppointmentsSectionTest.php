@@ -5,6 +5,7 @@ use App\Models\Appointment;
 use App\Models\Clinic;
 use App\Models\Doctor;
 use App\Models\Patient;
+use App\Models\Treatment;
 use App\Models\User;
 use App\Support\ClinicContext;
 use Database\Seeders\PermissionSeeder;
@@ -120,4 +121,44 @@ it('another patient\'s appointments never appear on the page', function (): void
         ->get(route('patients.show', $patient))
         ->assertOk()
         ->assertInertia(fn ($page) => $page->has('appointments', 0));
+});
+
+it('the patient page flags doctor_is_deleted on appointment and treatment rows', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    pasRole($owner, 'owner', $clinic->id);
+
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id]);
+
+    pasAppointment($clinic, $patient, $doctor, now()->subDays(5)->toDateTimeString());
+
+    Treatment::factory()->create([
+        'clinic_id' => $clinic->id,
+        'patient_id' => $patient->id,
+        'doctor_id' => $doctor->id,
+    ]);
+
+    $this->actingAs($owner)
+        ->get(route('patients.show', $patient))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('appointments.0.doctor_is_deleted', false)
+            ->where('treatments.0.doctor_is_deleted', false)
+        );
+
+    $name = $doctor->display_name;
+    $doctor->delete();
+
+    $this->actingAs($owner)
+        ->get(route('patients.show', $patient))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('appointments', 1)
+            ->where('appointments.0.doctor_name', $name)
+            ->where('appointments.0.doctor_is_deleted', true)
+            ->has('treatments', 1)
+            ->where('treatments.0.doctor_name', $name)
+            ->where('treatments.0.doctor_is_deleted', true)
+        );
 });

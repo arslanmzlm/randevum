@@ -52,6 +52,14 @@ const patientInvalid = computed(
 function clearPatient(): void {
     selectedPatient.value = null;
 }
+
+// Lets the page pick a patient the user never searched for — the restore-on-reuse flow, where a
+// soft-deleted patient is brought back and has to land on the existing-patient side.
+defineExpose({
+    selectPatient(patient: PatientSearchResult): void {
+        selectedPatient.value = patient;
+    },
+});
 </script>
 
 <template>

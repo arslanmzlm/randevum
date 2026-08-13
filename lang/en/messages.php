@@ -41,6 +41,7 @@ return [
         'delete_blocked_cases' => ':count open case(s)',
         'delete_blocked_appointments' => ':count upcoming appointment(s)',
         'delete_blocked_follow_ups' => ':count pending follow-up(s)',
+        'delete_blocked_balance' => 'an unsettled balance of :amount',
         'delete_blocked_suffix' => 'still open. Resolve these first.',
     ],
 

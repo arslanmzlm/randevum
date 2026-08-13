@@ -391,3 +391,36 @@ it('GET process redirects a completed treatment to the show page', function (): 
         ->get(route('treatments.process', $treatment))
         ->assertRedirect(route('treatments.show', $treatment));
 });
+
+it('flags treatment.doctor.is_deleted on the process and show screens for a soft-deleted doctor', function (): void {
+    ['owner' => $owner, 'appointment' => $appointment, 'clinic' => $clinic,
+        'doctor' => $doctor, 'patient' => $patient] = stSetup(AppointmentStatus::Arrived);
+
+    $treatment = stDraftTreatment($clinic, $appointment, $patient, $doctor, $owner);
+
+    $this->actingAs($owner)
+        ->get(route('treatments.process', $treatment))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('treatment.doctor.is_deleted', false));
+
+    $name = $doctor->display_name;
+    $doctor->delete();
+
+    $this->actingAs($owner)
+        ->get(route('treatments.process', $treatment))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('treatment.doctor.display_name', $name)
+            ->where('treatment.doctor.is_deleted', true)
+        );
+
+    $treatment->update(['status' => TreatmentStatus::Completed, 'completed_at' => now()]);
+
+    $this->actingAs($owner)
+        ->get(route('treatments.show', $treatment))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('treatment.doctor.display_name', $name)
+            ->where('treatment.doctor.is_deleted', true)
+        );
+});

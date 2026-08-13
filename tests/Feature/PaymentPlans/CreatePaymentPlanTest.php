@@ -262,6 +262,45 @@ it('rejects a plan whose installment sequences are not contiguous 1..N', functio
 });
 
 // ---------------------------------------------------------------------------
+// Deleted / foreign patients
+// ---------------------------------------------------------------------------
+
+it('rejects a plan opened for a soft-deleted patient', function (): void {
+    ['owner' => $owner, 'patient' => $patient] = cppSetup();
+
+    $patient->delete();
+
+    $this->actingAs($owner)
+        ->post(route('payment-plans.store'), cppPayload($patient->id))
+        ->assertSessionHasErrors('patient_id');
+
+    expect(PaymentPlan::withoutGlobalScopes()->where('patient_id', $patient->id)->exists())->toBeFalse();
+});
+
+it('accepts a plan for the same patient while the record is live', function (): void {
+    ['owner' => $owner, 'patient' => $patient] = cppSetup();
+
+    $this->actingAs($owner)
+        ->post(route('payment-plans.store'), cppPayload($patient->id))
+        ->assertSessionHasNoErrors();
+
+    expect(PaymentPlan::withoutGlobalScopes()->where('patient_id', $patient->id)->exists())->toBeTrue();
+});
+
+it("rejects a plan opened for another clinic's patient", function (): void {
+    ['owner' => $owner] = cppSetup();
+
+    $clinicB = Clinic::factory()->create();
+    $patientB = Patient::factory()->create(['clinic_id' => $clinicB->id]);
+
+    $this->actingAs($owner)
+        ->post(route('payment-plans.store'), cppPayload($patientB->id))
+        ->assertSessionHasErrors('patient_id');
+
+    expect(PaymentPlan::withoutGlobalScopes()->where('patient_id', $patientB->id)->exists())->toBeFalse();
+});
+
+// ---------------------------------------------------------------------------
 // Treatment-Process entry point (PaymentSection "installment" mode)
 // ---------------------------------------------------------------------------
 

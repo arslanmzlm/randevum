@@ -137,6 +137,7 @@ class PatientController extends Controller
             'title' => $t->serviceLines->first()?->service?->name,
             'total_amount' => $t->total_amount,
             'doctor_name' => $t->doctor->display_name,
+            'doctor_is_deleted' => $t->doctor->trashed(),
             'doctor_id' => (int) $t->doctor_id,
             'case_id' => $t->case_id !== null ? (int) $t->case_id : null,
             'case_title' => $t->case?->title,
@@ -153,6 +154,7 @@ class PatientController extends Controller
                     'status' => $a->status->value,
                     'is_walk_in' => $a->is_walk_in,
                     'doctor_name' => $a->doctor->display_name,
+                    'doctor_is_deleted' => $a->doctor->trashed(),
                     'service_name' => $a->service?->name,
                     'appointment_type' => $a->appointmentType
                         ? ['name' => $a->appointmentType->name, 'color' => $a->appointmentType->color]

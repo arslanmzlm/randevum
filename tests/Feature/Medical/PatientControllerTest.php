@@ -183,6 +183,60 @@ it('index search filters by last_name', function (): void {
         ->assertInertia(fn ($page) => $page->where('patients.meta.total', 1));
 });
 
+it('index search also finds a soft-deleted patient', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    ptcRole($owner, 'owner', $clinic->id);
+
+    $deleted = Patient::factory()->trashed()->create([
+        'clinic_id' => $clinic->id,
+        'first_name' => 'Silinen',
+        'last_name' => 'Hasta',
+        'phone' => '05311111111',
+    ]);
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'first_name' => 'Fatma', 'last_name' => 'Kaya', 'phone' => '05322222222']);
+
+    $this->actingAs($owner)
+        ->get(route('patients.index', ['filter' => ['search' => 'Silinen']]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('patients.meta.total', 1)
+            ->where('patients.data.0.id', $deleted->id)
+            ->where('patients.data.0.is_deleted', true)
+        );
+});
+
+it('index without a search term excludes soft-deleted patients', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    ptcRole($owner, 'owner', $clinic->id);
+
+    Patient::factory()->trashed()->create(['clinic_id' => $clinic->id, 'first_name' => 'Silinen', 'phone' => '05311111111']);
+    Patient::factory()->create(['clinic_id' => $clinic->id, 'first_name' => 'Fatma', 'phone' => '05322222222']);
+
+    $this->actingAs($owner)
+        ->get(route('patients.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('patients.meta.total', 1)
+            ->where('patients.data.0.first_name', 'Fatma')
+            ->where('patients.data.0.is_deleted', false)
+        );
+});
+
+it('index search that matches no live patient still excludes unrelated soft-deleted ones', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    ptcRole($owner, 'owner', $clinic->id);
+
+    Patient::factory()->trashed()->create(['clinic_id' => $clinic->id, 'first_name' => 'Silinen', 'phone' => '05311111111']);
+
+    $this->actingAs($owner)
+        ->get(route('patients.index', ['filter' => ['search' => 'Bulunamaz']]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('patients.meta.total', 0));
+});
+
 it('index returns all when search term is empty', function (): void {
     $clinic = Clinic::factory()->create();
     $owner = User::factory()->create();

@@ -4,6 +4,8 @@ import { IconCalendarOff, IconChevronRight, IconWalk } from '@tabler/icons-vue';
 import { useI18n } from 'vue-i18n';
 import AppointmentStatusTag from '@/components/AppointmentStatusTag.vue';
 import DashboardPanel from '@/components/dashboard/DashboardPanel.vue';
+import PatientNameLink from '@/components/patients/PatientNameLink.vue';
+import RecordName from '@/components/RecordName.vue';
 import { useDateTime } from '@/composables/useDateTime';
 import { index as calendarIndex } from '@/routes/calendar';
 import { show as patientShow } from '@/routes/patients';
@@ -54,9 +56,18 @@ defineProps<{
                 :key="appointment.id"
                 class="border-b border-surface-200 last:border-b-0"
             >
-                <Link
-                    :href="patientShow(appointment.patient_id).url"
-                    class="flex items-center justify-between gap-3 px-5 py-3 transition-colors hover:bg-surface-50"
+                <component
+                    :is="appointment.patient_is_deleted ? 'div' : Link"
+                    :href="
+                        appointment.patient_is_deleted
+                            ? undefined
+                            : patientShow(appointment.patient_id).url
+                    "
+                    class="flex items-center justify-between gap-3 px-5 py-3"
+                    :class="{
+                        'transition-colors hover:bg-surface-50':
+                            !appointment.patient_is_deleted,
+                    }"
                 >
                     <div class="flex min-w-0 items-center gap-3">
                         <span
@@ -70,20 +81,32 @@ defineProps<{
                             />
                         </span>
                         <div class="flex min-w-0 flex-col">
-                            <span class="truncate text-sm text-surface-800">
-                                {{ appointment.patient_name }}
-                            </span>
-                            <span class="truncate text-xs text-surface-500">
-                                {{ appointment.doctor_name
-                                }}<template v-if="appointment.service_name">
-                                    · {{ appointment.service_name }}</template
+                            <PatientNameLink
+                                plain
+                                :name="appointment.patient_name"
+                                :deleted="appointment.patient_is_deleted"
+                                class="truncate text-sm text-surface-800"
+                            />
+                            <div
+                                class="flex min-w-0 items-center gap-1 text-xs text-surface-500"
+                            >
+                                <RecordName
+                                    :name="appointment.doctor_name"
+                                    :deleted="appointment.doctor_is_deleted"
+                                    text-class="truncate"
+                                />
+                                <span
+                                    v-if="appointment.service_name"
+                                    class="truncate"
                                 >
-                            </span>
+                                    · {{ appointment.service_name }}
+                                </span>
+                            </div>
                         </div>
                     </div>
 
                     <AppointmentStatusTag :status="appointment.status" small />
-                </Link>
+                </component>
             </li>
         </ul>
     </DashboardPanel>

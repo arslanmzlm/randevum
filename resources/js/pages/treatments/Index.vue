@@ -7,6 +7,7 @@ import DataTableWrapper from '@/components/DataTableWrapper.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PatientNameLink from '@/components/patients/PatientNameLink.vue';
+import RecordName from '@/components/RecordName.vue';
 import TreatmentStatusTag from '@/components/TreatmentStatusTag.vue';
 import { useCan } from '@/composables/useCan';
 import { useDateTime } from '@/composables/useDateTime';
@@ -247,9 +248,11 @@ const dateRange = computed<(Date | null)[] | null>({
 
             <Column :header="t('treatment_list.columns.doctor')">
                 <template #body="{ data }">
-                    <span class="text-surface-700">
-                        {{ data.doctor.display_name }}
-                    </span>
+                    <RecordName
+                        :name="data.doctor.display_name"
+                        :deleted="data.doctor.is_deleted"
+                        text-class="truncate text-surface-700"
+                    />
                 </template>
             </Column>
 

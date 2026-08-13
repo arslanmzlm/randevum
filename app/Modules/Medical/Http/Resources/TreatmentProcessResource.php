@@ -41,6 +41,7 @@ class TreatmentProcessResource extends JsonResource
             'doctor' => [
                 'id' => $this->doctor->id,
                 'display_name' => $this->doctor->display_name,
+                'is_deleted' => $this->doctor->trashed(),
             ],
             'details' => [
                 'complaint' => $this->details?->complaint,

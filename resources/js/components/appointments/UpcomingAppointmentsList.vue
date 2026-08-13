@@ -3,6 +3,7 @@ import { Link } from '@inertiajs/vue3';
 import { IconCalendarOff, IconLoader2 } from '@tabler/icons-vue';
 import { useI18n } from 'vue-i18n';
 import AppointmentStatusTag from '@/components/AppointmentStatusTag.vue';
+import PatientNameLink from '@/components/patients/PatientNameLink.vue';
 import { useDateTime } from '@/composables/useDateTime';
 import { show as patientShow } from '@/routes/patients';
 import type { UpcomingAppointmentDto } from '@/types/appointment';
@@ -44,16 +45,26 @@ const { formatDateTime } = useDateTime();
                 :key="appointment.id"
                 class="border-b border-surface-200 last:border-b-0"
             >
-                <Link
-                    :href="patientShow(appointment.patient_id).url"
-                    class="flex items-start justify-between gap-3 px-4 py-3 transition-colors hover:bg-surface-100"
+                <component
+                    :is="appointment.patient_is_deleted ? 'div' : Link"
+                    :href="
+                        appointment.patient_is_deleted
+                            ? undefined
+                            : patientShow(appointment.patient_id).url
+                    "
+                    class="flex items-start justify-between gap-3 px-4 py-3"
+                    :class="{
+                        'transition-colors hover:bg-surface-100':
+                            !appointment.patient_is_deleted,
+                    }"
                 >
                     <div class="flex min-w-0 flex-col gap-0.5">
-                        <span
+                        <PatientNameLink
+                            plain
+                            :name="appointment.patient_name"
+                            :deleted="appointment.patient_is_deleted"
                             class="truncate text-sm font-medium text-surface-900"
-                        >
-                            {{ appointment.patient_name }}
-                        </span>
+                        />
                         <span class="text-xs text-surface-500">
                             {{ formatDateTime(appointment.starts_at) }}
                         </span>
@@ -94,7 +105,7 @@ const { formatDateTime } = useDateTime();
                             class="p-tag-sm"
                         />
                     </div>
-                </Link>
+                </component>
             </li>
         </ul>
     </div>

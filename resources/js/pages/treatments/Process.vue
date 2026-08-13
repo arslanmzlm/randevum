@@ -16,6 +16,7 @@ import { useI18n } from 'vue-i18n';
 import AnamnesisSection from '@/components/anamnesis/AnamnesisSection.vue';
 import ButtonLink from '@/components/ButtonLink.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import RecordName from '@/components/RecordName.vue';
 import SectionCard from '@/components/SectionCard.vue';
 import CaseLinkSection from '@/components/treatments/CaseLinkSection.vue';
 import ClinicalFieldsSection from '@/components/treatments/ClinicalFieldsSection.vue';
@@ -362,7 +363,10 @@ function submit(): void {
                     </span>
                     <span class="flex items-center gap-1">
                         <IconStethoscope class="size-4" />
-                        {{ treatment.doctor.display_name }}
+                        <RecordName
+                            :name="treatment.doctor.display_name"
+                            :deleted="treatment.doctor.is_deleted"
+                        />
                     </span>
                     <span v-if="bookedService" class="flex items-center gap-1">
                         <IconClipboardList class="size-4" />

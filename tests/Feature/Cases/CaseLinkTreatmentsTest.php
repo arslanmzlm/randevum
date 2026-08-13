@@ -121,6 +121,21 @@ it('creates an Open case and links completed treatments, setting their case_id',
         ->and($case->doctor_id)->toBe($doctor->id);
 });
 
+it('rejects a soft-deleted patient_id when opening a case', function (): void {
+    ['owner' => $owner, 'doctor' => $doctor, 'patient' => $patient] = cltSetup();
+    $patient->delete();
+
+    $this->actingAs($owner)
+        ->post(route('cases.store'), [
+            'patient_id' => $patient->id,
+            'title' => 'Case For Deleted Patient',
+            'doctor_id' => $doctor->id,
+        ])
+        ->assertSessionHasErrors('patient_id');
+
+    expect(CaseRecord::withoutGlobalScopes()->where('patient_id', $patient->id)->exists())->toBeFalse();
+});
+
 it('syncs the appointment case_id when creating a case from treatments', function (): void {
     ['clinic' => $clinic, 'owner' => $owner, 'doctor' => $doctor, 'patient' => $patient] = cltSetup();
     $treatment = cltCompletedTreatment($clinic, $doctor, $patient, $owner);
@@ -375,4 +390,37 @@ it('rejects linkTreatments when the case is Closed', function (): void {
         ->assertSessionHasErrors('case_id');
 
     expect(Treatment::withoutGlobalScopes()->find($treatment->id)->case_id)->toBeNull();
+});
+
+it('the ungrouped-treatments dialog rows flag doctor_is_deleted and keep the name', function (): void {
+    ['clinic' => $clinic, 'owner' => $owner, 'doctor' => $doctor, 'patient' => $patient] = cltSetup();
+
+    $case = CaseRecord::factory()->open()->create([
+        'clinic_id' => $clinic->id,
+        'patient_id' => $patient->id,
+        'doctor_id' => $doctor->id,
+        'vertical_id' => $clinic->vertical_id,
+    ]);
+
+    cltCompletedTreatment($clinic, $doctor, $patient, $owner);
+
+    $this->actingAs($owner)
+        ->get(route('cases.show', $case))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('ungroupedTreatments', 1)
+            ->where('ungroupedTreatments.0.doctor_is_deleted', false)
+        );
+
+    $name = $doctor->display_name;
+    $doctor->delete();
+
+    $this->actingAs($owner)
+        ->get(route('cases.show', $case))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('ungroupedTreatments', 1)
+            ->where('ungroupedTreatments.0.doctor_name', $name)
+            ->where('ungroupedTreatments.0.doctor_is_deleted', true)
+        );
 });

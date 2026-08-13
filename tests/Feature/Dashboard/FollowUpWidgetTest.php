@@ -401,3 +401,31 @@ it('clinic A user cannot see clinic B follow-ups in the followUps prop', functio
             ->where('followUps.0.id', $followUpA->id)
         );
 });
+
+it('followUps carry doctor.is_deleted for a soft-deleted case doctor and keep the name', function (): void {
+    ['clinic' => $clinic, 'owner' => $owner, 'doctor' => $doctor, 'patient' => $patient] = fuwSetup();
+
+    $case = CaseRecord::factory()->open()->create([
+        'clinic_id' => $clinic->id, 'patient_id' => $patient->id,
+        'doctor_id' => $doctor->id, 'vertical_id' => $clinic->vertical_id,
+    ]);
+
+    fuwFollowUp($clinic, $patient, fuwIstanbulToday(), $case->id);
+
+    $this->actingAs($owner)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('followUps.0.doctor.is_deleted', false));
+
+    $name = $doctor->display_name;
+    $doctor->delete();
+
+    $this->actingAs($owner)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('followUps', 1)
+            ->where('followUps.0.doctor.display_name', $name)
+            ->where('followUps.0.doctor.is_deleted', true)
+        );
+});

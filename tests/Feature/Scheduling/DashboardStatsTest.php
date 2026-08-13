@@ -1118,12 +1118,83 @@ it('today_schedule row carries the contract-shaped keys', function (): void {
                 ->where('id', fn ($v) => is_int($v))
                 ->where('patient_id', $patient->id)
                 ->has('patient_name')
+                ->where('patient_is_deleted', false)
                 ->where('doctor_id', $doctor->id)
                 ->has('doctor_name')
+                ->where('doctor_is_deleted', false)
                 ->has('service_name')
                 ->where('status', AppointmentStatus::Confirmed->value)
                 ->where('is_walk_in', fn ($v) => is_bool($v))
                 ->has('starts_at')
             )
+        );
+});
+
+it('today_schedule keeps a soft-deleted patient\'s appointment and flags patient_is_deleted', function (): void {
+    ['clinic' => $clinic, 'owner' => $owner, 'doctor' => $doctor, 'patient' => $patient] = dsSetup();
+
+    $todayStart = dsTodayStartUtc();
+
+    Appointment::factory()->create([
+        'clinic_id' => $clinic->id,
+        'doctor_id' => $doctor->id,
+        'patient_id' => $patient->id,
+        'starts_at' => $todayStart,
+        'ends_at' => $todayStart->copy()->addMinutes(30),
+        'status' => AppointmentStatus::Confirmed,
+    ]);
+
+    $this->actingAs($owner)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('stats.today_schedule', 1)
+            ->where('stats.today_schedule.0.patient_is_deleted', false)
+        );
+
+    $patient->delete();
+
+    $this->actingAs($owner)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('stats.today_schedule', 1)
+            ->where('stats.today_schedule.0.patient_name', trim($patient->first_name.' '.$patient->last_name))
+            ->where('stats.today_schedule.0.patient_is_deleted', true)
+        );
+});
+
+it('today_schedule keeps a soft-deleted doctor\'s appointment and flags doctor_is_deleted', function (): void {
+    ['clinic' => $clinic, 'owner' => $owner, 'doctor' => $doctor, 'patient' => $patient] = dsSetup();
+
+    $todayStart = dsTodayStartUtc();
+
+    Appointment::factory()->create([
+        'clinic_id' => $clinic->id,
+        'doctor_id' => $doctor->id,
+        'patient_id' => $patient->id,
+        'starts_at' => $todayStart,
+        'ends_at' => $todayStart->copy()->addMinutes(30),
+        'status' => AppointmentStatus::Confirmed,
+    ]);
+
+    $this->actingAs($owner)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('stats.today_schedule', 1)
+            ->where('stats.today_schedule.0.doctor_is_deleted', false)
+        );
+
+    $name = $doctor->display_name;
+    $doctor->delete();
+
+    $this->actingAs($owner)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('stats.today_schedule', 1)
+            ->where('stats.today_schedule.0.doctor_name', $name)
+            ->where('stats.today_schedule.0.doctor_is_deleted', true)
         );
 });

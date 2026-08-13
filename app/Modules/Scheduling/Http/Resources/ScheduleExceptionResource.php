@@ -24,6 +24,8 @@ class ScheduleExceptionResource extends JsonResource
             'id' => $this->id,
             'doctor_id' => $this->doctor_id,
             'doctor_name' => $this->doctor?->display_name ?? '',
+            // Leave rows are not deleted with the doctor, so the list keeps naming a departed one.
+            'doctor_is_deleted' => (bool) $this->doctor?->trashed(),
             'starts_at' => $this->starts_at->toIso8601String(),
             'ends_at' => $this->ends_at->toIso8601String(),
             'is_all_day' => $this->is_all_day,

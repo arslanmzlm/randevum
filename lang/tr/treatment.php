@@ -45,7 +45,7 @@ return [
         'document_no' => 'Belge No',
         'date' => 'Tarih',
         'patient' => 'Hasta',
-        'patient_deleted' => '(Silinmiş kayıt)',
+        'deleted_record' => '(Silinmiş kayıt)',
         'doctor' => 'Doktor',
         'services' => 'Hizmetler',
         'products' => 'Ürünler',

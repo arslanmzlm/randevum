@@ -17,8 +17,12 @@ export type AppointmentListItem = {
     id: number;
     patient_id: number;
     patient_name: string;
+    /** The row outlives its patient: a soft-deleted one is shown unlinked, with a badge. */
+    patient_is_deleted: boolean;
     doctor_id: number;
     doctor_name: string;
+    /** The row outlives its doctor: a soft-deleted one is named with a badge. */
+    doctor_is_deleted: boolean;
     service_name: string | null;
     appointment_type: { name: string; color: string } | null;
     status: AppointmentStatus;
@@ -40,8 +44,12 @@ export type UpcomingAppointmentDto = {
     id: number;
     patient_id: number;
     patient_name: string;
+    /** The row outlives its patient: a soft-deleted one is shown unlinked, with a badge. */
+    patient_is_deleted: boolean;
     doctor_id: number;
     doctor_name: string;
+    /** The row outlives its doctor: a soft-deleted one is named with a badge. */
+    doctor_is_deleted: boolean;
     service_name: string | null;
     appointment_type: { name: string; color: string } | null;
     /** Only `confirmed` | `rescheduled` are emitted, but kept broad for reuse. */
@@ -68,7 +76,11 @@ export type AppointmentListQuery = TableState<{
 export type CreatedAppointment = {
     patient_id: number;
     patient_name: string;
+    /** The row outlives its patient: a soft-deleted one is shown unlinked, with a badge. */
+    patient_is_deleted: boolean;
     doctor_name: string | null;
+    /** The row outlives its doctor: a soft-deleted one is named with a badge. */
+    doctor_is_deleted: boolean;
     service_name: string | null;
     /** Y-m-d, clinic timezone — links the day list filter. */
     date: string;
@@ -136,7 +148,13 @@ export type AppointmentCreateProps = {
 /** The fixed (read-only) patient + current slot of the appointment being rescheduled. */
 export type EditAppointment = {
     id: number;
-    patient: { id: number; full_name: string; phone: string | null };
+    patient: {
+        id: number;
+        full_name: string;
+        phone: string | null;
+        /** The row outlives its patient: a soft-deleted one is shown unlinked, with a badge. */
+        is_deleted: boolean;
+    };
     doctor_id: number;
     service_id: number | null;
     appointment_type_id: number | null;
@@ -210,6 +228,8 @@ export type BulkCancelPreviewRow = {
     starts_at: string;
     patient_name: string;
     doctor_name: string;
+    /** The row outlives its doctor: a soft-deleted one is named with a badge. */
+    doctor_is_deleted: boolean;
     service_name: string | null;
     status: AppointmentStatus;
     /** Patient has a phone → will receive the cancellation SMS once 1.16/1.17 lands. */
@@ -276,8 +296,12 @@ export type AppointmentDetail = {
     id: number;
     patient_id: number;
     patient_name: string;
+    /** The row outlives its patient: a soft-deleted one is shown unlinked, with a badge. */
+    patient_is_deleted: boolean;
     doctor_id: number;
     doctor_name: string;
+    /** The row outlives its doctor: a soft-deleted one is named with a badge. */
+    doctor_is_deleted: boolean;
     service_name: string | null;
     appointment_type: { name: string; color: string } | null;
     status: AppointmentStatus;

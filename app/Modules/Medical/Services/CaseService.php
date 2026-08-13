@@ -318,7 +318,7 @@ class CaseService
      * Ungrouped completed treatments for the case's patient + doctor, shaped for the
      * link-treatments dialog on the case Show page.
      *
-     * @return list<array{id: int, title: string|null, completed_at: string|null, doctor_id: int, doctor_name: string, total_amount: string}>
+     * @return list<array{id: int, title: string|null, completed_at: string|null, doctor_id: int, doctor_name: string, doctor_is_deleted: bool, total_amount: string}>
      */
     public function ungroupedTreatmentsForCase(CaseRecord $case): array
     {
@@ -330,6 +330,7 @@ class CaseService
                 'completed_at' => $t->completed_at?->toIso8601String(),
                 'doctor_id' => (int) $t->doctor_id,
                 'doctor_name' => $t->doctor->display_name,
+                'doctor_is_deleted' => $t->doctor->trashed(),
                 'total_amount' => (string) $t->total_amount,
             ])
             ->values()

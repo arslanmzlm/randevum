@@ -458,3 +458,41 @@ it('forbids a receptionist from every report tab', function (string $tab): void 
         ->get(route('reports.index', ['tab' => $tab]))
         ->assertForbidden();
 })->with(['finance', 'doctor', 'service', 'product', 'appointment_type', 'expense_owner']);
+
+it('doctor tab flags is_deleted on a row whose doctor profile is soft-deleted', function (): void {
+    ['clinic' => $clinic, 'owner' => $owner] = rbSetup();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id]);
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+
+    $appointment = Appointment::factory()->create([
+        'clinic_id' => $clinic->id,
+        'doctor_id' => $doctor->id,
+        'patient_id' => $patient->id,
+        'starts_at' => '2026-06-10 09:00:00',
+        'status' => AppointmentStatus::Completed,
+    ]);
+    Treatment::factory()->completed()->create([
+        'clinic_id' => $clinic->id,
+        'appointment_id' => $appointment->id,
+        'doctor_id' => $doctor->id,
+        'patient_id' => $patient->id,
+        'completed_at' => '2026-06-10 10:00:00',
+    ]);
+
+    $url = route('reports.index', ['tab' => 'doctor', 'start' => '2026-06-01', 'end' => '2026-06-30']);
+
+    $this->actingAs($owner)
+        ->get($url)
+        ->assertInertia(fn ($page) => $page->where('breakdown.data.0.is_deleted', false));
+
+    $name = $doctor->display_name;
+    $doctor->delete();
+
+    $this->actingAs($owner)
+        ->get($url)
+        ->assertInertia(fn ($page) => $page
+            ->has('breakdown.data', 1)
+            ->where('breakdown.data.0.label', $name)
+            ->where('breakdown.data.0.is_deleted', true)
+        );
+});

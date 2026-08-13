@@ -10,6 +10,8 @@ export type PendingInstallment = {
     plan_id: number;
     patient_id: number;
     patient_name: string;
+    /** The row outlives its patient: a soft-deleted one is shown unlinked, with a badge. */
+    patient_is_deleted: boolean;
     treatment_id: number | null;
     sequence: number;
     /** Total installments in the plan — the row renders "sequence / installment_count". */

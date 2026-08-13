@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import CalendarEvent from '@/components/calendar/CalendarEvent.vue';
+import RecordName from '@/components/RecordName.vue';
 import type {
     CalendarClosedBand,
     CalendarEventDto,
@@ -88,6 +89,7 @@ const leaveBlocks = computed(() =>
     ).map((block) => ({
         key: `exc-${block.item.id}`,
         doctorName: props.namedLeave ? block.item.doctor_name : null,
+        doctorDeleted: block.item.doctor_is_deleted,
         reason: block.item.reason ?? t('calendar.closed'),
         style: {
             top: `${block.topPct}%`,
@@ -136,12 +138,12 @@ const nowLineTop = computed(() => {
             class="calendar-leave pointer-events-none absolute flex items-center justify-center gap-1 overflow-hidden px-1 text-xs font-medium"
             :style="block.style"
         >
-            <span
+            <RecordName
                 v-if="block.doctorName"
-                class="max-w-full shrink-0 truncate text-surface-700"
-            >
-                {{ block.doctorName }}
-            </span>
+                :name="block.doctorName"
+                :deleted="block.doctorDeleted"
+                text-class="max-w-full truncate text-surface-700"
+            />
             <span
                 class="truncate"
                 :class="

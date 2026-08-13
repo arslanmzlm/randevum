@@ -29,7 +29,6 @@ return [
         'exception' => 'Seçilen saatte doktorun izni veya kapalı günü mevcut.',
         'conflict' => 'Seçilen saatte doktorun başka bir randevusu bulunuyor.',
         'doctor_not_allowed' => 'Yalnızca kendi adınıza randevu oluşturabilirsiniz.',
-        'phone_trashed' => 'Bu telefon numarası silinmiş bir hastaya ait. Hasta ekranından geri yükleyin.',
         'not_reschedulable' => 'Bu randevu yeniden planlanamaz.',
         'not_cancellable' => 'Bu randevu iptal edilemez.',
         'not_arrivable' => 'Bu randevu geldi olarak işaretlenemiyor. Randevunun durumu Onaylandı veya Yeniden Planlandı olmalıdır.',

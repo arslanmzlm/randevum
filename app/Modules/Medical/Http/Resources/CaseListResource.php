@@ -30,6 +30,7 @@ class CaseListResource extends JsonResource
             'doctor' => [
                 'id' => (int) $this->doctor_id,
                 'display_name' => $this->doctor->display_name,
+                'is_deleted' => $this->doctor->trashed(),
             ],
             'treatments_count' => (int) $this->treatments_count,
             'opened_at' => $this->opened_at->toIso8601String(),

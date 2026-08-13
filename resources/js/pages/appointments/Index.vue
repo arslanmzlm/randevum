@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import {
     IconBan,
     IconBell,
@@ -26,6 +26,8 @@ import AppointmentStatusTag from '@/components/AppointmentStatusTag.vue';
 import DataTableWrapper from '@/components/DataTableWrapper.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import PatientNameLink from '@/components/patients/PatientNameLink.vue';
+import RecordName from '@/components/RecordName.vue';
 import { useAppointmentActions } from '@/composables/useAppointmentActions';
 import { useCan } from '@/composables/useCan';
 import { useDateTime } from '@/composables/useDateTime';
@@ -33,7 +35,6 @@ import { useTableFilters } from '@/composables/useTableFilters';
 import { useTreatmentActions } from '@/composables/useTreatmentActions';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { index, show as appointmentShow } from '@/routes/appointments';
-import { show } from '@/routes/patients';
 import type {
     AppointmentIndexProps,
     AppointmentListItem,
@@ -473,12 +474,12 @@ const dateRange = computed<(Date | null)[] | null>({
             <Column :header="t('appointment_list.columns.patient')">
                 <template #body="{ data }">
                     <div class="flex min-w-0 items-center gap-2">
-                        <Link
-                            :href="show(data.patient_id).url"
-                            class="truncate font-medium text-primary-600 transition-colors hover:text-primary-700 hover:underline"
-                        >
-                            {{ data.patient_name }}
-                        </Link>
+                        <PatientNameLink
+                            :id="data.patient_id"
+                            :name="data.patient_name"
+                            :deleted="data.patient_is_deleted"
+                            class="truncate font-medium"
+                        />
                         <Tag
                             v-if="data.is_walk_in"
                             severity="warn"
@@ -490,9 +491,11 @@ const dateRange = computed<(Date | null)[] | null>({
 
             <Column :header="t('appointment_list.columns.doctor')">
                 <template #body="{ data }">
-                    <span class="text-surface-700">
-                        {{ data.doctor_name }}
-                    </span>
+                    <RecordName
+                        :name="data.doctor_name"
+                        :deleted="data.doctor_is_deleted"
+                        text-class="truncate text-surface-700"
+                    />
                 </template>
             </Column>
 

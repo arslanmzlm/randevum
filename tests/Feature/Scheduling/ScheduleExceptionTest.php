@@ -847,3 +847,39 @@ it("clinic A's exceptions are not visible to clinic B's owner", function (): voi
         ->assertOk()
         ->assertInertia(fn ($page) => $page->has('exceptions', 0));
 });
+
+it('the leave list flags doctor_is_deleted for a soft-deleted doctor and keeps the name', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    seTestRole($owner, 'owner', $clinic->id);
+
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+
+    ScheduleException::factory()->create([
+        'clinic_id' => $clinic->id,
+        'doctor_id' => $doctor->id,
+        'starts_at' => now()->addDays(3),
+        'ends_at' => now()->addDays(3)->addHours(2),
+    ]);
+
+    $this->actingAs($owner)
+        ->get(route('schedule-exceptions.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('exceptions', 1)
+            ->where('exceptions.0.doctor_is_deleted', false)
+        );
+
+    $name = $doctor->display_name;
+    $doctor->delete();
+
+    $this->actingAs($owner)
+        ->get(route('schedule-exceptions.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('exceptions', 1)
+            ->where('exceptions.0.doctor_name', $name)
+            ->where('exceptions.0.doctor_is_deleted', true)
+        );
+});

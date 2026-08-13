@@ -36,6 +36,7 @@ class CaseShowResource extends JsonResource
             'doctor' => [
                 'id' => (int) $this->doctor_id,
                 'display_name' => $this->doctor->display_name,
+                'is_deleted' => $this->doctor->trashed(),
             ],
             // The clinical trio rides along so the case page can show what was actually done
             // without a round trip to each treatment.

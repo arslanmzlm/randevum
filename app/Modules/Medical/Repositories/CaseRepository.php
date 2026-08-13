@@ -73,7 +73,8 @@ class CaseRepository
                 // withTrashed(): the case outlives a soft-deleted patient (cases are never
                 // deleted) — the list resource still needs a name, not a null.
                 'patient' => fn ($q) => $q->withTrashed()->select('id', 'first_name', 'last_name', 'deleted_at'),
-                'doctor.user',
+                // Same for the doctor: the case stays listed after its doctor is soft-deleted.
+                'doctor' => fn ($q) => $q->withTrashed()->with('user'),
             ])
             ->withCount('treatments')
             ->withMin(['followUps as next_follow_up_date' => fn ($q) => $q->where('status', 'open')], 'due_date')
@@ -87,8 +88,13 @@ class CaseRepository
             $needle = '%'.SearchTerm::normalize($term).'%';
 
             $query->where(function (Builder $q) use ($needle): void {
+                // Kept inline rather than routed through FilterHelper::searchRelationWithTrashed():
+                // that helper AND-s the relation onto the query, while a case must match on title
+                // OR patient name. withTrashed() mirrors the eager load above — the case stays
+                // listed after its patient is soft-deleted, so it must stay findable by that name.
                 $q->whereLike(SearchTerm::column('title'), $needle)
                     ->orWhereHas('patient', fn (Builder $p) => $p
+                        ->withTrashed()
                         ->whereLike(SearchTerm::column('first_name'), $needle)
                         ->orWhereLike(SearchTerm::column('last_name'), $needle)
                         ->orWhereLike(SearchTerm::column(['first_name', 'last_name']), $needle)

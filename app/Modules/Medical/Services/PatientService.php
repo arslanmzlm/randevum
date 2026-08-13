@@ -8,7 +8,6 @@ use App\Models\Treatment;
 use App\Modules\Billing\Contracts\BalanceReaderContract;
 use App\Modules\Core\Contracts\PatientAppointmentCounterContract;
 use App\Modules\Core\Exceptions\DeletionBlockedException;
-use App\Modules\Medical\Contracts\PatientRegistrarContract;
 use App\Modules\Medical\Exceptions\TrashedPhoneConflictException;
 use App\Modules\Medical\Repositories\CaseRepository;
 use App\Modules\Medical\Repositories\FollowUpRepository;
@@ -17,14 +16,16 @@ use App\Modules\Medical\Repositories\TreatmentRepository;
 use App\Support\ClinicContext;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Number;
 
-class PatientService implements PatientRegistrarContract
+class PatientService
 {
     public function __construct(
         private PatientRepository $repository,
         private TreatmentRepository $treatmentRepository,
         private CaseRepository $caseRepository,
         private FollowUpRepository $followUpRepository,
+        private PatientRegistrar $registrar,
         private PatientAppointmentCounterContract $appointmentCounter,
         private BalanceReaderContract $balanceReader,
         private ClinicContext $clinicContext,
@@ -103,11 +104,8 @@ class PatientService implements PatientRegistrarContract
     }
 
     /**
-     * Create a new patient for the active clinic.
-     *
-     * When the submitted phone already belongs to a soft-deleted patient in this clinic,
-     * throws TrashedPhoneConflictException so the caller can surface a restore prompt.
-     * clinic_id is auto-set by BelongsToClinic; user_id is always null in MVP.
+     * Create a new patient for the active clinic — see PatientRegistrar, which also
+     * fulfils the cross-module seam.
      *
      * @param  array<string, mixed>  $data
      *
@@ -115,17 +113,7 @@ class PatientService implements PatientRegistrarContract
      */
     public function create(array $data): Patient
     {
-        if (! empty($data['phone'])) {
-            $trashed = $this->repository->findTrashedByPhone($data['phone']);
-
-            if ($trashed !== null) {
-                throw new TrashedPhoneConflictException($trashed);
-            }
-        }
-
-        $data['user_id'] = null;
-
-        return $this->repository->create($data);
+        return $this->registrar->create($data);
     }
 
     /**
@@ -143,11 +131,11 @@ class PatientService implements PatientRegistrarContract
 
     /**
      * Delete the patient, refusing when clinical work still references it: an open case,
-     * a future active appointment, or an open follow-up. Patient soft-deletes, so the FK
-     * would stay technically valid either way — but leaving one of these open means the
-     * case/follow-up board or a treatment PDF discovers the deletion later as a dead
-     * relation, instead of the desk resolving it up front (see CaseRepository,
-     * FollowUpRepository, TreatmentReportService withTrashed() reads).
+     * a future active appointment, an open follow-up, or an unsettled balance. Patient
+     * soft-deletes, so the FK would stay technically valid either way — but leaving one of
+     * these open means the case/follow-up board or a treatment PDF discovers the deletion
+     * later as a dead relation, instead of the desk resolving it up front (see
+     * CaseRepository, FollowUpRepository, TreatmentReportService withTrashed() reads).
      *
      * @throws DeletionBlockedException
      */
@@ -186,6 +174,20 @@ class PatientService implements PatientRegistrarContract
         $openFollowUps = $this->followUpRepository->countOpenForPatient($patient->id);
         if ($openFollowUps > 0) {
             $reasons[] = __('messages.patient.delete_blocked_follow_ups', ['count' => $openFollowUps]);
+        }
+
+        // Non-zero either way blocks: positive = uncollected receivable, negative = a refund
+        // the clinic still owes. Deleting would orphan the money, and payments may not be
+        // recorded against a deleted patient.
+        $balance = $this->remainingBalancesFor([$patient->id])[$patient->id] ?? null;
+        if ($balance !== null) {
+            $reasons[] = __('messages.patient.delete_blocked_balance', [
+                'amount' => Number::currency(
+                    (float) $balance,
+                    $this->clinicContext->currency(),
+                    $this->clinicContext->locale(),
+                ),
+            ]);
         }
 
         return $reasons;

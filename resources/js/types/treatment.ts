@@ -65,7 +65,7 @@ export type ProcessTreatment = {
         /** Drives the women-only pregnancy field in the anamnesis section. */
         gender: PatientGender | null;
     };
-    doctor: { id: number; display_name: string };
+    doctor: { id: number; display_name: string; is_deleted: boolean };
     details: {
         complaint: string | null;
         diagnosis: string | null;
@@ -192,7 +192,7 @@ export type TreatmentShowProps = {
         completed_at: string | null;
         appointment: { id: number; starts_at: string };
         patient: { id: number; full_name: string; is_deleted: boolean };
-        doctor: { display_name: string };
+        doctor: { display_name: string; is_deleted: boolean };
         case: { id: number; title: string } | null;
         details: {
             complaint: string | null;
@@ -223,7 +223,7 @@ export type TreatmentListItem = {
     /** ISO 8601 UTC; null while the treatment is a Draft. */
     completed_at: string | null;
     patient: { id: number; full_name: string; is_deleted: boolean };
-    doctor: { id: number; display_name: string };
+    doctor: { id: number; display_name: string; is_deleted: boolean };
     /** Service-line names in `sort_order`; empty when the treatment has no service line. */
     service_names: string[];
     total_amount: string;
@@ -282,6 +282,8 @@ export type PatientTreatmentHistoryItem = {
     title: string | null;
     total_amount: string;
     doctor_name: string;
+    /** The row outlives its doctor: a soft-deleted one is named with a badge. */
+    doctor_is_deleted: boolean;
     /** Owning doctor — lets the FE identify which ungrouped treatments a user can group. */
     doctor_id: number;
     /** null ⇒ ungrouped (eligible for retrospective case linking). */

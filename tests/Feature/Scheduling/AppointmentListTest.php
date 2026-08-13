@@ -128,8 +128,10 @@ it('appointments prop contains the clinic appointments with the correct resource
                 ->has('id')
                 ->has('patient_id')
                 ->has('patient_name')
+                ->has('patient_is_deleted')
                 ->has('doctor_id')
                 ->has('doctor_name')
+                ->has('doctor_is_deleted')
                 ->has('service_name')
                 ->has('appointment_type')
                 ->has('status')
@@ -666,9 +668,8 @@ it('does not 500 and still shows names when an appointment\'s patient and doctor
     $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
     $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
 
-    // starts_at in the past: keeps this appointment out of the "upcoming appointments" header
-    // widget's own soft-delete gap (a separate, out-of-scope bug in AppointmentService::upcomingFor),
-    // so this test isolates the /appointments list fix under review.
+    // starts_at in the past keeps this appointment out of the "upcoming appointments" header
+    // widget, so the test isolates the /appointments list itself.
     $appointment = alAppointment($clinic, $doctor, $patient, [
         'starts_at' => now()->subDay(),
         'ends_at' => now()->subDay()->addMinutes(30),
@@ -685,5 +686,123 @@ it('does not 500 and still shows names when an appointment\'s patient and doctor
             ->where('appointments.data.0.id', $appointment->id)
             ->where('appointments.data.0.patient_name', trim($patient->first_name.' '.$patient->last_name))
             ->where('appointments.data.0.doctor_name', $doctor->display_name)
+        );
+});
+
+it('patient name search finds an appointment whose patient is soft-deleted', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    alRole($owner, 'owner', $clinic->id);
+
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+
+    $deleted = Patient::factory()->create(['clinic_id' => $clinic->id, 'first_name' => 'Zeynep', 'last_name' => 'Kaya', 'phone' => '05311111111']);
+    $active = Patient::factory()->create(['clinic_id' => $clinic->id, 'first_name' => 'Fatma', 'last_name' => 'Demir', 'phone' => '05322222222']);
+
+    $match = alAppointment($clinic, $doctor, $deleted, [
+        'starts_at' => now()->subDay(),
+        'ends_at' => now()->subDay()->addMinutes(30),
+    ]);
+    alAppointment($clinic, $doctor, $active);
+
+    $deleted->delete();
+
+    $this->actingAs($owner)
+        ->get(route('appointments.index', ['filter' => ['search' => 'Zeynep']]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('appointments.data', 1)
+            ->where('appointments.data.0.id', $match->id)
+            ->where('appointments.data.0.patient_name', 'Zeynep Kaya')
+        );
+});
+
+it("clinic B's soft-deleted patient name does not surface clinic B appointments in clinic A's search", function (): void {
+    $clinicA = Clinic::factory()->create();
+    $clinicB = Clinic::factory()->create();
+
+    $ownerA = User::factory()->create();
+    alRole($ownerA, 'owner', $clinicA->id);
+
+    $doctorB = Doctor::factory()->create(['clinic_id' => $clinicB->id]);
+    $patientB = Patient::factory()->create(['clinic_id' => $clinicB->id, 'first_name' => 'SilinenGizli', 'last_name' => 'GizliSoyadXyz', 'phone' => '05311111111']);
+    alAppointment($clinicB, $doctorB, $patientB);
+    $patientB->delete();
+
+    $response = $this->actingAs($ownerA)
+        ->get(route('appointments.index', ['filter' => ['search' => 'SilinenGizli']]));
+
+    $response->assertOk()
+        ->assertInertia(fn ($page) => $page->has('appointments.data', 0));
+
+    expect($response->getContent())->not->toContain('GizliSoyadXyz');
+});
+
+it('the appointment list row carries patient_is_deleted for a soft-deleted patient and false otherwise', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    alRole($owner, 'owner', $clinic->id);
+
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id]);
+
+    $deleted = Patient::factory()->create(['clinic_id' => $clinic->id, 'phone' => '05311111111']);
+    $active = Patient::factory()->create(['clinic_id' => $clinic->id, 'phone' => '05322222222']);
+
+    $deletedAppointment = alAppointment($clinic, $doctor, $deleted, [
+        'starts_at' => now()->subDays(2),
+        'ends_at' => now()->subDays(2)->addMinutes(30),
+    ]);
+    $activeAppointment = alAppointment($clinic, $doctor, $active, [
+        'starts_at' => now()->subDay(),
+        'ends_at' => now()->subDay()->addMinutes(30),
+    ]);
+
+    $deleted->delete();
+
+    $this->actingAs($owner)
+        ->get(route('appointments.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('appointments.data', 2)
+            // Default order is newest starts_at first.
+            ->where('appointments.data.0.id', $activeAppointment->id)
+            ->where('appointments.data.0.patient_is_deleted', false)
+            ->where('appointments.data.1.id', $deletedAppointment->id)
+            ->where('appointments.data.1.patient_is_deleted', true)
+        );
+});
+
+it('the appointment list row carries doctor_is_deleted for a soft-deleted doctor and keeps the name', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    alRole($owner, 'owner', $clinic->id);
+
+    $deletedDoctor = Doctor::factory()->create(['clinic_id' => $clinic->id]);
+    $activeDoctor = Doctor::factory()->create(['clinic_id' => $clinic->id]);
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id, 'phone' => '05311111111']);
+
+    $deletedDoctorAppointment = alAppointment($clinic, $deletedDoctor, $patient, [
+        'starts_at' => now()->subDays(2),
+        'ends_at' => now()->subDays(2)->addMinutes(30),
+    ]);
+    $activeDoctorAppointment = alAppointment($clinic, $activeDoctor, $patient, [
+        'starts_at' => now()->subDay(),
+        'ends_at' => now()->subDay()->addMinutes(30),
+    ]);
+
+    $deletedName = $deletedDoctor->display_name;
+    $deletedDoctor->delete();
+
+    $this->actingAs($owner)
+        ->get(route('appointments.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('appointments.data', 2)
+            ->where('appointments.data.0.id', $activeDoctorAppointment->id)
+            ->where('appointments.data.0.doctor_is_deleted', false)
+            ->where('appointments.data.1.id', $deletedDoctorAppointment->id)
+            ->where('appointments.data.1.doctor_is_deleted', true)
+            ->where('appointments.data.1.doctor_name', $deletedName)
         );
 });

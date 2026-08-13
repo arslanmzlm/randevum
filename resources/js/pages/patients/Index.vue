@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
+import { Head } from '@inertiajs/vue3';
 import { IconFilter, IconPlus, IconSearch, IconUsers } from '@tabler/icons-vue';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -7,6 +7,7 @@ import ButtonLink from '@/components/ButtonLink.vue';
 import DataTableWrapper from '@/components/DataTableWrapper.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import PatientNameLink from '@/components/patients/PatientNameLink.vue';
 import SegmentPicker from '@/components/patients/SegmentPicker.vue';
 import TagChip from '@/components/TagChip.vue';
 import { useCan } from '@/composables/useCan';
@@ -376,12 +377,12 @@ function genderLabel(gender: Patient['gender']): string {
             >
                 <template #body="{ data }">
                     <div class="flex min-w-0 items-center gap-2">
-                        <Link
-                            :href="show(data.id).url"
-                            class="truncate font-medium text-primary-600 transition-colors hover:text-primary-700 hover:underline"
-                        >
-                            {{ data.full_name }}
-                        </Link>
+                        <PatientNameLink
+                            :id="data.id"
+                            :name="data.full_name"
+                            :deleted="data.is_deleted"
+                            class="truncate font-medium"
+                        />
                         <Tag
                             v-if="data.is_legacy"
                             severity="warn"
@@ -484,6 +485,7 @@ function genderLabel(gender: Patient['gender']): string {
                 <template #body="{ data }">
                     <div class="flex items-center justify-end">
                         <ButtonLink
+                            v-if="!data.is_deleted"
                             :href="show(data.id).url"
                             :label="t('patient.view')"
                             severity="secondary"

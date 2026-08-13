@@ -29,7 +29,6 @@ return [
         'exception' => 'The doctor has a scheduled leave or closure at the selected time.',
         'conflict' => 'The doctor already has an appointment at the selected time.',
         'doctor_not_allowed' => 'You can only create appointments for yourself.',
-        'phone_trashed' => 'This phone number belongs to a deleted patient. Restore them from the patients screen.',
         'not_reschedulable' => 'This appointment cannot be rescheduled.',
         'not_cancellable' => 'This appointment cannot be cancelled.',
         'not_arrivable' => 'This appointment cannot be marked as arrived. Status must be Confirmed or Rescheduled.',

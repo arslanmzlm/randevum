@@ -5,6 +5,7 @@ import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import CaseStatusTag from '@/components/CaseStatusTag.vue';
 import PatientNameLink from '@/components/patients/PatientNameLink.vue';
+import RecordName from '@/components/RecordName.vue';
 import SectionCard from '@/components/SectionCard.vue';
 import { useDateTime } from '@/composables/useDateTime';
 import { update as updateTitle } from '@/routes/cases/title';
@@ -141,8 +142,12 @@ const metaRows = computed(() => {
                     <dt class="text-xs text-surface-500">
                         {{ t('case.fields.doctor') }}
                     </dt>
-                    <dd class="text-sm text-surface-900">
-                        {{ caseRecord.doctor.display_name }}
+                    <dd>
+                        <RecordName
+                            :name="caseRecord.doctor.display_name"
+                            :deleted="caseRecord.doctor.is_deleted"
+                            text-class="text-sm text-surface-900"
+                        />
                     </dd>
                 </div>
                 <div

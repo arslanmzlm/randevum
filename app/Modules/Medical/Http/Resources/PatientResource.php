@@ -36,6 +36,8 @@ class PatientResource extends JsonResource
             'marital_status' => $this->marital_status?->value,
             'notification_enabled' => (bool) $this->notification_enabled,
             'is_legacy' => (bool) $this->is_legacy,
+            // Search reaches soft-deleted patients, so the row must be able to say it is deleted.
+            'is_deleted' => $this->trashed(),
             'notes' => $this->notes,
             'created_at' => $this->created_at->toISOString(),
             // Present only on the list query (a sortable subselect); null on show/edit.

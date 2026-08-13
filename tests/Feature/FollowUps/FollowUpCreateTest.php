@@ -153,6 +153,17 @@ it('rejects create with a deactivated follow_up_type_id', function (): void {
     expect(FollowUp::withoutGlobalScopes()->where('patient_id', $patient->id)->exists())->toBeFalse();
 });
 
+it('rejects create for a soft-deleted patient', function (): void {
+    ['owner' => $owner, 'patient' => $patient, 'type' => $type] = fcrSetup();
+    $patient->delete();
+
+    $this->actingAs($owner)
+        ->post(route('follow-ups.store'), fcrPayload($patient, $type))
+        ->assertSessionHasErrors('patient_id');
+
+    expect(FollowUp::withoutGlobalScopes()->where('patient_id', $patient->id)->exists())->toBeFalse();
+});
+
 it('rejects create when case_id belongs to a different patient', function (): void {
     ['clinic' => $clinic, 'owner' => $owner, 'doctor' => $doctor, 'patient' => $patient, 'type' => $type] = fcrSetup();
 

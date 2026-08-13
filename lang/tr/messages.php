@@ -41,6 +41,7 @@ return [
         'delete_blocked_cases' => ':count açık vaka',
         'delete_blocked_appointments' => ':count gelecek randevu',
         'delete_blocked_follow_ups' => ':count bekleyen takip',
+        'delete_blocked_balance' => ':amount tutarında kapanmamış hesap',
         'delete_blocked_suffix' => 'var. Önce bunları kapatın.',
     ],
 

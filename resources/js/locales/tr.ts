@@ -697,7 +697,6 @@ export const tr = {
         legacy_badge: 'Sistem öncesi',
         legacy_only: 'Sistem öncesi',
         not_legacy: 'Sistemde oluşturulan',
-        deleted_badge: 'Silinmiş',
         back: 'Geri',
         save: 'Kaydet',
         create_title: 'Hasta Ekle',
@@ -834,6 +833,12 @@ export const tr = {
             hint: 'Temel bilgilerle hızlı kayıt oluşturulur. Detaylı giriş için "Detaylı hasta ekle" bağlantısını kullanın.',
         },
         clear_patient: 'Seçimi kaldır',
+        restore_patient: {
+            restored: 'Hasta kaydı geri yüklendi',
+            restored_hint:
+                'Hasta formda seçildi. Randevuyu oluşturmak için formu gönderin.',
+            failed: 'Hasta kaydı geri yüklenemedi. Lütfen tekrar deneyin.',
+        },
         hints: {
             service: 'Hizmet seçilirse süre otomatik belirlenir.',
             appointment_type:
@@ -1954,6 +1959,7 @@ export const tr = {
         confirm_title: 'Emin misiniz?',
         search: 'Ara',
         unspecified: 'Belirtilmemiş',
+        deleted_badge: 'Silinmiş',
         doctor_selected_suffix: 'doktor',
         delete: 'Sil',
         cancel: 'Vazgeç',

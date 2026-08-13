@@ -301,3 +301,38 @@ it('clinic A cannot produce clinic B treatment report (404 via ClinicScope route
         ->get(route('treatments.report', $setupB['treatment']))
         ->assertNotFound();
 });
+
+// ---------------------------------------------------------------------------
+// Soft-deleted doctor — the document outlives the profile
+// ---------------------------------------------------------------------------
+
+it('marks the doctor as deleted on the report when the doctor profile is soft-deleted', function (): void {
+    /** @var FakePdfBuilder $fake */
+    $fake = Pdf::fake();
+    $setup = trSetup();
+
+    $name = $setup['doctor']->display_name;
+    $setup['doctor']->delete();
+
+    $this->actingAs($setup['owner'])
+        ->get(route('treatments.report', $setup['treatment']))
+        ->assertOk();
+
+    $pdf = trCapturedPdf($fake);
+
+    expect($pdf->viewData['doctor']['displayName'])->toBe($name)
+        ->and($pdf->viewData['doctor']['deleted'])->toBeTrue()
+        ->and($pdf->getHtml())->toContain(__('treatment.report.deleted_record'));
+});
+
+it('leaves doctor.deleted false on the report while the doctor profile is live', function (): void {
+    /** @var FakePdfBuilder $fake */
+    $fake = Pdf::fake();
+    $setup = trSetup();
+
+    $this->actingAs($setup['owner'])
+        ->get(route('treatments.report', $setup['treatment']))
+        ->assertOk();
+
+    expect(trCapturedPdf($fake)->viewData['doctor']['deleted'])->toBeFalse();
+});

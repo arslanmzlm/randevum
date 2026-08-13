@@ -34,6 +34,15 @@ class PatientRepository
             ->addSelect(['last_visit_at' => $lastVisit])
             ->with('tags');
 
+        // A search is a targeted lookup ("where did that record go?"), so it reaches soft-deleted
+        // patients too — matching the treatment/appointment lists, which keep showing their rows.
+        // The unsearched list stays clean (default scope), so deleted patients are not browsable.
+        $term = request()->input('filter.search');
+
+        if (is_string($term) && filled($term)) {
+            $query->withTrashed();
+        }
+
         $this->applyTagFilter($query);
         $this->applyLastVisitFilter($query, $timezone);
 

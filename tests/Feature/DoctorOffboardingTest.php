@@ -1,16 +1,19 @@
 <?php
 
 use App\Enums\AppointmentStatus;
+use App\Enums\SmsType;
 use App\Models\Appointment;
 use App\Models\Clinic;
 use App\Models\Doctor;
 use App\Models\Patient;
 use App\Models\StatusLog;
 use App\Models\User;
+use App\Modules\Messaging\Jobs\SendSmsJob;
 use App\Support\ClinicContext;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Spatie\Permission\PermissionRegistrar;
 
 uses(RefreshDatabase::class);
@@ -194,6 +197,53 @@ it('offboard flashes a success toast', function (): void {
     $this->actingAs($owner)
         ->post(route('doctors.offboard', $doctor), ['cancel_appointments' => true])
         ->assertSessionHas('toasts');
+});
+
+// ---------------------------------------------------------------------------
+// Soft-deleted patient — the appointment outlives the patient
+// ---------------------------------------------------------------------------
+
+it('offboards a doctor whose future appointment belongs to a soft-deleted patient', function (): void {
+    Queue::fake();
+
+    [$clinic, $owner, $doctor] = obFixture('owner');
+
+    $patient = Patient::factory()->create([
+        'clinic_id' => $clinic->id,
+        'first_name' => 'Silinmiş',
+        'last_name' => 'Hasta',
+        'phone' => '+905321234567',
+    ]);
+
+    $appointment = Appointment::factory()->withStatus(AppointmentStatus::Confirmed)->create([
+        'clinic_id' => $clinic->id,
+        'doctor_id' => $doctor->id,
+        'patient_id' => $patient->id,
+    ]);
+
+    $patient->delete();
+
+    $this->actingAs($owner)
+        ->post(route('doctors.offboard', $doctor), [
+            'cancel_appointments' => true,
+            'reason' => 'Doktor ayrıldı.',
+        ])
+        ->assertRedirect(route('doctors.index'));
+
+    $fresh = $doctor->fresh();
+    expect($appointment->fresh()->status)->toBe(AppointmentStatus::Cancelled)
+        ->and($fresh->is_active)->toBeFalse()
+        ->and($fresh->left_at)->not->toBeNull();
+
+    // Without withTrashed() the eager-loaded patient relation is null, the cancel SMS
+    // throws inside its own swallow-all try/catch, and the patient is silently never told.
+    Queue::assertPushed(SendSmsJob::class, 1);
+    Queue::assertPushed(SendSmsJob::class, function (SendSmsJob $job) use ($clinic, $patient): bool {
+        return $job->message->type === SmsType::AppointmentCancelled
+            && $job->message->clinicId === $clinic->id
+            && $job->message->patientId === $patient->id
+            && $job->message->phone === '+905321234567';
+    });
 });
 
 // ---------------------------------------------------------------------------

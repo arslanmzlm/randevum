@@ -7,6 +7,7 @@ import { useI18n } from 'vue-i18n';
 import ScheduleExceptionDialog from '@/components/availability/ScheduleExceptionDialog.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import RecordName from '@/components/RecordName.vue';
 import SectionCard from '@/components/SectionCard.vue';
 import { useCan } from '@/composables/useCan';
 import { useDateTime } from '@/composables/useDateTime';
@@ -163,9 +164,11 @@ function removeException(exception: ScheduleException): void {
                     :header="t('availability.columns.doctor')"
                 >
                     <template #body="{ data }">
-                        <span class="font-medium text-surface-900">
-                            {{ data.doctor_name }}
-                        </span>
+                        <RecordName
+                            :name="data.doctor_name"
+                            :deleted="data.doctor_is_deleted"
+                            text-class="truncate font-medium text-surface-900"
+                        />
                     </template>
                 </Column>
 

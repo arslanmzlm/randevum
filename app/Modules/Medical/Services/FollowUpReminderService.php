@@ -44,6 +44,7 @@ class FollowUpReminderService implements FollowUpRemindersContract
                 'doctor' => $followUp->caseRecord !== null ? [
                     'id' => (int) $followUp->caseRecord->doctor_id,
                     'display_name' => $followUp->caseRecord->doctor->display_name,
+                    'is_deleted' => $followUp->caseRecord->doctor->trashed(),
                 ] : null,
                 'type' => $followUp->type !== null ? [
                     'id' => $followUp->type->id,

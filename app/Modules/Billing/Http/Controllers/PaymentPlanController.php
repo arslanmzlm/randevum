@@ -55,6 +55,7 @@ class PaymentPlanController extends Controller
                     'plan_id' => $plan->id,
                     'patient_id' => $plan->patient_id,
                     'patient_name' => trim("{$plan->patient->first_name} {$plan->patient->last_name}"),
+                    'patient_is_deleted' => $plan->patient->trashed(),
                     'treatment_id' => $plan->treatment_id,
                     'sequence' => $installment->sequence,
                     // Row shows "3 / 6": a bare sequence number says nothing about how far along

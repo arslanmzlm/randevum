@@ -120,6 +120,7 @@ class ReportBreakdownService
             array_keys($appointmentCounts),
         ));
         $labels = $this->repository->doctorLabels($ids);
+        $deletedIds = $this->repository->deletedDoctorIds($ids);
 
         $rows = [];
 
@@ -134,6 +135,9 @@ class ReportBreakdownService
             $rows[] = [
                 'id' => $id,
                 'label' => $labels[$id] ?? __('report.unspecified'),
+                // doctorLabels() reaches soft-deleted doctors on purpose (a past period must
+                // still name whoever worked it), so the row has to say the profile is gone.
+                'is_deleted' => in_array($id, $deletedIds, true),
                 'amount' => $amount,
                 'count' => $count,
                 'average' => $this->average($amount, $count),

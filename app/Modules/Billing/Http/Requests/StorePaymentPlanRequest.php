@@ -31,7 +31,11 @@ class StorePaymentPlanRequest extends FormRequest
             'patient_id' => [
                 'required',
                 'integer',
-                Rule::exists('patients', 'id')->where('clinic_id', $clinicId),
+                // whereNull('deleted_at'): Rule::exists builds a raw query, so SoftDeletes does
+                // not apply — without it a soft-deleted patient's id opens a new payment plan.
+                Rule::exists('patients', 'id')
+                    ->where('clinic_id', $clinicId)
+                    ->whereNull('deleted_at'),
             ],
             'treatment_id' => [
                 'nullable',

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3';
 import { IconPhone, IconUser } from '@tabler/icons-vue';
 import { computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -8,11 +8,11 @@ import DateTimeFields from '@/components/appointments/DateTimeFields.vue';
 import DaySchedulePanel from '@/components/appointments/DaySchedulePanel.vue';
 import { provideAppointmentForm } from '@/components/appointments/formContext';
 import PageHeader from '@/components/PageHeader.vue';
+import PatientNameLink from '@/components/patients/PatientNameLink.vue';
 import SectionCard from '@/components/SectionCard.vue';
 import { useDateTime } from '@/composables/useDateTime';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { index as appointmentsIndex, update } from '@/routes/appointments';
-import { show as patientShow } from '@/routes/patients';
 import type {
     AppointmentEditProps,
     AppointmentFormData,
@@ -140,12 +140,10 @@ function submit(): void {
                         <div
                             class="flex flex-col gap-3 rounded-lg border border-surface-200 p-4"
                         >
-                            <Link
-                                :href="patientShow(appointment.patient.id).url"
-                                class="font-medium text-primary-600 transition-colors hover:text-primary-700 hover:underline"
-                            >
-                                {{ appointment.patient.full_name }}
-                            </Link>
+                            <PatientNameLink
+                                :patient="appointment.patient"
+                                class="font-medium"
+                            />
                             <span
                                 v-if="appointment.patient.phone"
                                 class="flex items-center gap-2 text-sm text-surface-500"

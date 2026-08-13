@@ -24,8 +24,10 @@ class AppointmentDetailResource extends JsonResource
             'id' => $this->id,
             'patient_id' => $this->patient_id,
             'patient_name' => trim($this->patient->first_name.' '.$this->patient->last_name),
+            'patient_is_deleted' => $this->patient->trashed(),
             'doctor_id' => $this->doctor_id,
             'doctor_name' => $this->doctor->display_name,
+            'doctor_is_deleted' => $this->doctor->trashed(),
             'service_name' => $this->service?->name,
             'appointment_type' => $this->appointmentType
                 ? ['name' => $this->appointmentType->name, 'color' => $this->appointmentType->color]
