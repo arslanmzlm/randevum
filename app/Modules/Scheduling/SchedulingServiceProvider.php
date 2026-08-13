@@ -13,6 +13,7 @@ use App\Modules\Identity\Events\ClinicRegistered;
 use App\Modules\Scheduling\Console\Commands\AutoNoShowCommand;
 use App\Modules\Scheduling\Console\Commands\SendRemindersCommand;
 use App\Modules\Scheduling\Listeners\ProvisionDefaultAppointmentTypes;
+use App\Modules\Scheduling\Services\AppointmentReader;
 use App\Modules\Scheduling\Services\AppointmentService;
 use App\Modules\Scheduling\Services\AppointmentTypeService;
 use App\Modules\Scheduling\Services\DashboardStatsService;
@@ -26,9 +27,9 @@ class SchedulingServiceProvider extends ServiceProvider
     {
         $this->app->bind(AppointmentCancellationContract::class, AppointmentService::class);
         $this->app->bind(AppointmentLifecycleContract::class, AppointmentService::class);
-        $this->app->bind(PatientAppointmentsContract::class, AppointmentService::class);
+        $this->app->bind(PatientAppointmentsContract::class, AppointmentReader::class);
         $this->app->bind(PatientAppointmentCounterContract::class, PatientAppointmentCounter::class);
-        $this->app->bind(UpcomingAppointmentsContract::class, AppointmentService::class);
+        $this->app->bind(UpcomingAppointmentsContract::class, AppointmentReader::class);
         $this->app->bind(DashboardStatsContract::class, DashboardStatsService::class);
         $this->app->bind(AppointmentTypeLookupContract::class, AppointmentTypeService::class);
     }

@@ -10,7 +10,7 @@ use Illuminate\Support\Collection;
 /**
  * Read seam Medical uses to show a patient's appointment history on the patient
  * detail page. Lives in Core (shared kernel) so PatientController can depend on
- * the abstraction without importing Scheduling. AppointmentService implements it.
+ * the abstraction without importing Scheduling. AppointmentReader implements it.
  */
 interface PatientAppointmentsContract
 {

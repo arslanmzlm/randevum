@@ -7,7 +7,7 @@ use App\Models\User;
 /**
  * Read seam that allows HandleInertiaRequests (Core) to populate the shared
  * upcoming-appointments prop without importing Scheduling concretely.
- * AppointmentService implements it; the binding lives in SchedulingServiceProvider.
+ * AppointmentReader implements it; the binding lives in SchedulingServiceProvider.
  */
 interface UpcomingAppointmentsContract
 {

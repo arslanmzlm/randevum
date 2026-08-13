@@ -9,7 +9,7 @@ use App\Modules\Medical\Exceptions\TrashedPhoneConflictException;
  * Cross-module seam for creating a patient in the active clinic.
  *
  * Lets Scheduling (inline new-patient booking) register a patient without importing
- * Medical's concrete Service. Bound to PatientService in MedicalServiceProvider.
+ * Medical's concrete Service. Bound to PatientRegistrar in MedicalServiceProvider.
  */
 interface PatientRegistrarContract
 {
