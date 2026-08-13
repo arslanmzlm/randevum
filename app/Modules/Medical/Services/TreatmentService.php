@@ -9,7 +9,6 @@ use App\Enums\TreatmentStatus;
 use App\Models\Appointment;
 use App\Models\Clinic;
 use App\Models\Patient;
-use App\Models\PodiatryTreatmentDetail;
 use App\Models\Treatment;
 use App\Models\TreatmentProductLine;
 use App\Models\User;
@@ -33,8 +32,8 @@ use Illuminate\Validation\ValidationException;
 
 class TreatmentService
 {
-    /** Morph slug used for the podiatry vertical detail table. */
-    private const PODIATRY_DETAIL_SLUG = 'podiatry';
+    /** Vertical slug the treatment flow is built for. */
+    private const PODIATRY_VERTICAL_SLUG = 'podiatry';
 
     public function __construct(
         private TreatmentRepository $treatmentRepository,
@@ -53,7 +52,7 @@ class TreatmentService
      *
      * - Returns the existing treatment if already a Draft.
      * - Throws 422 if the treatment is already Completed (caller redirects to show).
-     * - Creates PodiatryTreatmentDetail + Treatment (Draft) and marks the appointment Arrived.
+     * - Creates the Treatment (Draft) and marks the appointment Arrived.
      *
      * @throws ValidationException
      */
@@ -73,14 +72,10 @@ class TreatmentService
         }
 
         return DB::transaction(function () use ($appointment, $actor): Treatment {
-            $detail = PodiatryTreatmentDetail::create([]);
-
             $treatment = $this->treatmentRepository->create([
                 'appointment_id' => $appointment->id,
                 'patient_id' => $appointment->patient_id,
                 'doctor_id' => $appointment->doctor_id,
-                'details_type' => self::PODIATRY_DETAIL_SLUG,
-                'details_id' => $detail->id,
                 'status' => TreatmentStatus::Draft->value,
                 'created_by' => $actor->id,
             ]);
@@ -103,13 +98,12 @@ class TreatmentService
      *
      * Order of operations (spec §complete):
      *   1. Resolve / create case
-     *   2. Update detail fields + notes
-     *   3. Insert line items + compute totals
-     *   4. Draft → Completed + completed_at + status_log
-     *   5. Deduct stock per product line
-     *   6. Record optional payment
-     *   7. Book follow-up appointment(s)
-     *   8. Mark appointment Arrived → Completed
+     *   2. Insert line items + compute totals
+     *   3. Clinical fields + notes + totals, Draft → Completed + completed_at + status_log
+     *   4. Deduct stock per product line
+     *   5. Record optional payment
+     *   6. Book follow-up appointment(s)
+     *   7. Mark appointment Arrived → Completed
      *
      * @param  array<string, mixed>  $data  Validated by CompleteTreatmentRequest
      * @return array{created: list<Appointment>, skipped: list<string>}
@@ -125,31 +119,25 @@ class TreatmentService
             ]);
         }
 
-        $treatment->loadMissing('appointment', 'details');
+        $treatment->loadMissing('appointment');
         $appointment = $treatment->appointment;
 
         return DB::transaction(function () use ($treatment, $appointment, $data, $actor): array {
             // 1. Case resolution
             $caseId = $this->resolveCase($treatment, $data, $actor);
 
-            // 2. Update detail fields + treatment notes
-            $treatment->details->fill([
-                'complaint' => $data['details']['complaint'] ?? null,
-                'diagnosis' => $data['details']['diagnosis'] ?? null,
-                'treatment_process' => $data['details']['treatment_process'] ?? null,
-            ])->save();
-
-            $treatment->notes = $data['notes'] ?? null;
-
-            // 3. Insert line items + compute totals
+            // 2. Insert line items + compute totals
             $this->writeServiceLines($treatment, $data['services'] ?? []);
             $this->writeProductLines($treatment, $data['products'] ?? []);
 
             $discountAmount = (string) ($data['discount_amount'] ?? 0);
             [$subtotal, $total] = $this->computeTotals($treatment, $discountAmount);
 
-            // 4. Draft → Completed
+            // 3. Clinical fields + Draft → Completed
             $this->treatmentRepository->update($treatment, [
+                'complaint' => $data['details']['complaint'] ?? null,
+                'diagnosis' => $data['details']['diagnosis'] ?? null,
+                'treatment_process' => $data['details']['treatment_process'] ?? null,
                 'subtotal_amount' => $subtotal,
                 'discount_amount' => $discountAmount,
                 'total_amount' => $total,
@@ -167,7 +155,7 @@ class TreatmentService
                 $actor,
             );
 
-            // 5. Stock deduction (negative allowed per domain rules). Locks are taken in
+            // 4. Stock deduction (negative allowed per domain rules). Locks are taken in
             // product_id order so two completions sharing products can't deadlock by
             // acquiring the same rows in opposite submission order.
             foreach ($treatment->productLines->sortBy('product_id') as $line) {
@@ -181,7 +169,7 @@ class TreatmentService
                 );
             }
 
-            // 6. Optional payment — either a split payment set or a taksit (installment) plan.
+            // 5. Optional payment — either a split payment set or a taksit (installment) plan.
             $installmentPlan = $data['installment_plan'] ?? null;
 
             if (! empty($installmentPlan)) {
@@ -220,7 +208,7 @@ class TreatmentService
                 }
             }
 
-            // 7. Follow-up appointment(s)
+            // 6. Follow-up appointment(s)
             $followUpResult = ['created' => [], 'skipped' => []];
             $followUp = $data['follow_up'] ?? null;
 
@@ -234,7 +222,7 @@ class TreatmentService
                 ], $actor);
             }
 
-            // 8. Appointment Arrived → Completed
+            // 7. Appointment Arrived → Completed
             $this->appointmentLifecycle->markCompleted($appointment, $actor, $caseId);
 
             return $followUpResult;
@@ -583,8 +571,8 @@ class TreatmentService
     }
 
     /**
-     * Assert the active clinic's vertical slug matches the podiatry detail morph slug.
-     * Clinic-vertical / detail-type consistency is enforced here per the cases-treatments domain rule.
+     * Assert the active clinic runs the only vertical the treatment flow ships for.
+     * Clinic-vertical consistency is enforced here per the cases-treatments domain rule.
      *
      * @throws ValidationException
      */
@@ -592,7 +580,7 @@ class TreatmentService
     {
         $clinic = Clinic::with('vertical')->findOrFail($this->clinicContext->id());
 
-        if ($clinic->vertical?->slug !== self::PODIATRY_DETAIL_SLUG) {
+        if ($clinic->vertical?->slug !== self::PODIATRY_VERTICAL_SLUG) {
             throw ValidationException::withMessages([
                 'treatment' => [__('treatment.errors.vertical_mismatch')],
             ]);

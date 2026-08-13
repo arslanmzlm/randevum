@@ -15,7 +15,6 @@ use App\Models\Patient;
 use App\Models\PatientSegment;
 use App\Models\PaymentPlan;
 use App\Models\PaymentPlanInstallment;
-use App\Models\PodiatryTreatmentDetail;
 use App\Models\Product;
 use App\Models\Role;
 use App\Models\ScheduleException;
@@ -130,7 +129,6 @@ class AppServiceProvider extends ServiceProvider
             'transaction' => Transaction::class,
             'patient' => Patient::class,
             'user' => User::class,
-            'podiatry' => PodiatryTreatmentDetail::class,
             'payment_plan' => PaymentPlan::class,
             'payment_plan_installment' => PaymentPlanInstallment::class,
             'follow_up' => FollowUp::class,

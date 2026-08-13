@@ -13,7 +13,6 @@ use App\Models\Doctor;
 use App\Models\FollowUp;
 use App\Models\FollowUpType;
 use App\Models\Patient;
-use App\Models\PodiatryTreatmentDetail;
 use App\Models\Service;
 use App\Models\StatusLog;
 use App\Models\Treatment;
@@ -265,15 +264,12 @@ class DemoCasesSeeder extends Seeder
             ->get();
 
         foreach ($appointments as $index => $appointment) {
-            $detail = PodiatryTreatmentDetail::create($this->clinicalNotes($index));
-
             $treatment = Treatment::create([
                 'clinic_id' => $this->clinic->id,
                 'appointment_id' => $appointment->id,
                 'patient_id' => $appointment->patient_id,
                 'doctor_id' => $appointment->doctor_id,
-                'details_type' => 'podiatry',
-                'details_id' => $detail->id,
+                ...$this->clinicalNotes($index),
                 'status' => TreatmentStatus::Draft,
                 'created_by' => $this->owner->id,
             ]);
@@ -302,8 +298,8 @@ class DemoCasesSeeder extends Seeder
     }
 
     /**
-     * A plausible complaint / diagnosis / process trio. The case page shows these inline, so an
-     * empty detail row would leave that screen looking unimplemented.
+     * A plausible complaint / diagnosis / process trio. The case page shows these inline, so
+     * leaving them empty would make that screen look unimplemented.
      *
      * @return array<string, string>
      */
@@ -379,18 +375,13 @@ class DemoCasesSeeder extends Seeder
             'created_by' => $this->owner->id,
         ]);
 
-        $detail = PodiatryTreatmentDetail::create(
-            $this->clinicalNotes($patient->id + $doctor->id),
-        );
-
         $treatment = Treatment::create([
             'clinic_id' => $this->clinic->id,
             'appointment_id' => $appointment->id,
             'patient_id' => $patient->id,
             'doctor_id' => $doctor->id,
             'case_id' => $case?->id,
-            'details_type' => 'podiatry',
-            'details_id' => $detail->id,
+            ...$this->clinicalNotes($patient->id + $doctor->id),
             'status' => TreatmentStatus::Completed,
             'completed_at' => $endsAt,
             'created_by' => $doctor->user_id,

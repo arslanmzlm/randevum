@@ -7,7 +7,6 @@ use App\Models\Appointment;
 use App\Models\Clinic;
 use App\Models\Doctor;
 use App\Models\Patient;
-use App\Models\PodiatryTreatmentDetail;
 use App\Models\Treatment;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -21,16 +20,15 @@ class TreatmentFactory extends Factory
      */
     public function definition(): array
     {
-        $detail = PodiatryTreatmentDetail::create([]);
-
         return [
             'clinic_id' => Clinic::factory(),
             'appointment_id' => Appointment::factory(),
             'patient_id' => Patient::factory(),
             'doctor_id' => Doctor::factory(),
             'case_id' => null,
-            'details_type' => 'podiatry',
-            'details_id' => $detail->id,
+            'complaint' => null,
+            'diagnosis' => null,
+            'treatment_process' => null,
             'subtotal_amount' => 0,
             'discount_amount' => 0,
             'total_amount' => 0,

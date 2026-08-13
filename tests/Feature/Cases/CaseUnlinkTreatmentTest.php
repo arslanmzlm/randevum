@@ -7,7 +7,6 @@ use App\Models\CaseRecord;
 use App\Models\Clinic;
 use App\Models\Doctor;
 use App\Models\Patient;
-use App\Models\PodiatryTreatmentDetail;
 use App\Models\Treatment;
 use App\Models\User;
 use App\Support\ClinicContext;
@@ -82,15 +81,12 @@ function cutLinkedCase(Clinic $clinic, Doctor $doctor, Patient $patient, User $a
         'case_id' => $case->id,
     ]);
 
-    $detail = PodiatryTreatmentDetail::create([]);
     $treatment = Treatment::create([
         'clinic_id' => $clinic->id,
         'appointment_id' => $appointment->id,
         'patient_id' => $patient->id,
         'doctor_id' => $doctor->id,
         'case_id' => $case->id,
-        'details_type' => 'podiatry',
-        'details_id' => $detail->id,
         'subtotal_amount' => 0,
         'discount_amount' => 0,
         'total_amount' => 0,

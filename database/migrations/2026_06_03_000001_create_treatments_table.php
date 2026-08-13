@@ -16,9 +16,14 @@ return new class extends Migration
             $table->foreignId('patient_id')->constrained()->cascadeOnDelete();
             $table->foreignId('doctor_id')->constrained('doctors')->cascadeOnDelete();
             $table->foreignId('case_id')->nullable()->constrained('cases')->nullOnDelete();
-            // Polymorphic detail row — always populated on Draft creation (NOT NULL)
-            $table->string('details_type', 50);
-            $table->unsignedBigInteger('details_id');
+            // Clinical trio — universal, not vertical-specific: `services` already carries
+            // default_complaint / default_diagnosis / default_treatment_process templates.
+            $table->text('complaint')->nullable();
+            $table->text('diagnosis')->nullable();
+            $table->text('treatment_process')->nullable();
+            // Optional polymorphic detail row for a vertical that needs fields of its own.
+            $table->string('details_type', 50)->nullable();
+            $table->unsignedBigInteger('details_id')->nullable();
             $table->decimal('subtotal_amount', 12, 2)->default(0);
             $table->decimal('discount_amount', 12, 2)->default(0);
             $table->decimal('total_amount', 12, 2)->default(0);

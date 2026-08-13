@@ -6,7 +6,7 @@ use App\Models\Appointment;
 use App\Models\Clinic;
 use App\Models\Doctor;
 use App\Models\Patient;
-use App\Models\PodiatryTreatmentDetail;
+use App\Models\Service;
 use App\Models\StatusLog;
 use App\Models\Treatment;
 use App\Models\User;
@@ -74,15 +74,11 @@ function stSetup(AppointmentStatus $status = AppointmentStatus::Confirmed): arra
  */
 function stDraftTreatment(Clinic $clinic, Appointment $appointment, Patient $patient, Doctor $doctor, User $creator, TreatmentStatus $status = TreatmentStatus::Draft): Treatment
 {
-    $detail = PodiatryTreatmentDetail::create([]);
-
     return Treatment::create([
         'clinic_id' => $clinic->id,
         'appointment_id' => $appointment->id,
         'patient_id' => $patient->id,
         'doctor_id' => $doctor->id,
-        'details_type' => 'podiatry',
-        'details_id' => $detail->id,
         'subtotal_amount' => 0,
         'discount_amount' => 0,
         'total_amount' => 0,
@@ -96,7 +92,7 @@ function stDraftTreatment(Clinic $clinic, Appointment $appointment, Patient $pat
 // POST /appointments/{appointment}/treatment — core creation behavior
 // ---------------------------------------------------------------------------
 
-it('creates a draft treatment with a podiatry detail row for a confirmed appointment', function (): void {
+it('creates a draft treatment for a confirmed appointment', function (): void {
     ['clinic' => $clinic, 'owner' => $owner, 'appointment' => $appointment] = stSetup();
 
     $this->actingAs($owner)
@@ -109,21 +105,23 @@ it('creates a draft treatment with a podiatry detail row for a confirmed appoint
 
     expect($treatment)->not->toBeNull()
         ->and($treatment->status)->toBe(TreatmentStatus::Draft)
-        ->and($treatment->details_type)->toBe('podiatry')
         ->and($treatment->clinic_id)->toBe($clinic->id)
         ->and($treatment->patient_id)->toBe($appointment->patient_id)
         ->and($treatment->doctor_id)->toBe($appointment->doctor_id);
-
-    expect(PodiatryTreatmentDetail::find($treatment->details_id))->not->toBeNull();
 });
 
-it('uses the podiatry morph slug in details_type', function (): void {
+it('starts the clinical fields empty and without a vertical detail row', function (): void {
     ['owner' => $owner, 'appointment' => $appointment] = stSetup();
 
     $this->actingAs($owner)->post(route('treatments.start', $appointment));
 
     $treatment = Treatment::withoutGlobalScopes()->where('appointment_id', $appointment->id)->first();
-    expect($treatment->details_type)->toBe('podiatry');
+
+    expect($treatment->complaint)->toBeNull()
+        ->and($treatment->diagnosis)->toBeNull()
+        ->and($treatment->treatment_process)->toBeNull()
+        ->and($treatment->details_type)->toBeNull()
+        ->and($treatment->details_id)->toBeNull();
 });
 
 it('redirects to the process screen after creating a draft treatment', function (): void {
@@ -378,6 +376,32 @@ it('GET process returns the Process component with required Inertia props', func
             ->has('openCases')
             ->has('defaultSlotDuration')
             ->has('workingHours')
+        );
+});
+
+// The Process screen copies these templates into complaint / diagnosis / treatment_process when a
+// service is picked, so the prop must carry them even though the trio now lives on `treatments`.
+it('GET process ships each service with its clinical templates', function (): void {
+    ['owner' => $owner, 'appointment' => $appointment, 'clinic' => $clinic,
+        'doctor' => $doctor, 'patient' => $patient] = stSetup(AppointmentStatus::Arrived);
+
+    Service::factory()->create([
+        'clinic_id' => $clinic->id,
+        'vertical_id' => $clinic->vertical_id,
+        'default_complaint' => 'Batık tırnak şikayeti',
+        'default_diagnosis' => 'Onikokriptoz',
+        'default_treatment_process' => 'Kenar rezeksiyonu',
+    ]);
+
+    $treatment = stDraftTreatment($clinic, $appointment, $patient, $doctor, $owner);
+
+    $this->actingAs($owner)
+        ->get(route('treatments.process', $treatment))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('services.0.default_complaint', 'Batık tırnak şikayeti')
+            ->where('services.0.default_diagnosis', 'Onikokriptoz')
+            ->where('services.0.default_treatment_process', 'Kenar rezeksiyonu')
         );
 });
 

@@ -10,7 +10,6 @@ use App\Models\CaseRecord;
 use App\Models\Clinic;
 use App\Models\Doctor;
 use App\Models\Patient;
-use App\Models\PodiatryTreatmentDetail;
 use App\Models\Product;
 use App\Models\Service;
 use App\Models\StatusLog;
@@ -74,14 +73,11 @@ function ctSetup(): array
             'ends_at' => $startsAt->copy()->addMinutes(30),
         ]);
 
-    $detail = PodiatryTreatmentDetail::create([]);
     $treatment = Treatment::create([
         'clinic_id' => $clinic->id,
         'appointment_id' => $appointment->id,
         'patient_id' => $patient->id,
         'doctor_id' => $doctor->id,
-        'details_type' => 'podiatry',
-        'details_id' => $detail->id,
         'subtotal_amount' => 0,
         'discount_amount' => 0,
         'total_amount' => 0,
@@ -120,6 +116,34 @@ it('transitions the treatment from draft to completed with completed_at set', fu
     $fresh = Treatment::withoutGlobalScopes()->find($treatment->id);
     expect($fresh->status)->toBe(TreatmentStatus::Completed)
         ->and($fresh->completed_at)->not->toBeNull();
+});
+
+it('persists the clinical trio onto the treatment row', function (): void {
+    ['owner' => $owner, 'treatment' => $treatment] = ctSetup();
+
+    $this->actingAs($owner)
+        ->put(route('treatments.complete', $treatment), ctPayload([
+            'details' => [
+                'complaint' => 'Sol ayak başparmağında ağrı',
+                'diagnosis' => 'Batık tırnak',
+                'treatment_process' => 'Kenar rezeksiyonu uygulandı',
+            ],
+        ]));
+
+    $fresh = Treatment::withoutGlobalScopes()->find($treatment->id);
+
+    expect($fresh->complaint)->toBe('Sol ayak başparmağında ağrı')
+        ->and($fresh->diagnosis)->toBe('Batık tırnak')
+        ->and($fresh->treatment_process)->toBe('Kenar rezeksiyonu uygulandı');
+
+    // API shape is unchanged: the show page still reads them from a nested `details` object.
+    $this->actingAs($owner)
+        ->get(route('treatments.show', $treatment))
+        ->assertInertia(fn ($page) => $page
+            ->where('treatment.details.complaint', 'Sol ayak başparmağında ağrı')
+            ->where('treatment.details.diagnosis', 'Batık tırnak')
+            ->where('treatment.details.treatment_process', 'Kenar rezeksiyonu uygulandı')
+        );
 });
 
 it('writes a draft → completed status_log with the actor', function (): void {

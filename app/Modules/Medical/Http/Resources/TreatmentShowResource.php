@@ -46,9 +46,9 @@ class TreatmentShowResource extends JsonResource
                 'title' => $this->case->title,
             ] : null,
             'details' => [
-                'complaint' => $this->details?->complaint,
-                'diagnosis' => $this->details?->diagnosis,
-                'treatment_process' => $this->details?->treatment_process,
+                'complaint' => $this->complaint,
+                'diagnosis' => $this->diagnosis,
+                'treatment_process' => $this->treatment_process,
             ],
             'serviceLines' => $this->serviceLines->map(fn ($line) => [
                 'id' => $line->id,

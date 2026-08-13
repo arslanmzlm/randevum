@@ -44,9 +44,9 @@ class TreatmentProcessResource extends JsonResource
                 'is_deleted' => $this->doctor->trashed(),
             ],
             'details' => [
-                'complaint' => $this->details?->complaint,
-                'diagnosis' => $this->details?->diagnosis,
-                'treatment_process' => $this->details?->treatment_process,
+                'complaint' => $this->complaint,
+                'diagnosis' => $this->diagnosis,
+                'treatment_process' => $this->treatment_process,
             ],
             'notes' => $this->notes,
         ];

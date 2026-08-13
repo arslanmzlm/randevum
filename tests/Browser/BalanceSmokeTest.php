@@ -8,7 +8,6 @@ use App\Models\Appointment;
 use App\Models\Clinic;
 use App\Models\Doctor;
 use App\Models\Patient;
-use App\Models\PodiatryTreatmentDetail;
 use App\Models\Transaction;
 use App\Models\Treatment;
 use App\Models\User;
@@ -69,14 +68,11 @@ it('renders the patient show page with balance summary and transaction list and 
         'starts_at' => $startsAt,
         'ends_at' => $startsAt->copy()->addMinutes(30),
     ]);
-    $detail = PodiatryTreatmentDetail::create([]);
     $treatment = Treatment::create([
         'clinic_id' => $clinic->id,
         'appointment_id' => $appointment->id,
         'patient_id' => $patient->id,
         'doctor_id' => $doctor->id,
-        'details_type' => 'podiatry',
-        'details_id' => $detail->id,
         'subtotal_amount' => 500,
         'discount_amount' => 0,
         'total_amount' => 500,
@@ -148,14 +144,11 @@ it('renders the treatment show page with payment list section and no JS errors',
         'starts_at' => $startsAt,
         'ends_at' => $startsAt->copy()->addMinutes(30),
     ]);
-    $detail = PodiatryTreatmentDetail::create([]);
     $treatment = Treatment::create([
         'clinic_id' => $clinic->id,
         'appointment_id' => $appointment->id,
         'patient_id' => $patient->id,
         'doctor_id' => $doctor->id,
-        'details_type' => 'podiatry',
-        'details_id' => $detail->id,
         'subtotal_amount' => 250,
         'discount_amount' => 0,
         'total_amount' => 250,

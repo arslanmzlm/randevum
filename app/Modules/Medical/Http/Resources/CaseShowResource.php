@@ -46,9 +46,9 @@ class CaseShowResource extends JsonResource
                 'status' => $t->status->value,
                 'completed_at' => $t->completed_at?->toIso8601String(),
                 'total_amount' => (string) $t->total_amount,
-                'complaint' => $t->details?->complaint,
-                'diagnosis' => $t->details?->diagnosis,
-                'treatment_process' => $t->details?->treatment_process,
+                'complaint' => $t->complaint,
+                'diagnosis' => $t->diagnosis,
+                'treatment_process' => $t->treatment_process,
             ])->all(),
         ];
     }

@@ -5,7 +5,6 @@ use App\Models\Appointment;
 use App\Models\Clinic;
 use App\Models\Doctor;
 use App\Models\Patient;
-use App\Models\PodiatryTreatmentDetail;
 use App\Models\Product;
 use App\Models\Service;
 use App\Models\Transaction;
@@ -108,18 +107,14 @@ function trSetup(): array
     $service = Service::factory()->create(['clinic_id' => $clinic->id, 'name' => 'Tırnak Bakımı']);
     $product = Product::factory()->create(['clinic_id' => $clinic->id, 'name' => 'Nasır Kremi']);
 
-    $detail = PodiatryTreatmentDetail::create([
-        'complaint' => 'Sol ayak başparmağında ağrı',
-        'diagnosis' => 'Batık tırnak',
-        'treatment_process' => 'Kısmi tırnak eksizyonu uygulandı',
-    ]);
-
     $treatment = Treatment::factory()->completed()->create([
         'clinic_id' => $clinic->id,
         'appointment_id' => $appointment->id,
         'doctor_id' => $doctor->id,
         'patient_id' => $patient->id,
-        'details_id' => $detail->id,
+        'complaint' => 'Sol ayak başparmağında ağrı',
+        'diagnosis' => 'Batık tırnak',
+        'treatment_process' => 'Kısmi tırnak eksizyonu uygulandı',
         'notes' => 'Kontrol 2 hafta sonra.',
         'subtotal_amount' => '300.00',
         'discount_amount' => '0.00',

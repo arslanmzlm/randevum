@@ -5,7 +5,6 @@ use App\Models\Appointment;
 use App\Models\Clinic;
 use App\Models\Doctor;
 use App\Models\Patient;
-use App\Models\PodiatryTreatmentDetail;
 use App\Models\Tag;
 use App\Models\Treatment;
 use App\Modules\Medical\Repositories\PatientRepository;
@@ -32,15 +31,11 @@ function prfVisit(Clinic $clinic, Patient $patient, Doctor $doctor, string $comp
         'doctor_id' => $doctor->id,
     ]);
 
-    $detail = PodiatryTreatmentDetail::create([]);
-
     return Treatment::create([
         'clinic_id' => $clinic->id,
         'appointment_id' => $appointment->id,
         'patient_id' => $patient->id,
         'doctor_id' => $doctor->id,
-        'details_type' => 'podiatry',
-        'details_id' => $detail->id,
         'subtotal_amount' => 100,
         'discount_amount' => 0,
         'total_amount' => 100,

@@ -35,6 +35,9 @@ class Treatment extends Model implements HasMedia
         'patient_id',
         'doctor_id',
         'case_id',
+        'complaint',
+        'diagnosis',
+        'treatment_process',
         'details_type',
         'details_id',
         'subtotal_amount',
@@ -110,6 +113,9 @@ class Treatment extends Model implements HasMedia
     }
 
     /**
+     * Optional vertical-specific extra fields. Null for a vertical that needs none —
+     * the clinical trio (complaint/diagnosis/treatment_process) lives on this table.
+     *
      * @return MorphTo<Model, $this>
      */
     public function details(): MorphTo

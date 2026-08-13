@@ -17,7 +17,9 @@ it('loads vertical translations per locale', function (): void {
         ->and(__('verticals.podiatry::vertical.doctor_label', [], 'tr'))->toBe('Podolog');
 });
 
-it('owns its treatment-details migration', function (): void {
-    expect(Schema::hasTable('podiatry_treatment_details'))->toBeTrue()
-        ->and(Schema::hasColumns('podiatry_treatment_details', ['complaint', 'diagnosis', 'treatment_process']))->toBeTrue();
+// The clinical trio is universal (treatments table), not vertical-owned: `services` ships the
+// default_* templates for it. The morphTo detail seam stays available but is unused and nullable.
+it('keeps the clinical trio on treatments with an optional vertical detail seam', function (): void {
+    expect(Schema::hasColumns('treatments', ['complaint', 'diagnosis', 'treatment_process']))->toBeTrue()
+        ->and(Schema::hasTable('podiatry_treatment_details'))->toBeFalse();
 });

@@ -6,7 +6,6 @@ use App\Models\Appointment;
 use App\Models\Clinic;
 use App\Models\Doctor;
 use App\Models\Patient;
-use App\Models\PodiatryTreatmentDetail;
 use App\Models\StatusLog;
 use App\Models\Transaction;
 use App\Models\Treatment;
@@ -57,14 +56,11 @@ function rpSetup(float $totalAmount = 200.00, TreatmentStatus $status = Treatmen
         'doctor_id' => $doctor->id,
     ]);
 
-    $detail = PodiatryTreatmentDetail::create([]);
     $treatment = Treatment::create([
         'clinic_id' => $clinic->id,
         'appointment_id' => $appointment->id,
         'patient_id' => $patient->id,
         'doctor_id' => $doctor->id,
-        'details_type' => 'podiatry',
-        'details_id' => $detail->id,
         'subtotal_amount' => $totalAmount,
         'discount_amount' => 0,
         'total_amount' => $totalAmount,
@@ -476,14 +472,11 @@ it('patient Show page sends treatments array with status for the standalone paym
         'patient_id' => $patient->id,
         'doctor_id' => $treatment->doctor_id,
     ]);
-    $detail2 = PodiatryTreatmentDetail::create([]);
     Treatment::create([
         'clinic_id' => $treatment->clinic_id,
         'appointment_id' => $appointment2->id,
         'patient_id' => $patient->id,
         'doctor_id' => $treatment->doctor_id,
-        'details_type' => 'podiatry',
-        'details_id' => $detail2->id,
         'subtotal_amount' => 0,
         'discount_amount' => 0,
         'total_amount' => 0,

@@ -8,7 +8,6 @@ use App\Models\CaseRecord;
 use App\Models\Clinic;
 use App\Models\Doctor;
 use App\Models\Patient;
-use App\Models\PodiatryTreatmentDetail;
 use App\Models\Service;
 use App\Models\StatusLog;
 use App\Models\Treatment;
@@ -69,14 +68,11 @@ function fuSetup(): array
             'ends_at' => $startsAt->copy()->addMinutes(30),
         ]);
 
-    $detail = PodiatryTreatmentDetail::create([]);
     $treatment = Treatment::create([
         'clinic_id' => $clinic->id,
         'appointment_id' => $appointment->id,
         'patient_id' => $patient->id,
         'doctor_id' => $doctor->id,
-        'details_type' => 'podiatry',
-        'details_id' => $detail->id,
         'subtotal_amount' => 0,
         'discount_amount' => 0,
         'total_amount' => 0,

@@ -8,7 +8,6 @@ use App\Models\CaseRecord;
 use App\Models\Clinic;
 use App\Models\Doctor;
 use App\Models\Patient;
-use App\Models\PodiatryTreatmentDetail;
 use App\Models\StatusLog;
 use App\Models\Treatment;
 use App\Models\User;
@@ -76,16 +75,12 @@ function cltCompletedTreatment(Clinic $clinic, Doctor $doctor, Patient $patient,
         'case_id' => null,
     ]);
 
-    $detail = PodiatryTreatmentDetail::create([]);
-
     return Treatment::create(array_merge([
         'clinic_id' => $clinic->id,
         'appointment_id' => $appointment->id,
         'patient_id' => $patient->id,
         'doctor_id' => $doctor->id,
         'case_id' => null,
-        'details_type' => 'podiatry',
-        'details_id' => $detail->id,
         'subtotal_amount' => 0,
         'discount_amount' => 0,
         'total_amount' => 0,
@@ -257,15 +252,12 @@ it('rejects linkTreatments when the treatment is Draft (not Completed)', functio
         'ends_at' => $startsAt->copy()->addMinutes(30),
     ]);
 
-    $detail = PodiatryTreatmentDetail::create([]);
     $draftTreatment = Treatment::create([
         'clinic_id' => $clinic->id,
         'appointment_id' => $appointment->id,
         'patient_id' => $patient->id,
         'doctor_id' => $doctor->id,
         'case_id' => null,
-        'details_type' => 'podiatry',
-        'details_id' => $detail->id,
         'subtotal_amount' => 0,
         'discount_amount' => 0,
         'total_amount' => 0,

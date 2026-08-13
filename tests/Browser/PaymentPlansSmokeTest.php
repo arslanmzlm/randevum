@@ -7,7 +7,6 @@ use App\Models\Doctor;
 use App\Models\Patient;
 use App\Models\PaymentPlan;
 use App\Models\PaymentPlanInstallment;
-use App\Models\PodiatryTreatmentDetail;
 use App\Models\Treatment;
 use App\Models\User;
 use Carbon\Carbon;
@@ -108,14 +107,11 @@ it('renders the installment builder in treatment Process with generated rows and
         'ends_at' => $startsAt->copy()->addMinutes(30),
     ]);
 
-    $detail = PodiatryTreatmentDetail::create([]);
     $treatment = Treatment::create([
         'clinic_id' => $clinic->id,
         'appointment_id' => $appointment->id,
         'patient_id' => $patient->id,
         'doctor_id' => $doctor->id,
-        'details_type' => 'podiatry',
-        'details_id' => $detail->id,
         'subtotal_amount' => 0,
         'discount_amount' => 0,
         'total_amount' => 0,

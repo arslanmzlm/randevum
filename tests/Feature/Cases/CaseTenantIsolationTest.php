@@ -7,7 +7,6 @@ use App\Models\CaseRecord;
 use App\Models\Clinic;
 use App\Models\Doctor;
 use App\Models\Patient;
-use App\Models\PodiatryTreatmentDetail;
 use App\Models\Treatment;
 use App\Models\User;
 use App\Support\ClinicContext;
@@ -79,16 +78,12 @@ function ctiCompletedTreatment(Clinic $clinic, Doctor $doctor, Patient $patient,
         'case_id' => null,
     ]);
 
-    $detail = PodiatryTreatmentDetail::create([]);
-
     return Treatment::create([
         'clinic_id' => $clinic->id,
         'appointment_id' => $appointment->id,
         'patient_id' => $patient->id,
         'doctor_id' => $doctor->id,
         'case_id' => null,
-        'details_type' => 'podiatry',
-        'details_id' => $detail->id,
         'subtotal_amount' => 0,
         'discount_amount' => 0,
         'total_amount' => 0,

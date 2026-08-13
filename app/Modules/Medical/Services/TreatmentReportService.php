@@ -35,7 +35,6 @@ class TreatmentReportService
             // never deleted) — a document requested long after "hasta sil" must still render.
             'patient' => fn ($q) => $q->withTrashed(),
             'doctor' => fn ($q) => $q->withTrashed()->with('user'),
-            'details',
             'serviceLines.service',
             'productLines.product',
         ]);
@@ -117,9 +116,9 @@ class TreatmentReportService
             ], $transactions) : [],
             'notes' => $treatment->notes,
             'details' => [
-                'complaint' => $treatment->details?->complaint,
-                'diagnosis' => $treatment->details?->diagnosis,
-                'treatmentProcess' => $treatment->details?->treatment_process,
+                'complaint' => $treatment->complaint,
+                'diagnosis' => $treatment->diagnosis,
+                'treatmentProcess' => $treatment->treatment_process,
             ],
         ];
     }

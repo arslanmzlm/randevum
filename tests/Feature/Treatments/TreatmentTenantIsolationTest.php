@@ -7,7 +7,6 @@ use App\Models\CaseRecord;
 use App\Models\Clinic;
 use App\Models\Doctor;
 use App\Models\Patient;
-use App\Models\PodiatryTreatmentDetail;
 use App\Models\Product;
 use App\Models\Service;
 use App\Models\Treatment;
@@ -68,14 +67,11 @@ function tiClinicSetup(): array
             'ends_at' => $startsAt->copy()->addMinutes(30),
         ]);
 
-    $detail = PodiatryTreatmentDetail::create([]);
     $treatment = Treatment::create([
         'clinic_id' => $clinic->id,
         'appointment_id' => $appointment->id,
         'patient_id' => $patient->id,
         'doctor_id' => $doctor->id,
-        'details_type' => 'podiatry',
-        'details_id' => $detail->id,
         'subtotal_amount' => 0,
         'discount_amount' => 0,
         'total_amount' => 0,
@@ -291,14 +287,11 @@ it("doctor A gets 403 on another doctor's treatment (lacks treatments.viewAll)",
             'ends_at' => $startsAt->copy()->addMinutes(30),
         ]);
 
-    $detail = PodiatryTreatmentDetail::create([]);
     $treatmentB = Treatment::create([
         'clinic_id' => $clinic->id,
         'appointment_id' => $appointment->id,
         'patient_id' => $patient->id,
         'doctor_id' => $doctorB->id,
-        'details_type' => 'podiatry',
-        'details_id' => $detail->id,
         'subtotal_amount' => 0,
         'discount_amount' => 0,
         'total_amount' => 0,
@@ -332,14 +325,11 @@ it('doctor sees their own treatment (own-record path)', function (): void {
             'ends_at' => $startsAt->copy()->addMinutes(30),
         ]);
 
-    $detail = PodiatryTreatmentDetail::create([]);
     $treatment = Treatment::create([
         'clinic_id' => $clinic->id,
         'appointment_id' => $appointment->id,
         'patient_id' => $patient->id,
         'doctor_id' => $doctor->id,
-        'details_type' => 'podiatry',
-        'details_id' => $detail->id,
         'subtotal_amount' => 0,
         'discount_amount' => 0,
         'total_amount' => 0,

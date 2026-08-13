@@ -12,7 +12,6 @@ use App\Models\Doctor;
 use App\Models\Patient;
 use App\Models\PaymentPlan;
 use App\Models\PaymentPlanInstallment;
-use App\Models\PodiatryTreatmentDetail;
 use App\Models\Product;
 use App\Models\Service;
 use App\Models\StatusLog;
@@ -70,14 +69,11 @@ function vdSetup(TreatmentStatus $status = TreatmentStatus::Completed): array
         'doctor_id' => $doctor->id,
     ]);
 
-    $detail = PodiatryTreatmentDetail::create([]);
     $treatment = Treatment::create([
         'clinic_id' => $clinic->id,
         'appointment_id' => $appointment->id,
         'patient_id' => $patient->id,
         'doctor_id' => $doctor->id,
-        'details_type' => 'podiatry',
-        'details_id' => $detail->id,
         'subtotal_amount' => '250.00',
         'discount_amount' => '50.00',
         'total_amount' => '200.00',

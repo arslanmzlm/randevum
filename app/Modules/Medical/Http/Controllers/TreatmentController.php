@@ -114,7 +114,6 @@ class TreatmentController extends Controller
             'patient',
             // withTrashed(): a draft can outlive the doctor's removal — the screen needs the name.
             'doctor' => fn ($q) => $q->withTrashed()->with('user'),
-            'details',
             'media',
         ]);
 
@@ -235,7 +234,6 @@ class TreatmentController extends Controller
             'patient' => fn ($q) => $q->withTrashed(),
             'doctor' => fn ($q) => $q->withTrashed()->with('user'),
             'case',
-            'details',
             'serviceLines.service',
             'productLines.product',
             'transactions',

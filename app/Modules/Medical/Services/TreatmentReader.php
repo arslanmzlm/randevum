@@ -35,9 +35,7 @@ class TreatmentReader implements TreatmentReaderContract
 
     public function summaryForAppointment(int $appointmentId, User $user): ?array
     {
-        $treatment = Treatment::with('details')
-            ->where('appointment_id', $appointmentId)
-            ->first();
+        $treatment = Treatment::where('appointment_id', $appointmentId)->first();
 
         if ($treatment === null || ! Gate::forUser($user)->allows('view', $treatment)) {
             return null;
@@ -46,8 +44,8 @@ class TreatmentReader implements TreatmentReaderContract
         return [
             'id' => $treatment->id,
             'status' => $treatment->status->value,
-            'complaint' => $treatment->details?->complaint,
-            'diagnosis' => $treatment->details?->diagnosis,
+            'complaint' => $treatment->complaint,
+            'diagnosis' => $treatment->diagnosis,
             'total_amount' => $treatment->total_amount,
             'completed_at' => $treatment->completed_at?->toIso8601String(),
         ];

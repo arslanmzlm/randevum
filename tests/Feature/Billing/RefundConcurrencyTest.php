@@ -7,7 +7,6 @@ use App\Models\Appointment;
 use App\Models\Clinic;
 use App\Models\Doctor;
 use App\Models\Patient;
-use App\Models\PodiatryTreatmentDetail;
 use App\Models\Transaction;
 use App\Models\Treatment;
 use App\Models\User;
@@ -60,14 +59,11 @@ function rfcSetup(float $paymentAmount = 200.00): array
         'doctor_id' => $doctor->id,
     ]);
 
-    $detail = PodiatryTreatmentDetail::create([]);
     $treatment = Treatment::create([
         'clinic_id' => $clinic->id,
         'appointment_id' => $appointment->id,
         'patient_id' => $patient->id,
         'doctor_id' => $doctor->id,
-        'details_type' => 'podiatry',
-        'details_id' => $detail->id,
         'subtotal_amount' => $paymentAmount,
         'discount_amount' => 0,
         'total_amount' => $paymentAmount,
