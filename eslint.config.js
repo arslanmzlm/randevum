@@ -29,6 +29,10 @@ export default defineConfigWithVueTs(
             import: importPlugin,
         },
         settings: {
+            // Wayfinder üretir, git'te yok: @/routes/* ve @/actions/* CI'da diskte bulunmaz.
+            // import/order grubu çözümlemeye bakarsa aynı dosya yerelde/CI'da farklı sınıflanır.
+            // internal-regex, @/ takma adını çözümlemeden bağımsız olarak "internal" sabitler.
+            'import/internal-regex': '^@/',
             'import/resolver': {
                 typescript: {
                     alwaysTryTypes: true,
