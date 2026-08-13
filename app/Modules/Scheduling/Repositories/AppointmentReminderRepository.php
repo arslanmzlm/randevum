@@ -17,7 +17,9 @@ class AppointmentReminderRepository
      * Runs without ClinicScope — the cron processes all clinics globally. Each
      * returned appointment carries its own clinic_id so the gate is correctly scoped.
      * Patient, clinic and doctor.user are eager-loaded to avoid N+1 (doctor.user
-     * feeds the ':doctor' template variable).
+     * feeds the ':doctor' template variable). The clinic-owned relations drop the scope
+     * too: the cron has no active clinic and ClinicScope is fail-closed, so leaving them
+     * scoped would null out every patient/doctor and crash the message builder.
      *
      * @param  non-empty-string  $flagColumn  'reminder_24h_sent' or 'reminder_1h_sent'
      * @return Collection<int, Appointment>
@@ -28,7 +30,11 @@ class AppointmentReminderRepository
             ->startingBetween($fromUtc, $toUtc)
             ->withStatus([AppointmentStatus::Confirmed, AppointmentStatus::Rescheduled])
             ->where($flagColumn, false)
-            ->with(['patient', 'clinic', 'doctor.user'])
+            ->with([
+                'patient' => fn ($query) => $query->withoutGlobalScope(ClinicScope::class),
+                'clinic',
+                'doctor' => fn ($query) => $query->withoutGlobalScope(ClinicScope::class)->with('user'),
+            ])
             ->get();
     }
 

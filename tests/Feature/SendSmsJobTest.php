@@ -50,7 +50,7 @@ it('logs a failed send with the provider error and reference', function (): void
         type: SmsType::Otp,
     )))->handle($provider);
 
-    $log = SmsLog::sole();
+    $log = SmsLog::withoutGlobalScopes()->sole();
 
     expect($log->status)->toBe(SmsStatus::Failed)
         ->and($log->error)->toBe('Netgsm error code 40')
@@ -67,7 +67,7 @@ it('logs a sent SMS through the null provider', function (): void {
         type: SmsType::Otp,
     )))->handle(app(SmsProviderInterface::class));
 
-    $log = SmsLog::sole();
+    $log = SmsLog::withoutGlobalScopes()->sole();
 
     expect($log->status)->toBe(SmsStatus::Sent)
         ->and($log->type)->toBe(SmsType::Otp)

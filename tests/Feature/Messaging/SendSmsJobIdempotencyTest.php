@@ -36,8 +36,8 @@ it('constructing the job creates exactly one sms_logs row, before handle() ever 
         type: SmsType::Reminder24h,
     ));
 
-    expect(SmsLog::count())->toBe(1)
-        ->and(SmsLog::sole()->status)->toBe(SmsStatus::Queued);
+    expect(SmsLog::withoutGlobalScopes()->count())->toBe(1)
+        ->and(SmsLog::withoutGlobalScopes()->sole()->status)->toBe(SmsStatus::Queued);
 });
 
 it('a retried/redelivered job does not resend or open a second sms_logs row once the first attempt already sent', function (): void {
@@ -57,9 +57,9 @@ it('a retried/redelivered job does not resend or open a second sms_logs row once
     $job->handle($provider);
 
     expect($provider->calls)->toBe(1)
-        ->and(SmsLog::count())->toBe(1);
+        ->and(SmsLog::withoutGlobalScopes()->count())->toBe(1);
 
-    expect(SmsLog::sole()->status)->toBe(SmsStatus::Sent);
+    expect(SmsLog::withoutGlobalScopes()->sole()->status)->toBe(SmsStatus::Sent);
 });
 
 it('a retry after a failed send is still allowed to resend — Failed is not treated as terminal', function (): void {
@@ -87,9 +87,9 @@ it('a retry after a failed send is still allowed to resend — Failed is not tre
     $job->handle($provider); // legitimate retry after a genuine failure — must still attempt
 
     expect($provider->calls)->toBe(2)
-        ->and(SmsLog::count())->toBe(1);
+        ->and(SmsLog::withoutGlobalScopes()->count())->toBe(1);
 
-    expect(SmsLog::sole()->status)->toBe(SmsStatus::Sent);
+    expect(SmsLog::withoutGlobalScopes()->sole()->status)->toBe(SmsStatus::Sent);
 });
 
 // ---------------------------------------------------------------------------
@@ -105,7 +105,7 @@ it('failed() settles a still-Queued log row to Failed with the exception message
 
     $job->failed(new RuntimeException('Netgsm connection timed out'));
 
-    $log = SmsLog::sole();
+    $log = SmsLog::withoutGlobalScopes()->sole();
 
     expect($log->status)->toBe(SmsStatus::Failed)
         ->and($log->error)->toBe('Netgsm connection timed out');
@@ -126,7 +126,7 @@ it('failed() does not pull an already-Sent log row back to Failed', function ():
     $job->handle($provider);
     $job->failed(new RuntimeException('should not matter'));
 
-    $log = SmsLog::sole();
+    $log = SmsLog::withoutGlobalScopes()->sole();
 
     expect($log->status)->toBe(SmsStatus::Sent)
         ->and($log->error)->toBeNull();

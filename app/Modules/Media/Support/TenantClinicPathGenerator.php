@@ -48,7 +48,10 @@ final class TenantClinicPathGenerator implements PathGenerator
 
     private function basePath(Media $media): string
     {
-        $owner = $media->model;
+        // Resolve the owner with global scopes off: conversions run on the queue, where
+        // there is no active clinic and the fail-closed ClinicScope would hand back null —
+        // silently dropping the tenant prefix (and the guard below) from the stored path.
+        $owner = $media->model()->withoutGlobalScopes()->first();
 
         if ($owner instanceof Clinic) {
             return "tenants/{$owner->tenant_id}/clinics/{$owner->getKey()}/{$media->getKey()}";

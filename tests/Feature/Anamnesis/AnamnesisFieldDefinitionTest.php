@@ -47,7 +47,9 @@ it('PodiatryAnamnesisFieldsSeeder creates the three podiatry definitions with cl
     $this->seed([VerticalSeeder::class, PodiatryAnamnesisFieldsSeeder::class]);
     $vertical = Vertical::where('slug', 'podiatry')->firstOrFail();
 
-    $definitions = AnamnesisField::where('vertical_id', $vertical->id)->get();
+    // Definitions are platform rows (clinic_id null) and no clinic is active, so read
+    // them the way AnamnesisFieldRepository does: scope off + explicit predicate.
+    $definitions = AnamnesisField::withoutGlobalScopes()->where('vertical_id', $vertical->id)->get();
 
     expect($definitions)->toHaveCount(3)
         ->and($definitions->pluck('key')->sort()->values()->all())->toBe([
@@ -61,7 +63,7 @@ it('PodiatryAnamnesisFieldsSeeder is idempotent on re-run', function (): void {
     $this->seed(PodiatryAnamnesisFieldsSeeder::class);
     $this->seed(PodiatryAnamnesisFieldsSeeder::class);
 
-    expect(AnamnesisField::count())->toBe(3);
+    expect(AnamnesisField::withoutGlobalScopes()->count())->toBe(3);
 });
 
 // ---------------------------------------------------------------------------

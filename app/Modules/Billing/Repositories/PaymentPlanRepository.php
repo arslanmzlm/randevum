@@ -162,7 +162,15 @@ class PaymentPlanRepository
             ->whereDate('due_date', $onDate)
             ->whereIn('status', [InstallmentStatus::Pending->value, InstallmentStatus::PartiallyPaid->value])
             ->where($flagColumn, false)
-            ->with(['plan.clinic', 'plan.patient'])
+            // The plan (and through it the patient) is clinic-owned; the cron has no active
+            // clinic and ClinicScope is fail-closed, so these relations must drop it too or
+            // every installment would come back with a null plan.
+            ->with([
+                'plan' => fn ($query) => $query->withoutGlobalScope(ClinicScope::class)->with([
+                    'clinic',
+                    'patient' => fn ($inner) => $inner->withoutGlobalScope(ClinicScope::class),
+                ]),
+            ])
             // This wave spans every clinic, so the collected sum drops ClinicScope too —
             // otherwise a caller with an active clinic would read 0.00 for every other
             // clinic's installment and the reminder would quote the full amount as remaining.

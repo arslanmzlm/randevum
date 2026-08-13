@@ -72,13 +72,14 @@ it('deletes an untouched plan with its installments and status logs', function (
 
     expect(PaymentPlan::withoutGlobalScopes()->find($plan->id))->toBeNull()
         ->and(PaymentPlanInstallment::withoutGlobalScopes()->where('payment_plan_id', $plan->id)->count())->toBe(0)
-        ->and(StatusLog::where('loggable_type', 'payment_plan')->where('loggable_id', $plan->id)->count())->toBe(0);
+        ->and(StatusLog::withoutGlobalScopes()->where('loggable_type', 'payment_plan')->where('loggable_id', $plan->id)->count())->toBe(0);
 });
 
 it('refuses to delete a plan once an installment has been collected', function (): void {
     ['clinic' => $clinic, 'owner' => $owner, 'plan' => $plan] = dpplSetup();
 
-    $installment = $plan->installments()->first();
+    // No active clinic outside the request, and ClinicScope is fail-closed.
+    $installment = $plan->installments()->withoutGlobalScopes()->first();
     $installment->forceFill([
         'status' => InstallmentStatus::Paid,
         'paid_at' => now(),
@@ -94,7 +95,8 @@ it('refuses to delete a plan once an installment has been collected', function (
 it('refuses to delete a plan that has a transaction against an installment', function (): void {
     ['clinic' => $clinic, 'owner' => $owner, 'plan' => $plan] = dpplSetup();
 
-    $installment = $plan->installments()->first();
+    // No active clinic outside the request, and ClinicScope is fail-closed.
+    $installment = $plan->installments()->withoutGlobalScopes()->first();
 
     Transaction::factory()->create([
         'clinic_id' => $clinic->id,

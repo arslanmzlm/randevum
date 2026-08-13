@@ -94,7 +94,7 @@ it('guest is redirected to login from GET /appointments/{appointment}', function
         ->assertRedirect(route('login'));
 });
 
-it('a user without appointments.viewAny gets 403', function (): void {
+it('a user with no clinic role cannot reach an appointment', function (): void {
     ['clinic' => $clinic, 'doctor' => $doctor, 'patient' => $patient] = adDoctorSetup();
     $appointment = adAppointment($clinic, $doctor, $patient);
 
@@ -104,9 +104,11 @@ it('a user without appointments.viewAny gets 403', function (): void {
     $noRole->unsetRelation('roles');
     $noRole->unsetRelation('permissions');
 
+    // A global-role user has no active clinic, so the fail-closed ClinicScope makes
+    // route model binding miss the row: the denial lands as 404 before the policy runs.
     $this->actingAs($noRole)
         ->get(route('appointments.show', $appointment))
-        ->assertForbidden();
+        ->assertNotFound();
 });
 
 it('owner can view any appointment and the Show component renders with the summary props', function (): void {

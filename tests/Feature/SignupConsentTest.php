@@ -11,6 +11,7 @@ use Database\Seeders\CountrySeeder;
 use Database\Seeders\LegalDocumentSeeder;
 use Database\Seeders\RoleSeeder;
 use Database\Seeders\VerticalSeeder;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -28,6 +29,26 @@ function seedPlatformLegalDocs(): void
     foreach (ConsentRecorderContract::REGISTRATION_DOCUMENT_TYPES as $type) {
         LegalDocument::factory()->ofType($type)->create(['created_by' => $author->id]);
     }
+}
+
+/**
+ * Consents and legal documents written at signup are platform-level rows (clinic_id null)
+ * and the test runs with no active clinic, where ClinicScope is fail-closed. Assertions
+ * read them the same way production does: scope off + an explicit predicate.
+ *
+ * @return Builder<Consent>
+ */
+function platformConsents(): Builder
+{
+    return Consent::withoutGlobalScopes()->whereNull('clinic_id');
+}
+
+/**
+ * @return Builder<LegalDocument>
+ */
+function platformLegalDocs(): Builder
+{
+    return LegalDocument::withoutGlobalScopes()->whereNull('clinic_id');
 }
 
 function signupConsentPayload(int $verticalId): array
@@ -87,8 +108,8 @@ it('records one user consent per platform document on successful registration', 
 
     $user = User::where('email', 'ali@example.com')->first();
 
-    expect(Consent::count())->toBe(3)
-        ->and(Consent::where('consentable_type', 'user')->where('consentable_id', $user->id)->count())->toBe(3);
+    expect(platformConsents()->count())->toBe(3)
+        ->and(platformConsents()->where('consentable_type', 'user')->where('consentable_id', $user->id)->count())->toBe(3);
 });
 
 it('binds each consent to an active platform document with a user morph and null clinic', function (): void {
@@ -97,9 +118,9 @@ it('binds each consent to an active platform document with a user morph and null
     $this->post(route('register.store'), signupConsentPayload($this->vertical->id));
 
     $user = User::where('email', 'ali@example.com')->first();
-    $docIds = LegalDocument::whereNull('clinic_id')->where('is_active', true)->pluck('id')->sort()->values();
+    $docIds = platformLegalDocs()->where('is_active', true)->pluck('id')->sort()->values();
 
-    $consents = Consent::where('consentable_id', $user->id)->get();
+    $consents = platformConsents()->where('consentable_id', $user->id)->get();
 
     expect($consents)->toHaveCount(3);
 
@@ -120,7 +141,7 @@ it('captures the request ip and user agent on the consent rows', function (): vo
     $this->withHeader('User-Agent', 'PestAgent')
         ->post(route('register.store'), signupConsentPayload($this->vertical->id));
 
-    $consent = Consent::first();
+    $consent = platformConsents()->first();
 
     expect($consent->ip_address)->toBe('127.0.0.1')
         ->and($consent->user_agent)->toBe('PestAgent');
@@ -133,8 +154,8 @@ it('resolves the user consentable morph back to the User model', function (): vo
 
     $user = User::where('email', 'ali@example.com')->first();
 
-    expect(Consent::first()->consentable)->toBeInstanceOf(User::class)
-        ->and($user->consents()->count())->toBe(3);
+    expect(platformConsents()->first()->consentable)->toBeInstanceOf(User::class)
+        ->and($user->consents()->withoutGlobalScopes()->count())->toBe(3);
 });
 
 // ---------------------------------------------------------------------------
@@ -151,7 +172,7 @@ it('writes no user and no consent when the dpa checkbox is unaccepted', function
         ->assertSessionHasErrors('dpa');
 
     expect(User::where('email', 'ali@example.com')->exists())->toBeFalse()
-        ->and(Consent::count())->toBe(0);
+        ->and(platformConsents()->count())->toBe(0);
 });
 
 // ---------------------------------------------------------------------------
@@ -165,7 +186,7 @@ it('seeds exactly three active platform documents and is idempotent', function (
     $this->seed(LegalDocumentSeeder::class);
     $this->seed(LegalDocumentSeeder::class);
 
-    $docs = LegalDocument::whereNull('clinic_id')->where('is_active', true)->get();
+    $docs = platformLegalDocs()->where('is_active', true)->get();
 
     expect($docs)->toHaveCount(3)
         ->and($docs->pluck('type')->map(fn ($t) => $t->value)->sort()->values()->all())
@@ -188,11 +209,11 @@ it('seeds the platform docs even when a clinic team context is active', function
 
     $this->seed(LegalDocumentSeeder::class);
 
-    expect(LegalDocument::whereNull('clinic_id')->where('is_active', true)->count())->toBe(3);
+    expect(platformLegalDocs()->where('is_active', true)->count())->toBe(3);
 });
 
 it('seeds nothing when no superadmin user exists', function (): void {
     $this->seed(LegalDocumentSeeder::class);
 
-    expect(LegalDocument::count())->toBe(0);
+    expect(LegalDocument::withoutGlobalScopes()->count())->toBe(0);
 });

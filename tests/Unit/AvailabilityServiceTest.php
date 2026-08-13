@@ -639,6 +639,9 @@ test('unavailableReason returns OutsideHours before ScheduleException (layer ord
 
 test('resolveDuration uses explicit duration_minutes override when provided', function (): void {
     $clinic = Clinic::factory()->create(['default_slot_duration_minutes' => 30]);
+    // resolveDuration looks the service/type up through the clinic-scoped models, so the
+    // active clinic must be set exactly as it is on a real request (ClinicScope fail-closes).
+    app(ClinicContext::class)->set($clinic->id);
     $service = app(AvailabilityService::class);
 
     expect($service->resolveDuration(60, null, null, $clinic))->toBe(60);
@@ -647,6 +650,9 @@ test('resolveDuration uses explicit duration_minutes override when provided', fu
 test('resolveDuration uses service duration_minutes when no explicit override', function (): void {
     $clinic = Clinic::factory()->create(['default_slot_duration_minutes' => 30]);
     $svc = Service::factory()->create(['clinic_id' => $clinic->id, 'duration_minutes' => 45]);
+    // resolveDuration looks the service/type up through the clinic-scoped models, so the
+    // active clinic must be set exactly as it is on a real request (ClinicScope fail-closes).
+    app(ClinicContext::class)->set($clinic->id);
     $service = app(AvailabilityService::class);
 
     expect($service->resolveDuration(null, $svc->id, null, $clinic))->toBe(45);
@@ -654,6 +660,9 @@ test('resolveDuration uses service duration_minutes when no explicit override', 
 
 test('resolveDuration falls back to clinic default when neither override nor service provided', function (): void {
     $clinic = Clinic::factory()->create(['default_slot_duration_minutes' => 30]);
+    // resolveDuration looks the service/type up through the clinic-scoped models, so the
+    // active clinic must be set exactly as it is on a real request (ClinicScope fail-closes).
+    app(ClinicContext::class)->set($clinic->id);
     $service = app(AvailabilityService::class);
 
     expect($service->resolveDuration(null, null, null, $clinic))->toBe(30);
@@ -662,6 +671,9 @@ test('resolveDuration falls back to clinic default when neither override nor ser
 test('resolveDuration falls back to clinic default when service has null duration_minutes', function (): void {
     $clinic = Clinic::factory()->create(['default_slot_duration_minutes' => 30]);
     $svc = Service::factory()->create(['clinic_id' => $clinic->id, 'duration_minutes' => null]);
+    // resolveDuration looks the service/type up through the clinic-scoped models, so the
+    // active clinic must be set exactly as it is on a real request (ClinicScope fail-closes).
+    app(ClinicContext::class)->set($clinic->id);
     $service = app(AvailabilityService::class);
 
     expect($service->resolveDuration(null, $svc->id, null, $clinic))->toBe(30);
@@ -670,6 +682,9 @@ test('resolveDuration falls back to clinic default when service has null duratio
 test('resolveDuration explicit override beats service duration', function (): void {
     $clinic = Clinic::factory()->create(['default_slot_duration_minutes' => 30]);
     $svc = Service::factory()->create(['clinic_id' => $clinic->id, 'duration_minutes' => 45]);
+    // resolveDuration looks the service/type up through the clinic-scoped models, so the
+    // active clinic must be set exactly as it is on a real request (ClinicScope fail-closes).
+    app(ClinicContext::class)->set($clinic->id);
     $service = app(AvailabilityService::class);
 
     expect($service->resolveDuration(90, $svc->id, null, $clinic))->toBe(90);
@@ -678,6 +693,9 @@ test('resolveDuration explicit override beats service duration', function (): vo
 test('resolveDuration uses appointment type default when no explicit override or service duration', function (): void {
     $clinic = Clinic::factory()->create(['default_slot_duration_minutes' => 30]);
     $type = AppointmentType::factory()->create(['clinic_id' => $clinic->id, 'default_duration_minutes' => 40]);
+    // resolveDuration looks the service/type up through the clinic-scoped models, so the
+    // active clinic must be set exactly as it is on a real request (ClinicScope fail-closes).
+    app(ClinicContext::class)->set($clinic->id);
     $service = app(AvailabilityService::class);
 
     expect($service->resolveDuration(null, null, $type->id, $clinic))->toBe(40);
@@ -687,6 +705,9 @@ test('resolveDuration service duration beats appointment type default', function
     $clinic = Clinic::factory()->create(['default_slot_duration_minutes' => 30]);
     $svc = Service::factory()->create(['clinic_id' => $clinic->id, 'duration_minutes' => 45]);
     $type = AppointmentType::factory()->create(['clinic_id' => $clinic->id, 'default_duration_minutes' => 40]);
+    // resolveDuration looks the service/type up through the clinic-scoped models, so the
+    // active clinic must be set exactly as it is on a real request (ClinicScope fail-closes).
+    app(ClinicContext::class)->set($clinic->id);
     $service = app(AvailabilityService::class);
 
     expect($service->resolveDuration(null, $svc->id, $type->id, $clinic))->toBe(45);

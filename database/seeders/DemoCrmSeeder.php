@@ -81,7 +81,9 @@ class DemoCrmSeeder extends Seeder
         // Roughly half the list is tagged, a handful carry three at once so the column's
         // overflow behaviour is visible.
         foreach ($patients as $index => $patient) {
-            if ($patient->tags()->exists()) {
+            // Seeders run with no active clinic and ClinicScope is fail-closed; without the
+            // opt-out this idempotency guard would always read false.
+            if ($patient->tags()->withoutGlobalScopes()->exists()) {
                 continue;
             }
 
@@ -233,7 +235,9 @@ class DemoCrmSeeder extends Seeder
         // Every 5th patient has a completed form; the rest stay empty so the "henüz doldurulmadı"
         // state is reviewable too.
         foreach ($patients as $index => $patient) {
-            if ($index % 5 !== 0 || $patient->anamnesis()->exists()) {
+            // Same as the tag guard: without the opt-out a re-run would add a second
+            // anamnesis row per patient (no clinic context → fail-closed read).
+            if ($index % 5 !== 0 || $patient->anamnesis()->withoutGlobalScopes()->exists()) {
                 continue;
             }
 

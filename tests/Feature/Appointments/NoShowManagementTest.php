@@ -96,7 +96,7 @@ it('guest is redirected to login from PATCH /appointments/{appointment}/arrive',
         ->assertRedirect(route('login'));
 });
 
-it('a user with no clinic role gets 403 on PATCH /appointments/{appointment}/arrive', function (): void {
+it('a user with no clinic role cannot check in an appointment', function (): void {
     ['clinic' => $clinic, 'doctor' => $doctor, 'patient' => $patient] = nsmSetup();
     $appointment = nsmAppointment($clinic, $doctor, $patient);
 
@@ -106,9 +106,11 @@ it('a user with no clinic role gets 403 on PATCH /appointments/{appointment}/arr
     $noRole->unsetRelation('roles');
     $noRole->unsetRelation('permissions');
 
+    // No active clinic → the fail-closed ClinicScope makes route model binding miss
+    // the row, so the denial is a 404 before the policy is reached.
     $this->actingAs($noRole)
         ->patch(route('appointments.arrive', $appointment))
-        ->assertForbidden();
+        ->assertNotFound();
 });
 
 it('owner can check in any appointment (has appointments.viewAll)', function (): void {
@@ -260,7 +262,7 @@ it('guest is redirected to login from PATCH /appointments/{appointment}/no-show'
         ->assertRedirect(route('login'));
 });
 
-it('a user with no clinic role gets 403 on PATCH /appointments/{appointment}/no-show', function (): void {
+it('a user with no clinic role cannot mark an appointment no-show', function (): void {
     ['clinic' => $clinic, 'doctor' => $doctor, 'patient' => $patient] = nsmSetup();
     $appointment = nsmAppointment($clinic, $doctor, $patient);
 
@@ -270,9 +272,10 @@ it('a user with no clinic role gets 403 on PATCH /appointments/{appointment}/no-
     $noRole->unsetRelation('roles');
     $noRole->unsetRelation('permissions');
 
+    // Same as the arrive case: no clinic context, so binding 404s before the policy.
     $this->actingAs($noRole)
         ->patch(route('appointments.no-show', $appointment), [])
-        ->assertForbidden();
+        ->assertNotFound();
 });
 
 it('receptionist can mark any appointment no-show (has appointments.viewAll)', function (): void {

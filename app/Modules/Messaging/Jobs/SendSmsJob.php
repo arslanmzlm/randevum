@@ -51,7 +51,9 @@ final class SendSmsJob implements ShouldQueue
 
     public function handle(SmsProviderInterface $provider): void
     {
-        $log = SmsLog::findOrFail($this->smsLogId);
+        // withoutGlobalScopes(): the worker runs with no active clinic, and ClinicScope
+        // is fail-closed — the row's id already pins the single tenant this job belongs to.
+        $log = SmsLog::withoutGlobalScopes()->findOrFail($this->smsLogId);
 
         // A retry/redelivery of a job whose send already completed (e.g. Redis
         // `retry_after` elapses mid-flight and Horizon re-queues the same payload)
@@ -81,7 +83,8 @@ final class SendSmsJob implements ShouldQueue
      */
     public function failed(Throwable $e): void
     {
-        $log = SmsLog::find($this->smsLogId);
+        // Same as handle(): no clinic context on the worker, id already pins the tenant.
+        $log = SmsLog::withoutGlobalScopes()->find($this->smsLogId);
 
         // Mirror handle()'s guard: a row that already sent must never be pulled back
         // to Failed — e.g. the send succeeded but the settling update itself then threw
