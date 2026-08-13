@@ -45,7 +45,7 @@ it('PATCH stock updates current_stock on the product', function (): void {
     ]);
 
     $this->actingAs($owner)
-        ->patch(route('products.stock.update', $product), ['current_stock' => 25])
+        ->patch(route('products.stock.update', $product), ['mode' => 'count', 'current_stock' => 25])
         ->assertRedirect(route('products.index'));
 
     expect($product->fresh()->current_stock)->toBe(25);
@@ -63,7 +63,7 @@ it('current_stock may be set to a negative value', function (): void {
     ]);
 
     $this->actingAs($owner)
-        ->patch(route('products.stock.update', $product), ['current_stock' => -3])
+        ->patch(route('products.stock.update', $product), ['mode' => 'count', 'current_stock' => -3])
         ->assertRedirect();
 
     expect($product->fresh()->current_stock)->toBe(-3);
@@ -81,7 +81,7 @@ it('current_stock may be set to zero', function (): void {
     ]);
 
     $this->actingAs($owner)
-        ->patch(route('products.stock.update', $product), ['current_stock' => 0])
+        ->patch(route('products.stock.update', $product), ['mode' => 'count', 'current_stock' => 0])
         ->assertRedirect();
 
     expect($product->fresh()->current_stock)->toBe(0);
@@ -101,7 +101,7 @@ it('stock update only changes current_stock — other fields are untouched', fun
     ]);
 
     $this->actingAs($owner)
-        ->patch(route('products.stock.update', $product), ['current_stock' => 99]);
+        ->patch(route('products.stock.update', $product), ['mode' => 'count', 'current_stock' => 99]);
 
     $fresh = $product->fresh();
     expect($fresh->name)->toBe('Unchanged Name')
@@ -117,7 +117,7 @@ it('stock update rejects a missing current_stock with a validation error', funct
     $product = Product::factory()->create(['clinic_id' => $clinic->id, 'vertical_id' => $clinic->vertical_id]);
 
     $this->actingAs($owner)
-        ->patch(route('products.stock.update', $product), [])
+        ->patch(route('products.stock.update', $product), ['mode' => 'count'])
         ->assertSessionHasErrors('current_stock');
 });
 
@@ -129,7 +129,7 @@ it('stock update rejects a non-integer current_stock with a validation error', f
     $product = Product::factory()->create(['clinic_id' => $clinic->id, 'vertical_id' => $clinic->vertical_id]);
 
     $this->actingAs($owner)
-        ->patch(route('products.stock.update', $product), ['current_stock' => 'not-a-number'])
+        ->patch(route('products.stock.update', $product), ['mode' => 'count', 'current_stock' => 'not-a-number'])
         ->assertSessionHasErrors('current_stock');
 });
 
@@ -141,7 +141,7 @@ it('stock update flashes a success toast', function (): void {
     $product = Product::factory()->create(['clinic_id' => $clinic->id, 'vertical_id' => $clinic->vertical_id]);
 
     $this->actingAs($owner)
-        ->patch(route('products.stock.update', $product), ['current_stock' => 50])
+        ->patch(route('products.stock.update', $product), ['mode' => 'count', 'current_stock' => 50])
         ->assertSessionHas('toasts');
 });
 
@@ -153,7 +153,7 @@ it('doctor role gets 403 on PATCH /products/{product}/stock', function (): void 
     $product = Product::factory()->create(['clinic_id' => $clinic->id, 'vertical_id' => $clinic->vertical_id]);
 
     $this->actingAs($doctorUser)
-        ->patch(route('products.stock.update', $product), ['current_stock' => 50])
+        ->patch(route('products.stock.update', $product), ['mode' => 'count', 'current_stock' => 50])
         ->assertForbidden();
 });
 
@@ -170,8 +170,9 @@ it('PATCH stock accepts reason and note without breaking the redirect', function
 
     $this->actingAs($owner)
         ->patch(route('products.stock.update', $product), [
+            'mode' => 'count',
             'current_stock' => 20,
-            'reason' => 'return',
+            'reason' => 'count_correction',
             'note' => 'Test note',
         ])
         ->assertRedirect(route('products.index'));
@@ -191,7 +192,7 @@ it('manager is allowed to update stock', function (): void {
     ]);
 
     $this->actingAs($manager)
-        ->patch(route('products.stock.update', $product), ['current_stock' => 15])
+        ->patch(route('products.stock.update', $product), ['mode' => 'count', 'current_stock' => 15])
         ->assertRedirect();
 
     expect($product->fresh()->current_stock)->toBe(15);

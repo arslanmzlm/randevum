@@ -570,6 +570,11 @@ export const tr = {
         edit_title: 'Ürünü Düzenle',
         save: 'Kaydet',
         stock_save: 'Stoğu Güncelle',
+        stock_current: 'Güncel stok: {stock}',
+        stock_mode: {
+            movement: 'Hareket gir',
+            count: 'Sayım yap',
+        },
         columns: {
             name: 'Ürün',
             price: 'Fiyat',
@@ -587,6 +592,9 @@ export const tr = {
             price: 'Fiyat',
             current_stock: 'Stok adedi',
             is_active: 'Aktif',
+            stock_mode: 'Güncelleme biçimi',
+            stock_new_total: 'Yeni stok toplamı',
+            stock_quantity: 'Miktar',
             stock_reason: 'Neden',
             stock_note: 'Not (isteğe bağlı)',
         },
@@ -594,7 +602,20 @@ export const tr = {
             is_active: 'Pasif ürünler tedavi ekranındaki listede görünmez.',
             current_stock:
                 'Stok negatife düşebilir; başlangıç değeri boş bırakılırsa 0 kabul edilir.',
-            stock: 'Stok adedini hızlıca güncelleyin. Negatif değer girilebilir.',
+            stock_mode_movement:
+                'Ne olduğunu yazarsınız: nedeni seçin, miktarı girin. Stoğun artacağını mı azalacağını mı, nedenin kendisi belirler.',
+            stock_mode_count:
+                'Rafı sayarsınız: yeni toplamı girin. Aradaki fark hareket olarak deftere yazılır.',
+            stock_quantity_in:
+                'Bu neden stoğu girdiğiniz miktar kadar artırır.',
+            stock_quantity_out:
+                'Bu neden stoğu girdiğiniz miktar kadar azaltır.',
+            stock_count:
+                'Rafta saydığınız toplamı girin. Negatif değer girilebilir.',
+            stock_count_increase:
+                'Bu neden yalnızca stoğu artırır; yeni toplam mevcut stoktan fazla olmalıdır.',
+            stock_count_decrease:
+                'Bu neden yalnızca stoğu azaltır; yeni toplam mevcut stoktan az olmalıdır.',
             stock_managed:
                 'Stok yalnızca listedeki stok güncelleme işlemiyle değişir.',
         },
@@ -622,9 +643,17 @@ export const tr = {
         reason: {
             treatment_usage: 'Tedavide kullanım',
             treatment_void: 'Tedavi iptali',
+            initial: 'Açılış stoğu',
+            stock_in: 'Stok geldi',
+            patient_return: 'Hastadan iade',
+            transfer_in: 'Diğer şubeden geldi',
+            supplier_return: 'Tedarikçiye iade',
+            wastage: 'Fire / zayi',
+            transfer_out: 'Diğer şubeye gönderildi',
+            count_correction: 'Sayım düzeltmesi',
+            // Artık yazılmıyor; eski hareketler okunabilir kalsın diye duruyor.
             manual_adjustment: 'Elle düzeltme',
             return: 'İade',
-            initial: 'Açılış stoğu',
         },
     },
     availability: {

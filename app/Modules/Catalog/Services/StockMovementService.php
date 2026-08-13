@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\StockMovement;
 use App\Models\User;
 use App\Modules\Catalog\Contracts\StockAdjusterContract;
+use App\Modules\Catalog\Exceptions\StockMovementSignConflictException;
 use App\Modules\Catalog\Repositories\ProductRepository;
 use App\Modules\Catalog\Repositories\StockMovementRepository;
 use App\Support\ClinicContext;
@@ -29,6 +30,8 @@ class StockMovementService implements StockAdjusterContract
     /**
      * Lock the product row, apply $delta to current_stock, and record the movement — all
      * inside one transaction. Returns null (and writes nothing) when $delta is 0.
+     *
+     * @throws StockMovementSignConflictException when $delta contradicts the reason's own direction
      */
     public function record(
         int $productId,
@@ -40,6 +43,14 @@ class StockMovementService implements StockAdjusterContract
     ): ?StockMovement {
         if ($delta === 0) {
             return null;
+        }
+
+        // Enforced at the funnel, not at the form: every caller writes the ledger through
+        // here, so a reason can never end up with a quantity pointing the other way.
+        $sign = $reason->sign();
+
+        if ($sign !== null && ($delta <=> 0) !== $sign) {
+            throw new StockMovementSignConflictException($reason, $delta);
         }
 
         return DB::transaction(function () use ($productId, $delta, $reason, $treatmentId, $note, $actor): StockMovement {

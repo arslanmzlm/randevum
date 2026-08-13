@@ -93,13 +93,25 @@ export type SmsStatus = 'queued' | 'sent' | 'failed' | 'skipped';
 /**
  * Mirrors `App\Enums\StockMovementReason`; the stock-history list branches on it
  * (reason→severity/label) and the manual stock dialog offers a subset of the cases.
+ * `manual_adjustment` and `return` are legacy: they still appear in old ledger rows but
+ * are never written or offered again.
  */
 export type StockMovementReason =
     | 'treatment_usage'
     | 'treatment_void'
+    | 'initial'
+    | 'stock_in'
+    | 'patient_return'
+    | 'transfer_in'
+    | 'supplier_return'
+    | 'wastage'
+    | 'transfer_out'
+    | 'count_correction'
     | 'manual_adjustment'
-    | 'return'
-    | 'initial';
+    | 'return';
+
+/** Mirrors `App\Enums\StockAdjustmentMode`; the manual stock dialog switches on it. */
+export type StockAdjustmentMode = 'movement' | 'count';
 
 /**
  * Mirrors `App\Enums\ReportTab`; the report page branches on it (which panel renders and

@@ -1,4 +1,4 @@
-import type { StockMovementReason } from '@/types/enums';
+import type { StockAdjustmentMode, StockMovementReason } from '@/types/enums';
 import type { Paginated, TableState } from '@/types/table';
 
 /** Canonical product shape emitted by ProductResource (index + edit). */
@@ -50,11 +50,17 @@ export type ProductCreateFormData = ProductFormData & {
     current_stock: number | null;
 };
 
-/** Standalone stock-adjust form (PATCH products.stock.update). */
+/**
+ * Standalone stock-adjust form (PATCH products.stock.update). `mode` picks which of the two
+ * amount fields the server reads: movement mode uses `quantity`, count mode `current_stock`.
+ */
 export type ProductStockFormData = {
-    /** May be negative. */
+    mode: StockAdjustmentMode;
+    /** Movement mode: always positive — the reason decides the direction. */
+    quantity: number;
+    /** Count mode: the new total. May be negative. */
     current_stock: number;
-    /** Server only accepts the manual subset (manual_adjustment / return). */
+    /** Server only accepts the manual subset; count correction is count mode only. */
     reason: StockMovementReason;
     /** Free-text ledger note; empty string = none. */
     note: string;

@@ -186,6 +186,10 @@ return [
         'copy_catalog' => [
             'vertical_mismatch' => 'The catalog can only be copied between branches of the same clinic type.',
         ],
+        'stock_adjustment' => [
+            'count_expects_increase' => '":reason" only increases stock; the new total must be higher than the current stock (:current).',
+            'count_expects_decrease' => '":reason" only decreases stock; the new total must be lower than the current stock (:current).',
+        ],
     ],
 
     /*
@@ -256,6 +260,7 @@ return [
         'sku' => 'SKU',
         'unit' => 'unit',
         'current_stock' => 'current stock',
+        'stock_quantity' => 'quantity',
         // patient record
         'contact_phone' => 'emergency phone number',
         'birth_date' => 'date of birth',

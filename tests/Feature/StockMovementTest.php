@@ -102,7 +102,7 @@ it('store with current_stock 0 writes no movement', function (): void {
 // PATCH /products/{product}/stock — manual movement
 // ---------------------------------------------------------------------------
 
-it('PATCH stock 10 to 25 writes one manual_adjustment movement of +15', function (): void {
+it('PATCH stock 10 to 25 in count mode writes one count_correction movement of +15', function (): void {
     $clinic = Clinic::factory()->create();
     $owner = User::factory()->create();
     smTestRole($owner, 'owner', $clinic->id);
@@ -114,18 +114,18 @@ it('PATCH stock 10 to 25 writes one manual_adjustment movement of +15', function
     ]);
 
     $this->actingAs($owner)
-        ->patch(route('products.stock.update', $product), ['current_stock' => 25]);
+        ->patch(route('products.stock.update', $product), ['mode' => 'count', 'current_stock' => 25]);
 
     $movement = StockMovement::withoutGlobalScopes()->where('product_id', $product->id)->first();
 
     expect($movement)->not->toBeNull()
         ->and($movement->quantity)->toBe(15)
         ->and($movement->balance_after)->toBe(25)
-        ->and($movement->reason)->toBe(StockMovementReason::ManualAdjustment)
+        ->and($movement->reason)->toBe(StockMovementReason::CountCorrection)
         ->and($movement->created_by)->toBe($owner->id);
 });
 
-it('PATCH stock with reason=return and a note persists them verbatim', function (): void {
+it('PATCH stock with an explicit reason and a note persists them verbatim', function (): void {
     $clinic = Clinic::factory()->create();
     $owner = User::factory()->create();
     smTestRole($owner, 'owner', $clinic->id);
@@ -138,14 +138,15 @@ it('PATCH stock with reason=return and a note persists them verbatim', function 
 
     $this->actingAs($owner)
         ->patch(route('products.stock.update', $product), [
+            'mode' => 'count',
             'current_stock' => 15,
-            'reason' => 'return',
+            'reason' => 'patient_return',
             'note' => 'Hasta iade etti',
         ]);
 
     $movement = StockMovement::withoutGlobalScopes()->where('product_id', $product->id)->first();
 
-    expect($movement->reason)->toBe(StockMovementReason::Return)
+    expect($movement->reason)->toBe(StockMovementReason::PatientReturn)
         ->and($movement->note)->toBe('Hasta iade etti');
 });
 
@@ -161,7 +162,7 @@ it('PATCH stock with the same value writes no movement but still redirects with 
     ]);
 
     $this->actingAs($owner)
-        ->patch(route('products.stock.update', $product), ['current_stock' => 10])
+        ->patch(route('products.stock.update', $product), ['mode' => 'count', 'current_stock' => 10])
         ->assertRedirect(route('products.index'))
         ->assertSessionHas('toasts');
 
@@ -180,7 +181,7 @@ it('PATCH stock to a negative value writes a movement with a negative balance_af
     ]);
 
     $this->actingAs($owner)
-        ->patch(route('products.stock.update', $product), ['current_stock' => -3]);
+        ->patch(route('products.stock.update', $product), ['mode' => 'count', 'current_stock' => -3]);
 
     $movement = StockMovement::withoutGlobalScopes()->where('product_id', $product->id)->first();
 
@@ -197,6 +198,7 @@ it('PATCH stock with an invalid reason returns a validation error', function ():
 
     $this->actingAs($owner)
         ->patch(route('products.stock.update', $product), [
+            'mode' => 'count',
             'current_stock' => 10,
             'reason' => 'treatment_usage',
         ])
@@ -271,7 +273,7 @@ it('doctor role (has products.viewAny, not products.manageStock) can view moveme
         ->assertOk();
 
     $this->actingAs($doctorUser)
-        ->patch(route('products.stock.update', $product), ['current_stock' => 99])
+        ->patch(route('products.stock.update', $product), ['mode' => 'count', 'current_stock' => 99])
         ->assertForbidden();
 });
 

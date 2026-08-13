@@ -115,8 +115,34 @@ class ProductCatalogService implements ProductLookupContract
     }
 
     /**
-     * Sets current_stock to an absolute value via the single stock funnel, recording the
-     * matching movement in the same transaction.
+     * Movement mode: the user states a reason and a positive quantity, and the reason's own
+     * direction decides whether that quantity is added or taken away. A reason with no fixed
+     * direction (count correction) has nothing to derive the sign from and is rejected by the
+     * FormRequest before it reaches here.
+     */
+    public function recordStockMovement(
+        Product $product,
+        int $quantity,
+        StockMovementReason $reason,
+        ?string $note,
+        User $actor,
+    ): Product {
+        $sign = $reason->sign();
+
+        if ($sign === null) {
+            throw new \InvalidArgumentException(
+                "Stock movement reason [{$reason->value}] has no fixed direction; use a count adjustment instead."
+            );
+        }
+
+        $this->stockMovementService->record($product->id, $sign * $quantity, $reason, null, $note, $actor);
+
+        return $product->fresh();
+    }
+
+    /**
+     * Count mode: sets current_stock to an absolute value via the single stock funnel,
+     * recording the matching movement in the same transaction.
      */
     public function updateStock(
         Product $product,

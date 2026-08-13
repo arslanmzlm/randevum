@@ -18,14 +18,17 @@ class StockMovementFactory extends Factory
      */
     public function definition(): array
     {
-        $quantity = fake()->numberBetween(1, 20) * fake()->randomElement([1, -1]);
+        // The reason picks the sign — a factory row must obey the same direction rule the
+        // service enforces, or fixtures start describing movements that can't happen.
+        $reason = fake()->randomElement(StockMovementReason::cases());
+        $sign = $reason->sign() ?? fake()->randomElement([1, -1]);
 
         return [
             'clinic_id' => Clinic::factory(),
             'product_id' => Product::factory(),
-            'quantity' => $quantity,
+            'quantity' => fake()->numberBetween(1, 20) * $sign,
             'balance_after' => fake()->numberBetween(0, 200),
-            'reason' => fake()->randomElement(StockMovementReason::cases()),
+            'reason' => $reason,
             'treatment_id' => null,
             'note' => fake()->optional()->sentence(),
             'created_by' => null,

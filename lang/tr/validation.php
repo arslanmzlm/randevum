@@ -123,6 +123,7 @@ return [
         'sku' => 'Stok kodu',
         'unit' => 'Birim',
         'current_stock' => 'Mevcut stok',
+        'stock_quantity' => 'Miktar',
         // patient record
         'contact_phone' => 'Acil telefon numarası',
         'birth_date' => 'Doğum tarihi',
@@ -258,6 +259,10 @@ return [
     'custom' => [
         'copy_catalog' => [
             'vertical_mismatch' => 'Katalog kopyalama yalnızca aynı klinik türündeki şubeler arasında yapılabilir.',
+        ],
+        'stock_adjustment' => [
+            'count_expects_increase' => '":reason" stoğu artıran bir nedendir; girdiğiniz yeni toplam mevcut stoktan (:current) fazla olmalıdır.',
+            'count_expects_decrease' => '":reason" stoğu azaltan bir nedendir; girdiğiniz yeni toplam mevcut stoktan (:current) az olmalıdır.',
         ],
     ],
 ];
