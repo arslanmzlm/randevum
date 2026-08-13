@@ -16,8 +16,9 @@ export function treatmentStatusSeverity(status: TreatmentStatus): string {
     return TREATMENT_STATUS_SEVERITY[status] ?? 'secondary';
 }
 
-/**
- * Statuses selectable in MVP filters — `voided` is unused in MVP, so it stays out of the
- * option list even though the server still accepts it. Order drives the MultiSelect order.
- */
-export const MVP_TREATMENT_STATUSES: TreatmentStatus[] = ['draft', 'completed'];
+/** Statuses selectable in the treatments-list filter. Order drives the MultiSelect order. */
+export const TREATMENT_FILTER_STATUSES: TreatmentStatus[] = [
+    'draft',
+    'completed',
+    'voided',
+];

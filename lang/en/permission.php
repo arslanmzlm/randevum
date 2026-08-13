@@ -87,6 +87,7 @@ return [
         'treatments.media.view' => 'View treatment media',
         'treatments.viewAll' => "View all doctors' treatments",
         'treatments.viewAny' => 'View treatment list',
+        'treatments.void' => 'Void a treatment',
         'roles.viewAny' => 'View role/permission matrix',
         'roles.manage' => 'Manage roles',
     ],

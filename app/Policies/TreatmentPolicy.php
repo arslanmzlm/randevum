@@ -64,6 +64,20 @@ class TreatmentPolicy
     }
 
     /**
+     * Voiding a completed treatment. Owner/manager may void any treatment in the clinic;
+     * a doctor holds the same permission but is confined to their own treatments, which is
+     * ownership state and cannot be expressed as a permission (doctors.update pattern).
+     */
+    public function void(User $user, Treatment $treatment): bool
+    {
+        if (! $user->can('treatments.void')) {
+            return false;
+        }
+
+        return $user->can('treatments.viewAll') || $this->ownsTreatment($user, $treatment);
+    }
+
+    /**
      * Treatment media (photos/documents) is KVKK-min: doctor + assistant only,
      * regardless of treatments.viewAll — owner/manager/receptionist never see it.
      */

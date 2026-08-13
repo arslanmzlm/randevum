@@ -621,6 +621,7 @@ export const tr = {
         },
         reason: {
             treatment_usage: 'Tedavide kullanım',
+            treatment_void: 'Tedavi iptali',
             manual_adjustment: 'Elle düzeltme',
             return: 'İade',
             initial: 'Açılış stoğu',
@@ -1203,6 +1204,17 @@ export const tr = {
             start: 'Tedaviye başla',
             resume: 'Tedaviye devam et',
             view: 'Tedaviyi görüntüle',
+        },
+        void: {
+            button: 'Tedaviyi iptal et',
+            confirm_title: 'Tedaviyi iptal et',
+            confirm_message:
+                'Bu tedavi hatalı kabul edilip iptal edilecek: tutarları sıfırlanır ve kayıt geçersiz sayılır. İşlem geri alınamaz ve bir ödeme iadesi değildir.',
+            confirm_accept: 'Tedaviyi iptal et',
+            restock_title: 'Stoğa geri dönecek ürünler',
+            restock_hint:
+                'İşaretli ürünler stoğa geri eklenir; işareti kaldırılan ürünler kullanılmış sayılır.',
+            restock_line: '{name} · {quantity} adet',
         },
         report: {
             download: 'Tedavi özeti (PDF)',

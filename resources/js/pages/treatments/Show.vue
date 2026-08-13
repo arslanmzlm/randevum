@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import {
     IconArrowLeft,
+    IconBan,
     IconCalendarEvent,
     IconCash,
     IconFileText,
@@ -11,6 +12,7 @@ import {
     IconStethoscope,
     IconUser,
 } from '@tabler/icons-vue';
+import { useConfirm } from 'primevue/useconfirm';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import ButtonLink from '@/components/ButtonLink.vue';
@@ -20,13 +22,17 @@ import RecordPaymentDialog from '@/components/payments/RecordPaymentDialog.vue';
 import TransactionList from '@/components/payments/TransactionList.vue';
 import RecordName from '@/components/RecordName.vue';
 import SectionCard from '@/components/SectionCard.vue';
+import TreatmentVoidDialog from '@/components/treatments/TreatmentVoidDialog.vue';
 import TreatmentStatusTag from '@/components/TreatmentStatusTag.vue';
 import { useCan } from '@/composables/useCan';
 import { useDateTime } from '@/composables/useDateTime';
 import { useMoney } from '@/composables/useMoney';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { show as patientShow } from '@/routes/patients';
-import { report as treatmentReport } from '@/routes/treatments';
+import {
+    report as treatmentReport,
+    voidMethod as treatmentVoid,
+} from '@/routes/treatments';
 import type { TreatmentLine, TreatmentShowProps } from '@/types/treatment';
 
 defineOptions({ layout: AppLayout });
@@ -37,9 +43,18 @@ const { t } = useI18n();
 const { can } = useCan();
 const { formatDateTime } = useDateTime();
 const { formatMoney } = useMoney();
+const confirm = useConfirm();
 
 const canRecordPayment = computed(() => can('transactions.create'));
 const canViewTransactions = computed(() => can('transactions.viewAny'));
+
+// Only a Completed treatment can be voided. The "own treatment only" half of the server rule is
+// ownership, not a permission, and this page carries no doctor→user link — so a doctor viewing
+// someone else's treatment sees the button and gets a 403 (they cannot reach the page anyway
+// without treatments.viewAll, which also lifts the ownership branch).
+const canVoid = computed(
+    () => can('treatments.void') && props.treatment.status === 'completed',
+);
 
 // Balance is always derived, never stored (paid = SUM(transactions); remaining = total − paid).
 const remaining = computed(() =>
@@ -70,6 +85,35 @@ const clinicalBlocks = computed(() => [
 
 const hasServiceLines = computed(() => props.treatment.serviceLines.length > 0);
 const hasProductLines = computed(() => props.treatment.productLines.length > 0);
+
+// Every product line starts checked: omitting an id means "leave it deducted", and under-returning
+// stock is fixable by hand while an unnoticed inflation is not.
+const restockLineIds = ref<number[]>([]);
+
+function confirmVoid(): void {
+    restockLineIds.value = props.treatment.productLines.map((line) => line.id);
+
+    confirm.require({
+        group: 'treatment-void',
+        header: t('treatment.void.confirm_title'),
+        message: t('treatment.void.confirm_message'),
+        rejectProps: {
+            label: t('common.cancel'),
+            severity: 'secondary',
+            outlined: true,
+        },
+        acceptProps: {
+            label: t('treatment.void.confirm_accept'),
+            severity: 'danger',
+        },
+        accept: () =>
+            router.post(
+                treatmentVoid(props.treatment.id).url,
+                { restock_line_ids: restockLineIds.value },
+                { preserveScroll: true },
+            ),
+    });
+}
 </script>
 
 <template>
@@ -99,6 +143,18 @@ const hasProductLines = computed(() => props.treatment.productLines.length > 0);
                 >
                     <template #icon>
                         <IconFileText />
+                    </template>
+                </Button>
+                <Button
+                    v-if="canVoid"
+                    type="button"
+                    severity="danger"
+                    outlined
+                    :label="t('treatment.void.button')"
+                    @click="confirmVoid"
+                >
+                    <template #icon>
+                        <IconBan />
                     </template>
                 </Button>
                 <ButtonLink
@@ -383,6 +439,12 @@ const hasProductLines = computed(() => props.treatment.productLines.length > 0);
                 </Button>
             </section>
         </div>
+
+        <TreatmentVoidDialog
+            v-if="canVoid"
+            v-model="restockLineIds"
+            :lines="treatment.productLines"
+        />
 
         <RecordPaymentDialog
             v-if="canRecordPayment"

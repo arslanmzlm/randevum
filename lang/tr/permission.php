@@ -87,6 +87,7 @@ return [
         'treatments.media.view' => 'Tedavi medyasını gör',
         'treatments.viewAll' => 'Tüm doktorların tedavilerini gör',
         'treatments.viewAny' => 'Tedavi listesini gör',
+        'treatments.void' => 'Tedaviyi iptal et (void)',
         'roles.viewAny' => 'Rol/izin matrisini gör',
         'roles.manage' => 'Rolleri düzenle',
     ],

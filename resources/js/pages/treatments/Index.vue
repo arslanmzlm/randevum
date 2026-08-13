@@ -19,7 +19,7 @@ import type { TreatmentIndexProps } from '@/types/treatment';
 import { parseDateString } from '@/utils/datetime';
 import { FILTER_NONE } from '@/utils/filterValues';
 import { shouldFilterSelect } from '@/utils/selectFilter';
-import { MVP_TREATMENT_STATUSES } from '@/utils/treatmentStatus';
+import { TREATMENT_FILTER_STATUSES } from '@/utils/treatmentStatus';
 
 defineOptions({ layout: AppLayout });
 
@@ -104,7 +104,7 @@ const showEmptyState = computed(
 );
 
 const statusOptions = computed(() =>
-    MVP_TREATMENT_STATUSES.map((status) => ({
+    TREATMENT_FILTER_STATUSES.map((status) => ({
         label: t(`treatment.status.${status}`),
         value: status,
     })),

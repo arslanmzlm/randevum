@@ -145,6 +145,7 @@ class TransactionRepository
         $total = Transaction::whereBetween('paid_at', [$dayStart, $dayEnd])
             ->whereNot('status', TransactionStatus::Pending)
             ->whereNotNull('patient_id')
+            ->excludingVoidedTreatments()
             ->sum('amount');
 
         return bcadd('0', (string) $total, 2);
@@ -162,6 +163,7 @@ class TransactionRepository
     {
         $total = Transaction::whereBetween('paid_at', [$startUtc, $endUtc])
             ->whereNot('status', TransactionStatus::Pending)
+            ->excludingVoidedTreatments()
             ->sum('amount');
 
         return bcadd('0', (string) $total, 2);
@@ -183,6 +185,7 @@ class TransactionRepository
     {
         return Transaction::whereBetween('paid_at', [$startUtc, $endUtc])
             ->whereNot('status', TransactionStatus::Pending)
+            ->excludingVoidedTreatments()
             ->orderBy('paid_at')
             ->get(['paid_at', 'amount', 'payment_method', 'patient_id', 'category']);
     }
@@ -200,6 +203,7 @@ class TransactionRepository
     public function allSettledRows(): Collection
     {
         return Transaction::whereNot('status', TransactionStatus::Pending)
+            ->excludingVoidedTreatments()
             ->orderBy('paid_at')
             ->get(['paid_at', 'amount', 'payment_method', 'patient_id', 'category']);
     }

@@ -4,8 +4,10 @@ namespace App\Models;
 
 use App\Enums\PaymentMethod;
 use App\Enums\TransactionStatus;
+use App\Enums\TreatmentStatus;
 use App\Models\Concerns\BelongsToClinic;
 use Database\Factories\TransactionFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -52,6 +54,25 @@ class Transaction extends Model
             'paid_at' => 'datetime',
             'created_by' => 'integer',
         ];
+    }
+
+    /**
+     * Drop rows booked against a voided treatment — a void means "this never happened",
+     * so its money must leave every revenue figure, retroactively (Owner decision).
+     *
+     * Netting alone is not enough: voiding requires the paid total to be zero, so the
+     * payment and its refund cancel out over the whole history, but a report window that
+     * contains only one of the two would still show the money. Manual income
+     * (treatment_id NULL) is untouched — whereNotExists never matches a NULL FK.
+     */
+    public function scopeExcludingVoidedTreatments(Builder $query): void
+    {
+        $query->whereNotExists(
+            fn ($sub) => $sub->selectRaw('1')
+                ->from('treatments')
+                ->whereColumn('treatments.id', 'transactions.treatment_id')
+                ->where('treatments.status', TreatmentStatus::Voided->value)
+        );
     }
 
     /**

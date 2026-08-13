@@ -7,6 +7,7 @@ import type { StockMovementReason } from '@/types/enums';
 /** Every reason the ledger can hold — feeds the history-page filter. */
 export const STOCK_MOVEMENT_REASONS: StockMovementReason[] = [
     'treatment_usage',
+    'treatment_void',
     'manual_adjustment',
     'return',
     'initial',
@@ -24,6 +25,9 @@ export const STOCK_MOVEMENT_REASON_SEVERITY: Record<
     string
 > = {
     treatment_usage: 'info',
+    // A void restock reverses a usage row, so it reads as the treatment's danger colour
+    // rather than the plain 'return' green a customer refund gets.
+    treatment_void: 'danger',
     manual_adjustment: 'warn',
     return: 'success',
     initial: 'secondary',

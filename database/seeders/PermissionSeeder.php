@@ -89,6 +89,10 @@ class PermissionSeeder extends Seeder
         // Absent → scoped to own doctor; doctors confined to own via policy ownership branch.
         'treatments.viewAll' => ['owner', 'manager', 'receptionist', 'assistant'],
         'treatments.create' => ['owner', 'manager', 'doctor', 'assistant'],
+        // Void a completed treatment entered in error. Owner/manager void any treatment;
+        // a doctor is confined to their own by the policy's ownership branch. Assistant and
+        // receptionist are excluded — voiding rewrites clinical and financial record.
+        'treatments.void' => ['owner', 'manager', 'doctor'],
         // Treatment media (photos/documents) — KVKK-min: doctor + assistant ONLY,
         // never owner/manager/receptionist (brief-fixed, unlike treatments.viewAll).
         'treatments.media.view' => ['doctor', 'assistant'],

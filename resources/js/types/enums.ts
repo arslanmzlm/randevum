@@ -24,7 +24,7 @@ export type AppointmentStatus =
 /** Mirrors `App\Enums\AvailabilityReason`; values also match the `appointment.errors.*` lang keys. */
 export type AvailabilityReason = 'outside_hours' | 'exception' | 'conflict';
 
-/** Mirrors `App\Enums\TreatmentStatus` (Voided unused until 1.28; the FE still labels it). */
+/** Mirrors `App\Enums\TreatmentStatus`; the FE branches on it (status→severity/label) and gates the void action. */
 export type TreatmentStatus = 'draft' | 'completed' | 'voided';
 
 /** Mirrors `App\Enums\CaseStatus`; the FE branches on it (status→severity/label) and gates transitions. */
@@ -96,6 +96,7 @@ export type SmsStatus = 'queued' | 'sent' | 'failed' | 'skipped';
  */
 export type StockMovementReason =
     | 'treatment_usage'
+    | 'treatment_void'
     | 'manual_adjustment'
     | 'return'
     | 'initial';

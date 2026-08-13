@@ -3,6 +3,7 @@
 namespace App\Modules\Billing\Repositories;
 
 use App\Enums\InstallmentStatus;
+use App\Enums\PaymentPlanStatus;
 use App\Models\PaymentPlan;
 use App\Models\PaymentPlanInstallment;
 use App\Scopes\ClinicScope;
@@ -126,6 +127,25 @@ class PaymentPlanRepository
         return PaymentPlan::where('patient_id', $patientId)
             ->with(['installments' => fn ($query) => $query->withSum('transactions as collected_total', 'amount')])
             ->orderByDesc('id')
+            ->get();
+    }
+
+    /**
+     * Active plans booked against a treatment in the active clinic, carrying only their OPEN
+     * (Pending + PartiallyPaid) installments with the collected total pre-summed, so the caller
+     * can derive what is still expected without an N+1. Not filtered to one row: nothing stops a
+     * treatment carrying more than one plan.
+     *
+     * @return Collection<int, PaymentPlan>
+     */
+    public function activePlansForTreatment(int $treatmentId): Collection
+    {
+        return PaymentPlan::where('treatment_id', $treatmentId)
+            ->where('status', PaymentPlanStatus::Active->value)
+            ->with(['installments' => fn ($query) => $query
+                ->whereIn('status', [InstallmentStatus::Pending->value, InstallmentStatus::PartiallyPaid->value])
+                ->withSum('transactions as collected_total', 'amount')])
+            ->orderBy('id')
             ->get();
     }
 

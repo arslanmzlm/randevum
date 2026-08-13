@@ -184,6 +184,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/appointments/{appointment}/treatment', [TreatmentController::class, 'start'])->name('treatments.start');
     Route::get('/treatments/{treatment}/process', [TreatmentController::class, 'process'])->name('treatments.process');
     Route::put('/treatments/{treatment}/complete', [TreatmentController::class, 'complete'])->name('treatments.complete');
+    Route::post('/treatments/{treatment}/void', [TreatmentController::class, 'void'])->name('treatments.void');
     Route::get('/treatments/{treatment}/report', [TreatmentReportController::class, 'show'])->name('treatments.report');
     Route::get('/treatments/{treatment}', [TreatmentController::class, 'show'])->name('treatments.show');
     Route::post('/treatments/{treatment}/media', [TreatmentMediaController::class, 'store'])->name('treatments.media.store');

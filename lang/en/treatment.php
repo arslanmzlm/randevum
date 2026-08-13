@@ -4,6 +4,7 @@ return [
 
     'completed' => 'Treatment completed.',
     'completed_with_followups' => 'Treatment completed. :created follow-up appointment(s) created, :skipped skipped due to conflicts.',
+    'voided' => 'Treatment voided and its amounts zeroed.',
 
     'media' => [
         'uploaded' => 'File uploaded.',
@@ -90,6 +91,10 @@ return [
         'follow_up_not_allowed' => 'You do not have permission to create follow-up appointments.',
         'vertical_mismatch' => "The clinic's vertical is not compatible with this treatment type.",
         'media_delete_window_expired' => 'This file can no longer be deleted — the 48-hour correction window has passed.',
+        'void_not_completed' => 'Only completed treatments can be voided.',
+        'void_has_payments' => 'This treatment has :amount collected against it and cannot be voided. Refund the payment first.',
+        'void_has_open_payment_plan' => 'This treatment has an open payment plan (:count installments, :amount outstanding) and cannot be voided. Complete or cancel the plan first.',
+        'void_restock_line_mismatch' => 'The product lines marked for stock return do not belong to this treatment.',
     ],
 
 ];

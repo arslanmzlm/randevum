@@ -11,12 +11,15 @@ use App\Models\Clinic;
 use App\Models\Patient;
 use App\Models\PodiatryTreatmentDetail;
 use App\Models\Treatment;
+use App\Models\TreatmentProductLine;
 use App\Models\User;
+use App\Modules\Billing\Contracts\BalanceReaderContract;
 use App\Modules\Billing\Contracts\PaymentPlanCreatorContract;
 use App\Modules\Billing\Contracts\PaymentRecorderContract;
 use App\Modules\Catalog\Contracts\StockAdjusterContract;
 use App\Modules\Core\Contracts\AppointmentLifecycleContract;
 use App\Modules\Core\Services\StatusLogService;
+use App\Modules\Medical\Exceptions\TreatmentVoidBlockedException;
 use App\Modules\Medical\Repositories\CaseRepository;
 use App\Modules\Medical\Repositories\TreatmentRepository;
 use App\Support\ClinicContext;
@@ -25,6 +28,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Number;
 use Illuminate\Validation\ValidationException;
 
 class TreatmentService
@@ -40,6 +44,7 @@ class TreatmentService
         private PaymentRecorderContract $paymentRecorder,
         private PaymentPlanCreatorContract $paymentPlanCreator,
         private StockAdjusterContract $stockAdjuster,
+        private BalanceReaderContract $balanceReader,
         private ClinicContext $clinicContext,
     ) {}
 
@@ -234,6 +239,140 @@ class TreatmentService
 
             return $followUpResult;
         });
+    }
+
+    /**
+     * Void a completed treatment: the record was entered in error and must count as if it
+     * never happened. Not a refund — money already collected is the caller's problem to
+     * refund FIRST, which is why any non-zero net collection blocks the transition.
+     *
+     * No time limit by owner decision: a mis-entered treatment stays voidable forever, so
+     * this deliberately does not consult the edit/delete windows in config/platform.php.
+     *
+     * Stock return is per product line, not all-or-nothing: material actually consumed
+     * before the mis-entry was noticed never goes back. $restockLineIds is REQUIRED and
+     * carries the caller's decision verbatim — no implicit "return everything" default, so
+     * a caller that forgets the choice cannot silently inflate stock. Pass [] to void
+     * without returning anything.
+     *
+     * @param  list<int>  $restockLineIds  `treatment_products.id` values to return to stock
+     *
+     * @throws TreatmentVoidBlockedException
+     * @throws ValidationException
+     * @throws \Throwable
+     */
+    public function void(Treatment $treatment, User $actor, array $restockLineIds): Treatment
+    {
+        return DB::transaction(function () use ($treatment, $actor, $restockLineIds): Treatment {
+            // Lock first, then read the paid total: a payment being recorded concurrently
+            // takes the same row lock (TreatmentReader::completedTotalCap), so the two
+            // serialize instead of both reading a stale "nothing collected".
+            $locked = $this->treatmentRepository->lockForUpdate($treatment->id) ?? $treatment;
+
+            if ($locked->status !== TreatmentStatus::Completed) {
+                throw new TreatmentVoidBlockedException(__('treatment.errors.void_not_completed'));
+            }
+
+            $paid = $this->balanceReader->paidTotalForTreatment($locked->id);
+
+            // Non-zero either way blocks: positive = money still held, negative = an
+            // over-refund the clinic owes back. Zero means every payment was refunded.
+            if (bccomp($paid, '0', 2) !== 0) {
+                throw new TreatmentVoidBlockedException(__('treatment.errors.void_has_payments', [
+                    'amount' => Number::currency(
+                        (float) $paid,
+                        $this->clinicContext->currency(),
+                        $this->clinicContext->locale(),
+                    ),
+                ]));
+            }
+
+            // A plan opened but not yet collected sums to zero, so the paid-total guard above
+            // cannot see it. Voiding then leaves the schedule running against a treatment that
+            // no longer exists. The void never cancels the plan itself — money decisions stay
+            // deliberate, so the caller closes or cancels the plan first.
+            $openPlan = $this->balanceReader->openPaymentPlanSummaryForTreatment($locked->id);
+
+            if ($openPlan !== null) {
+                throw new TreatmentVoidBlockedException(__('treatment.errors.void_has_open_payment_plan', [
+                    'count' => $openPlan['installment_count'],
+                    'amount' => Number::currency(
+                        (float) $openPlan['remaining_amount'],
+                        $this->clinicContext->currency(),
+                        $this->clinicContext->locale(),
+                    ),
+                ]));
+            }
+
+            $restockLines = $this->resolveRestockLines($locked, $restockLineIds);
+
+            // Money is zeroed, quantities and unit_price snapshots are not: the clinical
+            // record of what was used stays readable, only its monetary weight disappears.
+            $locked->serviceLines()->update(['discount_amount' => 0, 'subtotal' => 0]);
+            $locked->productLines()->update(['discount_amount' => 0, 'subtotal' => 0]);
+
+            $this->treatmentRepository->update($locked, [
+                'subtotal_amount' => 0,
+                'discount_amount' => 0,
+                'total_amount' => 0,
+                'status' => TreatmentStatus::Voided->value,
+                'updated_by' => $actor->id,
+            ]);
+
+            $this->statusLogService->record(
+                $locked,
+                TreatmentStatus::Completed->value,
+                TreatmentStatus::Voided->value,
+                $actor,
+            );
+
+            // Only product lines move stock; service lines have nothing to return. Locks are
+            // taken in product_id order for the same deadlock reason as complete(). Stock may
+            // go negative in the other direction, so no ceiling guard here either.
+            foreach ($restockLines->sortBy('product_id') as $line) {
+                $this->stockAdjuster->adjust(
+                    $line->product_id,
+                    $line->quantity,
+                    StockMovementReason::TreatmentVoid,
+                    $locked->id,
+                    null,
+                    $actor,
+                );
+            }
+
+            return $locked;
+        });
+    }
+
+    /**
+     * Map the caller's chosen line ids onto this treatment's own product lines.
+     *
+     * An id that is not one of this treatment's product lines is rejected rather than
+     * skipped: silently dropping it would let a tampered or stale payload restock another
+     * treatment's (or another clinic's) products under this void.
+     *
+     * @param  list<int>  $restockLineIds
+     * @return Collection<int, TreatmentProductLine>
+     *
+     * @throws ValidationException
+     */
+    private function resolveRestockLines(Treatment $treatment, array $restockLineIds): Collection
+    {
+        $ids = array_values(array_unique(array_map('intval', $restockLineIds)));
+
+        if ($ids === []) {
+            return new Collection;
+        }
+
+        $lines = $treatment->productLines()->whereIn('id', $ids)->get();
+
+        if ($lines->count() !== count($ids)) {
+            throw ValidationException::withMessages([
+                'restock_line_ids' => [__('treatment.errors.void_restock_line_mismatch')],
+            ]);
+        }
+
+        return $lines;
     }
 
     /**

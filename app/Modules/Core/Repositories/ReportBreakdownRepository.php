@@ -40,6 +40,8 @@ class ReportBreakdownRepository
     /**
      * Collected (non-pending) amount per doctor, from transactions bound to a
      * treatment. treatment_id NULL rows (manual income) drop out via the inner join.
+     * Voided treatments are excluded outright, so a doctor whose only treatment was
+     * voided gets no row at all (netted payment+refund would still produce a 0.00 one).
      *
      * @return array<int, string> doctor_id => amount (2-dp decimal string)
      */
@@ -56,6 +58,7 @@ class ReportBreakdownRepository
         $rows = Transaction::query()
             ->join('treatments', 'treatments.id', '=', 'transactions.treatment_id')
             ->where('treatments.clinic_id', $clinicId)
+            ->whereNot('treatments.status', TreatmentStatus::Voided)
             ->whereNot('transactions.status', TransactionStatus::Pending)
             ->when($startUtc, fn ($query) => $query->where('transactions.paid_at', '>=', $startUtc))
             ->when($endUtc, fn ($query) => $query->where('transactions.paid_at', '<=', $endUtc))
@@ -220,6 +223,7 @@ class ReportBreakdownRepository
             ->where('treatments.clinic_id', $clinicId)
             ->where('appointments.clinic_id', $clinicId)
             ->whereNull('appointments.deleted_at')
+            ->whereNot('treatments.status', TreatmentStatus::Voided)
             ->whereNot('transactions.status', TransactionStatus::Pending)
             ->when($startUtc, fn ($query) => $query->where('transactions.paid_at', '>=', $startUtc))
             ->when($endUtc, fn ($query) => $query->where('transactions.paid_at', '<=', $endUtc))
@@ -308,6 +312,7 @@ class ReportBreakdownRepository
         $rows = Transaction::withoutGlobalScope(ClinicScope::class)
             ->whereIn('clinic_id', $clinicIds)
             ->whereNot('status', TransactionStatus::Pending)
+            ->excludingVoidedTreatments()
             ->when($startUtc, fn ($query) => $query->where('paid_at', '>=', $startUtc))
             ->when($endUtc, fn ($query) => $query->where('paid_at', '<=', $endUtc))
             ->groupBy('clinic_id')
@@ -338,6 +343,7 @@ class ReportBreakdownRepository
         $rows = Transaction::withoutGlobalScope(ClinicScope::class)
             ->whereIn('clinic_id', $clinicIds)
             ->whereNot('status', TransactionStatus::Pending)
+            ->excludingVoidedTreatments()
             ->when($startUtc, fn ($query) => $query->where('paid_at', '>=', $startUtc))
             ->when($endUtc, fn ($query) => $query->where('paid_at', '<=', $endUtc))
             ->groupBy('clinic_id')

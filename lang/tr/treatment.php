@@ -4,6 +4,7 @@ return [
 
     'completed' => 'Tedavi tamamlandı.',
     'completed_with_followups' => 'Tedavi tamamlandı. :created randevu oluşturuldu, :skipped çakışma nedeniyle atlandı.',
+    'voided' => 'Tedavi iptal edildi ve tutarları sıfırlandı.',
 
     'media' => [
         'uploaded' => 'Dosya yüklendi.',
@@ -90,6 +91,10 @@ return [
         'follow_up_not_allowed' => 'Takip randevusu oluşturma yetkiniz bulunmamaktadır.',
         'vertical_mismatch' => 'Kliniğin uzmanlık alanı bu tedavi türüyle uyumsuz.',
         'media_delete_window_expired' => 'Bu dosya 48 saatlik düzeltme süresi geçtiği için silinemez.',
+        'void_not_completed' => 'Yalnızca tamamlanmış tedaviler iptal edilebilir.',
+        'void_has_payments' => 'Bu tedaviye bağlı :amount tutarında tahsilat var; tedavi iptal edilemez. Önce ödemeyi iade edin.',
+        'void_has_open_payment_plan' => 'Bu tedaviye bağlı açık bir taksit planı var (:count taksit, kalan :amount); tedavi iptal edilemez. Önce planı tamamlayın ya da iptal edin.',
+        'void_restock_line_mismatch' => 'Stoğa dönecek olarak işaretlenen ürün satırları bu tedaviye ait değil.',
     ],
 
 ];

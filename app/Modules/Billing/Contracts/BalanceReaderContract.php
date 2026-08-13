@@ -17,6 +17,14 @@ interface BalanceReaderContract
     public function paidTotalForPatient(int $patientId): string;
 
     /**
+     * Net sum of all settled transaction amounts booked against a treatment (refund
+     * counter-entries included, so a fully refunded treatment reads "0.00"). Returns a
+     * decimal string. Medical reads this to decide whether money still stands against a
+     * treatment before voiding it.
+     */
+    public function paidTotalForTreatment(int $treatmentId): string;
+
+    /**
      * Paid total (sum of transaction amounts) per patient in the active clinic, keyed by
      * patient_id, in one grouped query. Patients with no payments are absent from the map.
      * Lets Medical derive list-page balances without touching Billing tables.
@@ -62,6 +70,17 @@ interface BalanceReaderContract
      * }>
      */
     public function transactionsForTreatment(int $treatmentId): array;
+
+    /**
+     * Summary of the still-open payment plans booked against a treatment in the active
+     * clinic, or null when none is open. "Open" is a plan whose status is Active — a
+     * Completed (fully collected) or Cancelled plan expects no further money and is absent.
+     * The counts and remaining cover the plans' Pending/PartiallyPaid installments only.
+     * Medical reads this to refuse voiding a treatment whose schedule is still running.
+     *
+     * @return array{plan_count: int, installment_count: int, remaining_amount: string}|null
+     */
+    public function openPaymentPlanSummaryForTreatment(int $treatmentId): ?array;
 
     /**
      * A patient's payment plans (with installment schedules) in the active clinic, newest

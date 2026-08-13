@@ -28,6 +28,11 @@ class BalanceService implements BalanceReaderContract
         return $this->repository->paidTotalForPatient($patientId);
     }
 
+    public function paidTotalForTreatment(int $treatmentId): string
+    {
+        return $this->repository->paidTotalForTreatment($treatmentId);
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -57,6 +62,34 @@ class BalanceService implements BalanceReaderContract
     public function transactionsForTreatment(int $treatmentId): array
     {
         return $this->serialize($this->repository->forTreatment($treatmentId));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function openPaymentPlanSummaryForTreatment(int $treatmentId): ?array
+    {
+        $plans = $this->paymentPlanRepository->activePlansForTreatment($treatmentId);
+
+        if ($plans->isEmpty()) {
+            return null;
+        }
+
+        $installmentCount = 0;
+        $remaining = '0.00';
+
+        foreach ($plans as $plan) {
+            foreach ($plan->installments as $installment) {
+                $installmentCount++;
+                $remaining = bcadd($remaining, $this->settlement->remainingFromLoaded($installment), 2);
+            }
+        }
+
+        return [
+            'plan_count' => $plans->count(),
+            'installment_count' => $installmentCount,
+            'remaining_amount' => $remaining,
+        ];
     }
 
     /**

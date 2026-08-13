@@ -11,7 +11,9 @@ use App\Modules\Catalog\Contracts\ServiceLookupContract;
 use App\Modules\Core\Contracts\AppointmentTypeLookupContract;
 use App\Modules\Core\Contracts\DoctorDirectoryContract;
 use App\Modules\Core\Support\Toast;
+use App\Modules\Medical\Exceptions\TreatmentVoidBlockedException;
 use App\Modules\Medical\Http\Requests\CompleteTreatmentRequest;
+use App\Modules\Medical\Http\Requests\VoidTreatmentRequest;
 use App\Modules\Medical\Http\Resources\AnamnesisResource;
 use App\Modules\Medical\Http\Resources\TreatmentListResource;
 use App\Modules\Medical\Http\Resources\TreatmentProcessResource;
@@ -192,6 +194,28 @@ class TreatmentController extends Controller
         } else {
             Toast::success(__('treatment.completed'));
         }
+
+        return redirect()->route('treatments.show', $treatment);
+    }
+
+    /**
+     * POST /treatments/{treatment}/void
+     * Marks a completed treatment as never having happened (mis-entry correction).
+     * `restock_line_ids` carries the per-product-line "return to stock" choice.
+     */
+    public function void(VoidTreatmentRequest $request, Treatment $treatment): RedirectResponse
+    {
+        $this->authorize('void', $treatment);
+
+        try {
+            $this->treatmentService->void($treatment, $request->user(), $request->restockLineIds());
+        } catch (TreatmentVoidBlockedException $e) {
+            Toast::warning($e->getMessage());
+
+            return back();
+        }
+
+        Toast::success(__('treatment.voided'));
 
         return redirect()->route('treatments.show', $treatment);
     }
