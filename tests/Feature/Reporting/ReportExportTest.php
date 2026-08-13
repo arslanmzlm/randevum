@@ -5,7 +5,7 @@ use App\Models\Service;
 use App\Models\Treatment;
 use App\Models\TreatmentServiceLine;
 use App\Models\User;
-use App\Modules\Billing\Exports\ReportExport;
+use App\Modules\Reporting\Exports\ReportExport;
 use App\Support\ClinicContext;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;

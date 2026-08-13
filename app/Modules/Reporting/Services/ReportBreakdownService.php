@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Modules\Core\Services;
+namespace App\Modules\Reporting\Services;
 
 use App\Enums\ReportTab;
-use App\Modules\Core\Repositories\ReportBreakdownRepository;
+use App\Modules\Reporting\Repositories\ReportBreakdownRepository;
 use App\Support\ClinicContext;
 use Carbon\CarbonImmutable;
 use Collator;

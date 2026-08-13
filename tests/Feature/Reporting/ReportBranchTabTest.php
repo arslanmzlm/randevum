@@ -4,7 +4,7 @@ use App\Models\Clinic;
 use App\Models\Expense;
 use App\Models\Transaction;
 use App\Models\User;
-use App\Modules\Billing\Exports\ReportExport;
+use App\Modules\Reporting\Exports\ReportExport;
 use App\Support\ClinicContext;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;

@@ -1,15 +1,15 @@
 <?php
 
-namespace App\Modules\Billing\Http\Controllers;
+namespace App\Modules\Reporting\Http\Controllers;
 
 use App\Enums\ReportTab;
 use App\Http\Controllers\Controller;
 use App\Models\Expense;
-use App\Modules\Billing\Exports\ReportExport;
-use App\Modules\Billing\Services\FinanceReportService;
 use App\Modules\Core\Services\ClinicMembershipService;
-use App\Modules\Core\Services\ReportBreakdownService;
 use App\Modules\Core\Support\Toast;
+use App\Modules\Reporting\Exports\ReportExport;
+use App\Modules\Reporting\Services\FinanceReportService;
+use App\Modules\Reporting\Services\ReportBreakdownService;
 use App\Support\ClinicContext;
 use App\Support\DateRangeFilter;
 use Illuminate\Http\RedirectResponse;

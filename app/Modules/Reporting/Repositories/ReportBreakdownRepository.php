@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Modules\Core\Repositories;
+namespace App\Modules\Reporting\Repositories;
 
 use App\Enums\AppointmentStatus;
 use App\Enums\TransactionStatus;
@@ -20,11 +20,11 @@ use App\Support\ClinicContext;
 use Carbon\CarbonInterface;
 
 /**
- * Cross-module aggregation queries for the report breakdown tabs. Lives in Core (the
- * shared kernel) because a single breakdown spans Billing (transactions/expenses),
- * Medical (treatments/line items) and Scheduling (appointments) tables — a Billing- or
- * Medical-owned repository joining across those tables would violate the module
- * boundary. Every query is a grouped sum/count, DB-agnostic (sqlite tests + pgsql).
+ * Cross-module aggregation queries for the report breakdown tabs: a single breakdown
+ * spans Billing (transactions/expenses), Medical (treatments/line items) and Scheduling
+ * (appointments) tables. Reporting is the one module allowed to join across another
+ * module's tables — see the analytic-join exception in the architecture guideline.
+ * Every query is a grouped sum/count, DB-agnostic (sqlite tests + pgsql).
  *
  * ClinicScope (via BelongsToClinic) filters the base-model table of each query
  * automatically. For joined tables that themselves carry clinic_id, an explicit
@@ -281,7 +281,7 @@ class ReportBreakdownRepository
 
     /**
      * Expense count/total per creating user, windowed on expense_date (plain date
-     * column — whereDate, not a bare string comparison; see ExpenseRepository).
+     * column — whereDate, not a bare string comparison; see ExpenseReportRepository).
      * A NULL created_by groups under the '' key.
      *
      * @return array<string, array{count: int, total: string}>

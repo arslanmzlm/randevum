@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Modules\Billing\Services;
+namespace App\Modules\Reporting\Services;
 
 use App\Enums\PaymentMethod;
 use App\Models\Transaction;
-use App\Modules\Billing\Repositories\TransactionRepository;
+use App\Modules\Reporting\Repositories\RevenueReportRepository;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -14,7 +14,7 @@ class RevenueReportService
     private const DAILY_GRANULARITY_MAX_DAYS = 92;
 
     public function __construct(
-        private TransactionRepository $repository,
+        private RevenueReportRepository $repository,
     ) {}
 
     /**

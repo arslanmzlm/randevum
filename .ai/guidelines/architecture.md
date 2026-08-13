@@ -13,5 +13,6 @@
 - A cross-module contract lives in the `Contracts/` folder of the module that FULFILS it; `Core/Contracts/` holds only contracts Core itself implements.
 - A cross-module contract is fulfilled by a THIN class dedicated to that seam, never by the module's orchestration service: the bound concrete's constructor takes only its own module's repositories (and Core) — never another module's contract. Command seams (side-effecting writes) are a justified exception, recorded with its reason in `SEAM_ALLOW_LIST` in `tests/Feature/ContainerCycleTest.php`.
 - `App\Modules\Core` is the shared kernel, importable by any module.
+- `App\Modules\Reporting` is the sole exception to the boundary rule: its repositories may query and join another module's TABLES directly for analytic aggregates. Only tables — it still may not import another module's Repository or concrete Service.
 - No module extraction in MVP. Keep boundaries clean so extraction stays possible later, but don't build for it.
 - Vue components live in `resources/js/` (never under `app/Modules/`). Vertical-specific components go under `resources/js/Verticals/<Vertical>/`, loaded via `defineAsyncComponent` keyed on `clinic.vertical.slug`. Patient SPA pages live under `resources/js/Pages/Patient/*`.

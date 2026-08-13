@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Modules\Billing\Exports;
+namespace App\Modules\Reporting\Exports;
 
 use App\Enums\ReportTab;
 use Illuminate\Support\Facades\Lang;

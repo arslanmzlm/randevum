@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Modules\Billing\Exports;
+namespace App\Modules\Reporting\Exports;
 
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithColumnFormatting;

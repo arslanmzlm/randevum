@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Modules\Billing\Services;
+namespace App\Modules\Reporting\Services;
 
 use Illuminate\Support\Facades\Cache;
 

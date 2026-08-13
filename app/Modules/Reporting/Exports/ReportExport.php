@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Modules\Billing\Exports;
+namespace App\Modules\Reporting\Exports;
 
 use App\Enums\ReportTab;
-use App\Modules\Billing\Services\FinanceReportService;
-use App\Modules\Core\Services\ReportBreakdownService;
+use App\Modules\Reporting\Services\FinanceReportService;
+use App\Modules\Reporting\Services\ReportBreakdownService;
 use Maatwebsite\Excel\Concerns\Exportable;
 use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 

@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Modules\Billing\Services;
+namespace App\Modules\Reporting\Services;
 
-use App\Modules\Billing\Repositories\ExpenseRepository;
+use App\Modules\Reporting\Repositories\ExpenseReportRepository;
 
 class ExpenseReportService
 {
     public function __construct(
-        private ExpenseRepository $repository,
+        private ExpenseReportRepository $repository,
     ) {}
 
     /**

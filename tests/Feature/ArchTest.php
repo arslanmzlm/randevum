@@ -66,26 +66,45 @@ foreach ($modules as $module) {
         ->toOnlyBeUsedIn($self);
 }
 
-// Core is the shared kernel — any module may import it. Core may only reach back through a
-// sibling's Contracts/* (the seam abstraction), never its concrete namespaces.
-$siblingInternals = [];
+/** Concrete (non-Contracts) namespaces of every module except the named ones. */
+$internalNamespaces = static function (array $modules, string ...$except): array {
+    $namespaces = [];
 
-foreach ($modules as $module) {
-    if ($module === 'Core') {
-        continue;
-    }
+    foreach ($modules as $module) {
+        if (in_array($module, $except, true)) {
+            continue;
+        }
 
-    foreach (glob(dirname(__DIR__, 2)."/app/Modules/{$module}/*", GLOB_ONLYDIR) ?: [] as $dir) {
-        if (basename($dir) !== 'Contracts') {
-            $siblingInternals[] = "App\\Modules\\{$module}\\".basename($dir);
+        foreach (glob(dirname(__DIR__, 2)."/app/Modules/{$module}/*", GLOB_ONLYDIR) ?: [] as $dir) {
+            if (basename($dir) !== 'Contracts') {
+                $namespaces[] = "App\\Modules\\{$module}\\".basename($dir);
+            }
         }
     }
-}
+
+    return $namespaces;
+};
+
+// Core is the shared kernel — any module may import it. Core may only reach back through a
+// sibling's Contracts/* (the seam abstraction), never its concrete namespaces.
+$siblingInternals = $internalNamespaces($modules, 'Core');
 
 if (in_array('Core', $modules, true) && $siblingInternals !== []) {
     arch('module Core does not depend on sibling module internals')
         ->expect('App\Modules\Core')
         ->not->toUse($siblingInternals);
+}
+
+// Reporting is the boundary rule's one exception: its repositories may query and join
+// another module's TABLES for analytic aggregates. That exception lives entirely at the
+// model/table layer, which (see the note above) no arch rule can express — so the CODE
+// boundary is pinned here at full strength: Core plus sibling Contracts/*, nothing else.
+$reportingForbidden = $internalNamespaces($modules, 'Core', 'Reporting');
+
+if (in_array('Reporting', $modules, true) && $reportingForbidden !== []) {
+    arch('module Reporting joins tables, not sibling module code')
+        ->expect('App\Modules\Reporting')
+        ->not->toUse($reportingForbidden);
 }
 
 /*

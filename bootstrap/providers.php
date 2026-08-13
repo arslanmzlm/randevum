@@ -8,6 +8,7 @@ use App\Modules\Identity\IdentityServiceProvider;
 use App\Modules\Media\MediaServiceProvider;
 use App\Modules\Medical\MedicalServiceProvider;
 use App\Modules\Messaging\MessagingServiceProvider;
+use App\Modules\Reporting\ReportingServiceProvider;
 use App\Modules\Scheduling\SchedulingServiceProvider;
 use App\Modules\Verticals\Podiatry\PodiatryServiceProvider;
 use App\Providers\AppServiceProvider;
@@ -28,4 +29,5 @@ return [
     PodiatryServiceProvider::class,
     BillingServiceProvider::class,
     CatalogServiceProvider::class,
+    ReportingServiceProvider::class,
 ];
