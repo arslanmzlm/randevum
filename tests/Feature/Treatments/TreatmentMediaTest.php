@@ -98,18 +98,18 @@ function tmFakePdf(string $name = 'rapor.pdf'): UploadedFile
 }
 
 /**
- * A real (tiny) HEIC image, generated via Imagick, so content-sniffing genuinely
- * detects image/heic — proving the end-to-end upload path for the feature's
- * central use case (browsers can't render HEIC; the conversion pipeline needs a
- * correctly-detected image to kick in).
+ * A real (tiny) HEIC image, so content-sniffing genuinely detects image/heic —
+ * proving the end-to-end upload path for the feature's central use case (browsers
+ * can't render HEIC; the conversion pipeline needs a correctly-detected image to
+ * kick in). Read from a committed fixture rather than generated: generating one
+ * needs a HEIC delegate in the environment's ImageMagick build, which CI lacks.
  */
 function tmFakeHeic(string $name = 'foot.heic'): UploadedFile
 {
-    $image = new Imagick;
-    $image->newImage(20, 20, new ImagickPixel('red'));
-    $image->setImageFormat('heic');
-
-    return UploadedFile::fake()->createWithContent($name, $image->getImageBlob());
+    return UploadedFile::fake()->createWithContent(
+        $name,
+        file_get_contents(base_path('tests/Fixtures/sample.heic')),
+    );
 }
 
 // ---------------------------------------------------------------------------
