@@ -6,6 +6,7 @@ use App\Enums\TransactionStatus;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Modules\Billing\Repositories\TransactionRepository;
+use App\Modules\Core\Events\ClinicFinancesChanged;
 use App\Modules\Core\Services\StatusLogService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -108,6 +109,8 @@ class RefundService
                     $this->settlement->sync($installment, $actor);
                 }
             }
+
+            ClinicFinancesChanged::dispatchAfterCommit($counterEntry->clinic_id);
 
             return $counterEntry;
         });

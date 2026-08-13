@@ -4,6 +4,7 @@ namespace App\Modules\Billing\Services;
 
 use App\Models\Expense;
 use App\Modules\Billing\Repositories\ExpenseRepository;
+use App\Modules\Core\Events\ClinicFinancesChanged;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class ExpenseService
@@ -60,7 +61,11 @@ class ExpenseService
         $data['created_by'] = $creatorId;
 
         // clinic_id is auto-set by BelongsToClinic on create — not set manually.
-        return $this->repository->create($data);
+        $expense = $this->repository->create($data);
+
+        ClinicFinancesChanged::dispatchAfterCommit($expense->clinic_id);
+
+        return $expense;
     }
 
     /**
@@ -68,11 +73,19 @@ class ExpenseService
      */
     public function update(Expense $expense, array $data): Expense
     {
-        return $this->repository->update($expense, $data);
+        $saved = $this->repository->update($expense, $data);
+
+        ClinicFinancesChanged::dispatchAfterCommit($saved->clinic_id);
+
+        return $saved;
     }
 
     public function delete(Expense $expense): void
     {
+        $clinicId = $expense->clinic_id;
+
         $this->repository->delete($expense);
+
+        ClinicFinancesChanged::dispatchAfterCommit($clinicId);
     }
 }

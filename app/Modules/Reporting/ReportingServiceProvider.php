@@ -2,14 +2,15 @@
 
 namespace App\Modules\Reporting;
 
+use App\Modules\Core\Events\ClinicFinancesChanged;
+use App\Modules\Reporting\Listeners\ClearRevenueReportCache;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 
-/**
- * Reporting has no cross-module contract to bind yet — the module is read-only and
- * resolves its own services by concrete type. The provider exists as the module's
- * registration seam for when it does.
- */
 class ReportingServiceProvider extends ServiceProvider
 {
-    //
+    public function boot(): void
+    {
+        Event::listen(ClinicFinancesChanged::class, ClearRevenueReportCache::class);
+    }
 }

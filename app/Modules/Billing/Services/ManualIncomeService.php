@@ -7,6 +7,7 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Modules\Billing\Contracts\PaymentRecorderContract;
 use App\Modules\Billing\Repositories\ManualIncomeRepository;
+use App\Modules\Core\Events\ClinicFinancesChanged;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -96,9 +97,13 @@ class ManualIncomeService
             ]);
         }
 
+        $clinicId = $transaction->clinic_id;
+
         DB::transaction(function () use ($transaction): void {
             $transaction->statusLogs()->delete();
             $this->repository->delete($transaction);
         });
+
+        ClinicFinancesChanged::dispatchAfterCommit($clinicId);
     }
 }

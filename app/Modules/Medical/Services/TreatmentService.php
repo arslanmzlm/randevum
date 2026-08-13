@@ -16,6 +16,7 @@ use App\Modules\Billing\Contracts\BalanceReaderContract;
 use App\Modules\Billing\Contracts\PaymentPlanCreatorContract;
 use App\Modules\Billing\Contracts\PaymentRecorderContract;
 use App\Modules\Catalog\Contracts\StockAdjusterContract;
+use App\Modules\Core\Events\ClinicFinancesChanged;
 use App\Modules\Core\Services\StatusLogService;
 use App\Modules\Medical\Exceptions\TreatmentVoidBlockedException;
 use App\Modules\Medical\Repositories\CaseRepository;
@@ -225,6 +226,11 @@ class TreatmentService
             // 7. Appointment Arrived → Completed
             $this->appointmentLifecycle->markCompleted($appointment, $actor, $caseId);
 
+            // The treatment enters the revenue scope here. Its payments already fire this
+            // through the recorder, but a completion with no payment (or an installment
+            // plan with no down payment) would otherwise leave the report stale.
+            ClinicFinancesChanged::dispatchAfterCommit($treatment->clinic_id);
+
             return $followUpResult;
         });
     }
@@ -327,6 +333,10 @@ class TreatmentService
                     $actor,
                 );
             }
+
+            // A voided treatment drops out of the revenue scan (excludingVoidedTreatments),
+            // so its already-refunded transactions stop counting toward the breakdowns.
+            ClinicFinancesChanged::dispatchAfterCommit($locked->clinic_id);
 
             return $locked;
         });

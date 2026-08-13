@@ -7,6 +7,7 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Modules\Billing\Contracts\PaymentRecorderContract;
 use App\Modules\Billing\Repositories\TransactionRepository;
+use App\Modules\Core\Events\ClinicFinancesChanged;
 use App\Modules\Core\Services\StatusLogService;
 use App\Modules\Medical\Contracts\TreatmentReaderContract;
 use Illuminate\Support\Facades\DB;
@@ -80,6 +81,10 @@ class PaymentService implements PaymentRecorderContract
                 TransactionStatus::Completed->value,
                 $actor,
             );
+
+            // The single transaction-creation path: patient payments, manual income,
+            // installment collections and plan down payments all land here.
+            ClinicFinancesChanged::dispatchAfterCommit($transaction->clinic_id);
 
             return $transaction;
         });

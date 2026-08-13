@@ -139,7 +139,8 @@ function vreVoid(User $owner, Treatment $treatment): void
     expect(Treatment::withoutGlobalScopes()->find($treatment->id)->status)
         ->toBe(TreatmentStatus::Voided);
 
-    Cache::flush();
+    // No manual Cache::flush() here on purpose: the void itself drops the clinic's
+    // revenue cache, so the report reads below must already be fresh.
 }
 
 // ---------------------------------------------------------------------------
