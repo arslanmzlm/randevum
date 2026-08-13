@@ -35,6 +35,7 @@ return [
         'not_completable' => 'Bu randevu tamamlandı olarak işaretlenemiyor. Randevunun durumu Geldi olmalıdır.',
         'not_no_showable' => 'Bu randevu gelmedi olarak işaretlenemiyor. Randevunun durumu Onaylandı veya Yeniden Planlandı olmalıdır.',
         'delete_not_allowed' => 'Bu randevu silinemez. Lütfen iptal seçeneğini kullanın.',
+        'doctor_deleted' => 'Doktoru silindiği için bu randevu düzenlenemez. Yeni bir randevu oluşturabilirsiniz.',
     ],
 
     'rescheduled' => 'Randevu yeniden planlandı.',

@@ -892,6 +892,95 @@ it('keeps a calendar event whose patient is soft-deleted and flags patient_is_de
 // Soft-deleted doctor — the chip and the leave block outlive the profile
 // ---------------------------------------------------------------------------
 
+it('lists a soft-deleted doctor in the calendar filter options, flagged is_deleted', function (): void {
+    $clinic = Clinic::factory()->create(['timezone' => 'Europe/Istanbul']);
+    $owner = User::factory()->create();
+    calRole($owner, 'owner', $clinic->id);
+
+    $activeUser = User::factory()->create();
+    $active = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $activeUser->id]);
+    $goneUser = User::factory()->create();
+    $gone = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $goneUser->id]);
+
+    $goneName = $gone->display_name;
+    $gone->delete();
+
+    // The list is ordered by id, so the active doctor comes first and the deleted one second.
+    $this->actingAs($owner)
+        ->get(route('calendar.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('doctors', 2)
+            ->where('doctors.0.id', $active->id)
+            ->where('doctors.0.is_deleted', false)
+            ->where('doctors.1.id', $gone->id)
+            ->where('doctors.1.is_deleted', true)
+            ->where('doctors.1.display_name', $goneName)
+        );
+});
+
+it('never lists another clinic doctor — deleted or not — in the calendar filter options', function (): void {
+    $clinicA = Clinic::factory()->create(['timezone' => 'Europe/Istanbul']);
+    $clinicB = Clinic::factory()->create(['timezone' => 'Europe/Istanbul']);
+
+    $ownerA = User::factory()->create();
+    calRole($ownerA, 'owner', $clinicA->id);
+
+    $doctorUserA = User::factory()->create();
+    $doctorA = Doctor::factory()->create(['clinic_id' => $clinicA->id, 'user_id' => $doctorUserA->id]);
+
+    $doctorUserB = User::factory()->create();
+    $doctorB = Doctor::factory()->create(['clinic_id' => $clinicB->id, 'user_id' => $doctorUserB->id]);
+    $doctorB->delete();
+
+    $this->actingAs($ownerA)
+        ->get(route('calendar.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('doctors', 1)
+            ->where('doctors.0.id', $doctorA->id)
+        );
+});
+
+it('keeps a soft-deleted doctor out of the default calendar scope', function (): void {
+    $clinic = Clinic::factory()->create(['timezone' => 'Europe/Istanbul']);
+    $owner = User::factory()->create();
+    calRole($owner, 'owner', $clinic->id);
+
+    $activeUser = User::factory()->create();
+    $active = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $activeUser->id]);
+    $goneUser = User::factory()->create();
+    $gone = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $goneUser->id]);
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+
+    calMakeAppointment($clinic, $active, $patient, 10, 11);
+    calMakeAppointment($clinic, $gone, $patient, 14, 15);
+
+    $date = calNextMonday();
+    ScheduleException::factory()->create([
+        'clinic_id' => $clinic->id,
+        'doctor_id' => $gone->id,
+        'starts_at' => Carbon::parse("{$date} 16:00:00", 'Europe/Istanbul')->utc(),
+        'ends_at' => Carbon::parse("{$date} 17:00:00", 'Europe/Istanbul')->utc(),
+    ]);
+
+    $gone->delete();
+
+    $response = $this->actingAs($owner)->getJson(calEventsUrl())->assertOk()->json();
+
+    expect(array_column($response['data'], 'doctor_id'))->toBe([$active->id])
+        ->and($response['exceptions'])->toBe([]);
+
+    // ...but an explicit pick still reaches them — that is how the filter shows the old calendar.
+    $picked = $this->actingAs($owner)
+        ->getJson(calEventsUrl(['doctor_id' => (string) $gone->id]))
+        ->assertOk()
+        ->json();
+
+    expect(array_column($picked['data'], 'doctor_id'))->toBe([$gone->id])
+        ->and($picked['exceptions'])->toHaveCount(1);
+});
+
 it('flags doctor_is_deleted on calendar events and leave blocks of a soft-deleted doctor', function (): void {
     $clinic = Clinic::factory()->create(['timezone' => 'Europe/Istanbul']);
     $owner = User::factory()->create();

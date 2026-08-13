@@ -49,6 +49,7 @@ const treatmentActions = useTreatmentActions(props.ownDoctorId);
 const target = computed<AppointmentActionTarget | null>(() => ({
     id: props.appointment.id,
     doctor_id: props.appointment.doctor_id,
+    doctor_is_deleted: props.appointment.doctor_is_deleted,
     status: props.appointment.status,
     starts_at: props.appointment.starts_at,
     treatment_id: props.appointment.treatment_id,

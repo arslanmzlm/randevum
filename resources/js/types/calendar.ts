@@ -7,6 +7,8 @@ export type CalendarView = 'month' | 'week' | 'day';
 export type CalendarDoctor = {
     id: number;
     display_name: string;
+    /** Soft-deleted doctors stay selectable (their old appointments) but are never shown by default. */
+    is_deleted: boolean;
 };
 
 /** Props for the `calendar/Index` page (CalendarController@index). */

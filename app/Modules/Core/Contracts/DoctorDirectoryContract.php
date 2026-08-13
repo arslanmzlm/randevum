@@ -24,6 +24,16 @@ interface DoctorDirectoryContract
     public function activeForClinic(): Collection;
 
     /**
+     * Active doctors plus the soft-deleted ones, with user loaded — the calendar's
+     * doctor filter options. A deleted doctor's appointments stay reachable behind an
+     * explicit pick; every other doctor list (booking, cases, treatments, leave) uses
+     * activeForClinic() and must not offer them.
+     *
+     * @return Collection<int, Doctor>
+     */
+    public function forCalendarFilter(): Collection;
+
+    /**
      * Find a specific doctor in the current clinic by their profile id, or null.
      *
      * ClinicScope ensures the lookup is constrained to the active clinic.

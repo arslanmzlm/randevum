@@ -72,6 +72,7 @@ const target = computed<AppointmentActionTarget | null>(() =>
         ? {
               id: appointment.value.id,
               doctor_id: appointment.value.doctor_id,
+              doctor_is_deleted: appointment.value.doctor_is_deleted,
               status: appointment.value.status,
               starts_at: appointment.value.starts_at_utc,
               treatment_id: appointment.value.treatment_id,

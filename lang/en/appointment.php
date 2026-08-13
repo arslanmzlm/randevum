@@ -35,6 +35,7 @@ return [
         'not_completable' => 'This appointment cannot be marked as completed. Status must be Arrived.',
         'not_no_showable' => 'This appointment cannot be marked as no-show. Status must be Confirmed or Rescheduled.',
         'delete_not_allowed' => 'This appointment cannot be deleted. Please cancel it instead.',
+        'doctor_deleted' => 'This appointment cannot be edited because its doctor has been deleted. Create a new appointment instead.',
     ],
 
     'rescheduled' => 'Appointment rescheduled successfully.',

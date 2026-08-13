@@ -59,6 +59,26 @@ class DoctorRepository
     }
 
     /**
+     * Active doctors plus the soft-deleted ones, for the calendar's doctor filter.
+     *
+     * Their appointments outlive the profile, so a deleted doctor stays selectable —
+     * but only behind an explicit pick, which is why this list is separate from
+     * activeForClinic() (the default scope and every booking form).
+     *
+     * @return Collection<int, Doctor>
+     */
+    public function forCalendarFilter(): Collection
+    {
+        return Doctor::withTrashed()
+            ->with('user')
+            ->where(function ($query): void {
+                $query->where('is_active', true)->orWhereNotNull('deleted_at');
+            })
+            ->orderBy('id')
+            ->get();
+    }
+
+    /**
      * Find a single clinic doctor by profile id (active or inactive).
      *
      * Returns null when the doctor does not exist in the active clinic.

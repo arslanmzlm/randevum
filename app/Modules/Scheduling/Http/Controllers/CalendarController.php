@@ -33,8 +33,14 @@ class CalendarController extends Controller
         $clinic = $this->clinicContext->clinicOrFail();
         $user = $request->user();
 
-        $doctors = $this->doctorDirectory->activeForClinic()
-            ->map(fn ($d) => ['id' => $d->id, 'display_name' => $d->display_name]);
+        // Deleted doctors are listed but never selected by default — the grid and the events
+        // endpoint both fall back to the active-only scope when the filter is empty.
+        $doctors = $this->doctorDirectory->forCalendarFilter()
+            ->map(fn ($d) => [
+                'id' => $d->id,
+                'display_name' => $d->display_name,
+                'is_deleted' => $d->trashed(),
+            ]);
 
         return Inertia::render('calendar/Index', [
             'doctors' => $doctors,

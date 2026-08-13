@@ -13,6 +13,7 @@ use App\Modules\Medical\Contracts\PatientRegistrarContract;
 use App\Modules\Medical\Exceptions\TrashedPhoneConflictException;
 use App\Modules\Scheduling\Contracts\AppointmentCancellationContract;
 use App\Modules\Scheduling\Contracts\AppointmentLifecycleContract;
+use App\Modules\Scheduling\Exceptions\AppointmentEditBlockedException;
 use App\Modules\Scheduling\Repositories\AppointmentRepository;
 use App\Support\ClinicContext;
 use Carbon\Carbon;
@@ -160,6 +161,20 @@ class AppointmentService implements AppointmentCancellationContract, Appointment
     }
 
     /**
+     * The appointment row outlives its doctor's soft-delete for the record, but it can no
+     * longer be moved: a deleted doctor has no working hours, no leave and no calendar to
+     * re-book against. Called by the edit page before it renders and by reschedule() itself.
+     *
+     * @throws AppointmentEditBlockedException
+     */
+    public function assertEditable(Appointment $appointment): void
+    {
+        if ($appointment->doctor()->withTrashed()->first()?->trashed()) {
+            throw new AppointmentEditBlockedException(__('appointment.errors.doctor_deleted'));
+        }
+    }
+
+    /**
      * Reschedule a future Confirmed or Rescheduled appointment to a new slot.
      * Re-runs the 3-layer availability check excluding the appointment's own current slot.
      * Transitions to Rescheduled (+ status_logs) only when the start time actually moves
@@ -173,6 +188,8 @@ class AppointmentService implements AppointmentCancellationContract, Appointment
      */
     public function reschedule(Appointment $appointment, array $data, User $actor): Appointment
     {
+        $this->assertEditable($appointment);
+
         $allowedStatuses = [AppointmentStatus::Confirmed, AppointmentStatus::Rescheduled];
 
         if (! in_array($appointment->status, $allowedStatuses, true) || ! $appointment->starts_at->isFuture()) {

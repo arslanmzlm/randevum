@@ -19,6 +19,14 @@ class DoctorDirectoryService implements DoctorDirectoryContract
         return $this->repository->activeForClinic();
     }
 
+    /**
+     * @return Collection<int, Doctor>
+     */
+    public function forCalendarFilter(): Collection
+    {
+        return $this->repository->forCalendarFilter();
+    }
+
     public function findForClinic(int $doctorId): ?Doctor
     {
         return $this->repository->findForClinic($doctorId);

@@ -564,6 +564,105 @@ it('successful reschedule flashes a toast', function (): void {
 });
 
 // ---------------------------------------------------------------------------
+// Soft-deleted doctor — the appointment stays on record but can no longer be moved
+// ---------------------------------------------------------------------------
+
+it('sends the edit page away with a warning toast when the appointment doctor is soft-deleted', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    raRole($owner, 'owner', $clinic->id);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+    $appointment = raAppointment($clinic, $doctor, $patient);
+
+    $doctor->delete();
+
+    $this->actingAs($owner)
+        ->get(route('appointments.edit', $appointment))
+        ->assertRedirect(route('appointments.show', $appointment))
+        ->assertSessionHas('toasts.0.severity', 'warn')
+        ->assertSessionHas('toasts.0.summary', __('appointment.errors.doctor_deleted'));
+});
+
+it('refuses the reschedule and leaves the slot untouched when the appointment doctor is soft-deleted', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    raRole($owner, 'owner', $clinic->id);
+    $doctorUser = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+    $appointment = raAppointment($clinic, $doctor, $patient);
+
+    $originalStart = $appointment->starts_at->copy();
+    $doctor->delete();
+
+    $this->actingAs($owner)
+        ->put(route('appointments.update', $appointment), raPayload($doctor->id, raMondayAt('11:00')))
+        ->assertRedirect(route('appointments.show', $appointment))
+        // A single warn toast carrying the reason — not a field-error bag.
+        ->assertSessionHasNoErrors()
+        ->assertSessionHas('toasts.0.severity', 'warn')
+        ->assertSessionHas('toasts.0.summary', __('appointment.errors.doctor_deleted'));
+
+    $appointment->refresh();
+    expect($appointment->starts_at->equalTo($originalStart))->toBeTrue();
+});
+
+it('moving the appointment onto a still-active doctor is refused too — the block is on the appointment', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    raRole($owner, 'owner', $clinic->id);
+
+    $goneUser = User::factory()->create();
+    $gone = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $goneUser->id]);
+    $activeUser = User::factory()->create();
+    $active = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $activeUser->id]);
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+    $appointment = raAppointment($clinic, $gone, $patient);
+
+    $gone->delete();
+
+    $this->actingAs($owner)
+        ->put(route('appointments.update', $appointment), raPayload($active->id, raMondayAt('11:00')))
+        ->assertRedirect(route('appointments.show', $appointment));
+
+    $appointment->refresh();
+    expect($appointment->doctor_id)->toBe($gone->id);
+});
+
+it('keeps a soft-deleted doctor out of the booking doctor pickers', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    raRole($owner, 'owner', $clinic->id);
+
+    $activeUser = User::factory()->create();
+    $active = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $activeUser->id]);
+    $goneUser = User::factory()->create();
+    $gone = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $goneUser->id]);
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+    $appointment = raAppointment($clinic, $active, $patient);
+
+    $gone->delete();
+
+    $onlyActive = fn ($page) => $page
+        ->has('doctors', 1)
+        ->where('doctors.0.id', $active->id);
+
+    foreach ([
+        route('appointments.create'),
+        route('appointments.bulk-create'),
+        route('appointments.bulk-cancel'),
+        route('appointments.edit', $appointment),
+    ] as $url) {
+        $this->actingAs($owner)
+            ->get($url)
+            ->assertOk()
+            ->assertInertia($onlyActive);
+    }
+});
+
+// ---------------------------------------------------------------------------
 // Multi-tenant isolation (MANDATORY)
 // ---------------------------------------------------------------------------
 

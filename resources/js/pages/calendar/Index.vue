@@ -16,6 +16,7 @@ import AppointmentPopover from '@/components/calendar/AppointmentPopover.vue';
 import CalendarMonthGrid from '@/components/calendar/CalendarMonthGrid.vue';
 import CalendarTimeGrid from '@/components/calendar/CalendarTimeGrid.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import RecordName from '@/components/RecordName.vue';
 import { useAppointmentActions } from '@/composables/useAppointmentActions';
 import { useCalendarEvents } from '@/composables/useCalendarEvents';
 import { useCalendarNavigation } from '@/composables/useCalendarNavigation';
@@ -157,13 +158,19 @@ watch(crossBranch, (cross) => {
     }
 });
 
-// The doctors the grid renders: the selection, or everyone when nothing is selected.
+// `doctors` also carries the soft-deleted ones so their old appointments stay reachable, but they
+// are never part of "everyone" — the empty-filter default matches the server's active-only scope.
+const activeDoctors = computed(() =>
+    props.doctors.filter((d) => !d.is_deleted),
+);
+
+// The doctors the grid renders: the selection, or every active one when nothing is selected.
 const visibleDoctors = computed(() =>
     crossBranch.value
         ? []
         : doctorFilter.value.length
           ? props.doctors.filter((d) => doctorFilter.value.includes(d.id))
-          : props.doctors,
+          : activeDoctors.value,
 );
 
 // A column mixing several doctors' leave has to name each block; a doctor column already has the
@@ -413,7 +420,11 @@ const summariesByDate = computed(() => {
 });
 
 const doctorOptions = computed(() =>
-    props.doctors.map((d) => ({ label: d.display_name, value: d.id })),
+    props.doctors.map((d) => ({
+        label: d.display_name,
+        value: d.id,
+        deleted: d.is_deleted,
+    })),
 );
 const statusOptions = computed(() =>
     MVP_APPOINTMENT_STATUSES.map((status) => ({
@@ -597,7 +608,14 @@ function onSelectEvent(
                         :filter="shouldFilterSelect(doctorOptions.length)"
                         :filter-placeholder="t('common.search')"
                         class="w-full sm:w-52"
-                    />
+                    >
+                        <template #option="{ option }">
+                            <RecordName
+                                :name="option.label"
+                                :deleted="option.deleted"
+                            />
+                        </template>
+                    </MultiSelect>
                     <MultiSelect
                         v-model="statuses"
                         :options="statusOptions"

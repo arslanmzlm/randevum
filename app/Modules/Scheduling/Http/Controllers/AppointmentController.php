@@ -13,6 +13,7 @@ use App\Modules\Medical\Contracts\TreatmentReaderContract;
 use App\Modules\Medical\Exceptions\TrashedPhoneConflictException;
 use App\Modules\Messaging\Contracts\SmsHistoryContract;
 use App\Modules\Messaging\Contracts\SmsQuotaContract;
+use App\Modules\Scheduling\Exceptions\AppointmentEditBlockedException;
 use App\Modules\Scheduling\Http\Requests\BulkCancelAppointmentsRequest;
 use App\Modules\Scheduling\Http\Requests\BulkCancelPreviewRequest;
 use App\Modules\Scheduling\Http\Requests\BulkPrecheckAppointmentsRequest;
@@ -306,9 +307,15 @@ class AppointmentController extends Controller
         return Inertia::render('appointments/Show', $props);
     }
 
-    public function edit(Request $request, Appointment $appointment): Response
+    public function edit(Request $request, Appointment $appointment): RedirectResponse|Response
     {
         $this->authorize('update', $appointment);
+
+        try {
+            $this->service->assertEditable($appointment);
+        } catch (AppointmentEditBlockedException $e) {
+            return $this->backToShowBlocked($appointment, $e);
+        }
 
         // withTrashed(): the appointment outlives its patient's soft-delete — without it the
         // relation resolves to null and the read-only patient block renders empty.
@@ -363,11 +370,26 @@ class AppointmentController extends Controller
             $this->authorize('appointments.assignDoctor');
         }
 
-        $this->service->reschedule($appointment, $validated, $request->user());
+        try {
+            $this->service->reschedule($appointment, $validated, $request->user());
+        } catch (AppointmentEditBlockedException $e) {
+            return $this->backToShowBlocked($appointment, $e);
+        }
 
         Toast::success(__('appointment.rescheduled'));
 
         return to_route('appointments.index');
+    }
+
+    /**
+     * Editing was refused (deleted doctor). The edit page itself is the blocked surface, so
+     * both entry points land on the detail page with the reason as a single warning toast.
+     */
+    private function backToShowBlocked(Appointment $appointment, AppointmentEditBlockedException $e): RedirectResponse
+    {
+        Toast::warning($e->getMessage());
+
+        return to_route('appointments.show', $appointment);
     }
 
     public function cancel(CancelAppointmentRequest $request, Appointment $appointment): RedirectResponse

@@ -18,6 +18,8 @@ import type { AppointmentStatus } from '@/types/enums';
 export type ActionableAppointment = {
     id: number;
     doctor_id: number;
+    /** A soft-deleted doctor has no calendar left to move the appointment onto — no editing. */
+    doctor_is_deleted: boolean;
     status: AppointmentStatus;
     /** ISO 8601 UTC start instant. */
     starts_at: string;
@@ -56,6 +58,7 @@ export function useAppointmentActions(
         return (
             can('appointments.update') &&
             canAct(row) &&
+            !row.doctor_is_deleted &&
             (row.status === 'confirmed' || row.status === 'rescheduled')
         );
     }
