@@ -4,13 +4,13 @@ namespace App\Modules\Billing;
 
 use App\Modules\Billing\Console\Commands\SendInstallmentRemindersCommand;
 use App\Modules\Billing\Contracts\BalanceReaderContract;
+use App\Modules\Billing\Contracts\DailyRevenueContract;
 use App\Modules\Billing\Contracts\PaymentPlanCreatorContract;
 use App\Modules\Billing\Contracts\PaymentRecorderContract;
 use App\Modules\Billing\Services\BalanceService;
 use App\Modules\Billing\Services\DailyRevenueService;
 use App\Modules\Billing\Services\PaymentPlanService;
 use App\Modules\Billing\Services\PaymentService;
-use App\Modules\Core\Contracts\DailyRevenueContract;
 use Illuminate\Support\ServiceProvider;
 
 class BillingServiceProvider extends ServiceProvider

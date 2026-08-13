@@ -6,8 +6,8 @@ use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
 use App\Models\Patient;
 use App\Models\User;
-use App\Modules\Core\Contracts\PatientAppointmentsContract;
-use App\Modules\Core\Contracts\UpcomingAppointmentsContract;
+use App\Modules\Scheduling\Contracts\PatientAppointmentsContract;
+use App\Modules\Scheduling\Contracts\UpcomingAppointmentsContract;
 use App\Modules\Scheduling\Repositories\AppointmentRepository;
 use Illuminate\Database\Eloquent\Collection;
 

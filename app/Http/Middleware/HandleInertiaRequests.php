@@ -4,8 +4,8 @@ namespace App\Http\Middleware;
 
 use App\Models\Clinic;
 use App\Models\User;
-use App\Modules\Core\Contracts\UpcomingAppointmentsContract;
 use App\Modules\Core\Services\ClinicMembershipService;
+use App\Modules\Scheduling\Contracts\UpcomingAppointmentsContract;
 use App\Support\ClinicContext;
 use Illuminate\Http\Request;
 use Inertia\Middleware;

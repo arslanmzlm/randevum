@@ -2,7 +2,7 @@
 
 namespace App\Modules\Messaging;
 
-use App\Modules\Core\Contracts\ClinicSmsPanelContract;
+use App\Modules\Messaging\Contracts\ClinicSmsPanelContract;
 use App\Modules\Messaging\Contracts\SmsDispatcherContract;
 use App\Modules\Messaging\Contracts\SmsHistoryContract;
 use App\Modules\Messaging\Contracts\SmsProviderInterface;

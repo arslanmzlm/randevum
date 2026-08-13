@@ -1,14 +1,13 @@
 <?php
 
-namespace App\Modules\Core\Contracts;
+namespace App\Modules\Scheduling\Contracts;
 
 use Illuminate\Support\Collection;
 
 /**
  * Read seam for Scheduling's appointment-type catalog used by other modules (treatment
- * follow-up appointment-type select). Lives in Core (shared kernel) so Medical can read
- * active appointment types without importing Scheduling's model/repository concretely.
- * AppointmentTypeService implements it; the binding lives in SchedulingServiceProvider.
+ * follow-up appointment-type select) without importing Scheduling's model/repository
+ * concretely. AppointmentTypeService implements it; the binding lives in SchedulingServiceProvider.
  */
 interface AppointmentTypeLookupContract
 {

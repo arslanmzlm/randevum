@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Database\Eloquent\Scope;
+use Tests\Support\ContainerBindings;
 
 /*
 |--------------------------------------------------------------------------
@@ -65,14 +66,74 @@ foreach ($modules as $module) {
         ->toOnlyBeUsedIn($self);
 }
 
-// Core is the shared kernel — any module may import it, but it must not depend on sibling modules.
-$siblingModules = array_values(array_filter(
-    array_map(fn (string $m): string => "App\\Modules\\{$m}", $modules),
-    fn (string $ns): bool => $ns !== 'App\\Modules\\Core',
-));
+// Core is the shared kernel — any module may import it. Core may only reach back through a
+// sibling's Contracts/* (the seam abstraction), never its concrete namespaces.
+$siblingInternals = [];
 
-if (in_array('Core', $modules, true) && $siblingModules !== []) {
-    arch('module Core does not depend on sibling modules')
-        ->expect('App\Modules\Core')
-        ->not->toUse($siblingModules);
+foreach ($modules as $module) {
+    if ($module === 'Core') {
+        continue;
+    }
+
+    foreach (glob(dirname(__DIR__, 2)."/app/Modules/{$module}/*", GLOB_ONLYDIR) ?: [] as $dir) {
+        if (basename($dir) !== 'Contracts') {
+            $siblingInternals[] = "App\\Modules\\{$module}\\".basename($dir);
+        }
+    }
 }
+
+if (in_array('Core', $modules, true) && $siblingInternals !== []) {
+    arch('module Core does not depend on sibling module internals')
+        ->expect('App\Modules\Core')
+        ->not->toUse($siblingInternals);
+}
+
+/*
+ * Owner decision: a cross-module contract lives in the module that FULFILS it, so a seam is
+ * discoverable from its implementation. Reads the binding table without resolving anything —
+ * resolving here would hang on a dependency cycle instead of failing (see ContainerCycleTest).
+ */
+
+test('a module contract is fulfilled by a class in its own module', function (): void {
+    $bindings = ContainerBindings::map();
+
+    $checked = 0;
+    $violations = [];
+
+    foreach ($bindings as $abstract => $ignored) {
+        if (! str_starts_with($abstract, 'App\\Modules\\') || ! interface_exists($abstract)) {
+            continue;
+        }
+
+        $concrete = ContainerBindings::concreteFor($abstract, $bindings);
+
+        if ($concrete === null) {
+            continue;
+        }
+
+        $checked++;
+
+        $owner = ContainerBindings::moduleOf($abstract);
+        $implementor = ContainerBindings::moduleOf($concrete);
+
+        if ($owner === $implementor) {
+            continue;
+        }
+
+        $violations[] = sprintf(
+            '%s lives in %s but is fulfilled by %s (%s) — move the contract to '
+            .'app/Modules/%s/Contracts/ and update its namespace, imports and binding.',
+            class_basename($abstract),
+            (string) $owner,
+            class_basename($concrete),
+            (string) $implementor,
+            (string) $implementor,
+        );
+    }
+
+    expect($checked)->toBeGreaterThan(0, 'no module contract bindings were read — the binding scan is broken');
+
+    if ($violations !== []) {
+        $this->fail(implode("\n", $violations));
+    }
+});

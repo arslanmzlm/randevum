@@ -4,7 +4,7 @@ namespace App\Modules\Scheduling\Services;
 
 use App\Models\AppointmentType;
 use App\Models\Clinic;
-use App\Modules\Core\Contracts\AppointmentTypeLookupContract;
+use App\Modules\Scheduling\Contracts\AppointmentTypeLookupContract;
 use App\Modules\Scheduling\Repositories\AppointmentTypeRepository;
 use App\Support\ClinicContext;
 use Illuminate\Database\Eloquent\Collection;

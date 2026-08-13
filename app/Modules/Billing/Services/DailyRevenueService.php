@@ -2,8 +2,8 @@
 
 namespace App\Modules\Billing\Services;
 
+use App\Modules\Billing\Contracts\DailyRevenueContract;
 use App\Modules\Billing\Repositories\TransactionRepository;
-use App\Modules\Core\Contracts\DailyRevenueContract;
 
 class DailyRevenueService implements DailyRevenueContract
 {

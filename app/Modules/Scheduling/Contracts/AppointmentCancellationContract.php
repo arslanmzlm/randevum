@@ -1,15 +1,14 @@
 <?php
 
-namespace App\Modules\Core\Contracts;
+namespace App\Modules\Scheduling\Contracts;
 
 use App\Models\User;
 
 /**
  * Shared contract for cancelling a doctor's future appointments during offboarding.
  *
- * Lives in Core (shared kernel) so DoctorProfileService can depend on the
- * abstraction without importing Scheduling. AppointmentService implements it;
- * the binding lives in SchedulingServiceProvider.
+ * Lets Core's DoctorProfileService cancel without importing Scheduling concretely.
+ * AppointmentService implements it; the binding lives in SchedulingServiceProvider.
  */
 interface AppointmentCancellationContract
 {

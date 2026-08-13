@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Modules\Core\Contracts;
+namespace App\Modules\Scheduling\Contracts;
 
 /**
  * Deliberately separate from PatientAppointmentsContract: the deletion guard is a read-only

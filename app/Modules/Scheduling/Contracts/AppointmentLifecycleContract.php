@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Modules\Core\Contracts;
+namespace App\Modules\Scheduling\Contracts;
 
 use App\Models\Appointment;
 use App\Models\User;
@@ -8,8 +8,7 @@ use App\Models\User;
 /**
  * Lifecycle transitions Medical calls on appointments during treatment processing.
  *
- * Lives in Core (shared kernel) so TreatmentService can depend on the abstraction
- * without importing Scheduling directly. AppointmentService implements it.
+ * AppointmentService implements it; the binding lives in SchedulingServiceProvider.
  */
 interface AppointmentLifecycleContract
 {

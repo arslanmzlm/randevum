@@ -3,7 +3,7 @@
 namespace App\Modules\Medical\Services;
 
 use App\Models\Treatment;
-use App\Modules\Core\Contracts\MediaServiceContract;
+use App\Modules\Media\Contracts\MediaServiceContract;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\ValidationException;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;

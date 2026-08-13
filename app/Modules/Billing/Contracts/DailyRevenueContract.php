@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Modules\Core\Contracts;
+namespace App\Modules\Billing\Contracts;
 
 /**
  * Read seam that lets Scheduling compute today's revenue tile without importing

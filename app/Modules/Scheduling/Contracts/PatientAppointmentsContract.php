@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Modules\Core\Contracts;
+namespace App\Modules\Scheduling\Contracts;
 
 use App\Models\Appointment;
 use App\Models\Patient;
@@ -9,8 +9,8 @@ use Illuminate\Support\Collection;
 
 /**
  * Read seam Medical uses to show a patient's appointment history on the patient
- * detail page. Lives in Core (shared kernel) so PatientController can depend on
- * the abstraction without importing Scheduling. AppointmentReader implements it.
+ * detail page without importing Scheduling concretely.
+ * AppointmentReader implements it; the binding lives in SchedulingServiceProvider.
  */
 interface PatientAppointmentsContract
 {

@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Modules\Core\Contracts\DashboardStatsContract;
-use App\Modules\Core\Contracts\FollowUpRemindersContract;
+use App\Modules\Medical\Contracts\FollowUpRemindersContract;
+use App\Modules\Scheduling\Contracts\DashboardStatsContract;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;

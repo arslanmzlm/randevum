@@ -5,7 +5,7 @@ namespace App\Modules\Messaging\Services;
 use App\Enums\SmsType;
 use App\Models\Clinic;
 use App\Models\ClinicSmsSetting;
-use App\Modules\Core\Contracts\ClinicSmsPanelContract;
+use App\Modules\Messaging\Contracts\ClinicSmsPanelContract;
 use App\Modules\Messaging\Repositories\ClinicSmsSettingRepository;
 use App\Modules\Messaging\Support\SmsTemplateVariables;
 use Illuminate\Support\Facades\Gate;

@@ -4,7 +4,7 @@ namespace App\Modules\Medical\Services;
 
 use App\Models\FollowUp;
 use App\Models\User;
-use App\Modules\Core\Contracts\FollowUpRemindersContract;
+use App\Modules\Medical\Contracts\FollowUpRemindersContract;
 use App\Modules\Medical\Repositories\FollowUpRepository;
 use App\Support\ClinicContext;
 use Carbon\Carbon;

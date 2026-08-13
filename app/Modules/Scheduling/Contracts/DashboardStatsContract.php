@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Modules\Core\Contracts;
+namespace App\Modules\Scheduling\Contracts;
 
 use App\Models\User;
 

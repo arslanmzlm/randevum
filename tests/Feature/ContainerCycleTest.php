@@ -2,9 +2,9 @@
 
 use App\Modules\Billing\Contracts\PaymentRecorderContract;
 use App\Modules\Billing\Services\PaymentService;
-use App\Modules\Core\Contracts\AppointmentCancellationContract;
-use App\Modules\Core\Contracts\AppointmentLifecycleContract;
-use App\Modules\Core\Contracts\DashboardStatsContract;
+use App\Modules\Scheduling\Contracts\AppointmentCancellationContract;
+use App\Modules\Scheduling\Contracts\AppointmentLifecycleContract;
+use App\Modules\Scheduling\Contracts\DashboardStatsContract;
 use App\Modules\Scheduling\Services\AppointmentService;
 use App\Modules\Scheduling\Services\DashboardStatsService;
 use Tests\Support\ContainerBindings;

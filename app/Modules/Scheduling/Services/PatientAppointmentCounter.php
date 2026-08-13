@@ -2,7 +2,7 @@
 
 namespace App\Modules\Scheduling\Services;
 
-use App\Modules\Core\Contracts\PatientAppointmentCounterContract;
+use App\Modules\Scheduling\Contracts\PatientAppointmentCounterContract;
 use App\Modules\Scheduling\Repositories\AppointmentRepository;
 
 /**

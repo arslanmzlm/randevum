@@ -4,7 +4,6 @@ namespace App\Modules\Core\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Doctor;
-use App\Modules\Core\Contracts\MediaServiceContract;
 use App\Modules\Core\Exceptions\DeletionBlockedException;
 use App\Modules\Core\Http\Requests\OffboardDoctorRequest;
 use App\Modules\Core\Http\Requests\StoreDoctorRequest;
@@ -13,6 +12,7 @@ use App\Modules\Core\Http\Requests\UpdateDoctorProfileRequest;
 use App\Modules\Core\Http\Resources\DoctorResource;
 use App\Modules\Core\Services\DoctorProfileService;
 use App\Modules\Core\Support\Toast;
+use App\Modules\Media\Contracts\MediaServiceContract;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;

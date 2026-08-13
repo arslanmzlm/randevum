@@ -2,16 +2,16 @@
 
 namespace App\Modules\Scheduling;
 
-use App\Modules\Core\Contracts\AppointmentCancellationContract;
-use App\Modules\Core\Contracts\AppointmentLifecycleContract;
-use App\Modules\Core\Contracts\AppointmentTypeLookupContract;
-use App\Modules\Core\Contracts\DashboardStatsContract;
-use App\Modules\Core\Contracts\PatientAppointmentCounterContract;
-use App\Modules\Core\Contracts\PatientAppointmentsContract;
-use App\Modules\Core\Contracts\UpcomingAppointmentsContract;
 use App\Modules\Identity\Events\ClinicRegistered;
 use App\Modules\Scheduling\Console\Commands\AutoNoShowCommand;
 use App\Modules\Scheduling\Console\Commands\SendRemindersCommand;
+use App\Modules\Scheduling\Contracts\AppointmentCancellationContract;
+use App\Modules\Scheduling\Contracts\AppointmentLifecycleContract;
+use App\Modules\Scheduling\Contracts\AppointmentTypeLookupContract;
+use App\Modules\Scheduling\Contracts\DashboardStatsContract;
+use App\Modules\Scheduling\Contracts\PatientAppointmentCounterContract;
+use App\Modules\Scheduling\Contracts\PatientAppointmentsContract;
+use App\Modules\Scheduling\Contracts\UpcomingAppointmentsContract;
 use App\Modules\Scheduling\Listeners\ProvisionDefaultAppointmentTypes;
 use App\Modules\Scheduling\Services\AppointmentReader;
 use App\Modules\Scheduling\Services\AppointmentService;

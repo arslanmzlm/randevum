@@ -5,8 +5,8 @@ namespace App\Modules\Scheduling\Services;
 use App\Models\Appointment;
 use App\Models\Clinic;
 use App\Models\User;
-use App\Modules\Core\Contracts\DailyRevenueContract;
-use App\Modules\Core\Contracts\DashboardStatsContract;
+use App\Modules\Billing\Contracts\DailyRevenueContract;
+use App\Modules\Scheduling\Contracts\DashboardStatsContract;
 use App\Modules\Scheduling\Repositories\AppointmentRepository;
 use App\Support\ClinicContext;
 

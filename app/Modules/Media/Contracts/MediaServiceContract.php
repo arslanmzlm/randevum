@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Modules\Core\Contracts;
+namespace App\Modules\Media\Contracts;
 
 use Illuminate\Http\UploadedFile;
 use Spatie\MediaLibrary\HasMedia;
@@ -9,9 +9,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 /**
  * Cross-module contract for media storage operations.
  *
- * Lives in Core (the shared kernel) so any module can depend on it
- * without creating a cross-sibling import. The Media module binds the
- * concrete implementation in MediaServiceProvider.
+ * MediaService implements it; the binding lives in MediaServiceProvider.
  */
 interface MediaServiceContract
 {

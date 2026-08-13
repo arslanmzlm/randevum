@@ -10,6 +10,7 @@
 - A module's `Listeners/` only handle that module's own events.
 - Cross-module communication is allowed ONLY via a Service interface (sync, when you need data back) or a Domain Event (async, fire-and-forget). Never query or import another module's Model, Repository, or concrete Service directly.
 - Introduce an interface only at a REAL seam — a cross-module-callable service or a second implementation (e.g. `SmsProviderInterface`). Expose as `Contracts/<Service>Contract.php`, bind in the module's ServiceProvider. Don't add interfaces mechanically for module-internal services.
+- A cross-module contract lives in the `Contracts/` folder of the module that FULFILS it; `Core/Contracts/` holds only contracts Core itself implements.
 - A cross-module contract is fulfilled by a THIN class dedicated to that seam, never by the module's orchestration service: the bound concrete's constructor takes only its own module's repositories (and Core) — never another module's contract. Command seams (side-effecting writes) are a justified exception, recorded with its reason in `SEAM_ALLOW_LIST` in `tests/Feature/ContainerCycleTest.php`.
 - `App\Modules\Core` is the shared kernel, importable by any module.
 - No module extraction in MVP. Keep boundaries clean so extraction stays possible later, but don't build for it.
