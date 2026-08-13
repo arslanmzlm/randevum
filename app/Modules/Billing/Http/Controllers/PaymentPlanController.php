@@ -8,6 +8,7 @@ use App\Models\PaymentPlan;
 use App\Models\PaymentPlanInstallment;
 use App\Models\Transaction;
 use App\Modules\Billing\Http\Requests\CollectInstallmentRequest;
+use App\Modules\Billing\Http\Requests\PaymentPlanIndexRequest;
 use App\Modules\Billing\Http\Requests\StorePaymentPlanRequest;
 use App\Modules\Billing\Repositories\PaymentPlanRepository;
 use App\Modules\Billing\Services\InstallmentReminderService;
@@ -34,7 +35,7 @@ class PaymentPlanController extends Controller
      * GET /payment-plans/installments
      * Pending-installments collections screen: all the clinic's due/overdue installments.
      */
-    public function index(Request $request): Response
+    public function index(PaymentPlanIndexRequest $request): Response
     {
         $this->authorize('viewAny', PaymentPlan::class);
 

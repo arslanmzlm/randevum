@@ -16,9 +16,8 @@ class RoleRepository
 
     /**
      * The matrix columns for a clinic: the five ClinicRole baseline roles (clinic copy if one
-     * exists, global template otherwise) in enum order, followed by any extra clinic-owned
-     * roles whose name is not a ClinicRole case, ordered by name (forward-compat for 8b
-     * custom roles — the tail is always empty today).
+     * exists, global template otherwise) in enum order, followed by the clinic's own custom
+     * roles (name is not a ClinicRole case), ordered by name.
      *
      * @return Collection<int, Role>
      */

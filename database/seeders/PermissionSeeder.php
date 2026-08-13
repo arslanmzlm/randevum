@@ -12,7 +12,7 @@ class PermissionSeeder extends Seeder
     /**
      * Permission => the baseline roles that hold it. Only the abilities the app
      * actually enforces today; this grows feature by feature, not as a full
-     * up-front matrix (permission-management UI is Faz 3).
+     * up-front matrix.
      *
      * Only ever touches GLOBAL role rows (clinic_id null) — a clinic's copy-on-write
      * role customization (RoleCustomizationService) is never synced here, so re-seeding
@@ -158,9 +158,9 @@ class PermissionSeeder extends Seeder
         // Saved segment (filter preset) create/delete. Applying one / the list's tag +
         // last-visit filters need no permission — read-only over patients.viewAny.
         'segments.manage' => ['owner', 'manager'],
-        // Opens the read-only permission matrix page (this wave).
+        // Opens the permission matrix page.
         'roles.viewAny' => ['owner', 'manager'],
-        // Seeded now; enforced in Dalga 8b (matrix editing / custom roles).
+        // Every matrix mutation: permission edits, custom role create/rename/delete, revert.
         'roles.manage' => ['owner', 'manager'],
     ];
 

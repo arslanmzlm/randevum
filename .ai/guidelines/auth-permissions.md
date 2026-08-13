@@ -15,7 +15,16 @@
 - Role scoping — **Global** (`clinic_id` null): `superadmin`, `admin`, `moderator`, `patient` (B2C, over the user's own data). **Clinic-scoped** (`clinic_id` set): `owner`, `manager`, `doctor`, `receptionist`, `assistant`.
 - Seed 9 baseline roles (faz-0): the global + clinic-scoped sets above. Roles are global; clinic-scoped assignments carry `clinic_id`. `patient` assigned from Faz 2. Per-role intent / permission subsets: see `.localdev/docs/data-model.md`.
 - A user "is a doctor" by having a `doctors` profile row (calendar visibility), NOT by holding the `doctor` role.
-- MVP authorization is seed-driven; NO permission-management UI (custom roles, overrides, self-lockout protection, matrix = Faz 3). Until then superadmin grants clinic permissions directly in the DB. Faz 3 custom roles are scoped to the creating clinic, invisible to others.
+
+## Role management UI (permission matrix, custom roles)
+
+- `settings/roles` is the clinic's permission matrix: read gated by `roles.viewAny`, every mutation by `roles.manage` (`RolePolicy`). Server rules live in `App\Modules\Identity\Services\*`; never re-implement one in a controller or on the frontend.
+- Seeded baseline rows stay GLOBAL. The first time a clinic edits a baseline role it is copy-on-written into a clinic-owned row (`RoleCustomizationService::customizeForActiveClinic`: same name/guard, permissions copied, that clinic's `model_has_roles` re-pointed) — the global template and every other clinic are untouched.
+- `PermissionSeeder` syncs GLOBAL rows only (explicit `whereNull('clinic_id')` lookup, never `Role::findByName`) — re-seeding must never overwrite a clinic's customization.
+- Custom roles are clinic-owned (`clinic_id` set, name is not a `ClinicRole` case), invisible to other clinics, start with ZERO permissions, and are the only roles that may be renamed or deleted. A role with any assignment in the clinic cannot be deleted.
+- Baseline copies are never renamed or deleted individually; the clinic reverts them all at once back to the global templates (`revertAllForActiveClinic`), which re-points assignments and drops the copies. Custom roles are untouched by a revert.
+- Self-lockout protection is server-side and mandatory (`SelfLockoutGuard`): a user may not strip `roles.manage`/`roles.viewAny` from a role THEY hold, delete their own role, or revert in a way that would do either. The matrix renders those cells locked — UX only, the guard is the gate.
+- A permission created AFTER a clinic's copy-on-write and not held by the copy is surfaced as "undefined" in the matrix (owner decides) — never silently granted or denied. A permission that predates the copy is the clinic's own decision and is not flagged.
 
 ## Authorizing (permission-backed, not role-name checks)
 

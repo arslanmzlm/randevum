@@ -198,3 +198,50 @@ it('rejects a clinic B treatment_id in a clinic A store request (exists rule sco
         PaymentPlan::withoutGlobalScopes()->where('treatment_id', $treatmentB->id)->exists()
     )->toBeFalse();
 });
+
+// ---------------------------------------------------------------------------
+// Collections index — filter[patient_id] existence gate
+// ---------------------------------------------------------------------------
+
+it('rejects a clinic B patient id in the collections filter instead of rendering an empty list', function (): void {
+    ['ownerA' => $ownerA, 'patientB' => $patientB] = pplTiTwoClinicFixture();
+
+    $this->actingAs($ownerA)
+        ->get(route('payment-plans.installments', ['filter' => ['patient_id' => $patientB->id]]))
+        ->assertSessionHasErrors('filter.patient_id');
+});
+
+it('rejects a patient id that exists in no clinic at all', function (): void {
+    ['ownerA' => $ownerA] = pplTiTwoClinicFixture();
+
+    $this->actingAs($ownerA)
+        ->get(route('payment-plans.installments', ['filter' => ['patient_id' => 999999]]))
+        ->assertSessionHasErrors('filter.patient_id');
+});
+
+it("accepts the active clinic's own patient id in the collections filter", function (): void {
+    ['ownerA' => $ownerA, 'patientA' => $patientA, 'installmentA' => $installmentA] = pplTiTwoClinicFixture();
+
+    $this->actingAs($ownerA)
+        ->get(route('payment-plans.installments', ['filter' => ['patient_id' => $patientA->id]]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('installments', 1)
+            ->where('installments.0.id', $installmentA->id)
+        );
+});
+
+it('still accepts a soft-deleted patient id — the plan outlives the patient and stays listed', function (): void {
+    ['ownerA' => $ownerA, 'patientA' => $patientA, 'installmentA' => $installmentA] = pplTiTwoClinicFixture();
+
+    $patientA->delete();
+
+    $this->actingAs($ownerA)
+        ->get(route('payment-plans.installments', ['filter' => ['patient_id' => $patientA->id]]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('installments', 1)
+            ->where('installments.0.id', $installmentA->id)
+            ->where('installments.0.patient_is_deleted', true)
+        );
+});

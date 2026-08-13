@@ -331,3 +331,55 @@ it('leaves doctor.deleted false on the report while the doctor profile is live',
 
     expect(trCapturedPdf($fake)->viewData['doctor']['deleted'])->toBeFalse();
 });
+
+// ---------------------------------------------------------------------------
+// Money formatting — every figure matches the raw NumberFormatter output for the
+// TREATMENT's clinic locale/currency (pins the exact strings so the shared
+// Number::currency wrapper cannot silently change the document)
+// ---------------------------------------------------------------------------
+
+it('formats every money figure exactly as NumberFormatter does for the clinic locale/currency', function (): void {
+    /** @var FakePdfBuilder $fake */
+    $fake = Pdf::fake();
+    $setup = trSetup();
+
+    $this->actingAs($setup['owner'])
+        ->get(route('treatments.report', $setup['treatment']))
+        ->assertOk();
+
+    $data = trCapturedPdf($fake)->viewData;
+    $clinic = $setup['clinic'];
+    $money = fn (float $amount): string => (new NumberFormatter($clinic->locale, NumberFormatter::CURRENCY))
+        ->formatCurrency($amount, $clinic->currency);
+
+    expect($data['subtotalAmount'])->toBe($money(300.0))
+        ->and($data['discountAmount'])->toBe($money(0.0))
+        ->and($data['totalAmount'])->toBe($money(300.0))
+        ->and($data['paidTotal'])->toBe($money(200.0))
+        ->and($data['remainingBalance'])->toBe($money(100.0))
+        ->and($data['serviceLines'][0]['unitPrice'])->toBe($money(200.0))
+        ->and($data['serviceLines'][0]['discount'])->toBe($money(0.0))
+        ->and($data['serviceLines'][0]['subtotal'])->toBe($money(200.0))
+        ->and($data['productLines'][0]['unitPrice'])->toBe($money(100.0))
+        ->and($data['productLines'][0]['subtotal'])->toBe($money(100.0))
+        ->and(collect($data['payments'])->pluck('amount')->sort()->values()->all())
+        ->toBe(collect([$money(120.0), $money(80.0)])->sort()->values()->all());
+});
+
+it('follows the clinic locale/currency rather than a hardcoded pair', function (): void {
+    /** @var FakePdfBuilder $fake */
+    $fake = Pdf::fake();
+    $setup = trSetup();
+
+    $setup['clinic']->update(['locale' => 'en_US', 'currency' => 'USD']);
+
+    $this->actingAs($setup['owner'])
+        ->get(route('treatments.report', $setup['treatment']))
+        ->assertOk();
+
+    $data = trCapturedPdf($fake)->viewData;
+    $expected = (new NumberFormatter('en_US', NumberFormatter::CURRENCY))->formatCurrency(300.0, 'USD');
+
+    expect($data['totalAmount'])->toBe($expected)
+        ->and($expected)->toContain('$');
+});

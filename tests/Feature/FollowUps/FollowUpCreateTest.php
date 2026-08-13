@@ -235,3 +235,54 @@ it('unauthenticated user is redirected to login', function (): void {
     $this->post(route('follow-ups.store'), fcrPayload($patient, $type))
         ->assertRedirect(route('login'));
 });
+
+// ---------------------------------------------------------------------------
+// Case picker endpoint (follow-ups.cases) — patient_id existence gate
+// ---------------------------------------------------------------------------
+
+it('returns the patient cases for the case picker', function (): void {
+    ['clinic' => $clinic, 'owner' => $owner, 'doctor' => $doctor, 'patient' => $patient] = fcrSetup();
+
+    $case = CaseRecord::factory()->create([
+        'clinic_id' => $clinic->id,
+        'patient_id' => $patient->id,
+        'doctor_id' => $doctor->id,
+    ]);
+
+    $this->actingAs($owner)
+        ->getJson(route('follow-ups.cases', ['patient_id' => $patient->id]))
+        ->assertOk()
+        ->assertJsonPath('data.0.id', $case->id);
+});
+
+it('rejects a patient id from another clinic on the case picker (exists rule scoped to active clinic)', function (): void {
+    ['owner' => $owner] = fcrSetup();
+
+    $otherClinic = Clinic::factory()->create();
+    $otherPatient = Patient::factory()->create(['clinic_id' => $otherClinic->id]);
+
+    $this->actingAs($owner)
+        ->getJson(route('follow-ups.cases', ['patient_id' => $otherPatient->id]))
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('patient_id');
+});
+
+it('rejects a soft-deleted patient id on the case picker', function (): void {
+    ['owner' => $owner, 'patient' => $patient] = fcrSetup();
+
+    $patient->delete();
+
+    $this->actingAs($owner)
+        ->getJson(route('follow-ups.cases', ['patient_id' => $patient->id]))
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('patient_id');
+});
+
+it('rejects a patient id that exists in no clinic on the case picker', function (): void {
+    ['owner' => $owner] = fcrSetup();
+
+    $this->actingAs($owner)
+        ->getJson(route('follow-ups.cases', ['patient_id' => 999999]))
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('patient_id');
+});

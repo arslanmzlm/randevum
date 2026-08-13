@@ -7,6 +7,7 @@ use App\Models\Treatment;
 use App\Modules\Billing\Contracts\BalanceReaderContract;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Number;
 use Spatie\LaravelPdf\Enums\Format;
 use Spatie\LaravelPdf\Facades\Pdf;
 use Spatie\LaravelPdf\PdfBuilder;
@@ -123,11 +124,13 @@ class TreatmentReportService
         ];
     }
 
+    /**
+     * Locale/currency come from the TREATMENT's clinic, not ClinicContext — the document must
+     * read the same whichever clinic context it is rendered from.
+     */
     private function formatMoney(string $amount, Clinic $clinic): string
     {
-        $formatter = new \NumberFormatter($clinic->locale, \NumberFormatter::CURRENCY);
-
-        return $formatter->formatCurrency((float) $amount, $clinic->currency);
+        return Number::currency((float) $amount, $clinic->currency, $clinic->locale);
     }
 
     private function formatClinicAddress(Clinic $clinic): string
