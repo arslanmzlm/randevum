@@ -28,6 +28,7 @@ class TreatmentListResource extends JsonResource
             'patient' => [
                 'id' => (int) $this->patient_id,
                 'full_name' => trim($this->patient->first_name.' '.$this->patient->last_name),
+                'is_deleted' => $this->patient->trashed(),
             ],
             'doctor' => [
                 'id' => (int) $this->doctor_id,

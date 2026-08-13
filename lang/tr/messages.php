@@ -37,6 +37,11 @@ return [
         'deleted' => 'Hasta kaydı silindi.',
         'restored' => 'Hasta kaydı geri yüklendi.',
         'notes_updated' => 'Hasta notu güncellendi.',
+        'delete_blocked_prefix' => 'Hasta silinemez:',
+        'delete_blocked_cases' => ':count açık vaka',
+        'delete_blocked_appointments' => ':count gelecek randevu',
+        'delete_blocked_follow_ups' => ':count bekleyen takip',
+        'delete_blocked_suffix' => 'var. Önce bunları kapatın.',
     ],
 
     'schedule_exception' => [
@@ -87,8 +92,9 @@ return [
         'password_reminder_dismiss' => 'Daha sonra',
         'offboarded' => ':name işten çıkarıldı, :count randevu iptal edildi.',
         'already_offboarded' => 'Bu doktor zaten işten çıkarılmış.',
-        'has_upcoming_appointments' => 'Bu doktorun yaklaşan randevuları var; önce iptal edin ya da başka doktora taşıyın.',
+        'has_upcoming_appointments' => 'Bu doktorun :count yaklaşan randevusu var; önce iptal edin ya da başka doktora taşıyın.',
         'cannot_offboard_self' => 'Kendinizi işten çıkaramazsınız.',
+        'cannot_remove_self' => 'Kendi kaydınızı silemezsiniz.',
     ],
 
     'tag' => [

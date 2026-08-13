@@ -277,6 +277,11 @@ const hasProductLines = computed(() => props.treatment.productLines.length > 0);
                         <h2 class="text-base font-semibold text-surface-900">
                             {{ treatment.patient.full_name }}
                         </h2>
+                        <Tag
+                            v-if="treatment.patient.is_deleted"
+                            severity="danger"
+                            :value="t('patient.deleted_badge')"
+                        />
                     </div>
                     <TreatmentStatusTag :status="treatment.status" />
                 </header>

@@ -1,6 +1,8 @@
 <?php
 
+use App\Models\Appointment;
 use App\Models\Clinic;
+use App\Models\Doctor;
 use App\Models\Patient;
 use App\Models\User;
 use App\Support\ClinicContext;
@@ -820,6 +822,32 @@ it('destroy flashes a success toast', function (): void {
     $this->actingAs($owner)
         ->delete(route('patients.destroy', $patient))
         ->assertSessionHas('toasts');
+});
+
+it('a blocked delete flashes a warning toast and leaves the error bag empty', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    ptcRole($owner, 'owner', $clinic->id);
+
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+
+    // A future active appointment blocks deletion.
+    Appointment::factory()->create([
+        'clinic_id' => $clinic->id,
+        'patient_id' => $patient->id,
+        'doctor_id' => Doctor::factory()->create(['clinic_id' => $clinic->id]),
+    ]);
+
+    $this->actingAs($owner)
+        ->delete(route('patients.destroy', $patient))
+        ->assertSessionHasNoErrors()
+        ->assertSessionHas('toasts');
+
+    $toasts = session('toasts');
+    expect($toasts)->toHaveCount(1)
+        ->and($toasts[0]['severity'])->toBe('warn');
+
+    expect(Patient::withoutGlobalScopes()->find($patient->id)->deleted_at)->toBeNull();
 });
 
 it('receptionist can soft-delete a patient', function (): void {

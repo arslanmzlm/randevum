@@ -73,7 +73,9 @@ class CaseController extends Controller
         $this->authorize('view', $case);
 
         $case->load([
-            'patient:id,first_name,last_name',
+            // withTrashed(): the case outlives a soft-deleted patient (cases are never
+            // deleted) — this detail page stays reachable long after the patient is gone.
+            'patient' => fn ($q) => $q->withTrashed()->select('id', 'first_name', 'last_name', 'deleted_at'),
             'doctor.user',
             'treatments' => fn ($q) => $q->with([
                 'serviceLines' => fn ($sq) => $sq->orderBy('sort_order')->limit(1),

@@ -6,13 +6,13 @@ import { useI18n } from 'vue-i18n';
 import DataTableWrapper from '@/components/DataTableWrapper.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import PatientNameLink from '@/components/patients/PatientNameLink.vue';
 import TreatmentStatusTag from '@/components/TreatmentStatusTag.vue';
 import { useCan } from '@/composables/useCan';
 import { useDateTime } from '@/composables/useDateTime';
 import { useMoney } from '@/composables/useMoney';
 import { useTableFilters } from '@/composables/useTableFilters';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { show as patientShow } from '@/routes/patients';
 import { index, show as treatmentShow } from '@/routes/treatments';
 import type { TreatmentIndexProps } from '@/types/treatment';
 import { parseDateString } from '@/utils/datetime';
@@ -238,12 +238,10 @@ const dateRange = computed<(Date | null)[] | null>({
 
             <Column :header="t('treatment_list.columns.patient')">
                 <template #body="{ data }">
-                    <Link
-                        :href="patientShow(data.patient.id).url"
-                        class="truncate font-medium text-primary-600 transition-colors hover:text-primary-700 hover:underline"
-                    >
-                        {{ data.patient.full_name }}
-                    </Link>
+                    <PatientNameLink
+                        :patient="data.patient"
+                        class="truncate font-medium"
+                    />
                 </template>
             </Column>
 

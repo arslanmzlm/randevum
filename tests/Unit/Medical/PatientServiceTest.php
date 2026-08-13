@@ -1,7 +1,13 @@
 <?php
 
+use App\Enums\AppointmentStatus;
+use App\Models\Appointment;
+use App\Models\CaseRecord;
 use App\Models\Clinic;
+use App\Models\Doctor;
+use App\Models\FollowUp;
 use App\Models\Patient;
+use App\Modules\Core\Exceptions\DeletionBlockedException;
 use App\Modules\Medical\Exceptions\TrashedPhoneConflictException;
 use App\Modules\Medical\Services\PatientService;
 use App\Support\ClinicContext;
@@ -153,6 +159,101 @@ it('delete soft-deletes the patient', function (): void {
     app(ClinicContext::class)->set($clinic->id);
 
     $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+
+    $service = app(PatientService::class);
+    $service->delete($patient);
+
+    expect(Patient::withoutGlobalScopes()->find($patient->id)->deleted_at)->not->toBeNull();
+});
+
+it('delete is blocked when the patient has an open case', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+
+    CaseRecord::factory()->open()->create([
+        'clinic_id' => $clinic->id,
+        'patient_id' => $patient->id,
+        'doctor_id' => Doctor::factory()->create(['clinic_id' => $clinic->id]),
+    ]);
+
+    $service = app(PatientService::class);
+
+    expect(fn () => $service->delete($patient))
+        ->toThrow(DeletionBlockedException::class);
+
+    expect(Patient::withoutGlobalScopes()->find($patient->id)->deleted_at)->toBeNull();
+});
+
+it('delete is blocked when the patient has a future active appointment', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+
+    Appointment::factory()->create([
+        'clinic_id' => $clinic->id,
+        'patient_id' => $patient->id,
+        'doctor_id' => Doctor::factory()->create(['clinic_id' => $clinic->id]),
+        'status' => AppointmentStatus::Confirmed,
+        'starts_at' => now()->addDays(3),
+        'ends_at' => now()->addDays(3)->addMinutes(30),
+    ]);
+
+    $service = app(PatientService::class);
+
+    expect(fn () => $service->delete($patient))
+        ->toThrow(DeletionBlockedException::class);
+
+    expect(Patient::withoutGlobalScopes()->find($patient->id)->deleted_at)->toBeNull();
+});
+
+it('delete is blocked when the patient has an open follow-up', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+
+    FollowUp::factory()->open()->create([
+        'clinic_id' => $clinic->id,
+        'patient_id' => $patient->id,
+    ]);
+
+    $service = app(PatientService::class);
+
+    expect(fn () => $service->delete($patient))
+        ->toThrow(DeletionBlockedException::class);
+
+    expect(Patient::withoutGlobalScopes()->find($patient->id)->deleted_at)->toBeNull();
+});
+
+it('delete succeeds when the case, appointment and follow-up are all resolved', function (): void {
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id]);
+
+    CaseRecord::factory()->closed()->create([
+        'clinic_id' => $clinic->id,
+        'patient_id' => $patient->id,
+        'doctor_id' => $doctor->id,
+    ]);
+
+    Appointment::factory()->create([
+        'clinic_id' => $clinic->id,
+        'patient_id' => $patient->id,
+        'doctor_id' => $doctor->id,
+        'status' => AppointmentStatus::Cancelled,
+        'starts_at' => now()->addDays(3),
+        'ends_at' => now()->addDays(3)->addMinutes(30),
+    ]);
+
+    FollowUp::factory()->done()->create([
+        'clinic_id' => $clinic->id,
+        'patient_id' => $patient->id,
+    ]);
 
     $service = app(PatientService::class);
     $service->delete($patient);

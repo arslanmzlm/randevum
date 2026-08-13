@@ -92,7 +92,9 @@ function removeDoctor(doctor: Doctor): void {
         },
         acceptProps: { label: t('common.delete'), severity: 'danger' },
         accept: () =>
-            router.delete(destroy(doctor.id).url, { preserveScroll: true }),
+            router.delete(destroy(doctor.id).url, {
+                preserveScroll: true,
+            }),
     });
 }
 </script>
@@ -229,6 +231,7 @@ function removeDoctor(doctor: Doctor): void {
 
                         <Button
                             v-if="canDelete"
+                            v-tooltip.top="t('doctor.remove_tooltip')"
                             type="button"
                             severity="danger"
                             text

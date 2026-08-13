@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
 import {
     IconNote,
     IconPhone,
@@ -12,9 +11,9 @@ import { useI18n } from 'vue-i18n';
 import DashboardPanel from '@/components/dashboard/DashboardPanel.vue';
 import FollowUpCompleteDialog from '@/components/follow-ups/FollowUpCompleteDialog.vue';
 import FollowUpFormDialog from '@/components/follow-ups/FollowUpFormDialog.vue';
+import PatientNameLink from '@/components/patients/PatientNameLink.vue';
 import { useCan } from '@/composables/useCan';
 import { useDateTime } from '@/composables/useDateTime';
-import { show as patientShow } from '@/routes/patients';
 import type { FollowUpReminder } from '@/types/dashboard';
 import type { FollowUpTypeOption } from '@/types/followUp';
 
@@ -99,12 +98,10 @@ function markCalled(row: FollowUpReminder): void {
             >
                 <Column :header="t('dashboard.follow_ups.columns.patient')">
                     <template #body="{ data }">
-                        <Link
-                            :href="patientShow(data.patient.id).url"
-                            class="font-medium text-primary-600 transition-colors hover:text-primary-700 hover:underline"
-                        >
-                            {{ data.patient.full_name }}
-                        </Link>
+                        <PatientNameLink
+                            :patient="data.patient"
+                            class="font-medium"
+                        />
                     </template>
                 </Column>
 

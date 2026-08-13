@@ -31,7 +31,9 @@ class TreatmentReportService
     {
         $treatment->loadMissing([
             'clinic.city',
-            'patient',
+            // withTrashed(): the treatment outlives a soft-deleted patient (treatments are
+            // never deleted) — a document requested long after "hasta sil" must still render.
+            'patient' => fn ($q) => $q->withTrashed(),
             'doctor.user',
             'details',
             'serviceLines.service',
@@ -81,6 +83,7 @@ class TreatmentReportService
             ],
             'patient' => [
                 'fullName' => trim($treatment->patient->first_name.' '.$treatment->patient->last_name),
+                'deleted' => $treatment->patient->trashed(),
             ],
             'doctor' => [
                 'displayName' => $treatment->doctor->display_name,

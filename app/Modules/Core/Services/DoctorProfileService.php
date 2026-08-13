@@ -6,6 +6,7 @@ use App\Enums\ClinicRole;
 use App\Models\Doctor;
 use App\Models\User;
 use App\Modules\Core\Contracts\AppointmentCancellationContract;
+use App\Modules\Core\Exceptions\DeletionBlockedException;
 use App\Modules\Core\Repositories\DoctorRepository;
 use App\Support\ClinicContext;
 use Illuminate\Database\Eloquent\Collection;
@@ -120,10 +121,24 @@ class DoctorProfileService
     /**
      * Revoke the clinic-scoped doctor role and soft-delete the profile.
      *
+     * Deleting is the "hard" removal path (no undo, no cancellation option), so it goes
+     * through the same self/future-appointment guards as offboard() — otherwise a doctor
+     * with tomorrow's appointments could be deleted straight out from under them. An
+     * already-offboarded doctor is NOT blocked here: removing a departed doctor's record
+     * is legitimate and offboard()'s "already offboarded" guard doesn't apply.
+     *
+     * @throws DeletionBlockedException
      * @throws \Throwable
      */
-    public function remove(Doctor $doctor): void
+    public function remove(Doctor $doctor, User $actor): void
     {
+        $blocker = $this->selfBlocker($doctor, $actor, 'messages.doctor.cannot_remove_self')
+            ?? $this->futureAppointmentsBlocker($doctor);
+
+        if ($blocker !== null) {
+            throw new DeletionBlockedException($blocker);
+        }
+
         DB::transaction(function () use ($doctor): void {
             // SetClinicContext already set the Spatie team context to the active clinic; the
             // resolver picks the clinic's own copy of 'doctor' if one exists, so removeRole
@@ -147,22 +162,18 @@ class DoctorProfileService
      */
     public function offboard(Doctor $doctor, bool $cancelAppointments, ?string $reason, User $actor): int
     {
-        if ($doctor->user_id === $actor->id) {
-            throw ValidationException::withMessages([
-                'cancel_appointments' => [__('messages.doctor.cannot_offboard_self')],
-            ]);
+        $blocker = $this->selfBlocker($doctor, $actor, 'messages.doctor.cannot_offboard_self');
+
+        if ($blocker === null && $doctor->left_at !== null) {
+            $blocker = __('messages.doctor.already_offboarded');
         }
 
-        if ($doctor->left_at !== null) {
-            throw ValidationException::withMessages([
-                'cancel_appointments' => [__('messages.doctor.already_offboarded')],
-            ]);
+        if ($blocker === null && ! $cancelAppointments) {
+            $blocker = $this->futureAppointmentsBlocker($doctor);
         }
 
-        if (! $cancelAppointments && $this->cancellation->countCancellableFutureForDoctor($doctor->id) > 0) {
-            throw ValidationException::withMessages([
-                'cancel_appointments' => [__('messages.doctor.has_upcoming_appointments')],
-            ]);
+        if ($blocker !== null) {
+            throw ValidationException::withMessages(['cancel_appointments' => [$blocker]]);
         }
 
         return DB::transaction(function () use ($doctor, $cancelAppointments, $reason, $actor): int {
@@ -188,5 +199,28 @@ class DoctorProfileService
     public function previewOffboard(Doctor $doctor): int
     {
         return $this->cancellation->countCancellableFutureForDoctor($doctor->id);
+    }
+
+    /**
+     * Shared guard: an actor may never delete or offboard their own doctor profile.
+     * Returns the reason, or null when the action is allowed — the caller decides how to
+     * surface it (field error for the offboard form, toast for the delete button).
+     */
+    private function selfBlocker(Doctor $doctor, User $actor, string $messageKey): ?string
+    {
+        return $doctor->user_id === $actor->id ? __($messageKey) : null;
+    }
+
+    /**
+     * Shared guard: block the action while the doctor still has cancellable future
+     * appointments, naming the count so the caller isn't left guessing why.
+     */
+    private function futureAppointmentsBlocker(Doctor $doctor): ?string
+    {
+        $count = $this->cancellation->countCancellableFutureForDoctor($doctor->id);
+
+        return $count > 0
+            ? __('messages.doctor.has_upcoming_appointments', ['count' => $count])
+            : null;
     }
 }

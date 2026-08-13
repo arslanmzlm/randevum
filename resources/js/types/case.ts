@@ -8,7 +8,7 @@ export type CaseListItem = {
     id: number;
     title: string;
     status: CaseStatus;
-    patient: { id: number; full_name: string };
+    patient: { id: number; full_name: string; is_deleted: boolean };
     doctor: { id: number; display_name: string };
     treatments_count: number;
     /** ISO 8601 UTC timestamp. */
@@ -62,7 +62,7 @@ export type CaseDetail = {
     opened_at: string;
     closed_at: string | null;
     suspended_at: string | null;
-    patient: { id: number; full_name: string };
+    patient: { id: number; full_name: string; is_deleted: boolean };
     doctor: { id: number; display_name: string };
     treatments: CaseTreatmentItem[];
     /** Open rows first (due_date asc), then done/cancelled newest-completed-first. */

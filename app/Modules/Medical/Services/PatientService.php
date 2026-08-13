@@ -6,8 +6,12 @@ use App\Enums\TreatmentStatus;
 use App\Models\Patient;
 use App\Models\Treatment;
 use App\Modules\Billing\Contracts\BalanceReaderContract;
+use App\Modules\Core\Contracts\PatientAppointmentCounterContract;
+use App\Modules\Core\Exceptions\DeletionBlockedException;
 use App\Modules\Medical\Contracts\PatientRegistrarContract;
 use App\Modules\Medical\Exceptions\TrashedPhoneConflictException;
+use App\Modules\Medical\Repositories\CaseRepository;
+use App\Modules\Medical\Repositories\FollowUpRepository;
 use App\Modules\Medical\Repositories\PatientRepository;
 use App\Modules\Medical\Repositories\TreatmentRepository;
 use App\Support\ClinicContext;
@@ -19,6 +23,9 @@ class PatientService implements PatientRegistrarContract
     public function __construct(
         private PatientRepository $repository,
         private TreatmentRepository $treatmentRepository,
+        private CaseRepository $caseRepository,
+        private FollowUpRepository $followUpRepository,
+        private PatientAppointmentCounterContract $appointmentCounter,
         private BalanceReaderContract $balanceReader,
         private ClinicContext $clinicContext,
     ) {}
@@ -134,9 +141,54 @@ class PatientService implements PatientRegistrarContract
         return $this->repository->update($patient, ['notes' => $notes]);
     }
 
+    /**
+     * Delete the patient, refusing when clinical work still references it: an open case,
+     * a future active appointment, or an open follow-up. Patient soft-deletes, so the FK
+     * would stay technically valid either way — but leaving one of these open means the
+     * case/follow-up board or a treatment PDF discovers the deletion later as a dead
+     * relation, instead of the desk resolving it up front (see CaseRepository,
+     * FollowUpRepository, TreatmentReportService withTrashed() reads).
+     *
+     * @throws DeletionBlockedException
+     */
     public function delete(Patient $patient): void
     {
+        $reasons = $this->deletionBlockers($patient);
+
+        if ($reasons !== []) {
+            throw new DeletionBlockedException(
+                __('messages.patient.delete_blocked_prefix').' '.
+                implode(', ', $reasons).' '.
+                __('messages.patient.delete_blocked_suffix')
+            );
+        }
+
         $this->repository->delete($patient);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function deletionBlockers(Patient $patient): array
+    {
+        $reasons = [];
+
+        $openCases = $this->caseRepository->countOpenForPatient($patient->id);
+        if ($openCases > 0) {
+            $reasons[] = __('messages.patient.delete_blocked_cases', ['count' => $openCases]);
+        }
+
+        $futureAppointments = $this->appointmentCounter->countFutureForPatient($patient->id);
+        if ($futureAppointments > 0) {
+            $reasons[] = __('messages.patient.delete_blocked_appointments', ['count' => $futureAppointments]);
+        }
+
+        $openFollowUps = $this->followUpRepository->countOpenForPatient($patient->id);
+        if ($openFollowUps > 0) {
+            $reasons[] = __('messages.patient.delete_blocked_follow_ups', ['count' => $openFollowUps]);
+        }
+
+        return $reasons;
     }
 
     public function restore(Patient $patient): void

@@ -7,7 +7,12 @@ export type FollowUpReminder = {
     id: number;
     /** null for a case-less follow-up (e.g. a payment reminder). */
     case_id: number | null;
-    patient: { id: number; full_name: string; phone: string | null };
+    patient: {
+        id: number;
+        full_name: string;
+        phone: string | null;
+        is_deleted: boolean;
+    };
     /** Comes from the linked case; null when the follow-up has none. */
     doctor: { id: number; display_name: string } | null;
     /** null only when the type row was deleted. */

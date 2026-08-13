@@ -199,7 +199,9 @@ class TreatmentController extends Controller
 
         $treatment->load([
             'appointment',
-            'patient',
+            // withTrashed(): the treatment outlives a soft-deleted patient (treatments are
+            // never deleted) — this detail page stays reachable long after the patient is gone.
+            'patient' => fn ($q) => $q->withTrashed(),
             'doctor.user',
             'case',
             'details',

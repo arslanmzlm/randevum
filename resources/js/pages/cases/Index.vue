@@ -7,12 +7,12 @@ import CaseStatusTag from '@/components/CaseStatusTag.vue';
 import DataTableWrapper from '@/components/DataTableWrapper.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import PatientNameLink from '@/components/patients/PatientNameLink.vue';
 import { useCan } from '@/composables/useCan';
 import { useDateTime } from '@/composables/useDateTime';
 import { useTableFilters } from '@/composables/useTableFilters';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { index, show } from '@/routes/cases';
-import { show as patientShow } from '@/routes/patients';
 import type { CaseIndexProps } from '@/types/case';
 import { MVP_CASE_STATUSES } from '@/utils/caseStatus';
 import { shouldFilterSelect } from '@/utils/selectFilter';
@@ -149,12 +149,7 @@ const statusOptions = computed(() =>
 
             <Column :header="t('case_list.columns.patient')">
                 <template #body="{ data }">
-                    <Link
-                        :href="patientShow(data.patient.id).url"
-                        class="text-surface-700 transition-colors hover:text-primary-600"
-                    >
-                        {{ data.patient.full_name }}
-                    </Link>
+                    <PatientNameLink :patient="data.patient" subtle />
                 </template>
             </Column>
 

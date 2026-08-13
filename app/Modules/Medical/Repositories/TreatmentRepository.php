@@ -44,7 +44,8 @@ class TreatmentRepository
             ->with([
                 // withTrashed(): a soft-deleted patient/doctor must still resolve here — the
                 // treatment row outlives them and the list resource needs a name, not a null.
-                'patient' => fn ($q) => $q->withTrashed()->select('id', 'first_name', 'last_name'),
+                // deleted_at is selected so the resource can flag the row as "silinmiş".
+                'patient' => fn ($q) => $q->withTrashed()->select('id', 'first_name', 'last_name', 'deleted_at'),
                 'doctor' => fn ($q) => $q->withTrashed()->with('user'),
                 'serviceLines.service',
             ])

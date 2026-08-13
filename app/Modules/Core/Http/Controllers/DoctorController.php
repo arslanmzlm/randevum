@@ -5,6 +5,7 @@ namespace App\Modules\Core\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\Doctor;
 use App\Modules\Core\Contracts\MediaServiceContract;
+use App\Modules\Core\Exceptions\DeletionBlockedException;
 use App\Modules\Core\Http\Requests\OffboardDoctorRequest;
 use App\Modules\Core\Http\Requests\StoreDoctorRequest;
 use App\Modules\Core\Http\Requests\UpdateDoctorAvatarRequest;
@@ -111,7 +112,13 @@ class DoctorController extends Controller
     {
         $this->authorize('delete', $doctor);
 
-        $this->profileService->remove($doctor);
+        try {
+            $this->profileService->remove($doctor, $request->user());
+        } catch (DeletionBlockedException $e) {
+            Toast::warning($e->getMessage());
+
+            return back();
+        }
 
         Toast::success(__('messages.doctor.doctor_removed'));
 

@@ -145,6 +145,26 @@ class AppointmentRepository
     }
 
     /**
+     * Count of future active appointments for the patient — used to block patient deletion.
+     * "Active" excludes the terminal statuses (Cancelled/Completed/NoShow); Arrived is kept
+     * since a same-day appointment already checked in still needs resolving.
+     *
+     * ClinicScope auto-isolates the tenant — no explicit clinic_id filter needed.
+     */
+    public function countFutureForPatient(int $patientId): int
+    {
+        return Appointment::query()
+            ->where('patient_id', $patientId)
+            ->where('starts_at', '>=', now())
+            ->whereNotIn('status', [
+                AppointmentStatus::Cancelled->value,
+                AppointmentStatus::Completed->value,
+                AppointmentStatus::NoShow->value,
+            ])
+            ->count();
+    }
+
+    /**
      * All appointments that strictly overlap [startUtc, endUtc) for the given doctor(s),
      * filtered to the provided statuses. ClinicScope is applied automatically.
      *

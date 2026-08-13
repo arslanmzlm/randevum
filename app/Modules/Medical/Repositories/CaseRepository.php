@@ -47,6 +47,16 @@ class CaseRepository
     }
 
     /**
+     * Count of open cases for a patient, across all doctors — used to block patient
+     * deletion (a case is doctor-centric clinical work; it must be closed, not orphaned
+     * by deleting the patient underneath it).
+     */
+    public function countOpenForPatient(int $patientId): int
+    {
+        return CaseRecord::open()->where('patient_id', $patientId)->count();
+    }
+
+    /**
      * Paginated case list for the active clinic.
      *
      * When $doctorIds is null, all cases are included; when set, only cases belonging
@@ -59,7 +69,12 @@ class CaseRepository
     {
         $query = CaseRecord::query()
             ->when($doctorIds !== null, fn ($q) => $q->whereIn('doctor_id', $doctorIds))
-            ->with(['patient:id,first_name,last_name', 'doctor.user'])
+            ->with([
+                // withTrashed(): the case outlives a soft-deleted patient (cases are never
+                // deleted) — the list resource still needs a name, not a null.
+                'patient' => fn ($q) => $q->withTrashed()->select('id', 'first_name', 'last_name', 'deleted_at'),
+                'doctor.user',
+            ])
             ->withCount('treatments')
             ->withMin(['followUps as next_follow_up_date' => fn ($q) => $q->where('status', 'open')], 'due_date')
             ->orderByDesc('opened_at');

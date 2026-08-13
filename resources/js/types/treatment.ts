@@ -191,7 +191,7 @@ export type TreatmentShowProps = {
         status: TreatmentStatus;
         completed_at: string | null;
         appointment: { id: number; starts_at: string };
-        patient: { id: number; full_name: string };
+        patient: { id: number; full_name: string; is_deleted: boolean };
         doctor: { display_name: string };
         case: { id: number; title: string } | null;
         details: {
@@ -222,7 +222,7 @@ export type TreatmentListItem = {
     created_at: string;
     /** ISO 8601 UTC; null while the treatment is a Draft. */
     completed_at: string | null;
-    patient: { id: number; full_name: string };
+    patient: { id: number; full_name: string; is_deleted: boolean };
     doctor: { id: number; display_name: string };
     /** Service-line names in `sort_order`; empty when the treatment has no service line. */
     service_names: string[];

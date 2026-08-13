@@ -258,7 +258,9 @@ export const tr = {
         create_own: 'Beni de doktor yap',
         remove: 'Kaldır',
         remove_confirm:
-            '{name} adlı doktoru kaldırmak istediğinize emin misiniz?',
+            '{name} adlı doktoru kaldırmak istediğinize emin misiniz? Yaklaşan randevusu olan ya da kendi hesabınız olan bir doktor kaldırılamaz.',
+        remove_tooltip:
+            'Yaklaşan randevusu olan ya da kendi hesabınız olan bir doktor kaldırılamaz.',
         empty: 'Henüz doktor eklenmemiş.',
         empty_filtered: 'Aramayla eşleşen doktor yok.',
         search_placeholder: 'Doktor ara...',
@@ -695,6 +697,7 @@ export const tr = {
         legacy_badge: 'Sistem öncesi',
         legacy_only: 'Sistem öncesi',
         not_legacy: 'Sistemde oluşturulan',
+        deleted_badge: 'Silinmiş',
         back: 'Geri',
         save: 'Kaydet',
         create_title: 'Hasta Ekle',

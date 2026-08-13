@@ -1,7 +1,10 @@
 <?php
 
+use App\Enums\AppointmentStatus;
+use App\Models\Appointment;
 use App\Models\Clinic;
 use App\Models\Doctor;
+use App\Models\Patient;
 use App\Models\User;
 use App\Support\ClinicContext;
 use Database\Seeders\PermissionSeeder;
@@ -825,6 +828,99 @@ it('DELETE /doctors/{doctor} redirects to the doctors index with a success toast
         ->delete(route('doctors.destroy', $doctor))
         ->assertRedirect(route('doctors.index'))
         ->assertSessionHas('toasts');
+});
+
+// ---------------------------------------------------------------------------
+// DELETE /doctors/{doctor} — shares offboard's guards (self, future appointments)
+// ---------------------------------------------------------------------------
+
+/**
+ * Create a future Confirmed appointment for a doctor in a given clinic.
+ */
+function drFutureAppt(Clinic $clinic, Doctor $doctor): Appointment
+{
+    $patient = Patient::factory()->create(['clinic_id' => $clinic->id]);
+
+    return Appointment::factory()->withStatus(AppointmentStatus::Confirmed)->create([
+        'clinic_id' => $clinic->id,
+        'doctor_id' => $doctor->id,
+        'patient_id' => $patient->id,
+    ]);
+}
+
+it('a doctor with a future appointment cannot be removed via DELETE — message states the count', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    $doctorUser = User::factory()->create();
+    drTestRole($owner, 'owner', $clinic->id);
+    drTestRole($doctorUser, 'doctor', $clinic->id);
+
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+    drFutureAppt($clinic, $doctor);
+    drFutureAppt($clinic, $doctor);
+
+    $this->actingAs($owner)
+        ->delete(route('doctors.destroy', $doctor))
+        ->assertSessionHasNoErrors()
+        ->assertSessionHas('toasts');
+
+    $toasts = session('toasts');
+    expect($toasts)->toHaveCount(1)
+        ->and($toasts[0]['severity'])->toBe('warn')
+        ->and($toasts[0]['summary'])->toContain('2');
+    expect(Doctor::withoutGlobalScopes()->find($doctor->id)->deleted_at)->toBeNull();
+});
+
+it('an actor cannot remove their own doctor profile via DELETE', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    drTestRole($owner, 'owner', $clinic->id);
+
+    $ownDoctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $owner->id]);
+
+    $this->actingAs($owner)
+        ->delete(route('doctors.destroy', $ownDoctor))
+        ->assertSessionHasNoErrors()
+        ->assertSessionHas('toasts');
+
+    expect(Doctor::withoutGlobalScopes()->find($ownDoctor->id)->deleted_at)->toBeNull();
+});
+
+it('a doctor with no future appointments can be removed via DELETE', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    $doctorUser = User::factory()->create();
+    drTestRole($owner, 'owner', $clinic->id);
+    drTestRole($doctorUser, 'doctor', $clinic->id);
+
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $doctorUser->id]);
+
+    $this->actingAs($owner)
+        ->delete(route('doctors.destroy', $doctor))
+        ->assertRedirect(route('doctors.index'));
+
+    expect(Doctor::withoutGlobalScopes()->find($doctor->id)->deleted_at)->not->toBeNull();
+});
+
+it('an already-offboarded doctor with no future appointments can still be removed via DELETE', function (): void {
+    $clinic = Clinic::factory()->create();
+    $owner = User::factory()->create();
+    $doctorUser = User::factory()->create();
+    drTestRole($owner, 'owner', $clinic->id);
+    drTestRole($doctorUser, 'doctor', $clinic->id);
+
+    $doctor = Doctor::factory()->create([
+        'clinic_id' => $clinic->id,
+        'user_id' => $doctorUser->id,
+        'is_active' => false,
+        'left_at' => now()->subDay(),
+    ]);
+
+    $this->actingAs($owner)
+        ->delete(route('doctors.destroy', $doctor))
+        ->assertRedirect(route('doctors.index'));
+
+    expect(Doctor::withoutGlobalScopes()->find($doctor->id)->deleted_at)->not->toBeNull();
 });
 
 // ---------------------------------------------------------------------------

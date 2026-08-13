@@ -1,8 +1,11 @@
 <?php
 
+use App\Models\Appointment;
 use App\Models\Clinic;
 use App\Models\Doctor;
+use App\Models\Patient;
 use App\Models\User;
+use App\Modules\Core\Exceptions\DeletionBlockedException;
 use App\Modules\Core\Repositories\DoctorRepository;
 use App\Modules\Core\Services\DoctorProfileService;
 use App\Support\ClinicContext;
@@ -257,9 +260,10 @@ test('remove soft-deletes the doctor record', function (): void {
     $user = User::factory()->create();
     $user->assignRole('doctor');
     $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $user->id]);
+    $actor = User::factory()->create();
 
     $service = app(DoctorProfileService::class);
-    $service->remove($doctor);
+    $service->remove($doctor, $actor);
 
     expect(Doctor::withoutGlobalScopes()->find($doctor->id)->deleted_at)->not->toBeNull();
 });
@@ -274,10 +278,54 @@ test('remove revokes the clinic-scoped doctor role from the user', function (): 
     $user = User::factory()->create();
     $user->assignRole('doctor');
     $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $user->id]);
+    $actor = User::factory()->create();
 
     $service = app(DoctorProfileService::class);
-    $service->remove($doctor);
+    $service->remove($doctor, $actor);
 
     app(PermissionRegistrar::class)->setPermissionsTeamId($clinic->id);
     expect($user->fresh()->hasRole('doctor'))->toBeFalse();
+});
+
+test('remove is blocked when the actor is the doctor themselves', function (): void {
+    $this->seed(RoleSeeder::class);
+
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+    app(PermissionRegistrar::class)->setPermissionsTeamId($clinic->id);
+
+    $actor = User::factory()->create();
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $actor->id]);
+
+    $service = app(DoctorProfileService::class);
+
+    expect(fn () => $service->remove($doctor, $actor))
+        ->toThrow(DeletionBlockedException::class);
+
+    expect(Doctor::withoutGlobalScopes()->find($doctor->id)->deleted_at)->toBeNull();
+});
+
+test('remove is blocked when the doctor still has cancellable future appointments', function (): void {
+    $this->seed(RoleSeeder::class);
+
+    $clinic = Clinic::factory()->create();
+    app(ClinicContext::class)->set($clinic->id);
+    app(PermissionRegistrar::class)->setPermissionsTeamId($clinic->id);
+
+    $user = User::factory()->create();
+    $user->assignRole('doctor');
+    $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'user_id' => $user->id]);
+
+    Appointment::factory()->create([
+        'clinic_id' => $clinic->id,
+        'doctor_id' => $doctor->id,
+        'patient_id' => Patient::factory()->create(['clinic_id' => $clinic->id]),
+    ]);
+
+    $service = app(DoctorProfileService::class);
+
+    expect(fn () => $service->remove($doctor, User::factory()->create()))
+        ->toThrow(DeletionBlockedException::class);
+
+    expect(Doctor::withoutGlobalScopes()->find($doctor->id)->deleted_at)->toBeNull();
 });

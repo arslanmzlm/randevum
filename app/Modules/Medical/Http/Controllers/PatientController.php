@@ -8,6 +8,7 @@ use App\Models\Patient;
 use App\Models\SmsLog;
 use App\Modules\Billing\Contracts\BalanceReaderContract;
 use App\Modules\Core\Contracts\PatientAppointmentsContract;
+use App\Modules\Core\Exceptions\DeletionBlockedException;
 use App\Modules\Core\Support\Toast;
 use App\Modules\Medical\Exceptions\TrashedPhoneConflictException;
 use App\Modules\Medical\Http\Requests\StorePatientRequest;
@@ -229,7 +230,13 @@ class PatientController extends Controller
     {
         $this->authorize('delete', $patient);
 
-        $this->patientService->delete($patient);
+        try {
+            $this->patientService->delete($patient);
+        } catch (DeletionBlockedException $e) {
+            Toast::warning($e->getMessage());
+
+            return back();
+        }
 
         Toast::success(__('messages.patient.deleted'));
 

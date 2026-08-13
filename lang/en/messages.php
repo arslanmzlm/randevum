@@ -37,6 +37,11 @@ return [
         'deleted' => 'Patient record deleted.',
         'restored' => 'Patient record restored.',
         'notes_updated' => 'Patient note updated.',
+        'delete_blocked_prefix' => 'This patient cannot be deleted:',
+        'delete_blocked_cases' => ':count open case(s)',
+        'delete_blocked_appointments' => ':count upcoming appointment(s)',
+        'delete_blocked_follow_ups' => ':count pending follow-up(s)',
+        'delete_blocked_suffix' => 'still open. Resolve these first.',
     ],
 
     'schedule_exception' => [
@@ -87,8 +92,9 @@ return [
         'password_reminder_dismiss' => 'Later',
         'offboarded' => ':name has been offboarded, :count appointment(s) cancelled.',
         'already_offboarded' => 'This doctor has already been offboarded.',
-        'has_upcoming_appointments' => 'This doctor has upcoming appointments; cancel them or reassign to another doctor first.',
+        'has_upcoming_appointments' => 'This doctor has :count upcoming appointment(s); cancel them or reassign to another doctor first.',
         'cannot_offboard_self' => 'You cannot offboard yourself.',
+        'cannot_remove_self' => 'You cannot delete your own record.',
     ],
 
     'tag' => [

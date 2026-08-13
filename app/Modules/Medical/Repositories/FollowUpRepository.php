@@ -27,13 +27,24 @@ class FollowUpRepository
         return FollowUp::open()
             ->whereDate('due_date', '<=', $todayDate)
             ->with([
-                'patient:id,first_name,last_name,phone',
+                // withTrashed(): the follow-up outlives a soft-deleted patient (follow-ups are
+                // never deleted) — the dashboard widget still needs a name, not a null.
+                'patient' => fn ($q) => $q->withTrashed()->select('id', 'first_name', 'last_name', 'phone', 'deleted_at'),
                 'type:id,name',
                 'caseRecord.doctor.user',
             ])
             ->orderBy('due_date')
             ->orderBy('id')
             ->get();
+    }
+
+    /**
+     * Count of open follow-ups for a patient — used to block patient deletion (an open
+     * follow-up is a promise to call/act; it must be resolved, not silently orphaned).
+     */
+    public function countOpenForPatient(int $patientId): int
+    {
+        return FollowUp::open()->where('patient_id', $patientId)->count();
     }
 
     /**

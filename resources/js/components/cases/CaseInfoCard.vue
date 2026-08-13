@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { Link, useForm } from '@inertiajs/vue3';
+import { useForm } from '@inertiajs/vue3';
 import { IconPencil, IconStethoscope } from '@tabler/icons-vue';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import CaseStatusTag from '@/components/CaseStatusTag.vue';
+import PatientNameLink from '@/components/patients/PatientNameLink.vue';
 import SectionCard from '@/components/SectionCard.vue';
 import { useDateTime } from '@/composables/useDateTime';
 import { update as updateTitle } from '@/routes/cases/title';
-import { show as patientShow } from '@/routes/patients';
 import type { CaseDetail, CaseTitleFormData } from '@/types/case';
 
 const props = defineProps<{
@@ -131,12 +131,10 @@ const metaRows = computed(() => {
                         {{ t('case.fields.patient') }}
                     </dt>
                     <dd>
-                        <Link
-                            :href="patientShow(caseRecord.patient.id).url"
-                            class="text-sm font-medium text-primary-600 transition-colors hover:text-primary-700 hover:underline"
-                        >
-                            {{ caseRecord.patient.full_name }}
-                        </Link>
+                        <PatientNameLink
+                            :patient="caseRecord.patient"
+                            class="text-sm font-medium"
+                        />
                     </dd>
                 </div>
                 <div class="flex flex-col gap-0.5">

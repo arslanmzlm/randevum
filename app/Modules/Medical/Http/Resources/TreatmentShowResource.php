@@ -35,6 +35,7 @@ class TreatmentShowResource extends JsonResource
             'patient' => [
                 'id' => $this->patient->id,
                 'full_name' => trim($this->patient->first_name.' '.$this->patient->last_name),
+                'is_deleted' => $this->patient->trashed(),
             ],
             'doctor' => [
                 'display_name' => $this->doctor->display_name,
