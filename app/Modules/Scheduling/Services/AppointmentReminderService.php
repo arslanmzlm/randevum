@@ -4,6 +4,7 @@ namespace App\Modules\Scheduling\Services;
 
 use App\Enums\SmsType;
 use App\Models\Appointment;
+use App\Modules\Messaging\Contracts\ReminderWaveContract;
 use App\Modules\Messaging\Contracts\SmsDispatcherContract;
 use App\Modules\Messaging\Contracts\SmsTemplateRendererContract;
 use App\Modules\Messaging\Data\SmsMessage;
@@ -17,6 +18,7 @@ class AppointmentReminderService
 
     public function __construct(
         private AppointmentReminderRepository $repository,
+        private ReminderWaveContract $waves,
         private SmsDispatcherContract $dispatcher,
         private SmsTemplateRendererContract $renderer,
     ) {}
@@ -67,29 +69,13 @@ class AppointmentReminderService
         string $flagColumn,
         SmsType $type,
     ): int {
-        $appointments = $this->repository->dueForReminder($fromUtc, $toUtc, $flagColumn);
-
-        $count = 0;
-
-        foreach ($appointments as $appointment) {
-            // Second idempotency guard: if a Sent log already exists for this
-            // appointment+type, skip dispatch even though the flag was false.
-            if ($this->dispatcher->wasSent(self::LOGGABLE_TYPE, $appointment->id, $type)) {
-                $this->repository->markReminderSent($appointment, $flagColumn);
-
-                continue;
-            }
-
-            $message = $this->buildMessage($appointment, $type);
-
-            $this->dispatcher->dispatch($message);
-
-            $this->repository->markReminderSent($appointment, $flagColumn);
-
-            $count++;
-        }
-
-        return $count;
+        return $this->waves->dispatchWave(
+            $this->repository->dueForReminder($fromUtc, $toUtc, $flagColumn),
+            self::LOGGABLE_TYPE,
+            $type,
+            fn (Appointment $appointment): SmsMessage => $this->buildMessage($appointment, $type),
+            fn (Appointment $appointment) => $this->repository->markReminderSent($appointment, $flagColumn),
+        );
     }
 
     private function buildMessage(Appointment $appointment, SmsType $type): SmsMessage

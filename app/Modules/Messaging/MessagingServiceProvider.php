@@ -3,6 +3,7 @@
 namespace App\Modules\Messaging;
 
 use App\Modules\Messaging\Contracts\ClinicSmsPanelContract;
+use App\Modules\Messaging\Contracts\ReminderWaveContract;
 use App\Modules\Messaging\Contracts\SmsDispatcherContract;
 use App\Modules\Messaging\Contracts\SmsHistoryContract;
 use App\Modules\Messaging\Contracts\SmsProviderInterface;
@@ -12,6 +13,7 @@ use App\Modules\Messaging\Providers\LogSmsProvider;
 use App\Modules\Messaging\Providers\NetgsmSmsProvider;
 use App\Modules\Messaging\Providers\NullSmsProvider;
 use App\Modules\Messaging\Services\ClinicSmsSettingService;
+use App\Modules\Messaging\Services\ReminderWaveRunner;
 use App\Modules\Messaging\Services\SmsDispatcher;
 use App\Modules\Messaging\Services\SmsLogService;
 use App\Modules\Messaging\Services\SmsQuotaService;
@@ -31,6 +33,7 @@ class MessagingServiceProvider extends ServiceProvider
         });
 
         $this->app->bind(SmsDispatcherContract::class, SmsDispatcher::class);
+        $this->app->bind(ReminderWaveContract::class, ReminderWaveRunner::class);
         $this->app->bind(SmsHistoryContract::class, SmsLogService::class);
         $this->app->bind(SmsQuotaContract::class, SmsQuotaService::class);
         $this->app->bind(SmsTemplateRendererContract::class, SmsTemplateRenderer::class);

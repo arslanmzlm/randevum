@@ -6,6 +6,7 @@ use App\Enums\InstallmentStatus;
 use App\Enums\SmsType;
 use App\Models\PaymentPlanInstallment;
 use App\Modules\Billing\Repositories\PaymentPlanRepository;
+use App\Modules\Messaging\Contracts\ReminderWaveContract;
 use App\Modules\Messaging\Contracts\SmsDispatcherContract;
 use App\Modules\Messaging\Contracts\SmsTemplateRendererContract;
 use App\Modules\Messaging\Data\SmsMessage;
@@ -18,6 +19,7 @@ class InstallmentReminderService
 
     public function __construct(
         private PaymentPlanRepository $repository,
+        private ReminderWaveContract $waves,
         private SmsDispatcherContract $dispatcher,
         private SmsTemplateRendererContract $renderer,
         private InstallmentSettlementService $settlement,
@@ -76,28 +78,13 @@ class InstallmentReminderService
 
     private function processWave(string $onDate, string $flagColumn, SmsType $type): int
     {
-        $installments = $this->repository->dueInstallments($onDate, $flagColumn);
-
-        $count = 0;
-
-        foreach ($installments as $installment) {
-            // Second idempotency guard: a Sent log already exists for this installment+type.
-            if ($this->dispatcher->wasSent(self::LOGGABLE_TYPE, $installment->id, $type)) {
-                $this->repository->markReminderSent($installment, $flagColumn);
-
-                continue;
-            }
-
-            $message = $this->buildMessage($installment, $type);
-
-            $this->dispatcher->dispatch($message);
-
-            $this->repository->markReminderSent($installment, $flagColumn);
-
-            $count++;
-        }
-
-        return $count;
+        return $this->waves->dispatchWave(
+            $this->repository->dueInstallments($onDate, $flagColumn),
+            self::LOGGABLE_TYPE,
+            $type,
+            fn (PaymentPlanInstallment $installment): SmsMessage => $this->buildMessage($installment, $type),
+            fn (PaymentPlanInstallment $installment) => $this->repository->markReminderSent($installment, $flagColumn),
+        );
     }
 
     private function buildMessage(PaymentPlanInstallment $installment, SmsType $type): SmsMessage
