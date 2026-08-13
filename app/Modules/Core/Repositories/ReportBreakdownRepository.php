@@ -146,15 +146,21 @@ class ReportBreakdownRepository
 
     /**
      * Sold quantity/amount per service, from completed treatments' service lines
-     * (windowed on the treatment's completed_at). treatment_services carries no
-     * clinic_id of its own — it is scoped transitively through treatments.
+     * (windowed on the treatment's completed_at).
      *
      * @return array<int, array{quantity: int, total: string}>
      */
     public function serviceLineTotals(?CarbonInterface $startUtc, ?CarbonInterface $endUtc): array
     {
+        $clinicId = $this->clinicContext->id();
+
+        if ($clinicId === null) {
+            return [];
+        }
+
         $rows = Treatment::query()
             ->join('treatment_services', 'treatment_services.treatment_id', '=', 'treatments.id')
+            ->where('treatment_services.clinic_id', $clinicId)
             ->where('treatments.status', TreatmentStatus::Completed)
             ->when($startUtc, fn ($query) => $query->where('treatments.completed_at', '>=', $startUtc))
             ->when($endUtc, fn ($query) => $query->where('treatments.completed_at', '<=', $endUtc))
@@ -181,8 +187,15 @@ class ReportBreakdownRepository
      */
     public function productLineTotals(?CarbonInterface $startUtc, ?CarbonInterface $endUtc): array
     {
+        $clinicId = $this->clinicContext->id();
+
+        if ($clinicId === null) {
+            return [];
+        }
+
         $rows = Treatment::query()
             ->join('treatment_products', 'treatment_products.treatment_id', '=', 'treatments.id')
+            ->where('treatment_products.clinic_id', $clinicId)
             ->where('treatments.status', TreatmentStatus::Completed)
             ->when($startUtc, fn ($query) => $query->where('treatments.completed_at', '>=', $startUtc))
             ->when($endUtc, fn ($query) => $query->where('treatments.completed_at', '<=', $endUtc))

@@ -76,6 +76,7 @@ function vreSetup(?AppointmentType $type = null): array
 
     $service = Service::factory()->create(['clinic_id' => $clinic->id, 'vertical_id' => $clinic->vertical_id]);
     TreatmentServiceLine::create([
+        'clinic_id' => $clinic->id,
         'treatment_id' => $treatment->id,
         'service_id' => $service->id,
         'quantity' => 1,
@@ -87,6 +88,7 @@ function vreSetup(?AppointmentType $type = null): array
 
     $product = Product::factory()->create(['clinic_id' => $clinic->id, 'current_stock' => 10]);
     TreatmentProductLine::create([
+        'clinic_id' => $clinic->id,
         'treatment_id' => $treatment->id,
         'product_id' => $product->id,
         'quantity' => 2,

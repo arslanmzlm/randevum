@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('treatment_products', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('clinic_id')->constrained()->cascadeOnDelete();
             $table->foreignId('treatment_id')->constrained('treatments')->cascadeOnDelete();
             $table->foreignId('product_id')->constrained('products')->restrictOnDelete();
             // Always explicit — caller must supply qty (no default; spec says min 1)
@@ -22,7 +23,7 @@ return new class extends Migration
             $table->timestampsTz();
 
             $table->index(['treatment_id', 'sort_order']);
-            $table->index('product_id');
+            $table->index(['clinic_id', 'product_id']);
         });
     }
 

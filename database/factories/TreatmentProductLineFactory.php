@@ -24,6 +24,9 @@ class TreatmentProductLineFactory extends Factory
 
         return [
             'treatment_id' => Treatment::factory(),
+            // Derived, never independent: a line always belongs to its treatment's clinic.
+            'clinic_id' => fn (array $attributes): int => Treatment::withoutGlobalScopes()
+                ->findOrFail($attributes['treatment_id'])->clinic_id,
             'product_id' => Product::factory(),
             'quantity' => $qty,
             'unit_price' => $unitPrice,

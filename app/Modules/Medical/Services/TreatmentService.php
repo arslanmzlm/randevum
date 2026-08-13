@@ -473,7 +473,7 @@ class TreatmentService
      */
     private function writeServiceLines(Treatment $treatment, array $lines): void
     {
-        $this->writeLines($treatment->serviceLines(), 'service_id', $lines);
+        $this->writeLines($treatment->serviceLines(), 'service_id', $lines, $treatment->clinic_id);
     }
 
     /**
@@ -483,17 +483,19 @@ class TreatmentService
      */
     private function writeProductLines(Treatment $treatment, array $lines): void
     {
-        $this->writeLines($treatment->productLines(), 'product_id', $lines);
+        $this->writeLines($treatment->productLines(), 'product_id', $lines, $treatment->clinic_id);
     }
 
     /**
      * Replace a treatment's line rows on the given relation, snapshotting unit_price and
-     * computing subtotal = max(0, qty*unit_price − discount) per line.
+     * computing subtotal = max(0, qty*unit_price − discount) per line. clinic_id is taken
+     * from the parent treatment rather than left to the active-clinic default, so a line
+     * can never land in a different clinic than the record it belongs to.
      *
      * @param  HasMany<Model, Treatment>  $relation
      * @param  list<array<string, mixed>>  $lines
      */
-    private function writeLines($relation, string $foreignKey, array $lines): void
+    private function writeLines($relation, string $foreignKey, array $lines, int $clinicId): void
     {
         $relation->delete();
 
@@ -511,6 +513,7 @@ class TreatmentService
             }
 
             $relation->create([
+                'clinic_id' => $clinicId,
                 $foreignKey => (int) $line[$foreignKey],
                 'quantity' => $qty,
                 'unit_price' => $unitPrice,

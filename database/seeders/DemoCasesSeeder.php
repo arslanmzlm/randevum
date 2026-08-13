@@ -281,6 +281,7 @@ class DemoCasesSeeder extends Seeder
             $service = Service::withoutGlobalScopes()->find($this->serviceIds[0]);
 
             TreatmentServiceLine::create([
+                'clinic_id' => $this->clinic->id,
                 'treatment_id' => $treatment->id,
                 'service_id' => $service->id,
                 'quantity' => 1,
@@ -396,6 +397,7 @@ class DemoCasesSeeder extends Seeder
             $lineSubtotal = max(0, $quantity * (float) $service->price - $discount);
 
             TreatmentServiceLine::create([
+                'clinic_id' => $this->clinic->id,
                 'treatment_id' => $treatment->id,
                 'service_id' => $serviceId,
                 'quantity' => $quantity,

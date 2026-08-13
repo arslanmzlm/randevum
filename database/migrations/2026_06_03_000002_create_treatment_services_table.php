@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('treatment_services', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('clinic_id')->constrained()->cascadeOnDelete();
             // Only cascade allowed: line rows are meaningless without their treatment
             $table->foreignId('treatment_id')->constrained('treatments')->cascadeOnDelete();
             // Soft reference: catalog soft-deletes; snapshot survives via unit_price
@@ -23,7 +24,7 @@ return new class extends Migration
             $table->timestampsTz();
 
             $table->index(['treatment_id', 'sort_order']);
-            $table->index('service_id');
+            $table->index(['clinic_id', 'service_id']);
         });
     }
 

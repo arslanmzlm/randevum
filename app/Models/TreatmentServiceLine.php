@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToClinic;
 use Database\Factories\TreatmentServiceLineFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 class TreatmentServiceLine extends Model
 {
     /** @use HasFactory<TreatmentServiceLineFactory> */
-    use HasFactory;
+    use BelongsToClinic, HasFactory;
 
     // Avoids a class-name collision with App\Modules\Medical\Services\TreatmentService
     protected $table = 'treatment_services';
@@ -20,6 +21,7 @@ class TreatmentServiceLine extends Model
      * @var list<string>
      */
     protected $fillable = [
+        'clinic_id',
         'treatment_id',
         'service_id',
         'quantity',
@@ -36,6 +38,7 @@ class TreatmentServiceLine extends Model
     protected function casts(): array
     {
         return [
+            'clinic_id' => 'integer',
             'treatment_id' => 'integer',
             'service_id' => 'integer',
             'quantity' => 'integer',
@@ -44,6 +47,14 @@ class TreatmentServiceLine extends Model
             'subtotal' => 'decimal:2',
             'sort_order' => 'integer',
         ];
+    }
+
+    /**
+     * @return BelongsTo<Clinic, $this>
+     */
+    public function clinic(): BelongsTo
+    {
+        return $this->belongsTo(Clinic::class);
     }
 
     /**

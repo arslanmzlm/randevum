@@ -84,6 +84,7 @@ function vdSetup(TreatmentStatus $status = TreatmentStatus::Completed): array
 
     $service = Service::factory()->create(['clinic_id' => $clinic->id]);
     $line = TreatmentServiceLine::create([
+        'clinic_id' => $clinic->id,
         'treatment_id' => $treatment->id,
         'service_id' => $service->id,
         'quantity' => 1,
@@ -109,6 +110,7 @@ function vdProductLine(Treatment $treatment, int $quantity = 3, int $stock = 10)
     ]);
 
     $line = TreatmentProductLine::create([
+        'clinic_id' => $treatment->clinic_id,
         'treatment_id' => $treatment->id,
         'product_id' => $product->id,
         'quantity' => $quantity,
