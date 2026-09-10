@@ -7,3 +7,11 @@ Three distinct layers — keep them separate:
 - `patients` — clinic-owned RECORD: `clinic_id` NOT NULL, `user_id` nullable (always null in MVP — no patient login until Faz 2). `phone` unique per clinic. The same person across clinics = multiple `patients` rows.
 
 Staff↔clinic membership is the Spatie Teams role assignment (`clinic_id` on `model_has_roles`), NOT a `users` column; `doctors`/`patients` profiles are an additional layer, not the membership link. One identity wears multiple hats (doctor at A, patient at B) — isolation comes from `ClinicScope` + clinic-scoped roles (a role at clinic A grants nothing at B).
+
+## Patient identity number
+
+- `patients` carries `identity_type` (`tckn` | `foreign_id` | `passport`), `identity_number`, `identity_number_hash` and `identity_country_id`. All nullable — a walk-in or legacy patient must still be creatable; e-Nabız later queues an identity-less record as unsendable instead of blocking the record.
+- Validate per type: TCKN = 11 digits, first digit non-zero, checksum rule (length alone is not validation); YKN = 11 digits starting with 99; passport = alphanumeric with `identity_country_id` required.
+- `identity_number` is encrypted; lookup and uniqueness go through `identity_number_hash` (HMAC). Identity search is always exact match, so never add a `LIKE` search over it. Uniqueness is `UNIQUE(clinic_id, identity_type, identity_country_id, identity_number_hash)` partial on non-null — the country is part of the key because passport numbers collide across countries.
+- The identity number is identity data, NOT a special category of personal data — it does not carry the anamnesis/treatment encryption regime's obligations, but every read of it belongs in the access log.
+

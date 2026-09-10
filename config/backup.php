@@ -162,7 +162,7 @@ return [
 
             /*
              * The disk names on which the backups will be stored.
-             * Production targets S3 (eu-central-1); dev/CI default to local.
+             * Production targets Turkish S3-compatible storage; dev/CI default to local.
              */
             'disks' => [
                 env('BACKUP_DESTINATION_DISK', 'local'),
@@ -298,23 +298,16 @@ return [
     'monitor_backups' => [
         [
             'name' => env('APP_NAME', 'laravel-backup'),
-            'disks' => ['local'],
+            // Must follow the destination disk, otherwise backup:monitor keeps reporting a
+            // healthy local copy while the off-site archive silently stops being written.
+            'disks' => [
+                env('BACKUP_DESTINATION_DISK', 'local'),
+            ],
             'health_checks' => [
                 MaximumAgeInDays::class => 1,
                 MaximumStorageInMegabytes::class => 5000,
             ],
         ],
-
-        /*
-        [
-            'name' => 'name of the second app',
-            'disks' => ['local', 's3'],
-            'health_checks' => [
-                \Spatie\Backup\Tasks\Monitor\HealthChecks\MaximumAgeInDays::class => 1,
-                \Spatie\Backup\Tasks\Monitor\HealthChecks\MaximumStorageInMegabytes::class => 5000,
-            ],
-        ],
-        */
     ],
 
     'cleanup' => [
